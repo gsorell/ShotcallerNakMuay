@@ -99,7 +99,7 @@ export default function App() {
   const [roundsCount, setRoundsCount] = useState(5);
   const [roundMin, setRoundMin] = useState(3);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [voiceSpeed, setVoiceSpeed] = useState(1.5); // Set default speed to 1.5x and allow changes
+  const [voiceSpeed, setVoiceSpeed] = useState(1); // Set default speed to 100%
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
