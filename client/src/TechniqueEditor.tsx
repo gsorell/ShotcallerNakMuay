@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import './editor.css';
 import INITIAL_TECHNIQUES from './techniques';
 
