@@ -13,7 +13,7 @@
 
 body, #root {
   margin: 0;
-  background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+  background: transparent;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   color: #101010;
   -webkit-font-smoothing:antialiased;
@@ -171,4 +171,94 @@ body, #root {
 
 .read-the-docs {
   color: #888;
+}
+
+/* Force the central content area to be transparent and hide pseudo-overlay */
+.content-panel,
+.content-panel::before,
+.content-panel::after,
+.main-container::before,
+.main-container::after {
+  background: transparent !important;
+  background-image: none !important;
+  display: block; /* ensure element remains in flow */
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ensure no accidental color fill on the wrapper */
+.content-panel {
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* Force main container and panels to let the body gradient show through */
+.main-container,
+.main-container::before,
+.main-container::after,
+.panel,
+.panel::before,
+.panel::after,
+.app-page,
+.app-page::before,
+.app-page::after {
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+}
+
+/* Scoped only to the difficulty-level controls */
+.difficulty-controls .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: transform 140ms ease, box-shadow 160ms ease, background 160ms ease, opacity 120ms ease;
+  will-change: transform, box-shadow;
+  cursor: pointer;
+}
+
+.difficulty-controls .btn-primary {
+  background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 20px rgba(59,130,246,0.14);
+}
+.difficulty-controls .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(59,130,246,0.18); }
+.difficulty-controls .btn-primary:active { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+
+.difficulty-controls .icon-btn {
+  width: 40px;
+  height: 40px;
+  display:inline-grid;
+  place-items:center;
+  border-radius: 10px;
+  transition: transform 140ms ease, background 120ms ease, box-shadow 140ms ease;
+  box-shadow: none;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.difficulty-controls .icon-btn:hover { transform: translateY(-2px); background: rgba(0,0,0,0.06); }
+
+.difficulty-controls .btn:focus-visible,
+.difficulty-controls .icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.18), 0 6px 18px rgba(0,0,0,0.06);
+  border-radius: 10px;
+}
+
+.difficulty-controls .btn[disabled],
+.difficulty-controls .icon-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }

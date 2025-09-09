@@ -681,7 +681,7 @@ export default function App() {
         fontFamily: 'system-ui, sans-serif',
         padding: '2rem'
       }}>
-        <div style={{
+        <div className="content-panel" style={{
           maxWidth: '64rem',
           margin: '0 auto',
           padding: '2rem 0'
@@ -1102,7 +1102,7 @@ export default function App() {
                       Difficulty Level
                     </h3>
                     {/* difficulty controls — responsive grid */}
-                    <div className="difficulty-grid" role="tablist" aria-label="Difficulty">
+                    <div className="difficulty-controls">
                       <button
                         className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`}
                         onClick={() => setDifficulty('easy')}
