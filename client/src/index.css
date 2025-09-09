@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+
+/* Test class to verify Tailwind is working */
+.test-tailwind {
+  background-color: red !important;
+  color: white !important;
+  padding: 2rem !important;
+}

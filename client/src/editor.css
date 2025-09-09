@@ -1,0 +1,113 @@
+:root{
+  --panel-bg: rgba(255,255,255,0.09);
+  --panel-border: rgba(0,0,0,0.06);
+  --muted-text: #6b7280;
+  --text: #0b1220;
+  --primary: #2563eb;
+  --danger: #ef4444;
+  --card-radius: 10px;
+  --gap: 12px;
+}
+
+/* Root wrapper for editor/log pages */
+.editor-root {
+  padding: 20px;
+  max-width: 980px;
+  margin: 18px auto;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: var(--text);
+}
+
+/* Panel wrapper used by Technique Editor and Workout Logs only */
+.editor-panel {
+  background: var(--panel-bg);
+  border-radius: var(--card-radius);
+  padding: 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+}
+
+/* Header inside panels */
+.editor-panel h2 {
+  margin: 0 0 12px 0;
+  color: #f9a8d4;
+  font-weight: 600;
+}
+
+/* header actions */
+.editor-actions { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+
+/* two-column grid for singles/combos */
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+@media (max-width:900px) { .panel-grid { grid-template-columns: 1fr; } }
+
+/* lists and inputs */
+.tech-list { display:flex; flex-direction:column; gap:8px; }
+.tech-item { display:flex; gap:8px; align-items:center; }
+.tech-input {
+  flex:1;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid rgba(0,0,0,0.06);
+  background: #ffffff;
+  color: var(--text);
+  font-size:0.95rem;
+  min-height:36px;
+}
+.tech-input:focus { outline:none; box-shadow:0 6px 18px rgba(37,99,235,0.08); border-color: var(--primary); }
+
+/* small icon buttons */
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: opacity 120ms ease, box-shadow 120ms ease;
+}
+.icon-btn--danger {
+  background: var(--danger);
+  color: white;
+}
+.icon-btn:hover {
+  opacity: 0.95;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.icon-btn:focus {
+  outline: 2px solid rgba(37,99,235,0.18);
+  outline-offset: 2px;
+}
+
+/* actions */
+.actions { display:flex; gap:10px; align-items:center; margin-top:10px; }
+.btn { padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; border:none; }
+.btn-primary { background:var(--primary); color:white; }
+.btn-ghost { background:transparent; color:var(--muted-text); text-decoration:underline; }
+
+/* compact log card (reused) */
+.log-card {
+  padding:12px;
+  border-radius:8px;
+  background: #ffffff;
+  border:1px solid rgba(0,0,0,0.04);
+  color: var(--text);
+}
+.log-meta { font-size: 0.9rem; color: var(--muted-text); margin-top: 4px; }
+
+/* small visual tweaks */
+.panel-title { color: #6b21a8; font-weight:600; margin-bottom:8px; }
+.small-muted { color: var(--muted-text); font-size:0.9rem; }
