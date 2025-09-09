@@ -25,7 +25,6 @@ const EMPHASIS = [
 // Removed unused standardSingles declaration
 
 // REVISED & EXPANDED Technique library with extensive, sensible combinations and single strikes
-const INITIAL_TECHNIQUES: TechniquesShape = { ... };
 
 export default function App() {
   const [page, setPage] = useState<Page>('editor');
