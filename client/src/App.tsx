@@ -6,6 +6,11 @@ import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
 
+// --- NEW: Define shared types and constants ---
+type TechniquesShape = typeof INITIAL_TECHNIQUES;
+const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
+const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
+
 // Types
 type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing'; // Calisthenics removed from primary type
 type Difficulty = 'easy' | 'medium' | 'hard';
