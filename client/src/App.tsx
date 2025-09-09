@@ -4,6 +4,7 @@ import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
 import './App.css';
 import './difficulty.css';
+import { useWakeLock } from './useWakeLock';
 
 // Types
 type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing'; // Calisthenics removed from primary type
@@ -24,24 +25,31 @@ const EMPHASIS = [
 // Removed unused standardSingles declaration
 
 // REVISED & EXPANDED Technique library with extensive, sensible combinations and single strikes
-// (Removed unused INITIAL_TECHNIQUES_LOCAL)
-
-// --- NEW: localStorage key ---
-const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
-const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-
-// --- NEW: Technique Editor Component ---
-// TechniqueEditor extracted to ./TechniqueEditor.tsx (editor-only styles are imported there)
+const INITIAL_TECHNIQUES: TechniquesShape = { ... };
 
 export default function App() {
-  // --- NEW: Page routing state ---
-  const [page, setPage] = useState<Page>('timer');
+  const [page, setPage] = useState<Page>('editor');
+  const { requestWakeLock, releaseWakeLock } = useWakeLock();
+
+  // Effect to manage the screen wake lock based on the current page
+  useEffect(() => {
+    if (page === 'timer') {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+
+    // Ensure the lock is released when the component unmounts
+    return () => {
+      releaseWakeLock();
+    };
+  }, [page, requestWakeLock, releaseWakeLock]);
 
   // --- NEW: Techniques versioning & state initialization ---
   const TECHNIQUES_VERSION = 'v1';
-  const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
+  const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques';
 
-  const [techniques, setTechniques] = useState<typeof INITIAL_TECHNIQUES>(() => {
+  const [techniques, setTechniques] = useState<TechniquesShape>(() => {
     try {
       const raw = localStorage.getItem(TECHNIQUES_STORAGE_KEY);
       const storedVersion = localStorage.getItem(TECHNIQUES_VERSION_KEY);
@@ -59,7 +67,7 @@ export default function App() {
   });
 
   // Setter that persists and updates the in-memory state
-  const persistTechniques = (next: typeof INITIAL_TECHNIQUES) => {
+  const persistTechniques = (next: TechniquesShape) => {
     try {
       setTechniques(next);
       localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(next));
