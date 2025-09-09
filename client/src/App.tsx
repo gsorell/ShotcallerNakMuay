@@ -7,7 +7,6 @@ import './difficulty.css';
 
 // Types
 type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing'; // Calisthenics removed from primary type
-type AllTechniquesKey = EmphasisKey | 'calisthenics';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs';
 
