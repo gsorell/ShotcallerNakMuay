@@ -32,10 +32,10 @@ const EMPHASIS = [
 // REVISED & EXPANDED Technique library with extensive, sensible combinations and single strikes
 
 export default function App() {
-  const [page, setPage] = useState<Page>('editor');
+  const [page, setPage] = useState<Page>('timer');
   const { requestWakeLock, releaseWakeLock } = useWakeLock();
 
-  // Effect to manage the screen wake lock based on the current page
+  // Effect to manage the screen wake lock
   useEffect(() => {
     if (page === 'timer') {
       requestWakeLock();
