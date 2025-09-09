@@ -1,156 +1,98 @@
+// Minimal, safe seed of techniques used by the editor/timer.
+// Edit entries later in the Technique Editor UI or in this file.
 export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[] }> = {
   khao: {
-    // Close-range, clinch-focused combos and strikes
-    singles: [
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "Left teep",
-      "Right teep",
-      "Left Knee",
-      "Right Knee",
-      "Left Check",
-      "Right Check",
-      "Flying knee",
-      "Left kick",
-      "right kick",
-      "Left elbow",
-      "Right elbow",
-      "Spinning Elbow"
-    ],
+    singles: ["1","2","3","4","5","6","Left teep","Right teep","Left Knee","Right Knee","Flying knee","Left kick","Right kick","Left elbow","Right elbow","Spinning Elbow"],
     combos: [
-      "1, Step-in Right Knee",
-      "2, Step-in Left Knee",
-      "High block march, left knee, right knee",
-      "1, 2, Clinch, Double Knees",
-      "1, 4, Switch Knee, Elbow",
-      "Left check, 2, 3, 2",
-      "Right check, 3, 2, 3",
-      "2, Left elbow, Right elbow",
-      "Knee, Elbow, knee",
-      "1, 2, 3 to the body, 3 to the head",
-      "Knee, Knee, knee",
-      "1, 6, 3, 4, Knee"
+      "Jab, Step-in Straight Knee",
+      "Jab, Cross, Clinch, Double Knees",
+      "Right Hook, Clinch Pull-down, Right Knee to Head",
+      "High Guard Block, Clinch, Knee",
+      "Clinch, Multiple Knees, Dump",
+      "Feint Low, Flying Knee",
+      "Knee, Elbow",
+      "Uppercut, Knee, Elbow",
+      "Knee, Knee, Clinch",
+      "Elbow, Uppercut, Knee"
     ]
   },
-
   mat: {
-    singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Flying knee", "Left kick", "right kick",
-      "Left elbow", "Right elbow", "Spinning Elbow"
-    ],
+    singles: ["1","2","3","4","5","6","Left teep","Right teep","Left Knee","Right Knee","Flying knee","Left kick","Right kick","Left elbow","Right elbow","Spinning Elbow"],
     combos: [
-      "1, 2, 3",
-      "1, 2, 3, Right Low Kick, left check",
-      "1, 2 to the body, 3",
-      "Catch body kick, 2, 3",
-      "1, Overhand, clinch, push",
-      "1, 2, 3, Step-in Right Elbow",
-      "1, 1, 2",
-      "2, 3, 2",
-      "1 to the Body, 2",
-      "Overhand, 4 to the body, 3 to the body, 3 to the head",
+      "Jab, Cross, Left Hook",
+      "Jab, Cross, Left Hook, Right Low Kick",
+      "Jab high, Cross to body, Hook high",
+      "Catch body kick, Right Cross, Left Hook",
+      "Right Overhand, Spinning Left Backfist",
+      "Jab, Cross, Left Hook, Step-in Right Elbow",
+      "Jab, Jab, Cross",
+      "Cross, Hook, Cross",
+      "Jab to Body, Cross to Head",
+      "Overhand, Hook, Cross"
     ]
   },
-
   tae: {
-    singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Flying knee", "Left kick", "right kick",
-      "Left elbow", "Right elbow", "Spinning Elbow"
-    ],
+    singles: ["1","2","3","4","5","6","Left teep","Right teep","Left Knee","Right Knee","Flying knee","Left kick","Right kick","Left elbow","Right elbow","Spinning Elbow"],
     combos: [
-      "1, Right Kick",
-      "1, 2, Switch kick",
-      "Lead Teep, Right Kick",
+      "Jab, Right Roundhouse Kick",
+      "Jab, Cross, Switch Left Roundhouse Kick",
+      "Lead Teep, Right Roundhouse Kick",
       "Right Low Kick, Right High Kick",
-      "1, 2, 3, Spinning Back Kick",
-      "Inside leg Kick, Right  Kick, left check",
-      "2, 3, Low kick, right check",
-      "Double Jab, 2, Low kick",
+      "Jab feint, Spinning Back Kick",
+      "Switch Left Low Kick, Right Roundhouse Kick",
+      "Jab, Cross, Low kick",
+      "Double Jab, Cross, Low kick",
       "Hook, Cross, Low kick",
-      "1, 2, right kick, left kick",
+      "Jab, Body kick, High kick"
     ]
   },
-
   femur: {
-    singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Flying knee", "Left kick", "right kick",
-      "Left elbow", "Right elbow", "Spinning Elbow"
-    ],
+    singles: ["1","2","3","4","5","6","Left teep","Right teep","Left Knee","Right Knee","Flying knee","Left kick","Right kick","Left elbow","Right elbow","Spinning Elbow"],
     combos: [
-      "Check Kick, Right Low Kick",
-      "Slip right, 6, 3, right knee, right elbow",
-      "Parry Jab, Left Kick",
+      "Check Kick, Counter Right Low Kick",
+      "Slip Jab, Right Uppercut, Left Hook",
+      "Parry Jab, Right High Kick",
       "Lean Back, Right Low Kick",
-      "Olay Left",
-      "Olay right",
+      "Left Hook with pivot, Right Roundhouse Kick",
       "Catch Kick, Right Cross, Leg Sweep",
-      "Parry, Cross, Hook, right kick",
-      "Left teep, switch knee, right elbow",
-      "switch kick, 2, 3, 2",
+      "Parry, Cross, Hook",
+      "Slip, Cross, Hook, Low kick",
+      "Check hook, Cross",
       "Lean back, Cross, Low kick"
     ]
   },
-
   sok: {
-    singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Flying knee", "Left kick", "right kick",
-      "Left elbow", "Right elbow", "Spinning Elbow"
-    ],
+    singles: ["1","2","3","4","5","6","Left teep","Right teep","Left Knee","Right Knee","Flying knee","Left kick","Right kick","Left elbow","Right elbow","Spinning Elbow"],
     combos: [
-      "1, 2, right Elbow",
-      "1, spinning elbow",
-      "3, Spinning Elbow",
-      "Parry jab, Uppercut Elbow",
-      "1, axe Elbow",
-      "Clinch, Left up Elbow, right Elbow",
-      "Left elbow, right elbow, left elbow",
-      "Double Jab, 2, jumping elbow",
-      "Slip, Hook, right up elbow",
-      "Switch Knee, right Elbow",
-      "1, 2, 3, Spinning Elbow"
+      "Jab, Cross, Horizontal Elbow",
+      "Hook, Spinning Elbow",
+      "Parry, Uppercut Elbow",
+      "Jab, Overhand, Downward Elbow",
+      "Clinch, Horizontal Elbow, Uppercut Elbow",
+      "Push kick, Cross, Spear Elbow",
+      "Double Jab, Cross, Horizontal Elbow",
+      "Slip, Hook, Spinning Elbow",
+      "Knee, Downward Elbow",
+      "Jab, Cross, Hook, Spinning Elbow"
     ]
   },
-
   boxing: {
-    singles: [
-      "1", "2", "3", "4", "5", "6",
-      "1 to the body", "2 to the body", "3 to the body", "Pivot left",  "Pivot right", "duck",
-    ],
+    singles: ["1","2","3","4","5","6","Jab","Cross","Hook","Uppercut","Body Shot"],
     combos: [
-      "1, 1, 2",
-      "1, 2, 3",
-      "1, 2, 3, 2",
-      "1, 2, 5, 2",
-      "2, 3, 2",
-      "1, slip right, 2",
-      "1, 2, 3 to the body, 3 to the head",
-      "1, 2, Roll right, Cross, Hook",
-      "1, 2 to body, 3",
-      "Feint Jab, Right Cross",
-      "1, slip left, 5, 2, slip right, 6, 3"
+      "Jab, Jab, Cross",
+      "Jab, Cross, Lead Hook",
+      "Jab, Cross, Lead Hook, Cross",
+      "Jab, Cross, Lead Uppercut, Cross",
+      "Cross, Lead Hook, Cross",
+      "Jab, Slip, Cross",
+      "Jab, Jab, Body Hook",
+      "Jab, Cross, Roll, Cross, Hook",
+      "Jab high, Cross to body, Hook high",
+      "Feint Jab, Right Cross"
     ]
   },
-
   calisthenics: {
-    singles: [
-      "Breakdown",
-      "5 pushups",
-      "5 jumpsquats",
-      "5 speed kicks left",
-      "5 speed kicks right"
-    ],
+    singles: ["Breakdown","5 pushups","5 jumpsquats","5 speed kicks left","5 speed kicks right"],
     combos: []
   }
 };
