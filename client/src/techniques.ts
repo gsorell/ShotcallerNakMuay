@@ -77,7 +77,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Inside leg Kick, Right  Kick, left check",
       "2, 3, Low kick, right check",
       "Double Jab, 2, Low kick",
-      "Hook, Cross, Low kick",
+      "3, 2, Low kick",
       "1, 2, right kick, left kick",
     ]
   },
@@ -149,7 +149,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   calisthenics: {
     singles: [
       "Breakdown",
-      "5 pushups",
+      "3 pushups",
       "Alternating checks",
       "3 jumping jacks",
       "1, 2, 1, 2, 1, 2",
