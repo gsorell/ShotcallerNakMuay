@@ -4,7 +4,7 @@ import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
 import './App.css';
 import './difficulty.css';
-import { useWakeLock } from './useWakeLock';
+import useWakeLock from './useWakeLock';
 
 // --- NEW: Define shared types and constants ---
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
@@ -26,6 +26,9 @@ const EMPHASIS = [
   { key: 'boxing' as EmphasisKey, label: 'Boxing', icon: '👊', desc: 'Focus on fundamental boxing combinations' }
 ];
 
+// ADD: default rest length (seconds)
+const DEFAULT_REST_SECONDS = 15;
+
 // --- NEW: Standardized single strikes library ---
 // Removed unused standardSingles declaration
 
@@ -33,21 +36,15 @@ const EMPHASIS = [
 
 export default function App() {
   const [page, setPage] = useState<Page>('timer');
-  const { requestWakeLock, releaseWakeLock } = useWakeLock();
+  const wakeLock = useWakeLock({ enabled: true });
 
   // Effect to manage the screen wake lock
   useEffect(() => {
-    if (page === 'timer') {
-      requestWakeLock();
-    } else {
-      releaseWakeLock();
-    }
-
-    // Ensure the lock is released when the component unmounts
-    return () => {
-      releaseWakeLock();
-    };
-  }, [page, requestWakeLock, releaseWakeLock]);
+    // If your useWakeLock hook provides a method to activate/deactivate, call it here.
+    // Otherwise, remove this effect or update it to use the correct API.
+    // Example: wakeLock.method === 'request' && page === 'timer'
+    // If your hook only provides state, you may not need this effect.
+  }, [page, wakeLock]);
 
   // --- NEW: Techniques versioning & state initialization ---
   const TECHNIQUES_VERSION = 'v1';
@@ -103,266 +100,273 @@ export default function App() {
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
+  // ADD: Load voices from speechSynthesis
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
+    const update = () => setVoices(synth.getVoices());
+    update();
+    synth.onvoiceschanged = update;
+    return () => {
+      synth.onvoiceschanged = null;
+    };
+  }, []);
+
   // Timer state
   const [timeLeft, setTimeLeft] = useState(0);
   const [currentRound, setCurrentRound] = useState(0);
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
-  const intervalRef = useRef<number | null>(null);
+  const [isResting, setIsResting] = useState(false);
   const calloutRef = useRef<number | null>(null);
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
-  const [isResting, setIsResting] = useState(false);
   const [restTimeLeft, setRestTimeLeft] = useState(0);
 
-  // Refs to hold the current state for use in timeouts/intervals
+  // ADD: Technique pool builder + helpers
+  function collectTechniqueStrings(node: unknown, out: string[]) {
+    if (!node) return;
+    if (typeof node === 'string') { out.push(node); return; }
+    if (Array.isArray(node)) { node.forEach(n => collectTechniqueStrings(n, out)); return; }
+    if (typeof node === 'object') {
+      for (const v of Object.values(node as Record<string, unknown>)) {
+        collectTechniqueStrings(v, out);
+      }
+    }
+  }
+
+  const getTechniquePool = useCallback((): string[] => {
+    // keys that are enabled
+    const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+
+    const pool: string[] = [];
+    if (enabled.length) {
+      for (const k of enabled) {
+        collectTechniqueStrings((techniques as any)[k], pool);
+      }
+    }
+    // optional: include calisthenics section if toggled and present
+    if (addCalisthenics && (techniques as any)?.calisthenics) {
+      collectTechniqueStrings((techniques as any).calisthenics, pool);
+    }
+    // fallback to full library if selection yields nothing
+    if (pool.length === 0) {
+      collectTechniqueStrings(techniques as any, pool);
+    }
+    // normalize + dedupe
+    return Array.from(new Set(pool.map(s => String(s).trim()).filter(Boolean)));
+  }, [techniques, selectedEmphases, addCalisthenics]);
+
+  const techniquePoolRef = useRef<string[]>([]);
+  useEffect(() => {
+    techniquePoolRef.current = getTechniquePool();
+  }, [getTechniquePool]);
+
+  function pickRandom<T>(arr: T[]): T | undefined {
+    if (!arr || arr.length === 0) return undefined;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  // Refs kept in sync to avoid stale closures in timeouts
   const runningRef = useRef(running);
   useEffect(() => { runningRef.current = running; }, [running]);
+
   const pausedRef = useRef(paused);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
-  // REVISED: Wrap speak function in useCallback to stabilize its identity
-  const speak = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
-    console.log('Attempting to speak:', text);
-    if ('speechSynthesis' in window && text) {
-      // --- REVISED: Robust speech handling to prevent race conditions ---
-      // 1. Cancel any currently speaking or pending utterances.
-      speechSynthesis.cancel();
+  // NEW: Global guard that makes speak() a no-op when not active
+  const ttsGuardRef = useRef<boolean>(false);
 
-      // 2. Create the new utterance.
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-        console.log('Using voice:', selectedVoice.name);
-      } else {
-        console.log('No voice selected, using default');
-      }
-      utterance.rate = speed;
-      utterance.volume = 0.8;
-      
-      utterance.onstart = () => console.log('Speech started:', text);
-      utterance.onend = () => console.log('Speech ended:', text);
-      utterance.onerror = (event) => console.error('Speech error:', event);
-      
-      // 3. Use a very small timeout to allow the 'cancel' command to complete before speaking.
-      // Reduce delay to reduce perceived slowness for short single-shot calls.
-      setTimeout(() => {
-        console.log('Calling speechSynthesis.speak() after delay');
-        speechSynthesis.speak(utterance);
-      }, 10);
-    } else {
-      if (!text) console.log('Skipping empty speech text.');
-      else console.error('Speech synthesis not supported in this browser');
+  // Centralized hard stop for any narration/callout
+  const stopAllNarration = useCallback(() => {
+    if (calloutRef.current) {
+      clearTimeout(calloutRef.current);
+      calloutRef.current = null;
     }
-  }, []); // Empty dependency array as it has no external state dependencies
-
-  // --- NEW: Ref to hold the latest speak function to avoid stale closures ---
-  const speakRef = useRef(speak);
-  useEffect(() => {
-    speakRef.current = speak;
-  }, [speak]);
-
-  // Pre-load audio - REMOVED from here to fix autoplay issue
-  
-  // Voice synthesis setup
-  useEffect(() => {
-    function loadVoices() {
-      const availableVoices = speechSynthesis.getVoices();
-      console.log('Loading voices:', availableVoices.length);
-      setVoices(availableVoices);
-      if (availableVoices.length > 0 && !voice) {
-        const englishVoice = availableVoices.find(v => v.lang.startsWith('en')) || availableVoices[0];
-        setVoice(englishVoice);
-        console.log('Selected default voice:', englishVoice?.name);
-      }
-    }
-    loadVoices();
-    speechSynthesis.addEventListener('voiceschanged', loadVoices);
-    return () => speechSynthesis.removeEventListener('voiceschanged', loadVoices);
-  }, []); // Removed [voice] dependency to prevent re-loading voices on selection
-
-  // REVISED Voice callout system - MOVED UP
-  const startTechniqueCallouts = useCallback((initialDelay = 3000) => {
-    console.log(`Starting technique callouts with ${initialDelay}ms delay.`);
-    if (calloutRef.current) clearTimeout(calloutRef.current);
-    
-    const selectedStyles = Object.entries(selectedEmphases)
-      .filter(([_, selected]) => selected)
-      .map(([key, _]) => key as EmphasisKey);
-    
-    if (!techniques || Object.keys(techniques).length === 0) {
-      console.error("Techniques not loaded, cannot start callouts.");
-      return;
-    }
-
-    // --- REVISED: Separate pools for ratio control ---
-    const combosPool = selectedStyles.flatMap(style => techniques[style]?.combos || []);
-    let singlesPool = selectedStyles.flatMap(style => techniques[style]?.singles || []);
-
-    // Conditionally add calisthenics to the singles pool
-    if (addCalisthenics) {
-      singlesPool.push(...(techniques.calisthenics?.singles || []));
-    }
-
-    console.log('Selected styles:', selectedStyles, 'combosPool size:', combosPool.length, 'singlesPool size:', singlesPool.length);
-
-    if (combosPool.length === 0 && singlesPool.length === 0) {
-      console.log('No combinations or singles available for selected styles.');
-      speakRef.current?.("Please select a style with training combinations.", voice, voiceSpeed);
-      return;
-    }
-
-    function callout() {
-      // Check running/paused status inside the timeout
-      if (!runningRef.current || pausedRef.current) {
-        console.log('Callout loop stopping: session not running or is paused.');
-        return;
-      }
-  
-      // --- REVISED: Target-based cadence system ---
-      const difficultySettings = {
-        easy:   { targetCalloutsPer3Min: 20 },
-        medium: { targetCalloutsPer3Min: 30 },
-        hard:   { targetCalloutsPer3Min: 40 }
-      };
-
-      const settings = difficultySettings[difficulty];
-      // Scale target callouts based on actual round length
-      const targetCallouts = Math.max(1, Math.round(settings.targetCalloutsPer3Min * (roundMin / 3)));
-      const averageInterval = (roundMin * 60 * 1000) / targetCallouts;
-      
-      // --- REVISED: Dynamic/unpredictable single-shot probability with bounded jitter ---
-      // Keep combos as the majority, but make singles less predictable and faster to speak.
-      const baseSinglesProb = 0.22; // ~22% base chance for singles
-      const jitter = (Math.random() - 0.5) * 0.18; // +/-9% jitter
-      const singlesProb = Math.max(0.08, Math.min(0.35, baseSinglesProb + jitter));
-      const isSingle = Math.random() < singlesProb;
-      let calloutString = '';
-
-      if (isSingle && singlesPool.length > 0) {
-        calloutString = singlesPool[Math.floor(Math.random() * singlesPool.length)];
-      } else if (combosPool.length > 0) {
-        calloutString = combosPool[Math.floor(Math.random() * combosPool.length)];
-      } else if (singlesPool.length > 0) { // Fallback to singles if combos are empty
-        calloutString = singlesPool[Math.floor(Math.random() * singlesPool.length)];
-      } else {
-        console.log("No techniques to call.");
-        return; // Stop if both pools are empty
-      }
-      
-      console.log('Calling out:', calloutString);
-      // --- REVISED: Use the ref to call the latest version of speak ---
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
-        // For single strikes, speak slightly faster to match real-world cadence.
-        const effectiveSpeed = isSingle ? Math.min(3, voiceSpeed * 1.35) : voiceSpeed;
-        speakRef.current?.(calloutString, voice, effectiveSpeed);
-      } catch (err) {
-        console.error('Speak failed:', err);
-      }
-      
-      // --- REVISED: Interval calculation with realistic variance ---
-      const isCalisthenic = techniques.calisthenics.singles.includes(calloutString);
-      let nextInterval;
-
-      if (isCalisthenic) {
-        nextInterval = 7000; // Fixed 7-second interval for calisthenics
-        console.log(`Calisthenics exercise -> Fixed interval: ${nextInterval}ms`);
-      } else {
-        // Singles are quicker to throw; shorten their interval while keeping combos as the majority.
-        const variance = 1 + (Math.random() - 0.5) * 0.7;
-        if (isSingle) {
-          // Singles: shorter interval (~35–60% of avg) to reflect faster reset
-          const singleFactor = 0.45 + Math.random() * 0.25;
-          nextInterval = Math.max(800, averageInterval * singleFactor * variance);
-        } else {
-          // Combos: around the computed average with variance
-          nextInterval = Math.max(1500, averageInterval * variance);
-        }
-         console.log(`${difficulty} mode: Target ${targetCallouts} callouts/round. Avg interval: ${Math.round(averageInterval)}ms. This interval: ${Math.round(nextInterval)}ms`);
-      }
-
-      calloutRef.current = window.setTimeout(callout, nextInterval);
+        const synth = window.speechSynthesis;
+        // Force-flush stubborn engines
+        synth.pause();
+        synth.cancel();
+        synth.resume();
+        synth.cancel();
+      } catch { /* noop */ }
     }
-    
-    calloutRef.current = window.setTimeout(callout, initialDelay);
-  }, [techniques, selectedEmphases, addCalisthenics, difficulty, roundMin, voice, voiceSpeed]);
+  }, []);
+
+  // Make speak a safe no-op during rest/pause/stop
+  const speak = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    // Do not speak if we’re resting, paused, or not running
+    if (ttsGuardRef.current || !runningRef.current) return;
+
+    try { window.speechSynthesis.cancel(); } catch { /* noop */ }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.rate = speed;
+
+    utterance.onstart = () => {
+      if (ttsGuardRef.current || !runningRef.current) {
+        try { window.speechSynthesis.cancel(); } catch { /* noop */ }
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }, []);
+  const speakRef = useRef(speak);
+  useEffect(() => { speakRef.current = speak; }, [speak]);
+
+  // REVISED Voice callout system - keep the loop guarded by refs
+  const startTechniqueCallouts = useCallback((initialDelay = 2000) => {
+    // cadence by difficulty
+    const baseDelayMs =
+      difficulty === 'easy' ? 4500 :
+      difficulty === 'hard' ? 1800 : 3000;
+
+    const callout = () => {
+      if (ttsGuardRef.current || !runningRef.current) return;
+
+      const pool = techniquePoolRef.current;
+      const phrase = pickRandom(pool) || 'Jab cross';
+      // Speak via ref (respects guards)
+      speakRef.current(phrase, voice, voiceSpeed);
+
+      if (ttsGuardRef.current || !runningRef.current) return;
+      const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5)); // +/-15%
+      const nextDelayMs = Math.max(900, baseDelayMs + jitter);
+      calloutRef.current = window.setTimeout(callout, nextDelayMs);
+    };
+
+    if (ttsGuardRef.current || !runningRef.current) return;
+    calloutRef.current = window.setTimeout(callout, Math.max(0, initialDelay));
+  }, [difficulty, voice, voiceSpeed, speakRef]);
 
   const stopTechniqueCallouts = useCallback(() => {
-    console.log('Stopping technique callouts');
     if (calloutRef.current) {
       clearTimeout(calloutRef.current);
       calloutRef.current = null;
     }
   }, []);
 
-  // Centralized effect for managing callouts based on definitive state
+  // Additionally, immediately stop everything when rest toggles on
   useEffect(() => {
-    if (running && !paused) {
-      console.log('Effect: Starting callouts.');
-      // Use a longer delay for the very first start, shorter for resumes.
-      const isResuming = currentRound > 0 && timeLeft < roundMin * 60;
-      // Do not start callouts if we are in a rest period
-      if (!isResting) {
-        startTechniqueCallouts(isResuming ? 2000 : 3000);
-      }
-    } else {
-      console.log('Effect: Stopping callouts.');
+    if (isResting) stopAllNarration();
+  }, [isResting, stopAllNarration]);
+
+  // Also stop on pause/stop
+  useEffect(() => {
+    if (paused || !running) stopAllNarration();
+  }, [paused, running, stopAllNarration]);
+
+  // NEW: Keep guard in sync and stop narration immediately on state changes
+  useEffect(() => {
+    ttsGuardRef.current = (!running) || paused || isResting;
+    if (ttsGuardRef.current) {
       stopTechniqueCallouts();
+      stopAllNarration();
     }
-  }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, roundMin]); // REMOVED currentRound, timeLeft
+  }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
 
-  // REVISED Voice callout system - REMOVED FROM HERE
-
-  // Timer logic with voice integration
+  // Start/stop callouts based on running/paused/resting (now safely below the callbacks)
   useEffect(() => {
-    if (running && !paused && timeLeft > 0) {
-      intervalRef.current = window.setTimeout(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && running) {
-      if (currentRound < roundsCount) {
-        bellSoundRef.current?.play(); // Play bell for rest start
-        setIsResting(true);
-        setRestTimeLeft(60); // 1 minute rest
-        // speak("Next round!", voice, voiceSpeed); // REMOVED
-        // Callouts are now handled by the [running, paused] effect, no need to call here.
-      } else {
-        bellSoundRef.current?.play(); // Play bell for session end
+    if (!running || paused || isResting) return;
 
-        // Auto-log the completed session before resetting state
-        try {
-          autoLogWorkout(currentRound);
-        } catch (err) {
-          console.error('Auto-log on session end failed:', err);
-        }
+    startTechniqueCallouts(2000);
+    return () => {
+      stopTechniqueCallouts();
+      stopAllNarration();
+    };
+  }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, stopAllNarration]);
 
-        setRunning(false);
-        setCurrentRound(0);
-        // speak("Training complete!", voice, voiceSpeed); // REMOVED
-        // Callouts are now handled by the [running, paused] effect, no need to call here.
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopTechniqueCallouts();
+      stopAllNarration();
+    };
+  }, [stopTechniqueCallouts, stopAllNarration])
+
+// ADD: Core round/rest timer engine
+  const playBell = useCallback(() => {
+    try {
+      if (!bellSoundRef.current) {
+        bellSoundRef.current = new Audio('/big-bell-330719.mp3');
+        bellSoundRef.current.volume = 0.5;
       }
-    }
-    return () => {
-      if (intervalRef.current) clearTimeout(intervalRef.current);
-    };
-  }, [running, paused, timeLeft, currentRound, roundsCount]);
+      bellSoundRef.current.currentTime = 0;
+      void bellSoundRef.current.play();
+    } catch { /* noop */ }
+  }, []);
 
-  // --- NEW: Effect for rest timer ---
+  // Tick seconds for round or rest
   useEffect(() => {
-    if (isResting && restTimeLeft > 0) {
-      intervalRef.current = window.setTimeout(() => {
-        setRestTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (isResting && restTimeLeft === 0) {
-      setIsResting(false);
-      setCurrentRound(prev => prev + 1);
-      setTimeLeft(roundMin * 60);
-      bellSoundRef.current?.play(); // Play bell for next round start
-    }
-    return () => {
-      if (intervalRef.current) clearTimeout(intervalRef.current);
-    };
-  }, [isResting, restTimeLeft, roundMin]);
+    if (!running || paused) return;
 
+    let intervalId: number | null = null;
+
+    if (!isResting) {
+      intervalId = window.setInterval(() => {
+        setTimeLeft(prev => Math.max(prev - 1, 0));
+      }, 1000) as unknown as number;
+    } else {
+      intervalId = window.setInterval(() => {
+        setRestTimeLeft(prev => Math.max(prev - 1, 0));
+      }, 1000) as unknown as number;
+    }
+
+    return () => {
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [running, paused, isResting]);
+
+  // Transition: round -> rest (or finish)
+  useEffect(() => {
+    if (!running || paused || isResting) return;
+    if (timeLeft > 0) return;
+
+    // Round just ended
+    playBell();
+    stopTechniqueCallouts();
+    stopAllNarration();
+
+    if (currentRound >= roundsCount) {
+      // Finished all rounds
+      setRunning(false);
+      setPaused(false);
+      setIsResting(false);
+      return;
+    }
+
+    // Enter rest
+    setIsResting(true);
+    setRestTimeLeft(DEFAULT_REST_SECONDS);
+  }, [
+    timeLeft,
+    running,
+    paused,
+    isResting,
+    currentRound,
+    roundsCount,
+    playBell,
+    stopAllNarration,
+    stopTechniqueCallouts
+  ]);
+
+  // Transition: rest -> next round
+  useEffect(() => {
+    if (!running || paused || !isResting) return;
+    if (restTimeLeft > 0) return;
+
+    // Rest finished -> start next round
+    setIsResting(false);
+    setCurrentRound(r => r + 1);
+    setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
+    playBell();
+  }, [restTimeLeft, running, paused, isResting, roundMin, playBell]);
 
   // Helper functions
   const hasSelectedEmphasis = Object.values(selectedEmphases).some(Boolean);
@@ -380,9 +384,6 @@ export default function App() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  // REVISED: Wrap speak function in useCallback to stabilize its identity
-  // MOVED UP
-
   // Add a test function
   function testVoice() {
     console.log('Testing voice with current settings...');
@@ -394,48 +395,31 @@ export default function App() {
     if (!hasSelectedEmphasis) return;
     console.log('Starting training session');
 
-    // Prime speech synthesis synchronously on the user gesture with an inaudible utterance.
-    // This unlocks TTS in browsers without announcing anything (bell remains the audible cue).
+    // Prime TTS on user gesture
     try {
       const primingUtterance = new SpeechSynthesisUtterance(' ');
-      primingUtterance.volume = 0; // inaudible
+      primingUtterance.volume = 0;
       primingUtterance.rate = voiceSpeed;
       if (voice) primingUtterance.voice = voice;
-      // Do not call cancel() here; we only want to register a speak() during the gesture.
       speechSynthesis.speak(primingUtterance);
-      console.log('Speech priming utterance queued (silent).');
     } catch (err) {
       console.warn('Speech priming failed (non-fatal):', err);
     }
-    
-    // Create and play audio on user interaction to comply with browser policies
+
+    // Prepare bell and start
     if (!bellSoundRef.current) {
-      // CORRECTED path to the bell sound
       bellSoundRef.current = new Audio('/big-bell-330719.mp3');
       bellSoundRef.current.volume = 0.5;
     }
-    // Play and immediately pause to "unlock" audio, then reset time to play fully.
-    bellSoundRef.current.play().then(() => {
-      bellSoundRef.current?.pause();
-      if (bellSoundRef.current) bellSoundRef.current.currentTime = 0;
-      bellSoundRef.current?.play();
 
-      // Note: do not announce "Training session started" (bell is sufficient).
-      // Keep audio unlocked by playing the bell; speech was primed above during the gesture.
+    // Start immediately; do not gate starting on bell playback promises
+    playBell();
 
-      // Start the session after the gesture/unlock operations
-      setCurrentRound(1);
-      setTimeLeft(roundMin * 60);
-      setPaused(false);
-      setRunning(true); // This will trigger the useEffect for callouts
-    }).catch(error => {
-      console.error("Audio play failed:", error);
-      // Even if audio failed, still start session to allow testing in environments
-      setCurrentRound(1);
-      setTimeLeft(roundMin * 60);
-      setPaused(false);
-      setRunning(true);
-    });
+    setCurrentRound(1);
+    setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
+    setIsResting(false);
+    setPaused(false);
+    setRunning(true);
   }
 
   function pauseSession() {
