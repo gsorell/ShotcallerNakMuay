@@ -462,7 +462,7 @@ export default function App() {
       <div className="main-container" style={{ minHeight: '100vh', color: '#fdf2f8', fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
         <div className="content-panel" style={{ maxWidth: '64rem', margin: '0 auto', padding: '2rem 0' }}>
           {/* Top area: Start/Timer/Controls */}
-          <div style={{ minHeight: (running || hasSelectedEmphasis) ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
+          <div style={{ minHeight: running ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
             {running && (
               <div
                 style={{
@@ -499,20 +499,7 @@ export default function App() {
               </div>
             )}
 
-            {!running && hasSelectedEmphasis && (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: '2rem' }}>
-                <button onClick={startSession} style={{
-                  all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
-                  fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', userSelect: 'none',
-                  minWidth: '22rem', boxShadow: '0 10px 25px rgba(34,197,94,0.3), 0 4px 10px rgba(59,130,246,0.2)'
-                }}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                  <span style={{ lineHeight: 1 }}>Start</span>
-                </button>
-              </div>
-            )}
+            {/* START BUTTON MOVED FROM HERE */}
           </div>
 
           {/* Settings */}
@@ -553,6 +540,24 @@ export default function App() {
                     );
                   })}
                 </div>
+              </section>
+
+              {/* Calisthenics toggle MOVED HERE */}
+              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
+                  <span>Add Calisthenics</span>
+                  <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
+                    position: 'relative', width: '3.5rem', height: '1.75rem',
+                    backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+                    transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+                  }}>
+                    <div style={{
+                      position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
+                      width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+                      transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                    }} />
+                  </div>
+                </label>
               </section>
 
               {/* Step 2: Rounds/Length/Difficulty */}
@@ -602,33 +607,34 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Difficulty */}
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
-                <div className="difficulty-controls">
-                  <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
-                  <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
-                  <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
-                </div>
-              </section>
+              {/* Conditionally render Difficulty and Start button together */}
+              {!running && hasSelectedEmphasis && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '1rem' }}>
+                  {/* Difficulty */}
+                  <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
+                    <div className="difficulty-controls">
+                      <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
+                      <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
+                      <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
+                    </div>
+                  </section>
 
-              {/* Calisthenics toggle */}
-              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
-                  <span>Add Calisthenics</span>
-                  <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
-                    position: 'relative', width: '3.5rem', height: '1.75rem',
-                    backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-                    transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-                  }}>
-                    <div style={{
-                      position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
-                      width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-                      transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                    }} />
+                  {/* Start Button */}
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <button onClick={startSession} style={{
+                      all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
+                      fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
+                      background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', userSelect: 'none',
+                      minWidth: '22rem', boxShadow: '0 10px 25px rgba(34,197,94,0.3), 0 4px 10px rgba(59,130,246,0.2)'
+                    }}>
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                      <span style={{ lineHeight: 1 }}>Start</span>
+                    </button>
                   </div>
-                </label>
-              </section>
+                </div>
+              )}
 
               {/* Advanced */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -678,6 +684,8 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* START BUTTON MOVED FROM HERE */}
             </div>
           </div>
 
