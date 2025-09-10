@@ -444,10 +444,14 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
+        .start-button:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
+        }
         @media (max-width: 768px) {
           .main-container { padding: 1rem !important; }
           .header-title { font-size: 1.75rem !important; }
-          .main-timer { font-size: 5rem !important; }
+          .main-timer { fontSize: '5rem' !important; }
           .difficulty-grid { grid-template-columns: 1fr !important; }
           .emphasis-grid { grid-template-columns: 1fr !important; }
         }
@@ -622,12 +626,16 @@ export default function App() {
 
                   {/* Start Button */}
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <button onClick={startSession} style={{
-                      all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
-                      fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
-                      background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', userSelect: 'none',
-                      minWidth: '22rem', boxShadow: '0 10px 25px rgba(34,197,94,0.3), 0 4px 10px rgba(59,130,246,0.2)'
+                    <button
+                      onClick={startSession}
+                      className="start-button"
+                      style={{
+                        all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
+                        fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
+                        background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', userSelect: 'none',
+                        minWidth: '22rem', boxShadow: '0 10px 25px rgba(34,197,94,0.3), 0 4px 10px rgba(59,130,246,0.2)',
+                        transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
                     }}>
                       <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                       <span style={{ lineHeight: 1 }}>Start</span>
