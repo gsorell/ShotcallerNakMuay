@@ -289,7 +289,21 @@ export default function App() {
 
   // Voice tester
   function testVoice() {
-    speak(`Voice test at ${voiceSpeed.toFixed(2)}x`, voice, voiceSpeed);
+    if (typeof window === 'undefined' || !('speechSynthesis'in window)) return;
+    try {
+      // Cancel any ongoing speech to prevent overlap
+      window.speechSynthesis.cancel();
+
+      // Create and configure the utterance for the test
+      const utterance = new SpeechSynthesisUtterance(`Voice test at ${voiceSpeed.toFixed(2)}x`);
+      if (voice) utterance.voice = voice;
+      utterance.rate = voiceSpeed;
+
+      // Speak the test phrase
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.error("Voice test failed:", err);
+    }
   }
 
   // Session controls
