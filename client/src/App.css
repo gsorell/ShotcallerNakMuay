@@ -262,3 +262,32 @@ body, #root {
   transform: none;
   box-shadow: none;
 }
+
+/* Remove number input spinners (global) */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Round length input styling */
+.round-length-input {
+  width: 4.5rem;
+  padding: 0.5rem 0;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+  font-size: 2rem;
+  outline: none;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255,255,255,0.25);
+}
+.round-length-input:focus {
+  border-bottom-color: #60a5fa;
+}

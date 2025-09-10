@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-type UseWakeLockOpts = {
-  enabled: boolean;
-  log?: boolean;
-};
 
 type Method = 'wakeLock' | 'nosleep' | 'none';
 
@@ -12,7 +8,8 @@ type Method = 'wakeLock' | 'nosleep' | 'none';
  * It requests a wake lock and handles re-acquisition when the document becomes visible again.
  * @returns {object} An object containing functions to request and release the wake lock.
  */
-export function useWakeLock({ enabled, log }: UseWakeLockOpts) {
+export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
+  const { enabled, log } = opts;
   const [active, setActive] = useState(false);
   const [method, setMethod] = useState<Method>('none');
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +93,6 @@ export function useWakeLock({ enabled, log }: UseWakeLockOpts) {
   // Manage lifecycle
   useEffect(() => {
     let disposed = false;
-
     const ensure = async () => {
       if (!enabledRef.current) {
         await releaseAll();
@@ -104,7 +100,6 @@ export function useWakeLock({ enabled, log }: UseWakeLockOpts) {
       }
       await requestWakeLock();
     };
-
     ensure();
 
     const onVisibility = () => {
@@ -140,3 +135,26 @@ interface WakeLockSentinel extends EventTarget {
   type: 'screen';
   release(): Promise<void>;
 }
+
+// In the component file containing your "Test Voice" button
+
+const handleTestVoice = async () => {
+  // 1. Add this line to unlock the audio context on user interaction.
+  await new (window.AudioContext || (window as any).webkitAudioContext)().resume();
+
+  // 2. It's also good practice to cancel any prior speech.
+  window.speechSynthesis.cancel();
+
+  console.log('Testing voice with current settings...');
+  const utter = new SpeechSynthesisUtterance('Testing voice with current settings.');
+
+  // ... your existing logic to set the voice, rate, and pitch ...
+  // Example:
+  // const selectedVoice = voices.find(v => v.name === selectedVoiceName);
+  // if (selectedVoice) utter.voice = selectedVoice;
+  // utter.rate = voiceSpeed;
+
+  window.speechSynthesis.speak(utter);
+};
+
+// ... rest of your component
