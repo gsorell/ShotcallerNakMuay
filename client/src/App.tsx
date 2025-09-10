@@ -4,7 +4,7 @@ import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
 import './App.css';
 import './difficulty.css';
-import useWakeLock from './useWakeLock';
+import { useWakeLock } from './useWakeLock';
 
 // --- NEW: Define shared types and constants ---
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
