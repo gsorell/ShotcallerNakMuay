@@ -8,6 +8,9 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "4",
       "5",
       "6",
+      "1 to the body", 
+      "2 to the body", 
+      "3 to the body",
       "Left teep",
       "Right teep",
       "Left Knee",
@@ -125,7 +128,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
 
   boxing: {
     singles: [
-      "1", "2", "3", "4", "5", "6",
+      "Jab", "Cross", "Left Hook", "Right Hook", "Left Uppercut", "Right Uppercut",
       "1 to the body", "2 to the body", "3 to the body", "Pivot left",  "Pivot right", "duck",
     ],
     combos: [
@@ -147,9 +150,13 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     singles: [
       "Breakdown",
       "5 pushups",
-      "5 jumpsquats",
-      "5 speed kicks left",
-      "5 speed kicks right"
+      "Alternating checks",
+      "3 jumping jacks",
+      "1, 2, 1, 2, 1, 2",
+      "2, 3, 2, 3, 2, 3",
+      "3 jumpsquats",
+      "3 speed kicks left",
+      "3 speed kicks right"
     ],
     combos: []
   }
