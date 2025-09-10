@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect } from 'react';
+import { displayInAppBrowserWarning } from './utils/inAppBrowserDetector';
+import { useState, useEffect as useEffectWithoutReact, useRef, useCallback } from 'react';
 import INITIAL_TECHNIQUES from './techniques';
 import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
@@ -30,6 +32,10 @@ const EMPHASIS: { key: EmphasisKey; label: string; icon: string; desc: string }[
 const DEFAULT_REST_SECONDS = 60;
 
 export default function App() {
+  useEffect(() => {
+    displayInAppBrowserWarning();
+  }, []);
+
   // Routing
   const [page, setPage] = useState<Page>('timer');
 
