@@ -298,6 +298,16 @@ export default function App() {
     }
   }, []);
 
+  // New, unguarded speak function for system announcements
+  const speakSystem = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try { window.speechSynthesis.cancel(); } catch {}
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.rate = speed;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
   const speak = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (ttsGuardRef.current || !runningRef.current) return;
@@ -452,7 +462,7 @@ export default function App() {
     // Play warning sound with 10 seconds left
     if (restTimeLeft === 10) {
       playWarningSound();
-      speak('10 seconds', voice, voiceSpeed);
+      speakSystem('10 seconds', voice, voiceSpeed);
     }
 
     if (restTimeLeft > 0) return;
@@ -460,7 +470,7 @@ export default function App() {
     setCurrentRound(r => r + 1);
     setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
     playBell();
-  }, [restTimeLeft, running, paused, isResting, roundMin, playBell, playWarningSound, speak, voice, voiceSpeed]);
+  }, [restTimeLeft, running, paused, isResting, roundMin, playBell, playWarningSound, speakSystem, voice, voiceSpeed]);
 
   // Helpers
   const hasSelectedEmphasis = Object.values(selectedEmphases).some(Boolean);
@@ -517,7 +527,7 @@ export default function App() {
     setCurrentRound(1);
     setIsPreRound(true);
     setPreRoundTimeLeft(5);
-    speak('Round 1, get ready!', voice, voiceSpeed);
+    speakSystem('Get ready', voice, voiceSpeed);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function pauseSession() {
@@ -656,7 +666,7 @@ export default function App() {
         // If we're clicking something else, turn off 'newb' and toggle the clicked item.
         // Also preserve other selections.
         const currentSelections = { ...prev };
-        delete currentSelections.newb; // remove newb if we are selecting something else
+        currentSelections.newb = false; // remove newb if we are selecting something else by setting it to false
 
         const nextState = { ...currentSelections, newb: false };
         nextState[k] = !nextState[k];
