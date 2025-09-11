@@ -29,7 +29,7 @@ const EMPHASIS: { key: EmphasisKey; label: string; icon: string; desc: string }[
   { key: 'boxing',label: 'Boxing',     icon: '👊', desc: 'Fundamental boxing combinations' }
 ];
 
-const DEFAULT_REST_SECONDS = 60;
+const DEFAULT_REST_MINUTES = 1;
 
 export default function App() {
   useEffect(() => {
@@ -79,10 +79,15 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [roundsCount, setRoundsCount] = useState(5);
   const [roundMin, setRoundMin] = useState(3);
+  const [restMinutes, setRestMinutes] = useState(DEFAULT_REST_MINUTES);
 
   // NEW: keep a friendly text field state for the round length input
   const [roundMinInput, setRoundMinInput] = useState<string>(String(roundMin));
   useEffect(() => { setRoundMinInput(String(roundMin)); }, [roundMin]);
+
+  // NEW: keep a friendly text field state for the rest time input
+  const [restMinutesInput, setRestMinutesInput] = useState<string>(String(restMinutes));
+  useEffect(() => { setRestMinutesInput(String(restMinutes)); }, [restMinutes]);
 
   // ADD: advanced panel toggle (was missing)
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -266,8 +271,8 @@ export default function App() {
       return;
     }
     setIsResting(true);
-    setRestTimeLeft(DEFAULT_REST_SECONDS);
-  }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts]);
+    setRestTimeLeft(Math.max(1, Math.round(restMinutes * 60)));
+  }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts, restMinutes]);
 
   // Transition: rest -> next round
   useEffect(() => {
@@ -604,6 +609,35 @@ export default function App() {
                         const stepped = Math.round(v / 0.25) * 0.25;
                         setRoundMin(stepped);
                         setRoundMinInput(String(stepped));
+                      }}
+                    />
+                    <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
+                  </div>
+                </div>
+
+                {/* Rest Time */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Rest Time</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      className="round-length-input"
+                      value={restMinutesInput}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(',', '.');
+                        if (/^\d*\.?\d*$/.test(raw)) {
+                          setRestMinutesInput(raw);
+                        }
+                      }}
+                      onBlur={() => {
+                        let v = parseFloat(restMinutesInput || '');
+                        if (Number.isNaN(v)) v = restMinutes;
+                        v = Math.min(10, Math.max(0.25, v)); // Clamp between 15s and 10min
+                        const stepped = Math.round(v / 0.25) * 0.25;
+                        setRestMinutes(stepped);
+                        setRestMinutesInput(String(stepped));
                       }}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
