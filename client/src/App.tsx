@@ -19,16 +19,16 @@ const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 const TECHNIQUES_VERSION = 'v1';
 
-// UI config
-const EMPHASIS: { key: EmphasisKey; label: string; icon: string; desc: string }[] = [
-  { key: 'newb',  label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics' },
-  { key: 'khao',  label: 'Muay Khao',  icon: '🙏', desc: 'Close-range clinch work and knee combinations' },
-  { key: 'mat',   label: 'Muay Mat',   icon: '🥊', desc: 'Heavy hands and boxing combinations' },
-  { key: 'tae',   label: 'Muay Tae',   icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
-  { key: 'femur', label: 'Muay Femur', icon: '🧠', desc: 'Technical timing and defensive counters' },
-  { key: 'sok',   label: 'Muay Sok',   icon: '🔪', desc: 'Vicious elbows and close-range attacks' },
-  { key: 'boxing',label: 'Boxing',     icon: '👊', desc: 'Fundamental boxing combinations' }
-];
+// Base UI config for known styles
+const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string } } = {
+  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics' },
+  khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations' },
+  mat:    { label: 'Muay Mat',     icon: '🥊', desc: 'Heavy hands and boxing combinations' },
+  tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
+  femur:  { label: 'Muay Femur',   icon: '🧠', desc: 'Technical timing and defensive counters' },
+  sok:    { label: 'Muay Sok',     icon: '🔪', desc: 'Vicious elbows and close-range attacks' },
+  boxing: { label: 'Boxing',       icon: '👊', desc: 'Fundamental boxing combinations' }
+};
 
 const DEFAULT_REST_MINUTES = 1;
 
@@ -72,6 +72,20 @@ export default function App() {
     }
   }, [techniques]);
 
+  // Dynamically generate emphasis list from techniques, merging with base config for icons/descriptions.
+  const emphasisList = React.useMemo(() => {
+    const techniqueKeys = Object.keys(techniques || {}).filter(k => k !== 'calisthenics');
+    return techniqueKeys.map(key => {
+      const config = BASE_EMPHASIS_CONFIG[key] || {};
+      return {
+        key: key as EmphasisKey, // Assume keys are valid EmphasisKeys
+        label: config.label || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        icon: config.icon || '🎯',
+        desc: config.desc || `Custom style: ${key}`
+      };
+    });
+  }, [techniques]);
+
   // Ref to hold current techniques. This pattern ensures the ref is updated
   // on every render before any callbacks can access it, solving the stale data issue.
   const techniquesRef = useRef(techniques);
@@ -100,7 +114,7 @@ export default function App() {
       map[candidate.replace(/[_\s-]+/g, '').toLowerCase()] = candidate;
     }
     // Also map emphasis keys (and labels) to matching technique entries when possible.
-    for (const e of EMPHASIS) {
+    for (const e of emphasisList) {
       const keyNorm = normalizeKey(e.key);
       if (!map[keyNorm]) {
         const labelNorm = normalizeKey(e.label);
@@ -116,7 +130,7 @@ export default function App() {
       map['newb'] = 'newb_basics';
     }
     return map;
-  }, [techniques]);
+  }, [techniques, emphasisList]);
   techniqueIndexRef.current = techniqueIndex;
 
 
@@ -224,8 +238,12 @@ export default function App() {
         for (const v of node) extractStrings(v, out);
         return;
       }
+      // FIX: Instead of iterating all object values, only look in expected keys.
+      // This prevents the group name itself from being added to the pool.
       if (typeof node === 'object') {
-        for (const v of Object.values(node)) extractStrings(v, out);
+        if (node.singles) extractStrings(node.singles, out);
+        if (node.combos) extractStrings(node.combos, out);
+        if (node.breakdown) extractStrings(node.breakdown, out); // for calisthenics
       }
     };
 
@@ -623,18 +641,24 @@ export default function App() {
     // Exclusive rule: 'newb' cannot be combined with other emphases.
     setSelectedEmphases(prev => {
       const next: Record<EmphasisKey, boolean> = {
+        ...prev, // Start with previous state to preserve user-added keys
         khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
       };
+      // Ensure all known keys from the dynamic list are reset
+      emphasisList.forEach(e => { next[e.key] = false; });
+
 
       if (k === 'newb') {
         // If we're clicking 'newb', toggle it. If it's already on, turn it off.
-        // If it's off, turn it on and clear others (which is the default for `next`).
         next.newb = !prev.newb;
         return next;
       } else {
         // If we're clicking something else, turn off 'newb' and toggle the clicked item.
         // Also preserve other selections.
-        const nextState = { ...prev, newb: false };
+        const currentSelections = { ...prev };
+        delete currentSelections.newb; // remove newb if we are selecting something else
+
+        const nextState = { ...currentSelections, newb: false };
         nextState[k] = !nextState[k];
         return nextState;
       }
@@ -732,7 +756,7 @@ export default function App() {
                   <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to focus your training</p>
                 </div>
                 <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
-                  {EMPHASIS.map(style => {
+                  {emphasisList.map(style => {
                     const isSelected = selectedEmphases[style.key];
                     return (
                       <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
