@@ -65,7 +65,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Spinning Elbow"
     ],
     combos: [
-      "1, Step-in Right Knee",
+      "1, Step-in Right Knee, pivot left",
       "2, Step-in Left Knee",
       "High block march, left knee, right knee",
       "1, 2, Clinch, Double Knees",
@@ -76,7 +76,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Knee, Elbow, knee",
       "1, 2, 3 to the body, 3 to the head",
       "Knee, Knee, knee",
-      "1, 4, swithc Knee"
+      "1, 4, switch Knee"
     ]
   },
 
@@ -106,20 +106,22 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   tae: {
     singles: [
       "1", "2", "3", "4", "5", "6",
-      "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check",  "Left kick", "right kick",
+      "Left teep", "Right teep", "Left Knee", "Right Knee", 
+      "Left Check", "head kick",
+      "Right Check",  "Left kick", "right kick", "left check", 
+      "right check", "left check",
       "Left elbow", "Right elbow", 
     ],
     combos: [
       "1, Right Kick",
-      "Double right kick",
+      "Double right kick", "double left kick",
       "1, 2, Switch kick",
-      "Switch kick, switch kick",
+      "Right kick, Left kick",
       "Lead Teep, Right Kick",
       "Right kick, Right teep",
       "Right Low Kick, Right High Kick",
       "2, 3, Spinning Back Kick",
-      "Inside leg Kick, Right  Kick, left check",
+      "Inside leg Kick, Switch Kick",
       "2, 3, Low kick, right check",
       "Double Jab, 2, Low kick",
       "3, 2, Low kick",
@@ -136,7 +138,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     ],
     combos: [
       "Check Kick, Right Low Kick",
-      "Slip right, 6, 3, right knee, right elbow",
+      "6, 3, right knee, right elbow",
       "Parry Jab, Left Kick",
       "Lean Back, Right Low Kick",
       "Lead teep, right knee, sweep left",
@@ -147,7 +149,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Right kick, right teep",
       "Right teep, question mark kick",
       "Step through, left kick",
-      "Left teep, switch knee, right elbow",
+      "Lead teep, switch knee, right elbow",
       "switch kick, 2, 3, 2",
       "1, Lean back, Cross, Low kick"
     ]
@@ -158,18 +160,18 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1", "2", "3", "4", "5", "6",
       "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
       "Right Check", "Flying knee", "Left kick", "right kick",
-      "Left elbow", "Right elbow", "Spinning Elbow"
+      "Left elbow", "Right elbow", "Axe Elbow", "Spinning Elbow", "Sweep left", "Sweep right"
     ],
     combos: [
       "1, 2, right Elbow",
-      "1, spinning elbow",
-      "3, Spinning Elbow",
+      "1, right elbow",
+      "3, Right Elbow",
       "Parry jab, Uppercut Elbow",
-      "1, axe Elbow",
+      "2, roll right, right elbow",
       "Clinch, Left up Elbow, right Elbow",
       "Left elbow, right elbow, left elbow",
       "Double Jab, 2, jumping elbow",
-      "Slip, Hook, right up elbow",
+      "2, 3, right up elbow",
       "Switch Knee, right Elbow",
       "1, 2, 3, Spinning Elbow"
     ]
@@ -177,8 +179,10 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
 
   boxing: {
     singles: [
-      "Jab", "Cross", "Left Hook", "Right Hook", "Left Uppercut", "Right Uppercut",
-      "1 to the body", "2 to the body", "3 to the body", "Pivot left",  "Pivot right", "duck",
+      "Jab", "Cross", "3", "4", "5", "6", "Overhand", 
+      "high guard block", "Parry jab", "Catch cross",
+      "1 to the body", "2 to the body", "3 to the body", 
+      "Pivot left",  "Pivot right", "duck",
     ],
     combos: [
       "1, 1, 2",
@@ -186,12 +190,15 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1, 2, 3, 2",
       "1, 2, 5, 2",
       "2, 3, 2",
+      "3, 3, 3",
+      "2, 2, 2",
       "1, slip right, 2",
       "1, 2, 3 to the body, 3 to the head",
       "1, 2, Roll right, Cross, Hook",
       "1, 2 to body, 3",
       "Feint Jab, Right Cross",
-      "1, slip left, 5, 2, slip right, 6, 3"
+      "1, slip left, 5, 2", 
+      "2, slip right, 6, 3"
     ]
   },
 
@@ -205,7 +212,9 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "2, 3, 2, 3, 2, 3",
       "3 jumpsquats",
       "3 speed kicks left",
-      "3 speed kicks right"
+      "3 speed kicks right",
+      "Left check",
+      "Right check",
     ],
     combos: []
   }
