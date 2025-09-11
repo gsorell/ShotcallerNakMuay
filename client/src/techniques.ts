@@ -1,7 +1,7 @@
 export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[]; exclusive?: boolean; label?: string; title?: string }> = {
   // Nak Muay Newb - Start here to learn the Art of 8 Limbs
   // exclusive: true means this emphasis should not be combined with other styles
-  nakNewb: {
+  newb: {
     singles: [
       "Jab",
       "Cross",
