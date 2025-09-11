@@ -1,4 +1,47 @@
-export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[] }> = {
+export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[]; exclusive?: boolean; label?: string }> = {
+  // Nak Muay Newb - Start here to learn the Art of 8 Limbs
+  // exclusive: true means this emphasis should not be combined with other styles
+  nakNewb: {
+    label: "Nak Muay Newb - Start here to learn the Art of 8 Limbs",
+    singles: [
+      // REPLACE these with the exact single strikes you want (user-provided list)
+      "Jab",
+      "Cross",
+      "Left Hook",
+      "Right Hook",
+      "Left Uppercut",
+      "Right Uppercut",
+      "Overhand",
+      "jab to the body",
+      "cross to the body",
+      "Left Hook to the body",
+      "Right Hook to the body",
+      "Left teep",
+      "Right teep",
+      "Left Check",
+      "right Check",
+      "Inside leg Kick",
+      "Switch Kick",
+      "Low Kick",
+      "middle Kick",
+      "head Kick",
+      "Left Knee",
+      "Right Knee",
+      "duck",
+      "Slip Left",
+      "Slip Right",
+      "Lean Back",
+      "Pivot Left",
+      "Pivot Right",
+      "Roll right",
+      "Roll left",
+      "Long guard",
+      "high guard block",
+    ],
+    combos: [],
+    exclusive: true
+  },
+
   khao: {
     // Close-range, clinch-focused combos and strikes
     singles: [
