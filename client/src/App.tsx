@@ -10,7 +10,7 @@ import { useWakeLock } from './useWakeLock';
 
 // Types and storage keys
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
-type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing';
+type EmphasisKey = 'nakNewb' | 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs';
 
@@ -21,6 +21,7 @@ const TECHNIQUES_VERSION = 'v1';
 
 // UI config
 const EMPHASIS: { key: EmphasisKey; label: string; icon: string; desc: string }[] = [
+  { key: 'nakNewb', label: 'Nak Muay Newb', icon: '🌱', desc: 'Beginner — single strikes only (exclusive)' },
   { key: 'khao',  label: 'Muay Khao',  icon: '🙏', desc: 'Close-range clinch work and knee combinations' },
   { key: 'mat',   label: 'Muay Mat',   icon: '🥊', desc: 'Heavy hands and boxing combinations' },
   { key: 'tae',   label: 'Muay Tae',   icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
@@ -49,7 +50,23 @@ export default function App() {
         localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
         return INITIAL_TECHNIQUES;
       }
-      return JSON.parse(raw);
+
+      // Merge seed fields (label, exclusive, defaults) into persisted techniques so new flags are present
+      const parsed = JSON.parse(raw) as TechniquesShape;
+      const merged: any = { ...parsed };
+      for (const key of Object.keys(INITIAL_TECHNIQUES)) {
+        const seed = (INITIAL_TECHNIQUES as any)[key];
+        const existing = (parsed as any)[key];
+        if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
+          // Preserve user edits (singles/combos) but ensure seed-provided metadata (label/exclusive) exists
+          merged[key] = { ...seed, ...existing };
+        } else {
+          merged[key] = seed;
+        }
+      }
+      // Persist merged result so next load uses the updated shape
+      localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(merged));
+      return merged as TechniquesShape;
     } catch {
       return INITIAL_TECHNIQUES;
     }
@@ -73,7 +90,7 @@ export default function App() {
 
   // Selection and session settings
   const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false
+    nakNewb: false, khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false
   });
   const [addCalisthenics, setAddCalisthenics] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -141,6 +158,13 @@ export default function App() {
     const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
       .filter(([, v]) => v).map(([k]) => k);
     const pool: string[] = [];
+    // If an exclusive emphasis is selected, use only its singles list and do not combine with others
+    const exclusiveKey = enabled.find(k => !!((techniques as any)[k]?.exclusive));
+    if (exclusiveKey) {
+      const singles = (techniques as any)[exclusiveKey]?.singles || [];
+      pool.push(...singles);
+      return Array.from(new Set(pool.map(s => String(s).trim()).filter(Boolean)));
+    }
     if (enabled.length) {
       for (const k of enabled) collectTechniqueStrings((techniques as any)[k], pool);
     }
@@ -454,7 +478,22 @@ export default function App() {
   }
 
   function toggleEmphasis(k: EmphasisKey) {
-    setSelectedEmphases(prev => ({ ...prev, [k]: !prev[k] }));
+    setSelectedEmphases(prev => {
+      const isSelected = !!prev[k];
+      // If selecting an exclusive emphasis, deselect everything else and select it
+      const selectingExclusive = !isSelected && !!((techniques as any)[k]?.exclusive);
+      if (selectingExclusive) {
+        const next = Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: (key === k) }), {}) as Record<EmphasisKey, boolean>;
+        return next;
+      }
+      // If an exclusive is already selected and user selects a non-exclusive, deselect the exclusive
+      const currentExclusive = (Object.keys(prev) as EmphasisKey[]).find(pk => prev[pk] && !!((techniques as any)[pk]?.exclusive));
+      if (!isSelected && currentExclusive) {
+        return { ...prev, [currentExclusive]: false, [k]: true };
+      }
+      // normal toggle
+      return { ...prev, [k]: !prev[k] };
+    });
   }
 
   // Page routing
