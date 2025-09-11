@@ -77,13 +77,20 @@ export default function App() {
   const techniquesRef = useRef(techniques);
   techniquesRef.current = techniques;
 
+  // NOTE: Remove permissive normalization/mapping and fallbacks.
+  // The shot caller must only read what exists in the TechniqueEditor (the persisted `techniques` object).
+  // So do NOT build fuzzy indexes or try to resolve by label/substring/etc.
+  // Any lookup must be an exact key lookup against techniquesRef.current.
+  // (If you later add user-created emphases, wire UI keys to technique keys explicitly.)
+
   // technique index: normalized -> actual technique map key
   const techniqueIndexRef = useRef<Record<string, string>>({});
   const normalizeKey = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 
   // Rebuild a small lookup mapping normalized forms to the real technique key.
   // This runs whenever the techniques object changes.
-  useEffect(() => {
+  // USEMEMO FIX: Build the index synchronously with `useMemo` to avoid race conditions.
+  const techniqueIndex = React.useMemo(() => {
     const current = techniquesRef.current || {};
     const map: Record<string, string> = {};
     for (const candidate of Object.keys(current)) {
@@ -104,9 +111,14 @@ export default function App() {
         if (found) map[keyNorm] = found;
       }
     }
-    techniqueIndexRef.current = map;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [techniques]); // rebuild when persisted techniques state changes
+    // Explicitly map 'newb' to 'newb_basics' if it exists, as it's a special case.
+    if (Object.prototype.hasOwnProperty.call(current, 'newb_basics')) {
+      map['newb'] = 'newb_basics';
+    }
+    return map;
+  }, [techniques]);
+  techniqueIndexRef.current = techniqueIndex;
+
 
   // Expose techniques to window for quick debugging in DevTools.
   useEffect(() => {
@@ -115,7 +127,7 @@ export default function App() {
 
   // Selection and session settings
   const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
+    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: true
   });
   const [addCalisthenics, setAddCalisthenics] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -169,59 +181,35 @@ export default function App() {
   useEffect(() => { runningRef.current = running; }, [running]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
-  // Build a phrase pool from selected emphases (robust, simplified)
+  // Build a phrase pool from selected emphases (strict: only read exact keys from techniques)
   const getTechniquePool = useCallback((): string[] => {
     const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
       .filter(([, v]) => v).map(([k]) => k);
 
     const keysToUse = enabled.length > 0 ? enabled : ['newb'];
-    const currentTechniques = techniquesRef.current;
+    const currentTechniques = techniquesRef.current || {};
     const pool: string[] = [];
 
     // Debugging: surface what keys we're trying to use and what keys exist.
-    // Check DevTools console if you still get "empty pool".
     // eslint-disable-next-line no-console
     console.debug('getTechniquePool: keysToUse=', keysToUse, 'availableKeys=', Object.keys(currentTechniques || {}));
 
-    // Helper: try to resolve a style by exact key, otherwise try a forgiving match.
+    // Strict resolver: ONLY accept an exact property on the persisted techniques object.
     const resolveStyle = (k: string) => {
       if (!currentTechniques) return undefined;
-      const keys = Object.keys(currentTechniques);
-
-      // 1) direct hit by provided key
-      if ((currentTechniques as any)[k]) return (currentTechniques as any)[k];
-
-      const normK = normalizeKey(k);
-
-      // 2) use prebuilt normalized index for deterministic lookups
-      const mapped = techniqueIndexRef.current[normK];
-      if (mapped && (currentTechniques as any)[mapped]) return (currentTechniques as any)[mapped];
-
-      // 3) exact normalized key match (fall back)
-      for (const candidate of keys) {
-        if (normalizeKey(candidate) === normK) return (currentTechniques as any)[candidate];
+      // 1) exact property
+      if (Object.prototype.hasOwnProperty.call(currentTechniques, k)) {
+        return (currentTechniques as any)[k];
       }
-
-      // 4) match by the EMPHASIS label (e.g. "Nak Muay Newb") — fallback only
-      const emphas = EMPHASIS.find(e => e.key === k);
-      if (emphas) {
-        const labelNorm = normalizeKey(emphas.label);
-        for (const candidate of keys) {
-          const candNorm = normalizeKey(candidate);
-          if (candNorm === labelNorm || candNorm.includes(labelNorm) || labelNorm.includes(candNorm)) {
-            return (currentTechniques as any)[candidate];
-          }
-        }
+      // 2) normalized lookup using the index (most robust)
+      const norm = normalizeKey(k);
+      const mappedKey = techniqueIndexRef.current[norm] || techniqueIndexRef.current[k] || techniqueIndexRef.current[k.toLowerCase()];
+      if (mappedKey && Object.prototype.hasOwnProperty.call(currentTechniques, mappedKey)) {
+        return (currentTechniques as any)[mappedKey];
       }
-
-      // 5) last resort: case-insensitive substring matches
-      const lower = k.toLowerCase();
-      for (const candidate of keys) {
-        if (candidate.toLowerCase().includes(lower) || lower.includes(candidate.toLowerCase())) {
-          return (currentTechniques as any)[candidate];
-        }
-      }
-
+      // 3) try a last-resort label match against keys (not fuzzy — exact normalized equality)
+      const found = Object.keys(currentTechniques).find(candidate => normalizeKey(candidate) === norm);
+      if (found) return (currentTechniques as any)[found];
       return undefined;
     };
 
@@ -245,14 +233,15 @@ export default function App() {
       const style = resolveStyle(k);
       if (!style) {
         // eslint-disable-next-line no-console
-        console.warn('getTechniquePool: no style found for key', k);
+        console.warn('getTechniquePool: no style found for key (exact lookup only)', k);
         continue;
       }
       extractStrings(style, pool);
     }
 
     if (addCalisthenics) {
-      const cal = resolveStyle('calisthenics') || (currentTechniques as any).calisthenics;
+      // Only include calisthenics if it's explicitly present in the persisted techniques object.
+      const cal = (currentTechniques as any).calisthenics;
       if (cal) extractStrings(cal, pool);
     }
 
@@ -536,6 +525,24 @@ export default function App() {
     stopAllNarration();
   }
 
+  // Keep selectedEmphases in sync: if a selected emphasis no longer maps to any persisted technique, unselect it.
+  useEffect(() => {
+    setSelectedEmphases(prev => {
+      const curr = techniquesRef.current || {};
+      const next = { ...prev };
+      for (const k of Object.keys(prev) as (keyof typeof prev)[]) {
+        // if selected but no mapped technique, clear it
+        if (prev[k]) {
+          const exists = Object.prototype.hasOwnProperty.call(curr, k)
+            || Boolean(techniqueIndexRef.current[normalizeKey(String(k))])
+            || Boolean(Object.keys(curr).find(c => normalizeKey(c) === normalizeKey(String(k))));
+          if (!exists) next[k] = false;
+        }
+      }
+      return next;
+    });
+  }, [techniques]);
+
   function autoLogWorkout(roundsCompleted: number) {
     const entry = {
       id: `${Date.now()}`,
@@ -615,20 +622,21 @@ export default function App() {
   function toggleEmphasis(k: EmphasisKey) {
     // Exclusive rule: 'newb' cannot be combined with other emphases.
     setSelectedEmphases(prev => {
+      const next: Record<EmphasisKey, boolean> = {
+        khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
+      };
+
       if (k === 'newb') {
-        const selectingNewb = !prev.newb;
-        return {
-          khao: false,
-          mat: false,
-          tae: false,
-          femur: false,
-          sok: false,
-          boxing: false,
-          newb: selectingNewb
-        };
+        // If we're clicking 'newb', toggle it. If it's already on, turn it off.
+        // If it's off, turn it on and clear others (which is the default for `next`).
+        next.newb = !prev.newb;
+        return next;
       } else {
-        // If any non-newb is toggled, ensure 'newb' is cleared.
-        return { ...prev, [k]: !prev[k], newb: false };
+        // If we're clicking something else, turn off 'newb' and toggle the clicked item.
+        // Also preserve other selections.
+        const nextState = { ...prev, newb: false };
+        nextState[k] = !nextState[k];
+        return nextState;
       }
     });
   }
