@@ -127,7 +127,7 @@ export default function App() {
 
   // Selection and session settings
   const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: true
+    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
   });
   const [addCalisthenics, setAddCalisthenics] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
