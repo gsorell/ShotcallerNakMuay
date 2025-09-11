@@ -112,9 +112,11 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [isResting, setIsResting] = useState(false);
+  const [isPreRound, setIsPreRound] = useState(false); // ADD: pre-round countdown state
+  const [preRoundTimeLeft, setPreRoundTimeLeft] = useState(0); // ADD: pre-round time
 
   // Keep screen awake while running (not paused)
-  useWakeLock({ enabled: running && !paused, log: false });
+  useWakeLock({ enabled: (running && !paused) || isPreRound, log: false });
 
   // Refs
   const calloutRef = useRef<number | null>(null);
@@ -210,40 +212,57 @@ export default function App() {
   }, []);
 
   // Guard TTS on state changes
-  useEffect(() => {
-    ttsGuardRef.current = (!running) || paused || isResting;
-    if (ttsGuardRef.current) {
-      stopTechniqueCallouts();
-      stopAllNarration();
-    }
-  }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
-
-  // Start/stop callouts during active rounds
-  useEffect(() => {
-    if (!running || paused || isResting) return;
-    startTechniqueCallouts(2000);
-    return () => {
-      stopTechniqueCallouts();
-      stopAllNarration();
-    };
-  }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, stopAllNarration]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => { stopTechniqueCallouts(); stopAllNarration(); };
-  }, [stopTechniqueCallouts, stopAllNarration]);
-
-  // Bell
-  const playBell = useCallback(() => {
-    try {
-      if (!bellSoundRef.current) {
-        bellSoundRef.current = new Audio('/big-bell-330719.mp3');
-        bellSoundRef.current.volume = 0.5;
+    useEffect(() => {
+      ttsGuardRef.current = (!running) || paused || isResting;
+      if (ttsGuardRef.current) {
+        stopTechniqueCallouts();
+        stopAllNarration();
       }
-      bellSoundRef.current.currentTime = 0;
-      void bellSoundRef.current.play();
-    } catch { /* noop */ }
-  }, []);
+    }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
+  
+    // Bell
+    const playBell = useCallback(() => {
+      try {
+        if (!bellSoundRef.current) {
+          bellSoundRef.current = new Audio('/big-bell-330719.mp3');
+          bellSoundRef.current.volume = 0.5;
+        }
+        bellSoundRef.current.currentTime = 0;
+        void bellSoundRef.current.play();
+      } catch { /* noop */ }
+    }, []);
+  
+    // ADD: Pre-round countdown timer
+    useEffect(() => {
+      if (!isPreRound) return;
+      if (preRoundTimeLeft <= 0) {
+        // Countdown finished, start the round
+        setIsPreRound(false);
+        playBell();
+        setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
+        setIsResting(false);
+        setPaused(false);
+        setRunning(true);
+        return;
+      }
+      const id = window.setTimeout(() => setPreRoundTimeLeft(t => t - 1), 1000);
+      return () => window.clearTimeout(id);
+    }, [isPreRound, preRoundTimeLeft, playBell, roundMin]);
+  
+    // Start/stop callouts during active rounds
+    useEffect(() => {
+      if (!running || paused || isResting) return;
+      startTechniqueCallouts(2000);
+      return () => {
+        stopTechniqueCallouts();
+        stopAllNarration();
+      };
+    }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, stopAllNarration]);
+  
+    // Cleanup on unmount
+    useEffect(() => {
+      return () => { stopTechniqueCallouts(); stopAllNarration(); };
+    }, [stopTechniqueCallouts, stopAllNarration]);
 
   // Tick seconds for round/rest
   useEffect(() => {
@@ -286,7 +305,8 @@ export default function App() {
 
   // Helpers
   const hasSelectedEmphasis = Object.values(selectedEmphases).some(Boolean);
-  function getStatus(): 'ready' | 'running' | 'paused' | 'stopped' | 'resting' {
+  function getStatus(): 'ready' | 'running' | 'paused' | 'stopped' | 'resting' | 'pre-round' {
+    if (isPreRound) return 'pre-round';
     if (!running) return 'ready';
     if (paused) return 'paused';
     if (isResting) return 'resting';
@@ -327,12 +347,12 @@ export default function App() {
       if (voice) priming.voice = voice;
       speechSynthesis.speak(priming);
     } catch {}
-    playBell();
+    // Start pre-round countdown instead of the session directly
     setCurrentRound(1);
-    setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
-    setIsResting(false);
-    setPaused(false);
-    setRunning(true);
+    setIsPreRound(true);
+    setPreRoundTimeLeft(5);
+    speak('Round 1, get ready!', voice, voiceSpeed);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function pauseSession() {
     if (!running) return;
@@ -351,6 +371,8 @@ export default function App() {
     setCurrentRound(0);
     setTimeLeft(0);
     setIsResting(false);
+    setIsPreRound(false); // ADD: ensure pre-round is reset
+    setPreRoundTimeLeft(0); // ADD: ensure pre-round is reset
     stopTechniqueCallouts();
     stopAllNarration();
   }
@@ -379,13 +401,13 @@ export default function App() {
     time, round, totalRounds, status
   }: {
     time: string; round: number; totalRounds: number;
-    status: 'ready' | 'running' | 'paused' | 'stopped' | 'resting'
+    status: 'ready' | 'running' | 'paused' | 'stopped' | 'resting' | 'pre-round'
   }) {
     const statusColor = {
-      ready: '#4ade80', running: '#60a5fa', paused: '#fbbf24', stopped: '#9ca3af', resting: '#a5b4fc'
+      ready: '#4ade80', running: '#60a5fa', paused: '#fbbf24', stopped: '#9ca3af', resting: '#a5b4fc', 'pre-round': '#facc15'
     }[status];
     const statusText = {
-      ready: 'Ready to Start', running: 'Training Active', paused: 'Paused', stopped: 'Session Complete', resting: 'Rest Period'
+      ready: 'Ready to Start', running: 'Training Active', paused: 'Paused', stopped: 'Session Complete', resting: 'Rest Period', 'pre-round': 'Get Ready!'
     }[status];
     return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 0, textAlign: 'center' }}>
@@ -395,7 +417,7 @@ export default function App() {
             textShadow: '0 4px 8px rgba(0,0,0,0.3)', fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
             textAlign: 'center', width: '100%', margin: '0 auto'
           }}>
-            {isResting ? fmtTime(restTimeLeft) : time}
+            {isResting ? fmtTime(restTimeLeft) : (isPreRound ? preRoundTimeLeft : time)}
           </div>
         </div>
         <div style={{ fontSize: '1.125rem', fontWeight: 'bold', color: statusColor, marginBottom: '1rem', textAlign: 'center' }}>
@@ -471,8 +493,8 @@ export default function App() {
       <div className="main-container" style={{ minHeight: '100vh', color: '#fdf2f8', fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
         <div className="content-panel" style={{ maxWidth: '64rem', margin: '0 auto', padding: '2rem 0' }}>
           {/* Top area: Start/Timer/Controls */}
-          <div style={{ minHeight: running ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
-            {running && (
+          <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
+            {(running || isPreRound) && (
               <div
                 style={{
                   display: 'flex',
@@ -512,7 +534,12 @@ export default function App() {
           </div>
 
           {/* Settings */}
-          <div style={{ transition: 'all 0.4s ease-in-out', opacity: running ? 0.4 : 1, filter: running ? 'blur(3px)' : 'none', pointerEvents: running ? 'none' : 'auto' }}>
+          <div style={{
+            transition: 'all 0.4s ease-in-out',
+            opacity: running || isPreRound ? 0 : 1,
+            transform: running || isPreRound ? 'translateY(2rem)' : 'translateY(0)',
+            pointerEvents: running || isPreRound ? 'none' : 'auto'
+          }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
               {/* Step 1: Emphasis selection */}
               <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -646,7 +673,7 @@ export default function App() {
               </section>
 
               {/* Conditionally render Difficulty and Start button together */}
-              {!running && hasSelectedEmphasis && (
+              {!running && !isPreRound && hasSelectedEmphasis && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '1rem' }}>
                   {/* Difficulty */}
                   <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
