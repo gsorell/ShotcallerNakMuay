@@ -10,7 +10,7 @@ import { useWakeLock } from './useWakeLock';
 
 // Types and storage keys
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
-type EmphasisKey = 'nakNewb' | 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing';
+type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs';
 
@@ -21,7 +21,7 @@ const TECHNIQUES_VERSION = 'v1';
 
 // UI config
 const EMPHASIS: { key: EmphasisKey; label: string; icon: string; desc: string }[] = [
-  { key: 'nakNewb', label: 'Nak Muay Newb', icon: '🌱', desc: 'Beginner — single strikes only (exclusive)' },
+  { key: 'newb',  label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics' },
   { key: 'khao',  label: 'Muay Khao',  icon: '🙏', desc: 'Close-range clinch work and knee combinations' },
   { key: 'mat',   label: 'Muay Mat',   icon: '🥊', desc: 'Heavy hands and boxing combinations' },
   { key: 'tae',   label: 'Muay Tae',   icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
@@ -50,23 +50,7 @@ export default function App() {
         localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
         return INITIAL_TECHNIQUES;
       }
-
-      // Merge seed fields (label, exclusive, defaults) into persisted techniques so new flags are present
-      const parsed = JSON.parse(raw) as TechniquesShape;
-      const merged: any = { ...parsed };
-      for (const key of Object.keys(INITIAL_TECHNIQUES)) {
-        const seed = (INITIAL_TECHNIQUES as any)[key];
-        const existing = (parsed as any)[key];
-        if (existing && typeof existing === 'object' && !Array.isArray(existing)) {
-          // Preserve user edits (singles/combos) but ensure seed-provided metadata (label/exclusive) exists
-          merged[key] = { ...seed, ...existing };
-        } else {
-          merged[key] = seed;
-        }
-      }
-      // Persist merged result so next load uses the updated shape
-      localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(merged));
-      return merged as TechniquesShape;
+      return JSON.parse(raw);
     } catch {
       return INITIAL_TECHNIQUES;
     }
@@ -88,9 +72,50 @@ export default function App() {
     }
   }, [techniques]);
 
+  // Ref to hold current techniques. This pattern ensures the ref is updated
+  // on every render before any callbacks can access it, solving the stale data issue.
+  const techniquesRef = useRef(techniques);
+  techniquesRef.current = techniques;
+
+  // technique index: normalized -> actual technique map key
+  const techniqueIndexRef = useRef<Record<string, string>>({});
+  const normalizeKey = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+  // Rebuild a small lookup mapping normalized forms to the real technique key.
+  // This runs whenever the techniques object changes.
+  useEffect(() => {
+    const current = techniquesRef.current || {};
+    const map: Record<string, string> = {};
+    for (const candidate of Object.keys(current)) {
+      const candNorm = normalizeKey(candidate);
+      map[candNorm] = candidate;
+      map[candidate.toLowerCase()] = candidate;
+      map[candidate.replace(/[_\s-]+/g, '').toLowerCase()] = candidate;
+    }
+    // Also map emphasis keys (and labels) to matching technique entries when possible.
+    for (const e of EMPHASIS) {
+      const keyNorm = normalizeKey(e.key);
+      if (!map[keyNorm]) {
+        const labelNorm = normalizeKey(e.label);
+        const found = Object.keys(current).find(c => {
+          const cn = normalizeKey(c);
+          return cn === labelNorm || cn.includes(labelNorm) || labelNorm.includes(cn);
+        });
+        if (found) map[keyNorm] = found;
+      }
+    }
+    techniqueIndexRef.current = map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [techniques]); // rebuild when persisted techniques state changes
+
+  // Expose techniques to window for quick debugging in DevTools.
+  useEffect(() => {
+    try { (window as any).__techniques = techniquesRef.current; } catch { /* noop */ }
+  }, [techniques]);
+
   // Selection and session settings
   const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-    nakNewb: false, khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false
+    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
   });
   const [addCalisthenics, setAddCalisthenics] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -138,44 +163,115 @@ export default function App() {
   // Refs
   const calloutRef = useRef<number | null>(null);
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
+  const warningSoundRef = useRef<HTMLAudioElement | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
   useEffect(() => { runningRef.current = running; }, [running]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
-  // Build a phrase pool from selected emphases (fallback to full library)
-  function collectTechniqueStrings(node: unknown, out: string[]) {
-    if (!node) return;
-    if (typeof node === 'string') { out.push(node); return; }
-    if (Array.isArray(node)) { node.forEach(n => collectTechniqueStrings(n, out)); return; }
-    if (typeof node === 'object') {
-      for (const v of Object.values(node as Record<string, unknown>)) {
-        collectTechniqueStrings(v, out);
-      }
-    }
-  }
+  // Build a phrase pool from selected emphases (robust, simplified)
   const getTechniquePool = useCallback((): string[] => {
     const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
       .filter(([, v]) => v).map(([k]) => k);
+
+    const keysToUse = enabled.length > 0 ? enabled : ['newb'];
+    const currentTechniques = techniquesRef.current;
     const pool: string[] = [];
-    // If an exclusive emphasis is selected, use only its singles list and do not combine with others
-    const exclusiveKey = enabled.find(k => !!((techniques as any)[k]?.exclusive));
-    if (exclusiveKey) {
-      const singles = (techniques as any)[exclusiveKey]?.singles || [];
-      pool.push(...singles);
-      return Array.from(new Set(pool.map(s => String(s).trim()).filter(Boolean)));
+
+    // Debugging: surface what keys we're trying to use and what keys exist.
+    // Check DevTools console if you still get "empty pool".
+    // eslint-disable-next-line no-console
+    console.debug('getTechniquePool: keysToUse=', keysToUse, 'availableKeys=', Object.keys(currentTechniques || {}));
+
+    // Helper: try to resolve a style by exact key, otherwise try a forgiving match.
+    const resolveStyle = (k: string) => {
+      if (!currentTechniques) return undefined;
+      const keys = Object.keys(currentTechniques);
+
+      // 1) direct hit by provided key
+      if ((currentTechniques as any)[k]) return (currentTechniques as any)[k];
+
+      const normK = normalizeKey(k);
+
+      // 2) use prebuilt normalized index for deterministic lookups
+      const mapped = techniqueIndexRef.current[normK];
+      if (mapped && (currentTechniques as any)[mapped]) return (currentTechniques as any)[mapped];
+
+      // 3) exact normalized key match (fall back)
+      for (const candidate of keys) {
+        if (normalizeKey(candidate) === normK) return (currentTechniques as any)[candidate];
+      }
+
+      // 4) match by the EMPHASIS label (e.g. "Nak Muay Newb") — fallback only
+      const emphas = EMPHASIS.find(e => e.key === k);
+      if (emphas) {
+        const labelNorm = normalizeKey(emphas.label);
+        for (const candidate of keys) {
+          const candNorm = normalizeKey(candidate);
+          if (candNorm === labelNorm || candNorm.includes(labelNorm) || labelNorm.includes(candNorm)) {
+            return (currentTechniques as any)[candidate];
+          }
+        }
+      }
+
+      // 5) last resort: case-insensitive substring matches
+      const lower = k.toLowerCase();
+      for (const candidate of keys) {
+        if (candidate.toLowerCase().includes(lower) || lower.includes(candidate.toLowerCase())) {
+          return (currentTechniques as any)[candidate];
+        }
+      }
+
+      return undefined;
+    };
+
+    // Recursively extract any string values or arrays of strings from an object
+    const extractStrings = (node: any, out: string[]) => {
+      if (!node) return;
+      if (typeof node === 'string') {
+        out.push(node);
+        return;
+      }
+      if (Array.isArray(node)) {
+        for (const v of node) extractStrings(v, out);
+        return;
+      }
+      if (typeof node === 'object') {
+        for (const v of Object.values(node)) extractStrings(v, out);
+      }
+    };
+
+    for (const k of keysToUse) {
+      const style = resolveStyle(k);
+      if (!style) {
+        // eslint-disable-next-line no-console
+        console.warn('getTechniquePool: no style found for key', k);
+        continue;
+      }
+      extractStrings(style, pool);
     }
-    if (enabled.length) {
-      for (const k of enabled) collectTechniqueStrings((techniques as any)[k], pool);
+
+    if (addCalisthenics) {
+      const cal = resolveStyle('calisthenics') || (currentTechniques as any).calisthenics;
+      if (cal) extractStrings(cal, pool);
     }
-    if (addCalisthenics && (techniques as any)?.calisthenics) {
-      collectTechniqueStrings((techniques as any).calisthenics, pool);
+
+    // Normalize, trim and dedupe
+    const cleaned = Array.from(new Set(
+      pool
+        .map(s => (typeof s === 'string' ? s.trim() : String(s).trim()))
+        .filter(Boolean)
+    ));
+
+    // Debug: warn if still empty so you can inspect window.__techniques in DevTools
+    if (!cleaned.length) {
+      // eslint-disable-next-line no-console
+      console.warn('getTechniquePool: cleaned pool empty for keys', keysToUse);
     }
-    if (pool.length === 0) collectTechniqueStrings(techniques as any, pool);
-    return Array.from(new Set(pool.map(s => String(s).trim()).filter(Boolean)));
-  }, [techniques, selectedEmphases, addCalisthenics]);
-  const techniquePoolRef = useRef<string[]>([]);
-  useEffect(() => { techniquePoolRef.current = getTechniquePool(); }, [getTechniquePool]);
+
+    return cleaned;
+  }, [selectedEmphases, addCalisthenics]);
+
   function pickRandom<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
   }
@@ -213,27 +309,34 @@ export default function App() {
   useEffect(() => { speakRef.current = speak; }, [speak]);
 
   // Callout scheduler
-  const startTechniqueCallouts = useCallback((initialDelay = 2000) => {
-    const baseDelayMs = difficulty === 'easy' ? 4500 : difficulty === 'hard' ? 1800 : 3000;
-    const callout = () => {
+    const stopTechniqueCallouts = useCallback(() => {
+      if (calloutRef.current) {
+        clearTimeout(calloutRef.current);
+        calloutRef.current = null;
+      }
+    }, []);
+  
+    const startTechniqueCallouts = useCallback((initialDelay = 2000) => {
+      const baseDelayMs = difficulty === 'easy' ? 4500 : difficulty === 'hard' ? 1800 : 3000;
+      const callout = () => {
+        if (ttsGuardRef.current || !runningRef.current) return;
+        // REBUILD THE POOL ON DEMAND: This is the key fix.
+        const pool = getTechniquePool();
+        if (!pool.length) {
+          console.warn('No techniques available for callouts — stopping callouts');
+          stopTechniqueCallouts();
+          return;
+        }
+        const phrase = pickRandom(pool);
+        speakRef.current(phrase, voice, voiceSpeed);
+        if (ttsGuardRef.current || !runningRef.current) return;
+        const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
+        const nextDelayMs = Math.max(900, baseDelayMs + jitter);
+        calloutRef.current = window.setTimeout(callout, nextDelayMs);
+      };
       if (ttsGuardRef.current || !runningRef.current) return;
-      const pool = techniquePoolRef.current;
-      const phrase = pool.length ? pickRandom(pool) : 'Jab cross';
-      speakRef.current(phrase, voice, voiceSpeed);
-      if (ttsGuardRef.current || !runningRef.current) return;
-      const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
-      const nextDelayMs = Math.max(900, baseDelayMs + jitter);
-      calloutRef.current = window.setTimeout(callout, nextDelayMs);
-    };
-    if (ttsGuardRef.current || !runningRef.current) return;
-    calloutRef.current = window.setTimeout(callout, Math.max(0, initialDelay));
-  }, [difficulty, voice, voiceSpeed]);
-  const stopTechniqueCallouts = useCallback(() => {
-    if (calloutRef.current) {
-      clearTimeout(calloutRef.current);
-      calloutRef.current = null;
-    }
-  }, []);
+      calloutRef.current = window.setTimeout(callout, Math.max(0, initialDelay));
+    }, [difficulty, voice, voiceSpeed, getTechniquePool, stopTechniqueCallouts]); // include stopper in deps
 
   // Guard TTS on state changes
     useEffect(() => {
@@ -244,6 +347,11 @@ export default function App() {
       }
     }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
   
+    // REMOVED: The useEffect for updating the ref is no longer needed and was the source of the bug.
+    // useEffect(() => {
+    //   techniquesRef.current = techniques
+    // }, [techniques]);
+
     // Bell
     const playBell = useCallback(() => {
       try {
@@ -253,6 +361,19 @@ export default function App() {
         }
         bellSoundRef.current.currentTime = 0;
         void bellSoundRef.current.play();
+      } catch { /* noop */ }
+    }, []);
+
+    // 10-second warning sound
+    const playWarningSound = useCallback(() => {
+      try {
+        if (!warningSoundRef.current) {
+          // NOTE: Uses 'interval.mp3' from your /public directory
+          warningSoundRef.current = new Audio('/interval.mp3');
+          warningSoundRef.current.volume = 0.4;
+        }
+        warningSoundRef.current.currentTime = 0;
+        void warningSoundRef.current.play();
       } catch { /* noop */ }
     }, []);
   
@@ -320,12 +441,19 @@ export default function App() {
   // Transition: rest -> next round
   useEffect(() => {
     if (!running || paused || !isResting) return;
+
+    // Play warning sound with 10 seconds left
+    if (restTimeLeft === 10) {
+      playWarningSound();
+      speak('10 seconds', voice, voiceSpeed);
+    }
+
     if (restTimeLeft > 0) return;
     setIsResting(false);
     setCurrentRound(r => r + 1);
     setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
     playBell();
-  }, [restTimeLeft, running, paused, isResting, roundMin, playBell]);
+  }, [restTimeLeft, running, paused, isResting, roundMin, playBell, playWarningSound, speak, voice, voiceSpeed]);
 
   // Helpers
   const hasSelectedEmphasis = Object.values(selectedEmphases).some(Boolean);
@@ -364,6 +492,13 @@ export default function App() {
   // Session controls
   function startSession() {
     if (!hasSelectedEmphasis) return;
+    // Validate that the selected emphases actually yield techniques
+    const pool = getTechniquePool();
+    if (!pool.length) {
+      alert('No techniques found for the selected emphasis(es). Check the technique lists or choose a different emphasis.');
+      console.warn('startSession blocked: empty technique pool for selected emphases', selectedEmphases);
+      return;
+    }
     try {
       const priming = new SpeechSynthesisUtterance(' ');
       priming.volume = 0;
@@ -478,31 +613,33 @@ export default function App() {
   }
 
   function toggleEmphasis(k: EmphasisKey) {
+    // Exclusive rule: 'newb' cannot be combined with other emphases.
     setSelectedEmphases(prev => {
-      const isSelected = !!prev[k];
-      // If selecting an exclusive emphasis, deselect everything else and select it
-      const selectingExclusive = !isSelected && !!((techniques as any)[k]?.exclusive);
-      if (selectingExclusive) {
-        const next = Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: (key === k) }), {}) as Record<EmphasisKey, boolean>;
-        return next;
+      if (k === 'newb') {
+        const selectingNewb = !prev.newb;
+        return {
+          khao: false,
+          mat: false,
+          tae: false,
+          femur: false,
+          sok: false,
+          boxing: false,
+          newb: selectingNewb
+        };
+      } else {
+        // If any non-newb is toggled, ensure 'newb' is cleared.
+        return { ...prev, [k]: !prev[k], newb: false };
       }
-      // If an exclusive is already selected and user selects a non-exclusive, deselect the exclusive
-      const currentExclusive = (Object.keys(prev) as EmphasisKey[]).find(pk => prev[pk] && !!((techniques as any)[pk]?.exclusive));
-      if (!isSelected && currentExclusive) {
-        return { ...prev, [currentExclusive]: false, [k]: true };
-      }
-      // normal toggle
-      return { ...prev, [k]: !prev[k] };
     });
   }
 
   // Page routing
-  if (page === 'editor') {
-    return <TechniqueEditor techniques={techniques} setTechniques={persistTechniques} onBack={() => setPage('timer')} />;
-  }
-  if (page === 'logs') {
-    return <WorkoutLogs onBack={() => setPage('timer')} />;
-  }
+    if (page === 'editor') {
+      return <TechniqueEditor techniques={techniques} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />;
+    }
+    if (page === 'logs') {
+      return <WorkoutLogs onBack={() => setPage('timer')} />;
+    }
 
   // Main Timer UI
   return (
