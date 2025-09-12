@@ -1079,7 +1079,7 @@ export default function App() {
                 <button onClick={() => setPage('editor')} style={linkButtonStyle}>Manage Techniques</button>
                 <button onClick={() => setPage('logs')} style={linkButtonStyle} title="View workout logs">Workout Logs</button>
                 {/* subtle about link */}
-                <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, paddingLeft: 6, paddingRight: 6 }} title="Why this app?">About</button>
+                <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, paddingLeft: 6, paddingRight: 6 }} title="Help">Help</button>
               </div>
             </div>
           </footer>
