@@ -659,7 +659,13 @@ export default function App() {
       roundsPlanned: roundsCount,
       roundsCompleted,
       roundLengthMin: roundMin,
-      emphases: Object.entries(selectedEmphases).filter(([, v]) => v).map(([k]) => k)
+      difficulty, // <-- include difficulty level in the saved log
+      emphases: Object.entries(selectedEmphases)
+        .filter(([, v]) => v)
+        .map(([k]) => {
+          const found = emphasisList.find(e => e.key === (k as EmphasisKey));
+          return found ? found.label : k;
+        })
     };
     try {
       const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
@@ -1087,10 +1093,14 @@ export default function App() {
                   <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
                 </div>
                 <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-                  Turn one‑person shadowboxing into a guided session with spoken techniques and timed rounds. Focus on decision‑making and reaction under pressure — the app calls the strikes so the body learns to respond.
+                  Turn one‑person shadowboxing into a guided session with spoken techniques and timed rounds. Focus on reaction under pressure — the app calls the strikes so the body learns to respond.
                 </p>
                 <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-                  Pick 1 or more emphases, treat round length/rest as training variables, and edit technique lists if callouts don’t match what you want to practice.
+                  Pick 1 or more emphases, set a difficulty level, and get started! 
+                </p>
+                <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+                  Want to customize your own workout? Modify existing sets or create your own
+                   by maintaining groups, techniques, and combinations in the Technique Editor.
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                   <button onClick={() => { setShowOnboardingMsg(false); setPage('editor'); }} style={linkButtonStyle}>Manage Techniques</button>
