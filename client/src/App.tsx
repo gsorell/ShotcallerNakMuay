@@ -173,6 +173,9 @@ export default function App() {
   // ADD: advanced panel toggle (was missing)
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // ADD: subtle onboarding modal toggle
+  const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
+
   // TTS controls
   const [voiceSpeed, setVoiceSpeed] = useState(1);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
@@ -1016,9 +1019,33 @@ export default function App() {
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                 <button onClick={() => setPage('editor')} style={linkButtonStyle}>Manage Techniques</button>
                 <button onClick={() => setPage('logs')} style={linkButtonStyle} title="View workout logs">Workout Logs</button>
+                {/* subtle about link */}
+                <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, paddingLeft: 6, paddingRight: 6 }} title="Why this app?">About</button>
               </div>
             </div>
           </footer>
+
+          {/* Onboarding modal (subtle, dismissable) */}
+          {showOnboardingMsg && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+              <div style={{ maxWidth: '40rem', width: 'calc(100% - 2rem)', padding: '1.25rem 1.5rem', borderRadius: '0.75rem', background: '#0f172a', color: 'white', boxShadow: '0 10px 30px rgba(0,0,0,0.6)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
+                  <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
+                </div>
+                <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
+                  Turn one‑person shadowboxing into a guided session with spoken techniques and timed rounds. Focus on decision‑making and reaction under pressure — the app calls the strikes so the body learns to respond.
+                </p>
+                <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+                  Pick 1 or more emphases, treat round length/rest as training variables, and edit technique lists if callouts don’t match what you want to practice.
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button onClick={() => { setShowOnboardingMsg(false); setPage('editor'); }} style={linkButtonStyle}>Manage Techniques</button>
+                  <button onClick={() => { setShowOnboardingMsg(false); setPage('logs'); }} style={linkButtonStyle}>Workout Logs</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>
