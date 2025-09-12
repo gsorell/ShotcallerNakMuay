@@ -24,11 +24,11 @@ const TECHNIQUES_VERSION = 'v5'; // Increment this version to force a reset on d
 const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string } } = {
   newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics' },
   khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations' },
-  mat:    { label: 'Muay Mat',     icon: '🥊', desc: 'Heavy hands and boxing combinations' },
+  mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees' },
   tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
   femur:  { label: 'Muay Femur',   icon: '🧠', desc: 'Technical timing and defensive counters' },
   sok:    { label: 'Muay Sok',     icon: '🔪', desc: 'Vicious elbows and close-range attacks' },
-  boxing: { label: 'Boxing',       icon: '👊', desc: 'Fundamental boxing combinations' },
+  boxing: { label: 'Boxing',       icon: '🥊', desc: 'Fundamental boxing combinations' },
   two_piece: { label: 'Two-Piece Combos', icon: '⚡️', desc: 'Short, powerful 2-strike combinations' }
 };
 
