@@ -77,7 +77,7 @@ export default function App() {
   // Dynamically generate emphasis list from techniques, merging with base config for icons/descriptions.
   const emphasisList = React.useMemo(() => {
     const techniqueKeys = Object.keys(techniques || {}).filter(k => k !== 'calisthenics');
-    return techniqueKeys.map(key => {
+    const list = techniqueKeys.map(key => {
       const config = BASE_EMPHASIS_CONFIG[key] || {};
       return {
         key: key as EmphasisKey, // Assume keys are valid EmphasisKeys
@@ -85,6 +85,17 @@ export default function App() {
         icon: config.icon || '🎯',
         desc: config.desc || `Custom style: ${key}`
       };
+    });
+
+    // Desired presentation order (from screenshot): newb, two_piece, boxing, mat, tae, khao, sok, femur
+    const desiredOrder: EmphasisKey[] = ['newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur'];
+    const orderMap = new Map<string, number>(desiredOrder.map((k, i) => [k, i]));
+
+    // Stable sort: known keys get their index, unknown keys go to the end in original order
+    return list.slice().sort((a, b) => {
+      const ai = orderMap.has(a.key) ? orderMap.get(a.key)! : Number.MAX_SAFE_INTEGER;
+      const bi = orderMap.has(b.key) ? orderMap.get(b.key)! : Number.MAX_SAFE_INTEGER;
+      return ai - bi;
     });
   }, [techniques]);
 
