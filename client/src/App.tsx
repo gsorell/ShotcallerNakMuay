@@ -858,7 +858,9 @@ export default function App() {
               <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 <div style={{ textAlign: 'center' }}>
                   <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
-                  <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to focus your training</p>
+                  <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
+                  <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
+
                 </div>
                 <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
                   {emphasisList.map(style => {
@@ -888,6 +890,13 @@ export default function App() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Manage Techniques shortcut placed directly under the style grid */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
+                  <button onClick={() => setPage('editor')} style={{ ...linkButtonStyle, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
+                    Manage Techniques
+                  </button>
                 </div>
               </section>
 
@@ -1076,7 +1085,6 @@ export default function App() {
               <span>Train smart, fight smarter 🥊</span>
               <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <button onClick={() => setPage('editor')} style={linkButtonStyle}>Manage Techniques</button>
                 <button onClick={() => setPage('logs')} style={linkButtonStyle} title="View workout logs">Workout Logs</button>
                 {/* subtle about link */}
                 <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, paddingLeft: 6, paddingRight: 6 }} title="Help">Help</button>
@@ -1093,10 +1101,14 @@ export default function App() {
                   <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
                 </div>
                 <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-                  Turn one‑person shadowboxing into a guided session with spoken techniques and timed rounds. Focus on reaction under pressure — the app calls the strikes so the body learns to respond.
+                  Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer
+                  the app calls the strikes so you learn to respond automatically.
                 </p>
                 <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
                   Pick 1 or more emphases, set a difficulty level, and get started! 
+                </p>
+                <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+                  --- 
                 </p>
                 <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
                   Want to customize your own workout? Modify existing sets or create your own
