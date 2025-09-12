@@ -446,6 +446,8 @@ export default function App() {
     stopTechniqueCallouts();
     stopAllNarration();
     if (currentRound >= roundsCount) {
+      // Session finished naturally, log it and stop.
+      try { autoLogWorkout(roundsCount); } catch {}
       setRunning(false);
       setPaused(false);
       setIsResting(false);
@@ -539,8 +541,18 @@ export default function App() {
   function stopSession() {
     speechSynthesis.cancel();
     // compute rounds completed
-    let roundsCompleted = currentRound;
-    if (running && !isResting && timeLeft > 0) roundsCompleted = Math.max(0, currentRound - 1);
+    let roundsCompleted = 0;
+    if (currentRound > 0) {
+      // If we are in a rest period, the previous round was completed.
+      // If we are in an active round, the previous round was also the last one completed.
+      // The currentRound state is always 1 ahead of the last completed round.
+      roundsCompleted = isResting ? currentRound : Math.max(0, currentRound - 1);
+    }
+    // If the session finished naturally, currentRound might be > roundsCount. Clamp it.
+    if (!running && currentRound > roundsCount) {
+      roundsCompleted = roundsCount;
+    }
+
     try { autoLogWorkout(roundsCompleted); } catch {}
     setPaused(false);
     setRunning(false);
