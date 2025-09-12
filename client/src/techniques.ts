@@ -134,7 +134,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1", "2", "3", "4", "5", "6",
       "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
       "Right Check", "Flying knee", "Left kick", "right kick", "Head Kick",
-      "Left elbow", "Right elbow", "Spinning Elbow", "Question mark kick"
+      "Left elbow", "Right elbow", "Spinning Elbow", "Question mark kick",
+      "sweep left", "Sweep right", "Left check", "Right check"
     ],
     combos: [
       "Check Kick, Right Low Kick",
@@ -142,16 +143,19 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Parry Jab, Left Kick",
       "Lean Back, Right Low Kick",
       "Lead teep, right knee, sweep left",
-      "Jab, Olay Left",
-      "Jab, Olay right",
-      "Catch Kick, Right Cross, Sweep",
-      "Parry, Cross, Hook, right kick",
+      "Thai hop, Axe Elbow",
+      "Inside leg kick, Switch knee",
+      "1, Olay Left, head kick",
+      "1, Olay right, head kick",
+      "Catch Kick, Right Cross",
+      "Parry, 2, 3, right kick",
       "Right kick, right teep",
       "Right teep, question mark kick",
       "Step through, left kick",
       "Lead teep, switch knee, right elbow",
       "switch kick, 2, 3, 2",
-      "1, Lean back, Cross, Low kick"
+      "1, Lean back, Cross, Low kick",
+      "2, switch kick, 2, 3, low kick"
     ]
   },
 
