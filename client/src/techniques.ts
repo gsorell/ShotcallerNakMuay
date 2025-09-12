@@ -235,7 +235,27 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Right check",
     ],
     combos: []
-  }
+  },
+
+  two_piece: {
+    singles: [],
+    combos: [
+      "1, 2",
+      "2, 3",
+      "3, 4",
+      "5, 6",
+      "6, 3",
+      "1, right kick",
+      "2, switch kick",
+      "Inside leg kick, 2",
+      "3, low kick",
+      "right kick, 3",
+      "Lead teap, right kick",
+      "Lead teap, switch kick",
+      "Right kick, 2"
+    ]
+    // NOTE: added empty 'singles' to satisfy the required type; emphasis remains combos-focused
+  },
 };
 
 export default INITIAL_TECHNIQUES;

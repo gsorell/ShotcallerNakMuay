@@ -11,7 +11,7 @@ import { useWakeLock } from './useWakeLock';
 
 // Types and storage keys
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
-type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb';
+type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs';
 
@@ -28,7 +28,8 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
   tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
   femur:  { label: 'Muay Femur',   icon: '🧠', desc: 'Technical timing and defensive counters' },
   sok:    { label: 'Muay Sok',     icon: '🔪', desc: 'Vicious elbows and close-range attacks' },
-  boxing: { label: 'Boxing',       icon: '👊', desc: 'Fundamental boxing combinations' }
+  boxing: { label: 'Boxing',       icon: '👊', desc: 'Fundamental boxing combinations' },
+  two_piece: { label: 'Two-Piece Combos', icon: '⚡️', desc: 'Short, powerful 2-strike combinations' }
 };
 
 const DEFAULT_REST_MINUTES = 1;
@@ -142,7 +143,7 @@ export default function App() {
 
   // Selection and session settings
   const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
+    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
   });
   const [addCalisthenics, setAddCalisthenics] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -665,7 +666,7 @@ export default function App() {
     setSelectedEmphases(prev => {
       const next: Record<EmphasisKey, boolean> = {
         ...prev, // Start with previous state to preserve user-added keys
-        khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false
+        khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
       };
       // Ensure all known keys from the dynamic list are reset
       emphasisList.forEach(e => { next[e.key] = false; });
