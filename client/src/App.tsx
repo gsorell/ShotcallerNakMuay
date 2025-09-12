@@ -4,6 +4,7 @@ import { useState, useEffect as useEffectWithoutReact, useRef, useCallback } fro
 import INITIAL_TECHNIQUES from './techniques';
 import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
+import PageLayout from './PageLayout'; // Import the new layout component
 import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
@@ -689,10 +690,18 @@ export default function App() {
 
   // Page routing
     if (page === 'editor') {
-      return <TechniqueEditor techniques={techniques} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />;
+      return (
+        <PageLayout title="Manage Techniques" onBack={() => setPage('timer')}>
+          <TechniqueEditor techniques={techniques as any} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />
+        </PageLayout>
+      );
     }
     if (page === 'logs') {
-      return <WorkoutLogs onBack={() => setPage('timer')} />;
+      return (
+        <PageLayout title="Workout Logs" onBack={() => setPage('timer')}>
+          <WorkoutLogs onBack={() => setPage('timer')} />
+        </PageLayout>
+      );
     }
 
   // Main Timer UI

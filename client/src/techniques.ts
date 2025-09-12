@@ -2,6 +2,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   // Nak Muay Newb - Start here to learn the Art of 8 Limbs
   // exclusive: true means this emphasis should not be combined with other styles
   newb: {
+    label: 'newb',
+    title: 'Nak Muay Newb',
     singles: [
       "Jab",
       "Cross",
@@ -41,6 +43,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   khao: {
+    label: 'khao',
+    title: 'Muay Khao',
     // Close-range, clinch-focused combos and strikes
     singles: [
       "1",
@@ -81,6 +85,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   mat: {
+    label: 'mat',
+    title: 'Muay Mat',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
@@ -104,6 +110,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   tae: {
+    label: 'tae',
+    title: 'Muay Tae',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left teep", "Right teep", "Left Knee", "Right Knee", 
@@ -130,6 +138,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   femur: {
+    label: 'femur',
+    title: 'Muay Femur',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
@@ -160,6 +170,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   sok: {
+    label: 'sok',
+    title: 'Muay Sok',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left teep", "Right teep", "Left Knee", "Right Knee", "Left Check",
@@ -182,6 +194,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   boxing: {
+    label: 'boxing',
+    title: 'Boxing',
     singles: [
       "Jab", "Cross", "3", "4", "5", "6", "Overhand", 
       "high guard block", "Parry jab", "Catch cross",

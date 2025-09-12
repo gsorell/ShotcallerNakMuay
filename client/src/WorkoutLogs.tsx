@@ -44,34 +44,42 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="editor-root">
-      <div className="editor-panel" style={{ paddingBottom: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <h2>Workout Logs</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button onClick={onBack} className="btn btn-ghost" aria-label="Back to timer">Back</button>
-            {/* removed "Clear all" button intentionally */}
-          </div>
-        </div>
-      </div>
+      {/* The header and back button are now handled by PageLayout, so we can remove the old header panel */}
 
       {logs.length === 0 ? (
-        <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
-          <p style={{ margin: 0 }}>No workouts logged yet. Sessions are logged automatically at completion or on stop.</p>
+        <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <p style={{ margin: 0, textAlign: 'center', color: '#d1d5db' }}>No workouts logged yet. Sessions are logged automatically when they are stopped or completed.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {logs.slice().reverse().map(log => (
-            <div key={log.id} className="log-card" role="article" aria-labelledby={`log-${log.id}`}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+            <div key={log.id} className="log-card" role="article" aria-labelledby={`log-${log.id}`} style={{
+              background: 'rgba(0,0,0,0.2)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '0.75rem',
+              padding: '1rem 1.5rem',
+              color: '#fdf2f8'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                 <div>
-                  <div id={`log-${log.id}`} style={{ fontWeight: 700 }}>{new Date(log.timestamp).toLocaleString()}</div>
-                  <div className="log-meta">{log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}</div>
+                  <div id={`log-${log.id}`} style={{ fontWeight: 700, color: 'white' }}>{new Date(log.timestamp).toLocaleString()}</div>
+                  <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.875rem', marginTop: '0.25rem' }}>{log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}</div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700 }}>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
-                  <div className="log-meta">{log.roundLengthMin} min</div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontWeight: 700, color: 'white' }}>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
+                  <div className="log-meta" style={{ color: '#d1d5db', fontSize: '0.875rem' }}>{log.roundLengthMin} min</div>
                   <div style={{ marginTop: 8 }}>
-                    <button onClick={() => deleteEntry(log.id)} className="btn icon-btn icon-btn--danger" aria-label={`Delete log ${log.id}`}>✕</button>
+                    <button onClick={() => deleteEntry(log.id)} className="btn icon-btn" aria-label={`Delete log ${log.id}`} style={{
+                      background: 'rgba(236, 72, 153, 0.2)',
+                      color: '#f9a8d4',
+                      border: '1px solid rgba(236, 72, 153, 0.4)',
+                      borderRadius: '0.5rem',
+                      width: '2rem',
+                      height: '2rem',
+                      display: 'grid',
+                      placeItems: 'center',
+                      cursor: 'pointer'
+                    }}>✕</button>
                   </div>
                 </div>
               </div>
