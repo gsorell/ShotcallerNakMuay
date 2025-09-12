@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { displayInAppBrowserWarning } from './utils/inAppBrowserDetector';
-import { useState, useEffect as useEffectWithoutReact, useRef, useCallback } from 'react';
 import INITIAL_TECHNIQUES from './techniques';
 import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
@@ -177,17 +176,29 @@ export default function App() {
   const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
 
   // TTS controls
-  const [voiceSpeed, setVoiceSpeed] = useState(1);
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceSpeed, setVoiceSpeed] = useState<number>(() => difficulty === 'hard' ? 1.3 : 1);
+   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
+   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+   useEffect(() => {
+     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+     const synth = window.speechSynthesis;
+     const update = () => setVoices(synth.getVoices());
+     update();
+     (synth as any).onvoiceschanged = update;
+     return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
+   }, []);
+
+  // When difficulty changes:
+  // - hard: nudge voice speed up to the hard default (1.4x) if it's lower
+  // - easy/medium: default to 1x
   useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    const synth = window.speechSynthesis;
-    const update = () => setVoices(synth.getVoices());
-    update();
-    synth.onvoiceschanged = update;
-    return () => { (synth as any).onvoiceschanged = null; };
-  }, []);
+    if (difficulty === 'hard') {
+      setVoiceSpeed(prev => (prev < 1.3 ? 1.3 : prev));
+    } else {
+      // default easy/medium to 1x
+      setVoiceSpeed(1);
+    }
+  }, [difficulty]);
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(0);
@@ -206,6 +217,7 @@ export default function App() {
   const calloutRef = useRef<number | null>(null);
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
   useEffect(() => { runningRef.current = running; }, [running]);
@@ -309,7 +321,10 @@ export default function App() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         const synth = window.speechSynthesis;
-        synth.pause(); synth.cancel(); synth.resume(); synth.cancel();
+        // cancel any queued or active utterances
+        synth.cancel();
+        // clear tracked utterance
+        utteranceRef.current = null;
       } catch { /* noop */ }
     }
   }, []);
@@ -342,18 +357,29 @@ export default function App() {
   useEffect(() => { speakRef.current = speak; }, [speak]);
 
   // Callout scheduler
-    const stopTechniqueCallouts = useCallback(() => {
-      if (calloutRef.current) {
-        clearTimeout(calloutRef.current);
-        calloutRef.current = null;
+  const stopTechniqueCallouts = useCallback(() => {
+    if (calloutRef.current) {
+      clearTimeout(calloutRef.current);
+      calloutRef.current = null;
+    }
+    try {
+      // Cancel any currently speaking utterance
+      if (utteranceRef.current && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        utteranceRef.current = null;
       }
-    }, []);
-  
-    const startTechniqueCallouts = useCallback((initialDelay = 2000) => {
-      const baseDelayMs = difficulty === 'easy' ? 4500 : difficulty === 'hard' ? 1800 : 3000;
-      const callout = () => {
+    } catch { /* noop */ }
+  }, []);
+
+  const startTechniqueCallouts = useCallback((initialDelay = 2000) => {
+    // target ~160 bpm on hard -> ~375ms between callouts (post-speech)
+    const baseDelayMs = difficulty === 'easy' ? 4500 : difficulty === 'hard' ? 375 : 3000;
+    // allow a smaller minimum delay on hard so the Math.max floor doesn't override the short base
+    const minDelayMs = difficulty === 'hard' ? 200 : 900;
+
+    const scheduleCallout = (delay: number) => {
+      calloutRef.current = globalThis.setTimeout(() => {
         if (ttsGuardRef.current || !runningRef.current) return;
-        // REBUILD THE POOL ON DEMAND: This is the key fix.
         const pool = getTechniquePool();
         if (!pool.length) {
           console.warn('No techniques available for callouts — stopping callouts');
@@ -361,86 +387,107 @@ export default function App() {
           return;
         }
         const phrase = pickRandom(pool);
-        speakRef.current(phrase, voice, voiceSpeed);
-        if (ttsGuardRef.current || !runningRef.current) return;
-        const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
-        const nextDelayMs = Math.max(900, baseDelayMs + jitter);
-        calloutRef.current = window.setTimeout(callout, nextDelayMs);
-      };
-      if (ttsGuardRef.current || !runningRef.current) return;
-      calloutRef.current = window.setTimeout(callout, Math.max(0, initialDelay));
-    }, [difficulty, voice, voiceSpeed, getTechniquePool, stopTechniqueCallouts]); // include stopper in deps
+
+        // Build and speak an utterance here and schedule next callout in onend.
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+          // Fallback: schedule next with fixed delay
+          const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
+          const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
+          calloutRef.current = globalThis.setTimeout(() => scheduleCallout(nextDelayMs), nextDelayMs) as unknown as number;
+          return;
+        }
+
+        try { window.speechSynthesis.cancel(); } catch {}
+        const u = new SpeechSynthesisUtterance(phrase);
+        if (voice) u.voice = voice;
+        u.rate = voiceSpeed;
+        u.onend = () => {
+          utteranceRef.current = null;
+          if (ttsGuardRef.current || !runningRef.current) return;
+          const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
+          const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
+          scheduleCallout(nextDelayMs);
+        };
+        u.onerror = () => {
+          utteranceRef.current = null;
+          // On error, try scheduling the next one after a base delay
+          if (ttsGuardRef.current || !runningRef.current) return;
+          calloutRef.current = globalThis.setTimeout(() => scheduleCallout(baseDelayMs), baseDelayMs) as unknown as number;
+        };
+        utteranceRef.current = u;
+        window.speechSynthesis.speak(u);
+      }, Math.max(0, delay)) as unknown as number;
+    };
+
+    if (ttsGuardRef.current || !runningRef.current) return;
+    scheduleCallout(initialDelay);
+  }, [difficulty, voice, voiceSpeed, getTechniquePool, stopTechniqueCallouts]); // include stopper in deps
 
   // Guard TTS on state changes
-    useEffect(() => {
-      ttsGuardRef.current = (!running) || paused || isResting;
-      if (ttsGuardRef.current) {
-        stopTechniqueCallouts();
-        stopAllNarration();
-      }
-    }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
-  
-    // REMOVED: The useEffect for updating the ref is no longer needed and was the source of the bug.
-    // useEffect(() => {
-    //   techniquesRef.current = techniques
-    // }, [techniques]);
+  useEffect(() => {
+    ttsGuardRef.current = (!running) || paused || isResting;
+    if (ttsGuardRef.current) {
+      stopTechniqueCallouts();
+      stopAllNarration();
+    }
+  }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
 
-    // Bell
-    const playBell = useCallback(() => {
-      try {
-        if (!bellSoundRef.current) {
-          bellSoundRef.current = new Audio('/big-bell-330719.mp3');
-          bellSoundRef.current.volume = 0.5;
-        }
-        bellSoundRef.current.currentTime = 0;
-        void bellSoundRef.current.play();
-      } catch { /* noop */ }
-    }, []);
-
-    // 10-second warning sound
-    const playWarningSound = useCallback(() => {
-      try {
-        if (!warningSoundRef.current) {
-          // NOTE: Uses 'interval.mp3' from your /public directory
-          warningSoundRef.current = new Audio('/interval.mp3');
-          warningSoundRef.current.volume = 0.4;
-        }
-        warningSoundRef.current.currentTime = 0;
-        void warningSoundRef.current.play();
-      } catch { /* noop */ }
-    }, []);
-  
-    // ADD: Pre-round countdown timer
-    useEffect(() => {
-      if (!isPreRound) return;
-      if (preRoundTimeLeft <= 0) {
-        // Countdown finished, start the round
-        setIsPreRound(false);
-        playBell();
-        setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
-        setIsResting(false);
-        setPaused(false);
-        setRunning(true);
-        return;
+  // Bell
+  const playBell = useCallback(() => {
+    try {
+      if (!bellSoundRef.current) {
+        bellSoundRef.current = new Audio('/big-bell-330719.mp3');
+        bellSoundRef.current.volume = 0.5;
       }
-      const id = window.setTimeout(() => setPreRoundTimeLeft(t => t - 1), 1000);
-      return () => window.clearTimeout(id);
-    }, [isPreRound, preRoundTimeLeft, playBell, roundMin]);
-  
-    // Start/stop callouts during active rounds
-    useEffect(() => {
-      if (!running || paused || isResting) return;
-      startTechniqueCallouts(2000);
-      return () => {
-        stopTechniqueCallouts();
-        stopAllNarration();
-      };
-    }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, stopAllNarration]);
-  
-    // Cleanup on unmount
-    useEffect(() => {
-      return () => { stopTechniqueCallouts(); stopAllNarration(); };
-    }, [stopTechniqueCallouts, stopAllNarration]);
+      bellSoundRef.current.currentTime = 0;
+      void bellSoundRef.current.play();
+    } catch { /* noop */ }
+  }, []);
+
+  // 10-second warning sound
+  const playWarningSound = useCallback(() => {
+    try {
+      if (!warningSoundRef.current) {
+        // NOTE: Uses 'interval.mp3' from your /public directory
+        warningSoundRef.current = new Audio('/interval.mp3');
+        warningSoundRef.current.volume = 0.4;
+      }
+      warningSoundRef.current.currentTime = 0;
+      void warningSoundRef.current.play();
+    } catch { /* noop */ }
+  }, []);
+
+  // ADD: Pre-round countdown timer
+  useEffect(() => {
+    if (!isPreRound) return;
+    if (preRoundTimeLeft <= 0) {
+      // Countdown finished, start the round
+      setIsPreRound(false);
+      playBell();
+      setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
+      setIsResting(false);
+      setPaused(false);
+      setRunning(true);
+      return;
+    }
+    const id = window.setTimeout(() => setPreRoundTimeLeft(t => t - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [isPreRound, preRoundTimeLeft, playBell, roundMin]);
+
+  // Start/stop callouts during active rounds
+  useEffect(() => {
+    if (!running || paused || isResting) return;
+    startTechniqueCallouts(2000);
+    return () => {
+      stopTechniqueCallouts();
+      stopAllNarration();
+    };
+  }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, stopAllNarration]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { stopTechniqueCallouts(); stopAllNarration(); };
+  }, [stopTechniqueCallouts, stopAllNarration]);
 
   // Tick seconds for round/rest
   useEffect(() => {
@@ -507,7 +554,7 @@ export default function App() {
 
   // Voice tester
   function testVoice() {
-    if (typeof window === 'undefined' || !('speechSynthesis'in window)) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try {
       // Cancel any ongoing speech to prevent overlap
       window.speechSynthesis.cancel();
@@ -552,10 +599,16 @@ export default function App() {
     if (!running) return;
     const p = !paused;
     setPaused(p);
-    if (p) speechSynthesis.pause(); else speechSynthesis.resume();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        if (p) window.speechSynthesis.pause(); else window.speechSynthesis.resume();
+      } catch { /* noop */ }
+    }
   }
   function stopSession() {
-    speechSynthesis.cancel();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch { /* noop */ }
+    }
     // compute rounds completed
     let roundsCompleted = 0;
     if (currentRound > 0) {
@@ -704,20 +757,20 @@ export default function App() {
   }
 
   // Page routing
-    if (page === 'editor') {
-      return (
-        <PageLayout title="Manage Techniques" onBack={() => setPage('timer')}>
-          <TechniqueEditor techniques={techniques as any} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />
-        </PageLayout>
-      );
-    }
-    if (page === 'logs') {
-      return (
-        <PageLayout title="Workout Logs" onBack={() => setPage('timer')}>
-          <WorkoutLogs onBack={() => setPage('timer')} />
-        </PageLayout>
-      );
-    }
+  if (page === 'editor') {
+    return (
+      <PageLayout title="Manage Techniques" onBack={() => setPage('timer')}>
+        <TechniqueEditor techniques={techniques as any} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />
+      </PageLayout>
+    );
+  }
+  if (page === 'logs') {
+    return (
+      <PageLayout title="Workout Logs" onBack={() => setPage('timer')}>
+        <WorkoutLogs onBack={() => setPage('timer')} />
+      </PageLayout>
+    );
+  }
 
   // Main Timer UI
   return (
