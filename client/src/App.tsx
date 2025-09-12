@@ -18,7 +18,7 @@ type Page = 'timer' | 'editor' | 'logs';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v4'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v5'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string } } = {
