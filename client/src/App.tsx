@@ -797,7 +797,23 @@ export default function App() {
         }
       `}</style>
 
-      <header style={{ position: 'sticky', top: 0, zIndex: 50, background: '#1e0b30', backdropFilter: 'blur(10px)', padding: '1rem 2rem', borderBottom: '1px solid rgba(236,72,153,0.3)', textAlign: 'center' }}>
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          background: '#1e0b30',
+          backdropFilter: 'blur(10px)',
+          padding: '1rem 2rem',
+          // Ensure header contents are pushed below the device/browser safe area (notch / toolbar)
+          // use both env() and legacy constant() for broader compatibility
+          paddingTop: 'calc(1rem + env(safe-area-inset-top))',
+          WebkitPaddingStart: 'env(safe-area-inset-left)',
+          WebkitPaddingEnd: 'env(safe-area-inset-right)',
+          borderBottom: '1px solid rgba(236,72,153,0.3)',
+          textAlign: 'center'
+        }}
+      >
         <h1 className="header-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.5rem', fontWeight: 'normal', color: 'white', letterSpacing: '0.1em', margin: 0, textShadow: '0 2px 8px rgba(236,72,153,0.6)' }}>
           Nak Muay Shot Caller
         </h1>
@@ -1094,8 +1110,30 @@ export default function App() {
 
           {/* Onboarding modal (subtle, dismissable) */}
           {showOnboardingMsg && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
-              <div style={{ maxWidth: '40rem', width: 'calc(100% - 2rem)', padding: '1.25rem 1.5rem', borderRadius: '0.75rem', background: '#0f172a', color: 'white', boxShadow: '0 10px 30px rgba(0,0,0,0.6)' }}>
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 60,
+              padding: '1rem',            // safe spacing on small screens
+              overflowY: 'auto',         // allow scrolling when modal is taller than viewport
+              WebkitOverflowScrolling: 'touch'
+            }}>
+              <div style={{
+                maxWidth: '40rem',
+                width: 'calc(100% - 2rem)',
+                padding: '1.25rem 1.5rem',
+                borderRadius: '0.75rem',
+                background: '#0f172a',
+                color: 'white',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+                maxHeight: 'calc(100vh - 2rem)', // constrain to viewport height
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch'
+              }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
                   <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
@@ -1114,9 +1152,88 @@ export default function App() {
                   Want to customize your own workout? Modify existing sets or create your own
                    by maintaining groups, techniques, and combinations in the Technique Editor.
                 </p>
-                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                  <button onClick={() => { setShowOnboardingMsg(false); setPage('editor'); }} style={linkButtonStyle}>Manage Techniques</button>
-                  <button onClick={() => { setShowOnboardingMsg(false); setPage('logs'); }} style={linkButtonStyle}>Workout Logs</button>
+
+                {/* Glossary inserted beneath the onboarding text */}
+                <div style={{ marginTop: '0.75rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#f9a8d4' }}>Glossary</h4>
+
+                  {/* Table layout for improved readability */}
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f9a8d4', fontSize: '0.9rem' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', width: '28%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Technique</th>
+                          <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#f3e8ff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Jab (1)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A straight punch with the lead hand, used to gauge distance and set up other strikes.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Cross (2)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A straight punch with the rear hand, thrown across the body for maximum power.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Hook (3, 4)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A curved punch thrown with either hand, typically targeting the side of the opponent's head or body.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Uppercut (5, 6)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A vertical punch thrown with either hand, traveling upward to target the opponent's chin or solar plexus.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Elbow Strike (Sok)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, or vertically or straight down and are often used when the opponent is in clinching range.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Knee Strike (Khao)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A strike with the knee, often used in the clinch but can also be thrown from a distance. Knee strikes are a hallmark of Muay Thai and are very effective at close range.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Roundhouse Kick (Tae Wiang)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>The most common and powerful kick in Muay Thai, thrown with the shin. It can target the legs (low kick), body (mid kick), or head (high kick) and is known for its incredible power.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Switch Kick</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A variation of the roundhouse kick, where the fighter switches stance before delivering the kick. This can create a surprise element and target different angles.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Teep (Push Kick)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A straight push kick used to maintain distance, disrupt an opponent's rhythm, or knock them off balance. It's often referred to as the "weapon of distance."</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Guard</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>The basic defensive stance, with hands high to protect the head and a high guard to protect against kicks.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Clinch (Pam)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A grappling range where fighters hold onto each other, a key component of Muay Thai. From the clinch, fighters can use knee and elbow strikes, and use sweeps to take their opponent to the ground.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Block (Bang)</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>Using the shin, arms, or gloves to absorb or deflect an incoming strike.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Parry</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>Using a hand to deflect a punch or kick to the side.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Slip</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>Moving the head to the side to avoid a straight punch.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Roll (or "Shoulder Roll")</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>Ducking the head and using the shoulder to block a hook, allowing the punch to roll off the shoulder.</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Check</td>
+                          <td style={{ padding: '0.5rem 0.75rem' }}>A defensive technique unique to Muay Thai where the fighter lifts their shin to block an incoming roundhouse kick to the leg or body. This is a very effective way to defend against kicks and can also cause pain to the opponent's shin.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
