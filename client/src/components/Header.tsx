@@ -34,8 +34,8 @@ const Header = () => {
     <>
       <header className="app-header">
         <div className="logo" onClick={() => setIsHelpOpen(true)} style={logoContainerStyle}>
-          <img src="/assets/logo_icon.png" alt="Shotcaller Nak Muay Icon" />
-          <img src="/assets/logo_primary - Header.png" alt="Shotcaller Nak Muay Logo" />
+          {/* Replaced two images with single combined banner */}
+          <img src="/assets/Logo_Header_Banner_Smooth.png" alt="Shotcaller Nak Muay Header Banner" />
         </div>
       </header>
       {isHelpOpen && (
@@ -119,7 +119,7 @@ const HelpContent: React.FC<HelpContentProps> = ({ onClose }) => {
   return (
     <div style={modalContent}>
       <div style={headerStyle}>
-        <h3 style={h3Style}>Training Philosophy</h3>
+        <h3 style={h3Style}>How It Works</h3>
         <button style={closeButtonStyle} onClick={onClose}>Close</button>
       </div>
       <p style={{ ...pStyle, margin: '0.5rem 0px' }}>Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer the app calls the strikes so you learn to respond automatically.</p>
@@ -127,7 +127,16 @@ const HelpContent: React.FC<HelpContentProps> = ({ onClose }) => {
       <p style={{ ...pStyle, margin: '0.25rem 0px 0px' }}>---</p>
       <p style={{ ...pStyle, margin: '0.25rem 0px 0px' }}>Want to customize your own workout? Modify existing sets or create your own by maintaining groups, techniques, and combinations in the Technique Editor.</p>
       <div style={{ marginTop: '0.75rem' }}>
-        <h4 style={{ margin: '0px 0px 0.5rem', color: 'rgb(249, 168, 212)' }}>Glossary</h4>
+    <div style={headerStyle}></div>
+        <h3
+          style={{
+            margin: '0px 0px 0.5rem',
+            color: '#ffffff',
+            textAlign: 'left' as const,
+          }}
+        >
+          Glossary
+        </h3>
         <div style={{ overflowX: 'auto' }}>
           <table style={tableStyle}>
             <thead>
