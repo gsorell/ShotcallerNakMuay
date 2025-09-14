@@ -1,15 +1,29 @@
 import './Header.css';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Header = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overscrollBehaviorY = 'contain';
+    return () => {
+      document.body.style.overscrollBehaviorY = 'auto';
+    };
+  }, []);
+
+  const logoContainerStyle: React.CSSProperties = {
+    cursor: 'pointer',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+  };
 
   const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
     background: 'rgba(0, 0, 0, 0.5)',
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     zIndex: 50,
     padding: '1rem',
@@ -19,7 +33,7 @@ const Header = () => {
   return (
     <>
       <header className="app-header">
-        <div className="logo" onClick={() => setIsHelpOpen(true)} style={{ cursor: 'pointer' }}>
+        <div className="logo" onClick={() => setIsHelpOpen(true)} style={logoContainerStyle}>
           <img src="/assets/logo_icon.png" alt="Shotcaller Nak Muay Icon" />
           <img src="/assets/logo_primary - Header.png" alt="Shotcaller Nak Muay Logo" />
         </div>
