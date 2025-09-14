@@ -8,6 +8,18 @@ import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
 
+// REMOVE: The image imports are not needed for files in /public
+/*
+import iconNewb from '/assets/icon_newb.png';
+import iconKhao from '/assets/icon_khao.png';
+import iconMat from '/assets/icon_mat.png';
+import iconTae from '/assets/icon_tae.png';
+import iconFemur from '/assets/icon_femur.png';
+import iconSok from '/assets/icon_sok.png';
+import iconBoxing from '/assets/icon_boxing.png';
+import iconTwoPiece from '/assets/icon_two_piece.png';
+*/
+
 // Types and storage keys
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
 type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece';
@@ -20,15 +32,16 @@ const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 const TECHNIQUES_VERSION = 'v8'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
-const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string } } = {
-  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics' },
-  khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations' },
-  mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees' },
-  tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks' },
-  femur:  { label: 'Muay Femur',   icon: '🧠', desc: 'Technical timing and defensive counters' },
-  sok:    { label: 'Muay Sok',     icon: '🔪', desc: 'Vicious elbows and close-range attacks' },
-  boxing: { label: 'Boxing',       icon: '🥊', desc: 'Fundamental boxing combinations' },
-  two_piece: { label: 'Two-Piece Combos', icon: '⚡️', desc: 'Short, powerful 2-strike combinations' }
+// FIX: Use absolute string paths for icons in the /public/assets directory
+const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string; iconPath: string; } } = {
+  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics', iconPath: '/assets/icon_newb.png' },
+  khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations', iconPath: '/assets/icon_khao.png' },
+  mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees', iconPath: '/assets/icon_mat.png' },
+  tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks', iconPath: '/assets/icon_tae.png' },
+  femur:  { label: 'Muay Femur',   icon: '🧠', desc: 'Technical timing and defensive counters', iconPath: '/assets/icon_femur.png' },
+  sok:    { label: 'Muay Sok',     icon: '🔪', desc: 'Vicious elbows and close-range attacks', iconPath: '/assets/icon_sok.png' },
+  boxing: { label: 'Boxing',       icon: '🥊', desc: 'Fundamental boxing combinations', iconPath: '/assets/icon_boxing.png' },
+  two_piece: { label: 'Two-Piece Combos', icon: '⚡️', desc: 'Short, powerful 2-strike combinations', iconPath: '/assets/icon_two_piece.png' }
 };
 
 const DEFAULT_REST_MINUTES = 1;
@@ -79,9 +92,10 @@ export default function App() {
     const list = techniqueKeys.map(key => {
       const config = BASE_EMPHASIS_CONFIG[key] || {};
       return {
-        key: key as EmphasisKey, // Assume keys are valid EmphasisKeys
+        key: key as EmphasisKey,
         label: config.label || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        icon: config.icon || '🎯',
+        iconPath: config.iconPath,
+        emoji: config.icon || '🎯',
         desc: config.desc || `Custom style: ${key}`
       };
     });
@@ -98,53 +112,25 @@ export default function App() {
     });
   }, [techniques]);
 
-  // Ref to hold current techniques. This pattern ensures the ref is updated
-  // on every render before any callbacks can access it, solving the stale data issue.
-  const techniquesRef = useRef(techniques);
-  techniquesRef.current = techniques;
+  // Keep a mutable ref for the techniques object so callbacks can access the latest value without re-rendering.
+  const techniquesRef = useRef<TechniquesShape>(techniques);
+  useEffect(() => { techniquesRef.current = techniques; }, [techniques]);
 
-  // NOTE: Remove permissive normalization/mapping and fallbacks.
-  // The shot caller must only read what exists in the TechniqueEditor (the persisted `techniques` object).
-  // So do NOT build fuzzy indexes or try to resolve by label/substring/etc.
-  // Any lookup must be an exact key lookup against techniquesRef.current.
-  // (If you later add user-created emphases, wire UI keys to technique keys explicitly.)
+  // Normalize keys for stable lookups: lowercase, convert runs of non-alphanum to underscore, trim underscores.
+  const normalizeKey = (k: string) => k.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
-  // technique index: normalized -> actual technique map key
-  const techniqueIndexRef = useRef<Record<string, string>>({});
-  const normalizeKey = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-
-  // Rebuild a small lookup mapping normalized forms to the real technique key.
-  // This runs whenever the techniques object changes.
-  // USEMEMO FIX: Build the index synchronously with `useMemo` to avoid race conditions.
+  // Build an index mapping normalized keys -> original keys for robust lookups.
   const techniqueIndex = React.useMemo(() => {
-    const current = techniquesRef.current || {};
-    const map: Record<string, string> = {};
-    for (const candidate of Object.keys(current)) {
-      const candNorm = normalizeKey(candidate);
-      map[candNorm] = candidate;
-      map[candidate.toLowerCase()] = candidate;
-      map[candidate.replace(/[_\s-]+/g, '').toLowerCase()] = candidate;
-    }
-    // Also map emphasis keys (and labels) to matching technique entries when possible.
-    for (const e of emphasisList) {
-      const keyNorm = normalizeKey(e.key);
-      if (!map[keyNorm]) {
-        const labelNorm = normalizeKey(e.label);
-        const found = Object.keys(current).find(c => {
-          const cn = normalizeKey(c);
-          return cn === labelNorm || cn.includes(labelNorm) || labelNorm.includes(cn);
-        });
-        if (found) map[keyNorm] = found;
-      }
-    }
-    // Explicitly map 'newb' to 'newb_basics' if it exists, as it's a special case.
-    if (Object.prototype.hasOwnProperty.call(current, 'newb_basics')) {
-      map['newb'] = 'newb_basics';
-    }
-    return map;
-  }, [techniques, emphasisList]);
-  techniqueIndexRef.current = techniqueIndex;
+    const idx: Record<string, string> = {};
+    Object.keys(techniques || {}).forEach(k => {
+      idx[k] = k;
+      idx[normalizeKey(k)] = k;
+    });
+    return idx;
+  }, [techniques]);
 
+  const techniqueIndexRef = useRef<Record<string, string>>(techniqueIndex);
+  useEffect(() => { techniqueIndexRef.current = techniqueIndex; }, [techniqueIndex]);
 
   // Expose techniques to window for quick debugging in DevTools.
   useEffect(() => {
@@ -152,14 +138,36 @@ export default function App() {
   }, [techniques]);
 
   // Selection and session settings
-  const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
-  });
-  const [addCalisthenics, setAddCalisthenics] = useState(false);
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
-  const [roundsCount, setRoundsCount] = useState(5);
-  const [roundMin, setRoundMin] = useState(3);
-  const [restMinutes, setRestMinutes] = useState(DEFAULT_REST_MINUTES);
+    const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
+      khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
+    });
+    const [addCalisthenics, setAddCalisthenics] = useState(false);
+    const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+    const [roundsCount, setRoundsCount] = useState(5);
+    const [roundMin, setRoundMin] = useState(3);
+    const [restMinutes, setRestMinutes] = useState(DEFAULT_REST_MINUTES);
+  
+    // Toggle an emphasis on/off
+    const toggleEmphasis = (k: EmphasisKey) => {
+      setSelectedEmphases(prev => {
+        const isTurningOn = !prev[k];
+        if (k === 'newb') {
+          // If turning 'newb' on, turn all others off.
+          // If turning 'newb' off, just turn it off.
+          const allOff: Record<EmphasisKey, boolean> = {
+            khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
+          };
+          return { ...allOff, newb: isTurningOn };
+        }
+    
+        // For any other key, toggle it. If turning it on, ensure 'newb' is off.
+        const next = { ...prev, [k]: isTurningOn };
+        if (isTurningOn) {
+          next.newb = false;
+        }
+        return next;
+      });
+    };
 
   // NEW: keep a friendly text field state for the round length input
   const [roundMinInput, setRoundMinInput] = useState<string>(String(roundMin));
@@ -734,33 +742,86 @@ export default function App() {
     );
   }
 
-  function toggleEmphasis(k: EmphasisKey) {
-    // Exclusive rule: 'newb' cannot be combined with other emphases.
-    setSelectedEmphases(prev => {
-      const next: Record<EmphasisKey, boolean> = {
-        ...prev, // Start with previous state to preserve user-added keys
-        khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
-      };
-      // Ensure all known keys from the dynamic list are reset
-      emphasisList.forEach(e => { next[e.key] = false; });
+  // ADD: missing shared inline style helpers (fixes many "Cannot find name" TS errors)
+  const controlButtonStyle = (bg: string, border = bg): React.CSSProperties => ({
+    all: 'unset',
+    boxSizing: 'border-box',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.65rem 0.9rem',
+    borderRadius: '0.75rem',
+    cursor: 'pointer',
+    fontWeight: 700,
+    color: 'white',
+    background: `linear-gradient(180deg, ${bg} 0%, ${border} 100%)`,
+    border: `1px solid ${border}`,
+    boxShadow: '0 6px 18px rgba(0,0,0,0.18)'
+  });
 
+  const linkButtonStyle: React.CSSProperties = {
+    all: 'unset',
+    cursor: 'pointer',
+    color: '#f9a8d4',
+    padding: '0.5rem 0.75rem',
+    borderRadius: 8,
+    border: '1px solid transparent',
+    fontWeight: 700,
+    background: 'transparent',
+    textAlign: 'center'
+  };
 
-      if (k === 'newb') {
-        // If we're clicking 'newb', toggle it. If it's already on, turn it off.
-        next.newb = !prev.newb;
-        return next;
-      } else {
-        // If we're clicking something else, turn off 'newb' and toggle the clicked item.
-        // Also preserve other selections.
-        const currentSelections = { ...prev };
-        currentSelections.newb = false; // remove newb if we are selecting something else by setting it to false
+  const chipButtonStyle: React.CSSProperties = {
+    all: 'unset',
+    cursor: 'pointer',
+    width: '2.25rem',
+    height: '2.25rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: '0.5rem',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    color: 'white',
+    fontSize: '1.25rem',
+    fontWeight: 700
+  };
 
-        const nextState = { ...currentSelections, newb: false };
-        nextState[k] = !nextState[k];
-        return nextState;
-      }
-    });
-  }
+  // Image helper: tries several asset filenames/extensions then falls back to emoji
+  const ImageWithFallback: React.FC<{
+    srcPath?: string;
+    alt: string;
+    emoji: string;
+    style?: React.CSSProperties;
+    className?: string;
+  }> = ({ srcPath, alt, emoji, style, className }) => {
+    // FIX: Simplify state. Only use state to track loading errors.
+    const [error, setError] = useState(false);
+  
+    // FIX: Reset error state if the image source path changes.
+    useEffect(() => {
+      setError(false);
+    }, [srcPath]);
+  
+    // If there's no path or an error occurred, show the emoji.
+    if (!srcPath || error) {
+      return <span style={{ display: 'inline-block', fontSize: 28, ...style }}>{emoji}</span>;
+    }
+  
+    return (
+      <img
+        src={srcPath}
+        alt={alt}
+        className={className}
+        style={style}
+        // When an error occurs (e.g., 404 Not Found), set the error state to true.
+        onError={() => {
+          console.debug('ImageWithFallback load failed for', srcPath);
+          setError(true);
+        }}
+      />
+    );
+  };
 
   // Page routing
   if (page === 'editor') {
@@ -780,7 +841,89 @@ export default function App() {
 
   // Main Timer UI
   return (
-    <>
+    <React.Fragment>
+      {/* FIX: Move the modal to the top level to avoid JSX nesting issues and CSS conflicts. */}
+      {showOnboardingMsg && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 60,
+          padding: '1rem',            // safe spacing on small screens
+          overflowY: 'auto',         // allow scrolling when modal is taller than viewport
+          WebkitOverflowScrolling: 'touch'
+        }}>
+          <div style={{
+            maxWidth: '40rem',
+            width: 'calc(100% - 2rem)',
+            padding: '1.25rem 1.5rem',
+            borderRadius: '0.75rem',
+            background: '#0f172a',
+            color: 'white',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
+              <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
+            </div>
+
+            <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
+              Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer
+              the app calls the strikes so you learn to respond automatically.
+            </p>
+            <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+              Pick 1 or more emphases, set a difficulty level, and get started!
+            </p>
+            <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>---</p>
+            <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+              Want to customize your own workout? Modify existing sets or create your own by maintaining groups, techniques, and combinations in the Technique Editor.
+            </p>
+
+            <div style={{ marginTop: '0.75rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#f9a8d4' }}>Glossary</h4>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f9a8d4', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', width: '28%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Technique</th>
+                      <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#f3e8ff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Jab (1)', 'A straight punch with the lead hand, used to gauge distance and set up other strikes.'],
+                      ['Cross (2)', 'A straight punch with the rear hand, thrown across the body for maximum power.'],
+                      ['Hook (3, 4)', 'A curved punch thrown with either hand, typically targeting the side of the opponent\'s head or body.'],
+                      ['Uppercut (5, 6)', 'A vertical punch thrown with either hand, traveling upward to target the opponent\'s chin or solar plexus.'],
+                      ['Elbow Strike (Sok)', 'A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, vertically, or straight down and are often used when the opponent is in clinching range.'],
+                      ['Knee Strike (Khao)', 'A strike with the knee, often used in the clinch but can also be thrown from a distance. Knee strikes are a hallmark of Muay Thai and are very effective at close range.'],
+                      ['Roundhouse Kick (Tae Wiang)', 'The most common and powerful kick in Muay Thai, thrown with the shin. It can target the legs (low kick), body (mid kick), or head (high kick).'],
+                      ['Switch Kick', 'A variation of the roundhouse kick, where the fighter switches stance before delivering the kick.'],
+                      ['Teep (Push Kick)', 'A straight push kick used to maintain distance, disrupt rhythm, or knock an opponent off balance.'],
+                      ['Guard', 'The basic defensive stance, with hands high to protect the head.'],
+                      ['Clinch (Pam)', 'A grappling range where fighters hold onto each other; used for knees, elbows and sweeps.'],
+                      ['Block (Bang)', 'Using the shin, arms, or gloves to absorb or deflect an incoming strike.'],
+                      ['Parry', 'Using a hand to deflect a punch or kick to the side.'],
+                      ['Slip', 'Moving the head to the side to avoid a straight punch.'],
+                      ['Roll (or "Shoulder Roll")', 'Ducking the head and using the shoulder to block a hook, allowing the punch to roll off the shoulder.'],
+                      ['Check', 'Lifting the shin to block an incoming roundhouse kick to the leg or body.']
+                    ].map(([term, desc]) => (
+                      <tr key={term}>
+                        <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>{term}</td>
+                        <td style={{ padding: '0.5rem 0.75rem' }}>{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
@@ -819,28 +962,41 @@ export default function App() {
         </h1>
       </header>
 
-      <div className="main-container" style={{ minHeight: '100vh', color: '#fdf2f8', fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
-        <div className="content-panel" style={{ maxWidth: '64rem', margin: '0 auto', padding: '2rem 0' }}>
-          {/* Top area: Start/Timer/Controls */}
-          <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
-            {(running || isPreRound) && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  // single, non-collapsing spacing between timer and controls
-                  rowGap: 'clamp(16px, 3.2vh, 28px)',
-                }}
-              >
-                <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
-                <section
+      {/* Wrapper for background and content */}
+      <div style={{ position: 'relative', zIndex: 0 }}>
+        {/* Fixed Background Image */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+          <picture>
+            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
+            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
+            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </picture>
+          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+        </div>
+
+        {/* Main content container */}
+        <main className="main-container" style={{ minHeight: '100vh', color: '#fdf2f8', fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
+          <div className="content-panel" style={{ maxWidth: '64rem', margin: '0 auto', padding: '2rem 0' }}>
+            {/* Top area: Start/Timer/Controls */}
+            <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
+              {(running || isPreRound) && (
+                <div
                   style={{
-                    maxWidth: '32rem',
-                    margin: '0 auto',
-                    minHeight: '4rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    // single, non-collapsing spacing between timer and controls
+                    rowGap: 'clamp(16px, 3.2vh, 28px)',
                   }}
                 >
+                  <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
+                  <section
+                    style={{
+                      maxWidth: '32rem',
+                      margin: '0 auto',
+                      minHeight: '4rem',
+                    }}
+                  >
                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
                      <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
                       {paused ? (
@@ -883,29 +1039,33 @@ export default function App() {
                     const isSelected = selectedEmphases[style.key];
                     return (
                       <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
-                        position: 'relative', padding: '1.5rem', borderRadius: '1rem',
-                        border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
-                        minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
-                        backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
-                        boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
-                        transform: isSelected ? 'scale(1.02)' : 'scale(1)'
-                      }}>
-                        <div style={{ position: 'absolute', top: '1rem', right: '1rem', width: '1.5rem', height: '1.5rem', borderRadius: '50%',
-                          border: isSelected ? '2px solid white' : '2px solid rgba(255,255,255,0.4)', backgroundColor: isSelected ? 'white' : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                          {isSelected && <div style={{ width: '0.75rem', height: '0.75rem', backgroundColor: '#2563eb', borderRadius: '50%' }} />}
+                    position: 'relative', padding: '1.5rem', borderRadius: '1rem',
+                    border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
+                    minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
+                    backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
+                    boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
+                    transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                          {/* replaced img + emoji fallback with ImageWithFallback */}
+                          <ImageWithFallback
+                            srcPath={style.iconPath}
+                            alt={style.label}
+                            emoji={style.emoji}
+                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
+                          />
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: '700', margin: 0 }}>{style.label}</h3>
                         </div>
-                        <div style={{ paddingRight: '2rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                            <span style={{ fontSize: '1.5rem' }}>{style.icon}</span>
-                            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', margin: 0 }}>{style.label}</h3>
-                          </div>
-                          <p style={{ fontSize: '0.875rem', color: isSelected ? '#bfdbfe' : '#f9a8d4', margin: 0, lineHeight: 1.4 }}>{style.desc}</p>
-                        </div>
-                      </button>
+                        {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
+                      </div>
+                      {/* REMOVED: "Select" / "Selected" text indicator */}
+                    </div>
+                  </button>
                     );
                   })}
+
                 </div>
 
                 {/* Manage Techniques shortcut placed directly under the style grid */}
@@ -1032,244 +1192,31 @@ export default function App() {
                         all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
                         fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
                         background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', userSelect: 'none',
-                        minWidth: '22rem', boxShadow: '0 10px 25px rgba(34,197,94,0.3), 0 4px 10px rgba(59,130,246,0.2)',
-                        transition: 'transform 0.2s ease-out, box-shadow 0.2s ease-out'
-                    }}>
-                      <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                      <span style={{ lineHeight: 1 }}>Start</span>
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' // Ensure text is centered
+                      }}>
+                      Start Session
                     </button>
                   </div>
                 </div>
               )}
-
-              {/* Advanced */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <button type="button" onClick={() => setShowAdvanced(s => !s)} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-                  width: '100%', padding: '1rem 2rem', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4',
-                  backgroundColor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '0.75rem',
-                  cursor: 'pointer', transition: 'all 0.2s', maxWidth: '20rem', margin: '0 auto'
-                }}>
-                  <span style={{ fontSize: '1.25rem' }}>⚙️</span>
-                  <span>{showAdvanced ? 'Hide' : 'Show'} Advanced Settings</span>
-                  <span style={{
-                    transform: showAdvanced ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s', fontSize: '0.875rem',
-                  }}>▼</span>
-                </button>
-                {showAdvanced && (
-                  <div style={{
-                    display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '2rem',
-                    backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.1)',
-                    maxWidth: '32rem', margin: '0 auto'
-                  }}>
-                    {voices.length > 0 && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <label style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f9a8d4', textAlign: 'center' }}>
-                          Voice Selection ({voices.length} voices available)
-                        </label>
-                        <select
-                          value={voice?.name || ''}
-                          onChange={(e) => setVoice(voices.find(v => v.name === e.target.value) || null)}
-                          style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '0.5rem', color: 'white', fontWeight: 600, fontSize: '0.875rem' }}
-                        >
-                          <option value="" style={{ color: 'black' }}>Default voice</option>
-                          {voices.map(v => <option key={v.name} value={v.name} style={{ color: 'black' }}>{v.name} ({v.lang})</option>)}
-                        </select>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'center' }}>
-                          <label style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '0.875rem' }}>
-                            Voice speed: <strong>{voiceSpeed.toFixed(2)}x</strong>
-                          </label>
-                          <input type="range" min={0.8} max={2.5} step={0.05} value={voiceSpeed} onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))} style={{ width: '160px' }} />
-                          <button type="button" onClick={testVoice} style={{ padding: '0.5rem 0.75rem', backgroundColor: '#3b82f6', border: '1px solid #60a5fa', borderRadius: '0.5rem', color: 'white', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', transition: 'background-color 0.2s' }}>
-                            🔊 Test Voice
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* START BUTTON MOVED FROM HERE */}
             </div>
           </div>
 
+          {/* REPLACED: single footer + single onboarding modal (removed duplicated/modal nesting) */}
           <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
             <div style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
               <span>Train smart, fight smarter 🥊</span>
               <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
+              {/* FIX: Restore footer links and remove invalid modal placement */}
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <button onClick={() => setPage('logs')} style={linkButtonStyle} title="View workout logs">Workout Logs</button>
-                {/* subtle about link */}
-                <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, paddingLeft: 6, paddingRight: 6 }} title="Help">Help</button>
+                <button onClick={() => setPage('logs')} style={linkButtonStyle}>Workout Logs</button>
+                <button onClick={() => setShowOnboardingMsg(true)} style={linkButtonStyle}>Help</button>
               </div>
             </div>
           </footer>
-
-          {/* Onboarding modal (subtle, dismissable) */}
-          {showOnboardingMsg && (
-            <div style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 60,
-              padding: '1rem',            // safe spacing on small screens
-              overflowY: 'auto',         // allow scrolling when modal is taller than viewport
-              WebkitOverflowScrolling: 'touch'
-            }}>
-              <div style={{
-                maxWidth: '40rem',
-                width: 'calc(100% - 2rem)',
-                padding: '1.25rem 1.5rem',
-                borderRadius: '0.75rem',
-                background: '#0f172a',
-                color: 'white',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-                maxHeight: 'calc(100vh - 2rem)', // constrain to viewport height
-                overflowY: 'auto',
-                WebkitOverflowScrolling: 'touch'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
-                  <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
-                </div>
-                <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-                  Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer
-                  the app calls the strikes so you learn to respond automatically.
-                </p>
-                <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-                  Pick 1 or more emphases, set a difficulty level, and get started! 
-                </p>
-                <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-                  --- 
-                </p>
-                <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-                  Want to customize your own workout? Modify existing sets or create your own
-                   by maintaining groups, techniques, and combinations in the Technique Editor.
-                </p>
-
-                {/* Glossary inserted beneath the onboarding text */}
-                <div style={{ marginTop: '0.75rem' }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#f9a8d4' }}>Glossary</h4>
-
-                  {/* Table layout for improved readability */}
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f9a8d4', fontSize: '0.9rem' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', width: '28%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Technique</th>
-                          <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#f3e8ff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Jab (1)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A straight punch with the lead hand, used to gauge distance and set up other strikes.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Cross (2)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A straight punch with the rear hand, thrown across the body for maximum power.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Hook (3, 4)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A curved punch thrown with either hand, typically targeting the side of the opponent's head or body.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Uppercut (5, 6)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A vertical punch thrown with either hand, traveling upward to target the opponent's chin or solar plexus.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Elbow Strike (Sok)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, or vertically or straight down and are often used when the opponent is in clinching range.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Knee Strike (Khao)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A strike with the knee, often used in the clinch but can also be thrown from a distance. Knee strikes are a hallmark of Muay Thai and are very effective at close range.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Roundhouse Kick (Tae Wiang)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>The most common and powerful kick in Muay Thai, thrown with the shin. It can target the legs (low kick), body (mid kick), or head (high kick) and is known for its incredible power.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Switch Kick</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A variation of the roundhouse kick, where the fighter switches stance before delivering the kick. This can create a surprise element and target different angles.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Teep (Push Kick)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A straight push kick used to maintain distance, disrupt an opponent's rhythm, or knock them off balance. It's often referred to as the "weapon of distance."</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Guard</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>The basic defensive stance, with hands high to protect the head and a high guard to protect against kicks.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Clinch (Pam)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A grappling range where fighters hold onto each other, a key component of Muay Thai. From the clinch, fighters can use knee and elbow strikes, and use sweeps to take their opponent to the ground.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Block (Bang)</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>Using the shin, arms, or gloves to absorb or deflect an incoming strike.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Parry</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>Using a hand to deflect a punch or kick to the side.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Slip</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>Moving the head to the side to avoid a straight punch.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Roll (or "Shoulder Roll")</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>Ducking the head and using the shoulder to block a hook, allowing the punch to roll off the shoulder.</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>Check</td>
-                          <td style={{ padding: '0.5rem 0.75rem' }}>A defensive technique unique to Muay Thai where the fighter lifts their shin to block an incoming roundhouse kick to the leg or body. This is a very effective way to defend against kicks and can also cause pain to the opponent's shin.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
+        </main>
       </div>
-    </>
+    </React.Fragment>
   );
-}
-
-// Small styles
-const linkButtonStyle: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#bfdbfe', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.875rem'
-};
-
-// ADD: chip button style used by +/- controls (was missing)
-const chipButtonStyle: React.CSSProperties = {
-  all: 'unset',
-  width: '2.5rem',
-  height: '2.5rem',
-  display: 'grid',
-  placeItems: 'center',
-  borderRadius: '0.75rem',
-  background: 'rgba(255,255,255,0.15)',
-  border: '1px solid rgba(255,255,255,0.25)',
-  color: 'white',
-  fontSize: '1.25rem',
-  fontWeight: 800,
-  cursor: 'pointer',
-  userSelect: 'none',
-};
-
-function controlButtonStyle(from: string, to: string): React.CSSProperties {
-  return {
-    all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '1.25rem 1rem', borderRadius: '1rem',
-    fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
-    color: 'white', minHeight: '4rem', minWidth: '6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', userSelect: 'none'
-  };
 }
