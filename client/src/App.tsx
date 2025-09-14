@@ -185,7 +185,7 @@ export default function App() {
   const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
 
   // TTS controls
-  const [voiceSpeed, setVoiceSpeed] = useState<number>(() => difficulty === 'hard' ? 1.3 : 1);
+  const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
    const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
    useEffect(() => {
@@ -197,9 +197,8 @@ export default function App() {
      return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
    }, []);
 
-  // When difficulty changes:
-  // - hard: nudge voice speed up to the hard default (1.4x) if it's lower
-  // - easy/medium: default to 1x
+  // REMOVED: This effect is no longer needed as voice speed is now manually controlled.
+  /*
   useEffect(() => {
     if (difficulty === 'hard') {
       setVoiceSpeed(prev => (prev < 1.3 ? 1.3 : prev));
@@ -208,6 +207,7 @@ export default function App() {
       setVoiceSpeed(1);
     }
   }, [difficulty]);
+  */
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(0);
@@ -1174,18 +1174,60 @@ export default function App() {
                 </div>
               </section>
 
+              {/* Difficulty - MOVED HERE */}
+              {hasSelectedEmphasis && (
+                <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
+                  <div className="difficulty-controls">
+                    <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
+                    <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
+                    <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
+                  </div>
+                </section>
+              )}
+
+              {/* Advanced Settings: Voice Speed and Selection */}
+              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }}>
+                <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
+                  {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
+                </button>
+                {showAdvanced && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
+                    {/* Voice Speed Slider */}
+                    <div style={{ width: '100%', maxWidth: '24rem' }}>
+                      <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
+                        Voice Speed: {voiceSpeed.toFixed(2)}x
+                      </label>
+                      <input
+                        id="voice-speed"
+                        type="range"
+                        min="0.5"
+                        max="2"
+                        step="0.05"
+                        value={voiceSpeed}
+                        onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                    {/* Voice Selection Dropdown */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <select
+                        value={voice?.name || ''}
+                        onChange={e => setVoice(voices.find(v => v.name === e.target.value) || null)}
+                        style={{ background: 'rgba(0,0,0,0.3)', color: 'white', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid rgba(255,255,255,0.2)' }}
+                      >
+                        {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+                      </select>
+                      <button onClick={testVoice} style={{ ...linkButtonStyle, background: 'rgba(255,255,255,0.1)', borderRadius: '0.375rem' }}>Test Voice</button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
               {/* Conditionally render Difficulty and Start button together */}
               {!running && !isPreRound && hasSelectedEmphasis && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '1rem' }}>
-                  {/* Difficulty */}
-                  <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
-                    <div className="difficulty-controls">
-                      <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
-                      <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
-                      <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
-                    </div>
-                  </section>
+                  {/* Difficulty - REMOVED FROM HERE */}
 
                   {/* Start Button */}
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
