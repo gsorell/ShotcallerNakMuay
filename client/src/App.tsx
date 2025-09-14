@@ -186,16 +186,28 @@ export default function App() {
 
   // TTS controls
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
-   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
-   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-   useEffect(() => {
-     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-     const synth = window.speechSynthesis;
-     const update = () => setVoices(synth.getVoices());
-     update();
-     (synth as any).onvoiceschanged = update;
-     return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
-   }, []);
+  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
+    const update = () => setVoices(synth.getVoices());
+    update();
+    (synth as any).onvoiceschanged = update;
+    return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
+  }, []);
+
+  // NEW: refs so changing speed/voice doesn’t restart cadence
+  const voiceSpeedRef = useRef(voiceSpeed);
+  useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(voice);
+  useEffect(() => { voiceRef.current = voice; }, [voice]);
+
+  // NEW: ensure voice speed always defaults to 1x on mount
+  useEffect(() => {
+    setVoiceSpeed(1);
+    voiceSpeedRef.current = 1;
+  }, []);
 
   // REMOVED: This effect is no longer needed as voice speed is now manually controlled.
   /*
@@ -279,7 +291,7 @@ export default function App() {
       // This prevents the group name itself from being added to the pool.
       if (typeof node === 'object') {
         if (node.singles) extractStrings(node.singles, out);
-        if (node.combos) extractStrings(node.combos, out);
+        if (node.combos) extractStrings(node.combos, out); // for calisthenics
         if (node.breakdown) extractStrings(node.breakdown, out); // for calisthenics
       }
     };
@@ -380,57 +392,48 @@ export default function App() {
     } catch { /* noop */ }
   }, []);
 
-  const startTechniqueCallouts = useCallback((initialDelay = 2000) => {
-    // target ~160 bpm on hard -> ~375ms between callouts (post-speech)
-    const baseDelayMs = difficulty === 'easy' ? 4500 : difficulty === 'hard' ? 375 : 3000;
-    // allow a smaller minimum delay on hard so the Math.max floor doesn't override the short base
-    const minDelayMs = difficulty === 'hard' ? 200 : 900;
+  const startTechniqueCallouts = useCallback((initialDelay = 1200) => {
+    // Faster fixed cadence per difficulty (calls/min) — independent of voice speed
+    const cadencePerMin =
+      difficulty === 'easy' ? 20 :
+      difficulty === 'hard' ? 32 : 24;
+    const baseDelayMs = Math.round(60000 / cadencePerMin);
+    const minDelayMs = Math.round(baseDelayMs * 0.5); // tighter floor
 
-    const scheduleCallout = (delay: number) => {
-      calloutRef.current = globalThis.setTimeout(() => {
-        if (ttsGuardRef.current || !runningRef.current) return;
-        const pool = getTechniquePool();
-        if (!pool.length) {
-          console.warn('No techniques available for callouts — stopping callouts');
-          stopTechniqueCallouts();
-          return;
-        }
-        const phrase = pickRandom(pool);
+    const scheduleNext = (delay: number) => {
+      calloutRef.current = globalThis.setTimeout(doCallout, Math.max(0, delay)) as unknown as number;
+    };
 
-        // Build and speak an utterance here and schedule next callout in onend.
-        if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-          // Fallback: schedule next with fixed delay
-          const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
-          const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
-          calloutRef.current = globalThis.setTimeout(() => scheduleCallout(nextDelayMs), nextDelayMs) as unknown as number;
-          return;
-        }
+    const doCallout = () => {
+      if (ttsGuardRef.current || !runningRef.current) return;
 
-        try { window.speechSynthesis.cancel(); } catch {}
+      const pool = getTechniquePool();
+      if (!pool.length) {
+        console.warn('No techniques available for callouts — stopping callouts');
+        stopTechniqueCallouts();
+        return;
+      }
+
+      const phrase = pickRandom(pool);
+
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         const u = new SpeechSynthesisUtterance(phrase);
-        if (voice) u.voice = voice;
-        u.rate = voiceSpeed;
-        u.onend = () => {
-          utteranceRef.current = null;
-          if (ttsGuardRef.current || !runningRef.current) return;
-          const jitter = Math.floor(baseDelayMs * 0.15 * (Math.random() - 0.5));
-          const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
-          scheduleCallout(nextDelayMs);
-        };
-        u.onerror = () => {
-          utteranceRef.current = null;
-          // On error, try scheduling the next one after a base delay
-          if (ttsGuardRef.current || !runningRef.current) return;
-          calloutRef.current = globalThis.setTimeout(() => scheduleCallout(baseDelayMs), baseDelayMs) as unknown as number;
-        };
+        const v = voiceRef.current;
+        if (v) u.voice = v;
+        u.rate = voiceSpeedRef.current; // speed affects narration only
         utteranceRef.current = u;
         window.speechSynthesis.speak(u);
-      }, Math.max(0, delay)) as unknown as number;
+      }
+
+      // Less jitter for snappier feel
+      const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
+      const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
+      scheduleNext(nextDelayMs);
     };
 
     if (ttsGuardRef.current || !runningRef.current) return;
-    scheduleCallout(initialDelay);
-  }, [difficulty, voice, voiceSpeed, getTechniquePool, stopTechniqueCallouts]); // include stopper in deps
+    scheduleNext(initialDelay);
+  }, [difficulty, getTechniquePool, stopTechniqueCallouts]);
 
   // Guard TTS on state changes
   useEffect(() => {
@@ -486,7 +489,7 @@ export default function App() {
   // Start/stop callouts during active rounds
   useEffect(() => {
     if (!running || paused || isResting) return;
-    startTechniqueCallouts(2000);
+    startTechniqueCallouts(1200);
     return () => {
       stopTechniqueCallouts();
       stopAllNarration();
