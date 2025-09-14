@@ -7,6 +7,7 @@ import PageLayout from './PageLayout'; // Import the new layout component
 import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
+import Header from './components/Header';
 
 // REMOVE: The image imports are not needed for files in /public
 /*
@@ -871,7 +872,7 @@ export default function App() {
           inset: 0,
           background: 'rgba(0,0,0,0.5)',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'center',
           zIndex: 60,
           padding: '1rem',            // safe spacing on small screens
@@ -931,6 +932,7 @@ export default function App() {
                       ['Block (Bang)', 'Using the shin, arms, or gloves to absorb or deflect an incoming strike.'],
                       ['Parry', 'Using a hand to deflect a punch or kick to the side.'],
                       ['Slip', 'Moving the head to the side to avoid a straight punch.'],
+                      ['Oley', 'A strategic, often evasive, defensive technique to establish an angle'],
                       ['Roll (or "Shoulder Roll")', 'Ducking the head and using the shoulder to block a hook, allowing the punch to roll off the shoulder.'],
                       ['Check', 'Lifting the shin to block an incoming roundhouse kick to the leg or body.']
                     ].map(([term, desc]) => (
@@ -962,27 +964,7 @@ export default function App() {
         }
       `}</style>
 
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          background: '#1e0b30',
-          backdropFilter: 'blur(10px)',
-          padding: '1rem 2rem',
-          // Ensure header contents are pushed below the device/browser safe area (notch / toolbar)
-          // use both env() and legacy constant() for broader compatibility
-          paddingTop: 'calc(1rem + env(safe-area-inset-top))',
-          WebkitPaddingStart: 'env(safe-area-inset-left)',
-          WebkitPaddingEnd: 'env(safe-area-inset-right)',
-          borderBottom: '1px solid rgba(236,72,153,0.3)',
-          textAlign: 'center'
-        }}
-      >
-        <h1 className="header-title" style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: '2.5rem', fontWeight: 'normal', color: 'white', letterSpacing: '0.1em', margin: 0, textShadow: '0 2px 8px rgba(236,72,153,0.6)' }}>
-          Nak Muay Shot Caller
-        </h1>
-      </header>
+      <Header />
 
       {/* Wrapper for background and content */}
       <div style={{ position: 'relative', zIndex: 0 }}>
