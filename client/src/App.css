@@ -291,3 +291,62 @@ input[type='number'] {
 .round-length-input:focus {
   border-bottom-color: #60a5fa;
 }
+
+/* Mobile-safe layout for voice speed controls */
+.voice-speed-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.voice-speed-settings .field {
+  flex: 1 1 220px;
+  min-width: 0; /* allow shrinking on small screens */
+}
+
+.voice-speed-settings input[type="range"],
+.voice-speed-settings input[type="number"],
+.voice-speed-settings select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.voice-speed-settings label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .voice-speed-settings {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .voice-speed-settings .field {
+    flex-basis: 100%;
+  }
+}
+
+/* Ensure grid children don’t overflow their columns */
+.panel-grid > * { min-width: 0; }
+
+/* Ensure nested wrappers can shrink inside the grid */
+.panel-grid > * > * { min-width: 0; }        /* add one more level */
+.voice-speed-settings { min-width: 0; }      /* ensure the wrapper itself can shrink */
+
+/* Prevent long selected option text from widening the select */
+.voice-speed-settings select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Optional safety to avoid page-wide horizontal scroll */
+html, body { overflow-x: hidden; }
