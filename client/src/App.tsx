@@ -1187,12 +1187,12 @@ export default function App() {
               )}
 
               {/* Advanced Settings: Voice Speed and Selection */}
-              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }}>
+              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
                 <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
                   {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
                 </button>
                 {showAdvanced && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
                     {/* Voice Speed Slider */}
                     <div style={{ width: '100%', maxWidth: '24rem' }}>
                       <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
@@ -1210,14 +1210,28 @@ export default function App() {
                       />
                     </div>
                     {/* Voice Selection Dropdown */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <select
-                        value={voice?.name || ''}
-                        onChange={e => setVoice(voices.find(v => v.name === e.target.value) || null)}
-                        style={{ background: 'rgba(0,0,0,0.3)', color: 'white', padding: '0.5rem', borderRadius: '0.375rem', border: '1px solid rgba(255,255,255,0.2)' }}
-                      >
-                        {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
-                      </select>
+                    <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', minWidth: 0 }}>
+                      <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
+                        <select
+                          value={voice?.name || ''}
+                          onChange={e => setVoice(voices.find(v => v.name === e.target.value) || null)}
+                          style={{
+                            background: 'rgba(0,0,0,0.3)',
+                            color: 'white',
+                            padding: '0.5rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            width: '100%',
+                            maxWidth: '100%',
+                            minWidth: 0,                 // key: allow shrinking
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+                        </select>
+                      </div>
                       <button onClick={testVoice} style={{ ...linkButtonStyle, background: 'rgba(255,255,255,0.1)', borderRadius: '0.375rem' }}>Test Voice</button>
                     </div>
                   </div>
