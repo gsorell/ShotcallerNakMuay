@@ -826,16 +826,38 @@ export default function App() {
   // Page routing
   if (page === 'editor') {
     return (
-      <PageLayout title="Manage Techniques" onBack={() => setPage('timer')}>
-        <TechniqueEditor techniques={techniques as any} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />
-      </PageLayout>
+      <React.Fragment>
+        {/* Fixed Background Image */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+          <picture>
+            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
+            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
+            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </picture>
+          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+        </div>
+        <PageLayout title="Manage Techniques" onBack={() => setPage('timer')}>
+          <TechniqueEditor techniques={techniques as any} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />
+        </PageLayout>
+      </React.Fragment>
     );
   }
   if (page === 'logs') {
     return (
-      <PageLayout title="Workout Logs" onBack={() => setPage('timer')}>
-        <WorkoutLogs onBack={() => setPage('timer')} />
-      </PageLayout>
+      <React.Fragment>
+        {/* Fixed Background Image */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+          <picture>
+            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
+            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
+            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </picture>
+          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+        </div>
+        <PageLayout title="Workout Logs" onBack={() => setPage('timer')}>
+          <WorkoutLogs onBack={() => setPage('timer')} />
+        </PageLayout>
+      </React.Fragment>
     );
   }
 
