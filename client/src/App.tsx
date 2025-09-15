@@ -1512,12 +1512,29 @@ export default function App() {
 
       {/* FIX: Floating Start button at the bottom of the viewport */}
       {!running && !isPreRound && hasSelectedEmphasis && (
-        <button
-          onClick={startSession}
-          className="start-button"
-        >
-          Start Session
-        </button>
+        <>
+          {/* Shadow gradient backdrop */}
+          <div
+            style={{
+              position: 'fixed',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: '32vh',
+              pointerEvents: 'none',
+              zIndex: 999, // below the button
+              background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(40,10,60,0.45) 70%, rgba(40,10,60,0.85) 100%)',
+            }}
+            aria-hidden="true"
+          />
+          <button
+            onClick={startSession}
+            className="start-button"
+            style={{ zIndex: 1000, position: 'fixed', left: '50%', bottom: '2.5rem', transform: 'translate(-50%, 0)' }}
+          >
+            Start Session
+          </button>
+        </>
       )}
     
     </div> {/* fixed background wrapper */}
