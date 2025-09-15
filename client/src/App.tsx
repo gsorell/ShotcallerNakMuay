@@ -1067,42 +1067,43 @@ export default function App() {
       <OnboardingModal open={showOnboardingMsg} onClose={() => setShowOnboardingMsg(false)} />
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
-        .start-button {
-          position: fixed;
-          left: 50%;
-          bottom: 2.5rem;
-          transform: translate(-50%, 0);
-          min-width: 260px;
-          font-size: 2rem;
-          font-weight: 900;
-          color: white;
-          background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
-          border-radius: 1.25rem;
-          border: none;
-          box-shadow: 0 15px 30px rgba(34,197,94,0.08), 0 8px 15px rgba(59,130,246,0.06);
-          padding: 1.25rem 2.5rem;
-          z-index: 1000;
-          cursor: pointer;
-          will-change: transform, box-shadow;
-          transition: 
-            box-shadow 0.18s cubic-bezier(.4,2,.3,1),
-            transform 0.18s cubic-bezier(.4,2,.3,1),
-            background 0.18s;
-        }
-        .start-button:hover {
-          transform: translate(-50%, -4px); /* Only change Y value, keep X centered */
-          box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
-        }
-        @media (max-width: 768px) {
-          .main-container { padding: 1rem !important; }
-          .header-title { font-size: 1.75rem !important; }
-          .main-timer { font-size: 5rem !important; }
-          .difficulty-grid { grid-template-columns: 1fr !important; }
-          .emphasis-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+  body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
+  .start-button {
+    position: fixed;
+    left: 50%;
+    bottom: 18vh; /* Lowered from 33vh to 18vh */
+    transform: translate(-50%, 0);
+    min-width: 260px;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
+    border-radius: 1.25rem;
+    border: none;
+    box-shadow: 0 15px 30px rgba(34,197,94,0.08), 0 8px 15px rgba(59,130,246,0.06);
+    padding: 1.25rem 2.5rem;
+    z-index: 1000;
+    cursor: pointer;
+    will-change: transform, box-shadow;
+    transition: 
+      box-shadow 0.18s cubic-bezier(.4,2,.3,1),
+      transform 0.18s cubic-bezier(.4,2,.3,1),
+      background 0.18s;
+  }
+  .start-button:hover {
+    transform: translate(-50%, -4px); /* Only change Y value, keep X centered */
+    box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
+  }
+  @media (max-width: 768px) {
+    .main-container { padding: 1rem !important; }
+    .header-title { font-size: 1.75rem !important; }
+    .main-timer { font-size: 5rem !important; }
+    .difficulty-grid { grid-template-columns: 1fr !important; }
+    .emphasis-grid { grid-template-columns: 1fr !important; }
+    .start-button { bottom: 8vh !important; } /* Lowered from 18vh to 8vh on mobile */
+  }
+`}</style>
 
     <Header onHelp={() => setShowOnboardingMsg(true)} />
 
@@ -1465,6 +1466,7 @@ export default function App() {
                             >
                               <option value="" disabled>Select a voice...</option>
                               {voices.map(v => (
+
                                 <option key={v.name} value={v.name} style={{ padding: '0.5rem 0' }}>
                                   {v.name} {v.default ? '(Default)' : ''}
                                 </option>
@@ -1485,7 +1487,8 @@ export default function App() {
                           position: 'fixed',
                           left: 0,
                           right: 0,
-                          top: `calc(100vh - 2.5rem - 80px - 48px)`, // 48px above button
+                          // Lower the overlay so it starts just above the new button position
+                          top: `calc(82vh - 80px - 48px)`, // 82vh from top, minus button height and gap
                           bottom: 0,
                           zIndex: 998,
                           pointerEvents: 'none',
