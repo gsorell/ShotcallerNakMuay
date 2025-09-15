@@ -353,11 +353,16 @@ export default function App() {
     }
   }, []);
 
+  // Helper to fix TTS pronunciation for ambiguous words
+  function fixPronunciation(text: string): string {
+    return text.replace(/\blead\b/gi, 'leed');
+  }
+
   // New, unguarded speak function for system announcements
   const speakSystem = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     try { window.speechSynthesis.cancel(); } catch {}
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(fixPronunciation(text));
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.rate = speed;
     window.speechSynthesis.speak(utterance);
@@ -367,7 +372,7 @@ export default function App() {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (ttsGuardRef.current || !runningRef.current) return;
     try { window.speechSynthesis.cancel(); } catch {}
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(fixPronunciation(text));
     if (selectedVoice) utterance.voice = selectedVoice;
     utterance.rate = speed;
     utterance.onstart = () => {
