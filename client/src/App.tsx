@@ -31,7 +31,7 @@ type Page = 'timer' | 'editor' | 'logs';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v9'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v10'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
@@ -355,7 +355,7 @@ export default function App() {
 
   // Helper to fix TTS pronunciation for ambiguous words
   function fixPronunciation(text: string): string {
-    return text.replace(/\blead\b/gi, 'leed');
+    return text.replace(/\bLeft\b/gi, 'leed');
   }
 
   // New, unguarded speak function for system announcements
@@ -1023,8 +1023,8 @@ export default function App() {
                 </thead>
                 <tbody>
                   {[
-                    ['Jab (1)', 'A straight punch with the lead hand, used to gauge distance and set up other strikes.'],
-                    ['Cross (2)', 'A straight punch with the rear hand, thrown across the body for maximum power.'],
+                    ['Jab (1)', 'A straight punch with the Left hand, used to gauge distance and set up other strikes.'],
+                    ['Cross (2)', 'A straight punch with the Right hand, thrown across the body for maximum power.'],
                     ['Hook (3, 4)', 'A curved punch thrown with either hand, typically targeting the side of the opponent\'s head or body.'],
                     ['Uppercut (5, 6)', 'A vertical punch thrown with either hand, traveling upward to target the opponent\'s chin or solar plexus.'],
                     ['Elbow Strike (Sok)', 'A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, vertically, or straight down and are often used when the opponent is in clinching range.'],
