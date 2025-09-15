@@ -401,8 +401,8 @@ export default function App() {
   const startTechniqueCallouts = useCallback((initialDelay = 1200) => {
     // Fixed cadence per difficulty (calls/min)
     const cadencePerMin =
-      difficulty === 'easy' ? 20 :
-      difficulty === 'hard' ? 32 : 24;
+      difficulty === 'easy' ? 22 :
+      difficulty === 'hard' ? 35 : 26;
     const baseDelayMs = Math.round(60000 / cadencePerMin);
     const minDelayMs = Math.round(baseDelayMs * 0.5);
 
@@ -1497,7 +1497,7 @@ export default function App() {
                         aria-hidden="true"
                       />
                       <button className="start-button" onClick={startSession}>
-                        Start Training
+                        Let's Go!
                       </button>
                     </>
                   )}
