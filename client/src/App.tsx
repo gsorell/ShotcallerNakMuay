@@ -189,6 +189,8 @@ export default function App() {
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  // Live "subtitle" for the active technique/combination
+  const [currentCallout, setCurrentCallout] = useState<string>('');
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     const synth = window.speechSynthesis;
@@ -391,18 +393,25 @@ export default function App() {
         utteranceRef.current = null;
       }
     } catch { /* noop */ }
+    // Optional: clear visible subtitle when we explicitly stop callouts
+    // (Guard effect below will also clear on pause/rest/stop)
+    setCurrentCallout('');
   }, []);
 
   const startTechniqueCallouts = useCallback((initialDelay = 1200) => {
-    // Faster fixed cadence per difficulty (calls/min) — independent of voice speed
+    // Fixed cadence per difficulty (calls/min)
     const cadencePerMin =
       difficulty === 'easy' ? 20 :
       difficulty === 'hard' ? 32 : 24;
     const baseDelayMs = Math.round(60000 / cadencePerMin);
-    const minDelayMs = Math.round(baseDelayMs * 0.5); // tighter floor
+    const minDelayMs = Math.round(baseDelayMs * 0.5);
 
     const scheduleNext = (delay: number) => {
-      calloutRef.current = globalThis.setTimeout(doCallout, Math.max(0, delay)) as unknown as number;
+      if (calloutRef.current) {
+        clearTimeout(calloutRef.current);
+        calloutRef.current = null;
+      }
+      calloutRef.current = window.setTimeout(doCallout, Math.max(0, delay)) as unknown as number;
     };
 
     const doCallout = () => {
@@ -417,16 +426,48 @@ export default function App() {
 
       const phrase = pickRandom(pool);
 
+      // If Web Speech is available, sync UI to the actual utterance lifecycle
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        // Ensure no backlog so visual and audio stay aligned
+        try { window.speechSynthesis.cancel(); } catch { /* noop */ }
+
         const u = new SpeechSynthesisUtterance(phrase);
         const v = voiceRef.current;
         if (v) u.voice = v;
-        u.rate = voiceSpeedRef.current; // speed affects narration only
+        u.rate = voiceSpeedRef.current;
+
+        // Display the text when the utterance actually begins
+        u.onstart = () => {
+          if (ttsGuardRef.current || !runningRef.current) {
+            try { window.speechSynthesis.cancel(); } catch { /* noop */ }
+            return;
+          }
+          setCurrentCallout(phrase);
+        };
+
+        // Schedule the next callout when this one finishes
+        u.onend = () => {
+          utteranceRef.current = null;
+          if (ttsGuardRef.current || !runningRef.current) return;
+          const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
+          const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
+          scheduleNext(nextDelayMs);
+        };
+
+        u.onerror = () => {
+          utteranceRef.current = null;
+          if (ttsGuardRef.current || !runningRef.current) return;
+          // Try again quickly on error
+          scheduleNext(250);
+        };
+
         utteranceRef.current = u;
         window.speechSynthesis.speak(u);
+        return; // scheduling handled in onend
       }
 
-      // Less jitter for snappier feel
+      // Fallback (no TTS): update immediately and use timer cadence
+      setCurrentCallout(phrase);
       const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
       const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
       scheduleNext(nextDelayMs);
@@ -442,6 +483,8 @@ export default function App() {
     if (ttsGuardRef.current) {
       stopTechniqueCallouts();
       stopAllNarration();
+      // Clear visible subtitle when we shouldn't be calling out
+      setCurrentCallout('');
     }
   }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
 
@@ -585,6 +628,7 @@ export default function App() {
     playBell();
     stopTechniqueCallouts();
     stopAllNarration();
+    setCurrentCallout(''); // clear subtitle at round end
     if (currentRound >= roundsCount) {
       // Session finished naturally, log it and stop.
       try { autoLogWorkout(roundsCount); } catch {}
@@ -712,6 +756,7 @@ export default function App() {
     setPreRoundTimeLeft(0); // ADD: ensure pre-round is reset
     stopTechniqueCallouts();
     stopAllNarration();
+    setCurrentCallout(''); // clear subtitle on stop
   }
 
   // Keep selectedEmphases in sync: if a selected emphasis no longer maps to any persisted technique, unselect it.
@@ -1076,6 +1121,29 @@ export default function App() {
                       }}
                     >
                       <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
+
+                      {/* Live technique subtitle (during active rounds only) */}
+                      {running && !paused && !isResting && currentCallout && (
+                        <div
+                          aria-live="polite"
+                          style={{
+                            maxWidth: '46rem',
+                            textAlign: 'center',
+                            fontSize: '2rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.5px',
+                            color: 'white',
+                            background: 'rgba(0,0,0,0.35)',
+                            border: '1px solid rgba(255,255,255,0.22)',
+                            borderRadius: '0.85rem',
+                            padding: '0.6rem 1rem',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                          }}
+                        >
+                          {currentCallout}
+                        </div>
+                      )}
+
                       <section
                         style={{
                           maxWidth: '32rem',
@@ -1392,18 +1460,25 @@ export default function App() {
 
             {/* Footer stays visible on all pages */}
             <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-                <span>Train smart, fight smarter 🥊</span>
-                <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                  <button type="button" onClick={() => setPage('logs')} style={linkButtonStyle}>Workout Logs</button>
-                  <button type="button" onClick={() => setShowOnboardingMsg(true)} style={linkButtonStyle}>Help</button>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
+                <span>Train smart, fight smarter</span>
+                <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
+                  Workout Logs
+                </button>
+                <button
+                  onClick={() => {
+                    const url = 'https://github.com/'; // placeholder help link
+                    try { window.open(url, '_blank', 'noopener,noreferrer'); } catch {}
+                  }}
+                  style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}
+                >
+                  Help
+                </button>
               </div>
             </footer>
-          </div>
+          </div> {/* content-panel */}
         </main>
-      </div>
+      </div> {/* fixed background wrapper */}
     </React.Fragment>
   );
 }
