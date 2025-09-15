@@ -1511,6 +1511,11 @@ export default function App() {
       {/* Footer stays visible on all pages */}
       <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
+          <img
+            src="/assets/logo_icon.png"
+            alt="Logo"
+            style={{ height: '32px', marginRight: '0.5rem', verticalAlign: 'middle', borderRadius: '8px', background: 'rgba(255,255,255,0.04)' }}
+          />
           <span>Train smart, fight smarter</span>
           <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
             Workout Logs
