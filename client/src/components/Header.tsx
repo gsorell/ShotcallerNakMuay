@@ -157,8 +157,8 @@ const HelpContent: React.FC<HelpContentProps> = ({ onClose }) => {
               </tr>
             </thead>
             <tbody>
-              <tr><td style={tdBoldStyle}>Jab (1)</td><td style={tdStyle}>A straight punch with the lead hand, used to gauge distance and set up other strikes.</td></tr>
-              <tr><td style={tdBoldStyle}>Cross (2)</td><td style={tdStyle}>A straight punch with the rear hand, thrown across the body for maximum power.</td></tr>
+              <tr><td style={tdBoldStyle}>Jab (1)</td><td style={tdStyle}>A straight punch with the Left hand, used to gauge distance and set up other strikes.</td></tr>
+              <tr><td style={tdBoldStyle}>Cross (2)</td><td style={tdStyle}>A straight punch with the Right hand, thrown across the body for maximum power.</td></tr>
               <tr><td style={tdBoldStyle}>Hook (3, 4)</td><td style={tdStyle}>A curved punch thrown with either hand, typically targeting the side of the opponent's head or body.</td></tr>
               <tr><td style={tdBoldStyle}>Uppercut (5, 6)</td><td style={tdStyle}>A vertical punch thrown with either hand, traveling upward to target the opponent's chin or solar plexus.</td></tr>
               <tr><td style={tdBoldStyle}>Elbow Strike (Sok)</td><td style={tdStyle}>A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, vertically, or straight down and are often used when the opponent is in clinching range.</td></tr>
