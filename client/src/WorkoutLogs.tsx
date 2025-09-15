@@ -44,8 +44,29 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="editor-root">
-      {/* The header and back button are now handled by PageLayout, so we can remove the old header panel */}
+      {/* Header with Back button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back to main page"
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            color: '#f9a8d4',
+            padding: '0.5rem 0.75rem',
+            borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.2)',
+            background: 'rgba(255,255,255,0.06)'
+          }}
+        >
+          ← Back
+        </button>
+        <h2 style={{ margin: 0, color: 'white', fontSize: '1.25rem' }}>Workout Logs</h2>
+        <div style={{ width: '4rem' }} />
+      </div>
 
+      {/* The header and back button are now handled here */}
       {logs.length === 0 ? (
         <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
           <p style={{ margin: 0, textAlign: 'center', color: '#d1d5db' }}>No workouts logged yet. Sessions are logged automatically when they are stopped or completed.</p>
