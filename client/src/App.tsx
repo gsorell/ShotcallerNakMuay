@@ -444,29 +444,93 @@ export default function App() {
     }
   }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
 
+  // Simple Web Audio fallback chime if mp3 can't play (autoplay blocked or missing file)
+  const webAudioChime = useCallback(() => {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+    } catch {/* noop */}
+  }, []);
+
+  // Proactively unlock audio on user gesture (Start button)
+  const ensureMediaUnlocked = useCallback(async () => {
+    try {
+      if (!bellSoundRef.current) {
+        bellSoundRef.current = new Audio('/big-bell-330719.mp3'); // ensure this file is in /public
+        bellSoundRef.current.preload = 'auto';
+      }
+      // play muted once to satisfy autoplay policy
+      const bell = bellSoundRef.current;
+      const bellPrevVol = bell.volume;
+      bell.volume = 0;
+      bell.muted = true;
+      await bell.play().catch(() => {});
+      bell.pause();
+      bell.currentTime = 0;
+      bell.muted = false;
+      bell.volume = bellPrevVol;
+
+      if (!warningSoundRef.current) {
+        warningSoundRef.current = new Audio('/interval.mp3');
+        warningSoundRef.current.preload = 'auto';
+      }
+      const warn = warningSoundRef.current;
+      const warnPrevVol = warn.volume;
+      warn.volume = 0;
+      warn.muted = true;
+      await warn.play().catch(() => {});
+      warn.pause();
+      warn.currentTime = 0;
+      warn.muted = false;
+      warn.volume = warnPrevVol;
+    } catch {/* noop */}
+  }, []);
+
   // Bell
   const playBell = useCallback(() => {
     try {
       if (!bellSoundRef.current) {
         bellSoundRef.current = new Audio('/big-bell-330719.mp3');
+        bellSoundRef.current.preload = 'auto';
         bellSoundRef.current.volume = 0.5;
       }
       bellSoundRef.current.currentTime = 0;
-      void bellSoundRef.current.play();
-    } catch { /* noop */ }
-  }, []);
+      const p = bellSoundRef.current.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(() => { webAudioChime(); });
+      }
+    } catch {
+      webAudioChime();
+    }
+  }, [webAudioChime]);
 
   // 10-second warning sound
   const playWarningSound = useCallback(() => {
     try {
       if (!warningSoundRef.current) {
-        // NOTE: Uses 'interval.mp3' from your /public directory
         warningSoundRef.current = new Audio('/interval.mp3');
+        warningSoundRef.current.preload = 'auto';
         warningSoundRef.current.volume = 0.4;
       }
       warningSoundRef.current.currentTime = 0;
-      void warningSoundRef.current.play();
-    } catch { /* noop */ }
+      const p = warningSoundRef.current.play();
+      if (p && typeof p.then === 'function') {
+        p.catch(() => {/* no critical fallback for warning */});
+      }
+    } catch {/* noop */}
   }, []);
 
   // ADD: Pre-round countdown timer
@@ -586,13 +650,16 @@ export default function App() {
   // Session controls
   function startSession() {
     if (!hasSelectedEmphasis) return;
-    // Validate that the selected emphases actually yield techniques
     const pool = getTechniquePool();
     if (!pool.length) {
       alert('No techniques found for the selected emphasis(es). Check the technique lists or choose a different emphasis.');
       console.warn('startSession blocked: empty technique pool for selected emphases', selectedEmphases);
       return;
     }
+
+    // Unlock audio while we still have a user gesture
+    void ensureMediaUnlocked();
+
     try {
       const priming = new SpeechSynthesisUtterance(' ');
       priming.volume = 0;
@@ -827,130 +894,102 @@ export default function App() {
     );
   };
 
-  // Page routing
-  if (page === 'editor') {
-    return (
-      <React.Fragment>
-        {/* Fixed Background Image */}
-        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
-          <picture>
-            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
-            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
-            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </picture>
-          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
-        </div>
-        <PageLayout title="Manage Techniques" onBack={() => setPage('timer')}>
-          <TechniqueEditor techniques={techniques as any} setTechniques={persistTechniques as any} onBack={() => setPage('timer')} />
-        </PageLayout>
-      </React.Fragment>
-    );
-  }
-  if (page === 'logs') {
-    return (
-      <React.Fragment>
-        {/* Fixed Background Image */}
-        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
-          <picture>
-            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
-            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
-            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </picture>
-          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
-        </div>
-        <PageLayout title="Workout Logs" onBack={() => setPage('timer')}>
-          <WorkoutLogs onBack={() => setPage('timer')} />
-        </PageLayout>
-      </React.Fragment>
-    );
-  }
-
   // Main Timer UI
-  return (
-    <React.Fragment>
-      {/* FIX: Move the modal to the top level to avoid JSX nesting issues and CSS conflicts. */}
-      {showOnboardingMsg && (
+  // Add this helper right before the return
+  const isActive = running || isPreRound;
+
+  // New: Extracted onboarding modal to avoid JSX bracket/paren issues
+  const OnboardingModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+    if (!open) return null;
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        zIndex: 60,
+        padding: '1rem',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
+      }}>
         <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          zIndex: 60,
-          padding: '1rem',            // safe spacing on small screens
-          overflowY: 'auto',         // allow scrolling when modal is taller than viewport
-          WebkitOverflowScrolling: 'touch'
+          maxWidth: '40rem',
+          width: 'calc(100% - 2rem)',
+          padding: '1.25rem 1.5rem',
+          borderRadius: '0.75rem',
+          background: '#0f172a',
+          color: 'white',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
         }}>
-          <div style={{
-            maxWidth: '40rem',
-            width: 'calc(100% - 2rem)',
-            padding: '1.25rem 1.5rem',
-            borderRadius: '0.75rem',
-            background: '#0f172a',
-            color: 'white',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
-              <button onClick={() => setShowOnboardingMsg(false)} style={{ ...linkButtonStyle }}>Close</button>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
+            <button onClick={onClose} style={{ ...linkButtonStyle }}>Close</button>
+          </div>
 
-            <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-              Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer
-              the app calls the strikes so you learn to respond automatically.
-            </p>
-            <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-              Pick 1 or more emphases, set a difficulty level, and get started!
-            </p>
-            <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>---</p>
-            <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-              Want to customize your own workout? Modify existing sets or create your own by maintaining groups, techniques, and combinations in the Technique Editor.
-            </p>
+          <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
+            Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer
+            the app calls the strikes so you learn to respond automatically.
+          </p>
+          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+            Pick 1 or more emphases, set a difficulty level, and get started!
+          </p>
+          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>---</p>
+          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
+            Want to customize your own workout? Modify existing sets or create your own by maintaining groups, techniques, and combinations in the Technique Editor.
+          </p>
 
-            <div style={{ marginTop: '0.75rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#f9a8d4' }}>Glossary</h4>
+          <div style={{ marginTop: '0.75rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#f9a8d4' }}>Glossary</h4>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f9a8d4', fontSize: '0.9rem' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', width: '28%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Technique</th>
-                      <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#f3e8ff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Description</th>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f9a8d4', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', width: '28%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Technique</th>
+                    <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#f3e8ff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Jab (1)', 'A straight punch with the lead hand, used to gauge distance and set up other strikes.'],
+                    ['Cross (2)', 'A straight punch with the rear hand, thrown across the body for maximum power.'],
+                    ['Hook (3, 4)', 'A curved punch thrown with either hand, typically targeting the side of the opponent\'s head or body.'],
+                    ['Uppercut (5, 6)', 'A vertical punch thrown with either hand, traveling upward to target the opponent\'s chin or solar plexus.'],
+                    ['Elbow Strike (Sok)', 'A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, vertically, or straight down and are often used when the opponent is in clinching range.'],
+                    ['Knee Strike (Khao)', 'A strike with the knee, often used in the clinch but can also be thrown from a distance. Knee strikes are a hallmark of Muay Thai and are very effective at close range.'],
+                    ['Roundhouse Kick (Tae Wiang)', 'The most common and powerful kick in Muay Thai, thrown with the shin. It can target the legs (low kick), body (mid kick), or head (high kick).'],
+                    ['Switch Kick', 'A variation of the roundhouse kick, where the fighter switches stance before delivering the kick.'],
+                    ['Teep (Push Kick)', 'A straight push kick used to maintain distance, disrupt rhythm, or knock an opponent off balance.'],
+                    ['Guard', 'The basic defensive stance, with hands high to protect the head.'],
+                    ['Clinch (Pam)', 'A grappling range where fighters hold onto each other; used for knees, elbows and sweeps.'],
+                    ['Block (Bang)', 'Using the shin, arms, or gloves to absorb or deflect an incoming strike.'],
+                    ['Parry', 'Using a hand to deflect a punch or kick to the side.'],
+                    ['Slip', 'Moving the head to the side to avoid a straight punch.'],
+                    ['Oley', 'A strategic, often evasive, defensive technique to establish an angle'],
+                    ['Roll (or "Shoulder Roll")', 'Ducking the head and using the shoulder to block a hook, allowing the punch to roll off the shoulder.'],
+                    ['Check', 'Lifting the shin to block an incoming roundhouse kick to the leg or body.']
+                  ].map(([term, desc]) => (
+                    <tr key={term}>
+                      <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>{term}</td>
+                      <td style={{ padding: '0.5rem 0.75rem' }}>{desc}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      ['Jab (1)', 'A straight punch with the lead hand, used to gauge distance and set up other strikes.'],
-                      ['Cross (2)', 'A straight punch with the rear hand, thrown across the body for maximum power.'],
-                      ['Hook (3, 4)', 'A curved punch thrown with either hand, typically targeting the side of the opponent\'s head or body.'],
-                      ['Uppercut (5, 6)', 'A vertical punch thrown with either hand, traveling upward to target the opponent\'s chin or solar plexus.'],
-                      ['Elbow Strike (Sok)', 'A powerful close-range strike unique to Muay Thai. Elbows can be thrown horizontally, diagonally, vertically, or straight down and are often used when the opponent is in clinching range.'],
-                      ['Knee Strike (Khao)', 'A strike with the knee, often used in the clinch but can also be thrown from a distance. Knee strikes are a hallmark of Muay Thai and are very effective at close range.'],
-                      ['Roundhouse Kick (Tae Wiang)', 'The most common and powerful kick in Muay Thai, thrown with the shin. It can target the legs (low kick), body (mid kick), or head (high kick).'],
-                      ['Switch Kick', 'A variation of the roundhouse kick, where the fighter switches stance before delivering the kick.'],
-                      ['Teep (Push Kick)', 'A straight push kick used to maintain distance, disrupt rhythm, or knock an opponent off balance.'],
-                      ['Guard', 'The basic defensive stance, with hands high to protect the head.'],
-                      ['Clinch (Pam)', 'A grappling range where fighters hold onto each other; used for knees, elbows and sweeps.'],
-                      ['Block (Bang)', 'Using the shin, arms, or gloves to absorb or deflect an incoming strike.'],
-                      ['Parry', 'Using a hand to deflect a punch or kick to the side.'],
-                      ['Slip', 'Moving the head to the side to avoid a straight punch.'],
-                      ['Oley', 'A strategic, often evasive, defensive technique to establish an angle'],
-                      ['Roll (or "Shoulder Roll")', 'Ducking the head and using the shoulder to block a hook, allowing the punch to roll off the shoulder.'],
-                      ['Check', 'Lifting the shin to block an incoming roundhouse kick to the leg or body.']
-                    ].map(([term, desc]) => (
-                      <tr key={term}>
-                        <td style={{ padding: '0.5rem 0.75rem', verticalAlign: 'top', fontWeight: 700 }}>{term}</td>
-                        <td style={{ padding: '0.5rem 0.75rem' }}>{desc}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    );
+  };
+
+  return (
+    <React.Fragment>
+      {/* FIX: Move the modal to the top level to avoid JSX nesting issues and CSS conflicts. */}
+      <OnboardingModal open={showOnboardingMsg} onClose={() => setShowOnboardingMsg(false)} />
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
@@ -961,7 +1000,7 @@ export default function App() {
         @media (max-width: 768px) {
           .main-container { padding: 1rem !important; }
           .header-title { font-size: 1.75rem !important; }
-          .main-timer { fontSize: '5rem' !important; }
+          .main-timer { font-size: 5rem !important; }
           .difficulty-grid { grid-template-columns: 1fr !important; }
           .emphasis-grid { grid-template-columns: 1fr !important; }
         }
@@ -982,70 +1021,131 @@ export default function App() {
         </div>
 
         {/* Main content container */}
-        <main className="main-container" style={{ minHeight: '100vh', color: '#fdf2f8', fontFamily: 'system-ui, sans-serif', padding: '2rem' }}>
+        <main
+          className="main-container"
+          style={{
+            // FIX: Avoid forcing full viewport height while timer is active
+            minHeight: isActive ? 'auto' : '100vh',
+            color: '#fdf2f8',
+            fontFamily: 'system-ui, sans-serif',
+            padding: '2rem'
+          }}
+        >
           <div className="content-panel" style={{ maxWidth: '64rem', margin: '0 auto', padding: '2rem 0' }}>
-            {/* Top area: Start/Timer/Controls */}
-            <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
-              {(running || isPreRound) && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    // single, non-collapsing spacing between timer and controls
-                    rowGap: 'clamp(16px, 3.2vh, 28px)',
-                  }}
-                >
-                  <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
-                  <section
-                    style={{
-                      maxWidth: '32rem',
-                      margin: '0 auto',
-                      minHeight: '4rem',
-                    }}
-                  >
-                   <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                     <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
-                      {paused ? (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                      ) : (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                      )}
-                      <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{paused ? 'Resume' : 'Pause'}</span>
-                    </button>
-                    <button onClick={stopSession} style={controlButtonStyle('#ef4444', '#ec4899')}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
-                      <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>Stop</span>
-                    </button>
-                  </div>
-                </section>
-              </div>
+            {/* Render Workout Logs page */}
+            {page === 'logs' && (
+              <WorkoutLogs onBack={() => setPage('timer')} />
             )}
 
-            {/* START BUTTON MOVED FROM HERE */}
-          </div>
+            {/* Render timer/settings only when not on logs page */}
+            {page !== 'logs' && (
+              <>
+                {/* Top area: Start/Timer/Controls */}
+                <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
+                  {(running || isPreRound) && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        rowGap: 'clamp(16px, 3.2vh, 28px)',
+                      }}
+                    >
+                      <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
+                      <section
+                        style={{
+                          maxWidth: '32rem',
+                          margin: '0 auto',
+                          minHeight: '4rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                          <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
+                            {paused ? (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                            ) : (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                            )}
+                            <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{paused ? 'Resume' : 'Pause'}</span>
+                          </button>
+                          <button onClick={stopSession} style={controlButtonStyle('#ef4444', '#ec4899')}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                            <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>Stop</span>
+                          </button>
+                        </div>
+                      </section>
 
-          {/* Settings */}
-          <div style={{
-            transition: 'all 0.4s ease-in-out',
-            opacity: running || isPreRound ? 0 : 1,
-            transform: running || isPreRound ? 'translateY(2rem)' : 'translateY(0)',
-            pointerEvents: running || isPreRound ? 'none' : 'auto'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-              {/* Step 1: Emphasis selection */}
-              <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
-                  <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
-                  <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
-
+                      {/* NEW: Show selected emphasis icons during the session */}
+                      {emphasisList.some(e => selectedEmphases[e.key]) && (
+                        <section aria-label="Selected styles"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            marginTop: '0.25rem',
+                            padding: '0 0.75rem',
+                            width: '100%',
+                          }}
+                        >
+                          <div style={{ fontSize: '0.875rem', color: '#f9a8d4', fontWeight: 700 }}>
+                            Selected Styles
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              justifyContent: 'center',
+                              gap: '0.5rem',
+                              maxWidth: '56rem',
+                            }}
+                          >
+                            {emphasisList.filter(e => selectedEmphases[e.key]).map(e => (
+                              <div key={e.key}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  padding: '0.4rem 0.6rem',
+                                  borderRadius: '9999px',
+                                  background: 'rgba(0,0,0,0.25)',
+                                  border: '1px solid rgba(255,255,255,0.18)',
+                                  color: 'white',
+                                }}
+                                title={e.desc}
+                              >
+                                <ImageWithFallback
+                                  srcPath={e.iconPath}
+                                  alt={e.label}
+                                  emoji={e.emoji}
+                                  style={{ width: 20, height: 20, borderRadius: 6, objectFit: 'cover' }}
+                                />
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
-                  {emphasisList.map(style => {
-                    const isSelected = selectedEmphases[style.key];
-                    return (
-                      <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
+
+                {/* Settings */}
+                {!isActive && (
+                  <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                      {/* Step 1: Emphasis selection */}
+                      <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
+                          <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
+                          <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
+                        </div>
+                        <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
+                          {emphasisList.map(style => {
+                            const isSelected = selectedEmphases[style.key];
+                            return (
+                              <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
                     position: 'relative', padding: '1.5rem', borderRadius: '1rem',
                     border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
                     minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
@@ -1063,221 +1163,221 @@ export default function App() {
                             emoji={style.emoji}
                             style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
                           />
-                          <h3 style={{ fontSize: '1.125rem', fontWeight: '700', margin: 0 }}>{style.label}</h3>
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>{style.label}</h3>
                         </div>
                         {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
                       </div>
                       {/* REMOVED: "Select" / "Selected" text indicator */}
                     </div>
                   </button>
-                    );
-                  })}
+                            );
+                          })}
 
-                </div>
+                        </div>
 
-                {/* Manage Techniques shortcut placed directly under the style grid */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
-                  <button onClick={() => setPage('editor')} style={{ ...linkButtonStyle, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
-                    Manage Techniques
-                  </button>
-                </div>
-              </section>
+                        {/* Manage Techniques shortcut */}
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
+                          <button onClick={() => setPage('editor')} style={{ ...linkButtonStyle, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
+                            Manage Techniques
+                          </button>
+                        </div>
+                      </section>
 
-              {/* Calisthenics toggle MOVED HERE */}
-              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
-                  <span>Add Calisthenics</span>
-                  <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
-                    position: 'relative', width: '3.5rem', height: '1.75rem',
-                    backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-                    transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-                  }}>
-                    <div style={{
-                      position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
-                      width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-                      transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                    }} />
-                  </div>
-                </label>
-              </section>
+                      {/* Calisthenics toggle */}
+                      <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
+                          <span>Add Calisthenics</span>
+                          <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
+                            position: 'relative', width: '3.5rem', height: '1.75rem',
+                            backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+                            transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+                          }}>
+                            <div style={{
+                              position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
+                              width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+                              transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                            }} />
+                          </div>
+                        </label>
+                      </section>
 
-              {/* Step 2: Rounds/Length/Difficulty */}
-              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-                {/* Rounds */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Number of Rounds</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                    <button type="button" onClick={() => setRoundsCount(Math.max(1, roundsCount - 1))} style={chipButtonStyle}>−</button>
-                    <div style={{ minWidth: '4rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{roundsCount}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#f9a8d4', marginTop: '0.25rem' }}>rounds</div>
-                    </div>
-                    <button type="button" onClick={() => setRoundsCount(Math.min(20, roundsCount + 1))} style={chipButtonStyle}>+</button>
-                  </div>
-                </div>
+                      {/* Step 2: Rounds/Length/Rest */}
+                      <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                        {/* Rounds */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Number of Rounds</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                            <button type="button" onClick={() => setRoundsCount(Math.max(1, roundsCount - 1))} style={chipButtonStyle}>−</button>
+                            <div style={{ minWidth: '4rem', textAlign: 'center' }}>
+                              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{roundsCount}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#f9a8d4', marginTop: '0.25rem' }}>rounds</div>
+                            </div>
+                            <button type="button" onClick={() => setRoundsCount(Math.min(20, roundsCount + 1))} style={chipButtonStyle}>+</button>
+                          </div>
+                        </div>
 
-                {/* Round length */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Round Length</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]*[.,]?[0-9]*"
-                      className="round-length-input"
-                      value={roundMinInput}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(',', '.');
-                        // Allow only digits and a single dot
-                        if (/^\d*\.?\d*$/.test(raw)) {
-                          setRoundMinInput(raw);
-                        }
-                      }}
-                      onBlur={() => {
-                        // Commit on blur: clamp to [0.25, 30], snap to nearest 0.25
-                        let v = parseFloat(roundMinInput || '');
-                        if (Number.isNaN(v)) v = roundMin;
-                        v = Math.min(30, Math.max(0.25, v));
-                        const stepped = Math.round(v / 0.25) * 0.25;
-                        setRoundMin(stepped);
-                        setRoundMinInput(String(stepped));
-                      }}
-                    />
-                    <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
-                  </div>
-                </div>
+                        {/* Round length */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Round Length</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              pattern="[0-9]*[.,]?[0-9]*"
+                              className="round-length-input"
+                              value={roundMinInput}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(',', '.');
+                                // Allow only digits and a single dot
+                                if (/^\d*\.?\d*$/.test(raw)) {
+                                  setRoundMinInput(raw);
+                                }
+                              }}
+                              onBlur={() => {
+                                // Commit on blur: clamp to [0.25, 30], snap to nearest 0.25
+                                let v = parseFloat(roundMinInput || '');
+                                if (Number.isNaN(v)) v = roundMin;
+                                v = Math.min(30, Math.max(0.25, v));
+                                const stepped = Math.round(v / 0.25) * 0.25;
+                                setRoundMin(stepped);
+                                setRoundMinInput(String(stepped));
+                              }}
+                            />
+                            <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
+                          </div>
+                        </div>
 
-                {/* Rest Time */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Rest Time</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      pattern="[0-9]*[.,]?[0-9]*"
-                      className="round-length-input"
-                      value={restMinutesInput}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(',', '.');
-                        if (/^\d*\.?\d*$/.test(raw)) {
-                          setRestMinutesInput(raw);
-                        }
-                      }}
-                      onBlur={() => {
-                        let v = parseFloat(restMinutesInput || '');
-                        if (Number.isNaN(v)) v = restMinutes;
-                        v = Math.min(10, Math.max(0.25, v)); // Clamp between 15s and 10min
-                        const stepped = Math.round(v / 0.25) * 0.25;
-                        setRestMinutes(stepped);
-                        setRestMinutesInput(String(stepped));
-                      }}
-                    />
-                    <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
-                  </div>
-                </div>
-              </section>
+                        {/* Rest Time */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Rest Time</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              pattern="[0-9]*[.,]?[0-9]*"
+                              className="round-length-input"
+                              value={restMinutesInput}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(',', '.');
+                                if (/^\d*\.?\d*$/.test(raw)) {
+                                  setRestMinutesInput(raw);
+                                }
+                              }}
+                              onBlur={() => {
+                                let v = parseFloat(restMinutesInput || '');
+                                if (Number.isNaN(v)) v = restMinutes;
+                                v = Math.min(10, Math.max(0.25, v)); // Clamp between 15s and 10min
+                                const stepped = Math.round(v / 0.25) * 0.25;
+                                setRestMinutes(stepped);
+                                setRestMinutesInput(String(stepped));
+                              }}
+                            />
+                            <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
+                          </div>
+                        </div>
+                      </section>
 
-              {/* Difficulty - MOVED HERE */}
-              {hasSelectedEmphasis && (
-                <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
-                  <div className="difficulty-controls">
-                    <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
-                    <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
-                    <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
-                  </div>
-                </section>
-              )}
+                      {/* Difficulty */}
+                      {hasSelectedEmphasis && (
+                        <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
+                          <div className="difficulty-controls">
+                            <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
+                            <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
+                            <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
+                          </div>
+                        </section>
+                      )}
 
-              {/* Advanced Settings: Voice Speed and Selection */}
-              <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
-                <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
-                  {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
-                </button>
-                {showAdvanced && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
-                    {/* Voice Speed Slider */}
-                    <div style={{ width: '100%', maxWidth: '24rem' }}>
-                      <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
-                        Voice Speed: {voiceSpeed.toFixed(2)}x
-                      </label>
-                      <input
-                        id="voice-speed"
-                        type="range"
-                        min="0.5"
-                        max="2"
-                        step="0.05"
-                        value={voiceSpeed}
-                        onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
-                        style={{ width: '100%' }}
-                      />
-                    </div>
-                    {/* Voice Selection Dropdown */}
-                    <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', minWidth: 0 }}>
-                      <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
-                        <select
-                          value={voice?.name || ''}
-                          onChange={e => setVoice(voices.find(v => v.name === e.target.value) || null)}
-                          style={{
-                            background: 'rgba(0,0,0,0.3)',
-                            color: 'white',
-                            padding: '0.5rem',
-                            borderRadius: '0.375rem',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            width: '100%',
-                            maxWidth: '100%',
-                            minWidth: 0,                 // key: allow shrinking
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
-                        </select>
-                      </div>
-                      <button onClick={testVoice} style={{ ...linkButtonStyle, background: 'rgba(255,255,255,0.1)', borderRadius: '0.375rem' }}>Test Voice</button>
+                      {/* Advanced Settings: Voice Speed and Selection */}
+                      <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
+                        <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
+                          {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
+                        </button>
+                        {showAdvanced && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
+                            {/* Voice Speed Slider */}
+                            <div style={{ width: '100%', maxWidth: '24rem' }}>
+                              <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
+                                Voice Speed: {voiceSpeed.toFixed(2)}x
+                              </label>
+                              <input
+                                id="voice-speed"
+                                type="range"
+                                min="0.5"
+                                max="2"
+                                step="0.05"
+                                value={voiceSpeed}
+                                onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
+                                style={{ width: '100%' }}
+                              />
+                            </div>
+                            {/* Voice Selection Dropdown */}
+                            <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', minWidth: 0 }}>
+                              <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
+                                <select
+                                  value={voice?.name || ''}
+                                  onChange={e => setVoice(voices.find(v => v.name === e.target.value) || null)}
+                                  style={{
+                                    background: 'rgba(0,0,0,0.3)',
+                                    color: 'white',
+                                    padding: '0.5rem',
+                                    borderRadius: '0.375rem',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    width: '100%',
+                                    maxWidth: '100%',
+                                    minWidth: 0,                 // key: allow shrinking
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+                                </select>
+                              </div>
+                              <button onClick={testVoice} style={{ ...linkButtonStyle, background: 'rgba(255,255,255,0.1)', borderRadius: '0.375rem' }}>Test Voice</button>
+                            </div>
+                          </div>
+                        )}
+                      </section>
+
+                      {/* Conditionally render Difficulty and Start button together */}
+                      {!running && !isPreRound && hasSelectedEmphasis && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '1rem' }}>
+                          {/* Start Button */}
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            <button
+                              onClick={startSession}
+                              className="start-button"
+                              style={{
+                                all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
+                                fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
+                                background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center' // Ensure text is centered
+                              }}>
+                              Start Session
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
-              </section>
+              </>
+            )}
 
-              {/* Conditionally render Difficulty and Start button together */}
-              {!running && !isPreRound && hasSelectedEmphasis && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '1rem' }}>
-                  {/* Difficulty - REMOVED FROM HERE */}
-
-                  {/* Start Button */}
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <button
-                      onClick={startSession}
-                      className="start-button"
-                      style={{
-                        all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
-                        fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
-                        background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center' // Ensure text is centered
-                      }}>
-                      Start Session
-                    </button>
-                  </div>
+            {/* Footer stays visible on all pages */}
+            <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
+                <span>Train smart, fight smarter 🥊</span>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <button type="button" onClick={() => setPage('logs')} style={linkButtonStyle}>Workout Logs</button>
+                  <button type="button" onClick={() => setShowOnboardingMsg(true)} style={linkButtonStyle}>Help</button>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* REPLACED: single footer + single onboarding modal (removed duplicated/modal nesting) */}
-          <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem' }}>
-              <span>Train smart, fight smarter 🥊</span>
-              <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
-              {/* FIX: Restore footer links and remove invalid modal placement */}
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                <button onClick={() => setPage('logs')} style={linkButtonStyle}>Workout Logs</button>
-                <button onClick={() => setShowOnboardingMsg(true)} style={linkButtonStyle}>Help</button>
               </div>
-            </div>
-          </footer>
-        </div>
+            </footer>
+          </div>
         </main>
       </div>
     </React.Fragment>
