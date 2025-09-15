@@ -1519,7 +1519,20 @@ export default function App() {
           <img
             src="/assets/logo_icon.png"
             alt="Logo"
-            style={{ height: '32px', marginRight: '0.5rem', verticalAlign: 'middle', borderRadius: '8px', background: 'rgba(255,255,255,0.04)' }}
+            style={{ height: '32px', marginRight: '0.5rem', verticalAlign: 'middle', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', cursor: 'pointer' }}
+            onClick={() => {
+              setPage('timer');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            tabIndex={0}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setPage('timer');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            role="button"
+            aria-label="Go to home"
           />
           <span>Train smart, fight smarter</span>
           <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
