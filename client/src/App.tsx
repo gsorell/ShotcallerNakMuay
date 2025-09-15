@@ -1064,8 +1064,30 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
+        .start-button {
+          position: fixed;
+          left: 50%;
+          bottom: 2.5rem;
+          transform: translate(-50%, 0);
+          min-width: 260px;
+          font-size: 2rem;
+          font-weight: 900;
+          color: white;
+          background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
+          border-radius: 1.25rem;
+          border: none;
+          box-shadow: 0 15px 30px rgba(34,197,94,0.08), 0 8px 15px rgba(59,130,246,0.06);
+          padding: 1.25rem 2.5rem;
+          z-index: 1000;
+          cursor: pointer;
+          will-change: transform, box-shadow;
+          transition: 
+            box-shadow 0.18s cubic-bezier(.4,2,.3,1),
+            transform 0.18s cubic-bezier(.4,2,.3,1),
+            background 0.18s;
+        }
         .start-button:hover {
-          transform: translateY(-4px);
+          transform: translate(-50%, -4px); /* Only change Y value, keep X centered */
           box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
         }
         @media (max-width: 768px) {
@@ -1413,25 +1435,39 @@ export default function App() {
                               <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
                                 <select
                                   value={voice?.name || ''}
-                                  onChange={e => setVoice(voices.find(v => v.name === e.target.value) || null)}
+                                  onChange={e => {
+                                    const selected = voices.find(v => v.name === e.target.value) || null;
+                                    setVoice(selected);
+                                    // Test the selected voice immediately
+                                    if (selected) {
+                                      speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
+                                    }
+                                  }}
                                   style={{
-                                    background: 'rgba(0,0,0,0.3)',
+                                    appearance: 'none',
+                                    background: 'rgba(255,255,255,0.05)',
                                     color: 'white',
-                                    padding: '0.5rem',
-                                    borderRadius: '0.375rem',
+                                    padding: '0.75rem 1.25rem',
+                                    borderRadius: '0.5rem',
                                     border: '1px solid rgba(255,255,255,0.2)',
-                                    width: '100%',
-                                    maxWidth: '100%',
-                                    minWidth: 0,                 // key: allow shrinking
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    position: 'relative',
+                                    // Custom arrow icon
+                                    backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f9a8d4\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 0.75rem center',
+                                    backgroundSize: '1.5rem',
                                   }}
                                 >
-                                  {voices.map(v => <option key={v.name} value={v.name}>{v.name} ({v.lang})</option>)}
+                                  <option value="" disabled>Select a voice...</option>
+                                  {voices.map(v => (
+                                    <option key={v.name} value={v.name} style={{ padding: '0.5rem 0' }}>
+                                      {v.name} {v.default ? '(Default)' : ''}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
-                              <button onClick={testVoice} style={{ ...linkButtonStyle, background: 'rgba(255,255,255,0.1)', borderRadius: '0.375rem' }}>Test Voice</button>
                             </div>
                           </div>
                         )}
@@ -1439,23 +1475,21 @@ export default function App() {
 
                       {/* Conditionally render Difficulty and Start button together */}
                       {!running && !isPreRound && hasSelectedEmphasis && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingTop: '1rem' }}>
-                          {/* Start Button */}
-                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <button
-                              onClick={startSession}
-                              className="start-button"
-                              style={{
-                                all: 'unset', boxSizing: 'border-box', position: 'relative', padding: '2rem 4rem', borderRadius: '1.5rem',
-                                fontWeight: 'bold', fontSize: '2rem', cursor: 'pointer',
-                                background: 'linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)', color: 'white', minHeight: '6rem',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center' // Ensure text is centered
-                              }}>
-                              Start Session
-                            </button>
-                          </div>
-                        </div>
+                        <></> // REMOVE this button from inside the content
                       )}
+
+                      {/* Footer stays visible on all pages */}
+                      <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
+                          <span>Train smart, fight smarter</span>
+                          <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
+                            Workout Logs
+                          </button>
+                          <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
+                            Help
+                          </button>
+                        </div>
+                      </footer>
                     </div>
                   </div>
                 )}
@@ -1465,8 +1499,8 @@ export default function App() {
             {/* Footer stays visible on all pages */}
             <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
-                               <span>Train smart, fight smarter</span>
-                <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
+                <span>Train smart, fight smarter</span>
+                <button onClick={() => setPage('logs')} style={{ ... linkButtonStyle, padding: '0.25rem 0.5rem' }}>
                   Workout Logs
                 </button>
                 <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
@@ -1475,7 +1509,18 @@ export default function App() {
               </div>
             </footer>
         </main>
-      </div> {/* fixed background wrapper */}
-    </React.Fragment>
+
+      {/* FIX: Floating Start button at the bottom of the viewport */}
+      {!running && !isPreRound && hasSelectedEmphasis && (
+        <button
+          onClick={startSession}
+          className="start-button"
+        >
+          Start Session
+        </button>
+      )}
+    
+    </div> {/* fixed background wrapper */}
+  </React.Fragment>
   );
 }
