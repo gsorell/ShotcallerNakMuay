@@ -994,18 +994,18 @@ export default function App() {
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
+            <h3 style={{ margin: 0, fontSize: '1.125rem' }}>How to Use Nak Muay Shot Caller</h3>
             <button onClick={onClose} style={{ ...linkButtonStyle }}>Close</button>
           </div>
 
           <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-            Turn your shadowboxing and bagwork into a guided session with spoken techniques and timed rounds. Focus on reaction and flow — just like a real trainer
-            the app calls the strikes so you learn to respond automatically.
+            Turn your shadowboxing and bagwork into guided sessions with spoken techniques and timed rounds. The app calls out strikes just like a real trainer
+            while you focus on reaction and flow.
           </p>
           <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
             Pick 1 or more emphases, set a difficulty level, and get started!
           </p>
-          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>---</p>
+          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}></p>
           <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
             Want to customize your own workout? Modify existing sets or create your own by maintaining groups, techniques, and combinations in the Technique Editor.
           </p>
@@ -1017,7 +1017,7 @@ export default function App() {
               <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f9a8d4', fontSize: '0.9rem' }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', width: '28%', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Technique</th>
+                    <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Term</th>
                     <th style={{ textAlign: 'left', padding: '0.5rem 0.75rem', color: '#f3e8ff', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Description</th>
                   </tr>
                 </thead>
@@ -1487,8 +1487,8 @@ export default function App() {
                           position: 'fixed',
                           left: 0,
                           right: 0,
-                          // Lower the overlay so it starts just above the new button position
-                          top: `calc(82vh - 80px - 48px)`, // 82vh from top, minus button height and gap
+                          // Raise the overlay so it starts further above the button for more focus
+                          top: `calc(75vh - 80px - 48px)`, // was 82vh
                           bottom: 0,
                           zIndex: 998,
                           pointerEvents: 'none',
