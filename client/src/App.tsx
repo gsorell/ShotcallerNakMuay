@@ -1057,8 +1057,8 @@ export default function App() {
   const TechniqueEditorAny = TechniqueEditor as unknown as React.ComponentType<any>;
 
   return (
-    <React.Fragment>
-      {/* FIX: Move the modal to the top level to avoid JSX nesting issues and CSS conflicts. */}
+    <>
+      {/* Onboarding Modal */}
       <OnboardingModal open={showOnboardingMsg} onClose={() => setShowOnboardingMsg(false)} />
 
       <style>{`
@@ -1099,445 +1099,428 @@ export default function App() {
         }
       `}</style>
 
-      <Header onHelp={() => setShowOnboardingMsg(true)} />
+    <Header onHelp={() => setShowOnboardingMsg(true)} />
 
-      {/* Wrapper for background and content */}
-      <div style={{ position: 'relative', zIndex: 0 }}>
-        {/* Fixed Background Image */}
-        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
-          <picture>
-            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
-            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
-            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </picture>
-          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
-        </div>
+    {/* Wrapper for background and content */}
+    <div style={{ position: 'relative', zIndex: 0 }}>
+      {/* Fixed Background Image */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+        <picture>
+          <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
+          <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
+          <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </picture>
+        <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+      </div>
 
-        {/* Main content container */}
-        <main
-          className="main-container"
-          style={{
-            // FIX: Avoid forcing full viewport height while timer is active
-            minHeight: isActive ? 'auto' : '100vh',
-            color: '#fdf2f8',
-            fontFamily: 'system-ui, sans-serif',
-            padding: '2rem'
-          }}
-        >
-            {page === 'logs' ? (
-              <WorkoutLogs onBack={() => setPage('timer')} />
-            ) : page === 'editor' ? (
-              <TechniqueEditorAny
-                // Provide current data and a single persist entry point
-                techniques={techniques as any}
-                onSave={persistTechniques}
-                onBack={() => setPage('timer')}
-              />
-            ) : (
-               <>
-                 {/* Top area: Start/Timer/Controls */}
-                 <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
-                   {(running || isPreRound) && (
-                     <div
-                       style={{
-                         display: 'flex',
-                         flexDirection: 'column',
-                         alignItems: 'center',
-                         rowGap: 'clamp(16px, 3.2vh, 28px)',
-                       }}
-                     >
-                       <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
-
-                       {/* Live technique subtitle (during active rounds only) */}
-                       {running && !paused && !isResting && currentCallout && (
-                         <div
-                           aria-live="polite"
-                           style={{
-                             maxWidth: '46rem',
-                             textAlign: 'center',
-                             fontSize: '2rem',
-                             fontWeight: 800,
-                             letterSpacing: '0.5px',
-                             color: 'white',
-                             background: 'rgba(0,0,0,0.35)',
-                             border: '1px solid rgba(255,255,255,0.22)',
-                             borderRadius: '0.85rem',
-                             padding: '0.6rem 1rem',
-                             boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                           }}
-                         >
-                           {currentCallout}
-                         </div>
-                       )}
-
-                       <section
-                         style={{
-                           maxWidth: '32rem',
-                           margin: '0 auto',
-                           minHeight: '4rem',
-                         }}
-                       >
-                         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                           <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
-                             {paused ? (
-                               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                             ) : (
-                               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                             )}
-                             <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{paused ? 'Resume' : 'Pause'}</span>
-                           </button>
-                           <button onClick={stopSession} style={controlButtonStyle('#ef4444', '#ec4899')}>
-                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
-                             <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>Stop</span>
-                           </button>
-                         </div>
-                       </section>
-
-                       {/* NEW: Show selected emphasis icons during the session */}
-                       {emphasisList.some(e => selectedEmphases[e.key]) && (
-                         <section aria-label="Selected styles"
-                           style={{
-                             display: 'flex',
-                             flexDirection: 'column',
-                             alignItems: 'center',
-                             gap: '0.5rem',
-                             marginTop: '0.25rem',
-                             padding: '0 0.75rem',
-                             width: '100%',
-                           }}
-                         >
-                           <div style={{ fontSize: '0.875rem', color: '#f9a8d4', fontWeight: 700 }}>
-                             Selected Styles
-                           </div>
-                           <div
-                             style={{
-                               display: 'flex',
-                               flexWrap: 'wrap',
-                               justifyContent: 'center',
-                               gap: '0.5rem',
-                               maxWidth: '56rem',
-                             }}
-                           >
-                             {emphasisList.filter(e => selectedEmphases[e.key]).map(e => (
-                               <div key={e.key}
-                                 style={{
-                                   display: 'inline-flex',
-                                   alignItems: 'center',
-                                   gap: '0.5rem',
-                                   padding: '0.4rem 0.6rem',
-                                   borderRadius: '9999px',
-                                   background: 'rgba(0,0,0,0.25)',
-                                   border: '1px solid rgba(255,255,255,0.18)',
-                                   color: 'white',
-                                 }}
-                                 title={e.desc}
-                               >
-                                 <ImageWithFallback
-                                   srcPath={e.iconPath}
-                                   alt={e.label}
-                                   emoji={e.emoji}
-                                   style={{ width: 20, height: 20, borderRadius: 6, objectFit: 'cover' }}
-                                 />
-                                 <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.label}</span>
-                               </div>
-                             ))}
-                           </div>
-                         </section>
-                       )}
-                     </div>
-                   )}
-                 </div>
-
-                 {/* Settings */}
-                 {!isActive && (
-                   <div>
-                     <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-                       {/* Step 1: Emphasis selection */}
-                       <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                         <div style={{ textAlign: 'center' }}>
-                           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
-                           <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
-                           <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
-                         </div>
-                         <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
-                           {emphasisList.map(style => {
-                             const isSelected = selectedEmphases[style.key];
-                             return (
-                               <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
-                    position: 'relative', padding: '1.5rem', borderRadius: '1rem',
-                    border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
-                    minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
-                    backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
-                    boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
-                    transform: isSelected ? 'scale(1.02)' : 'scale(1)'
-                  }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                          {/* replaced img + emoji fallback with ImageWithFallback */}
-                          <ImageWithFallback
-                            srcPath={style.iconPath}
-                            alt={style.label}
-                            emoji={style.emoji}
-                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
-                          />
-                          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>{style.label}</h3>
-                        </div>
-                        {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
-                      </div>
-                      {/* REMOVED: "Select" / "Selected" text indicator */}
-                    </div>
-                  </button>
-                            );
-                          })}
-
-                        </div>
-
-                        {/* Manage Techniques shortcut */}
-                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
-                          <button onClick={() => setPage('editor')} style={{ ...linkButtonStyle, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
-                            Manage Techniques
-                          </button>
-                        </div>
-                      </section>
-
-                      {/* Calisthenics toggle */}
-                      <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
-                          <span>Add Calisthenics</span>
-                          <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
-                            position: 'relative', width: '3.5rem', height: '1.75rem',
-                            backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-                            transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-                          }}>
-                            <div style={{
-                              position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
-                              width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-                              transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                            }} />
-                          </div>
-                        </label>
-                      </section>
-
-                      {/* Step 2: Rounds/Length/Rest */}
-                      <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-                        {/* Rounds */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Number of Rounds</h3>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                            <button type="button" onClick={() => setRoundsCount(Math.max(1, roundsCount - 1))} style={chipButtonStyle}>−</button>
-                            <div style={{ minWidth: '4rem', textAlign: 'center' }}>
-                              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{roundsCount}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#f9a8d4', marginTop: '0.25rem' }}>rounds</div>
-                            </div>
-                            <button type="button" onClick={() => setRoundsCount(Math.min(20, roundsCount + 1))} style={chipButtonStyle}>+</button>
-                          </div>
-                        </div>
-
-                        {/* Round length */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Round Length</h3>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              pattern="[0-9]*[.,]?[0-9]*"
-                              className="round-length-input"
-                              value={roundMinInput}
-                              onChange={(e) => {
-                                const raw = e.target.value.replace(',', '.');
-                                // Allow only digits and a single dot
-                                if (/^\d*\.?\d*$/.test(raw)) {
-                                  setRoundMinInput(raw);
-                                }
-                              }}
-                              onBlur={() => {
-                                // Commit on blur: clamp to [0.25, 30], snap to nearest 0.25
-                                let v = parseFloat(roundMinInput || '');
-                                if (Number.isNaN(v)) v = roundMin;
-                                v = Math.min(30, Math.max(0.25, v));
-                                const stepped = Math.round(v / 0.25) * 0.25;
-                                setRoundMin(stepped);
-                                setRoundMinInput(String(stepped));
-                              }}
-                            />
-                            <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
-                          </div>
-                        </div>
-
-                        {/* Rest Time */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Rest Time</h3>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              pattern="[0-9]*[.,]?[0-9]*"
-                              className="round-length-input"
-                              value={restMinutesInput}
-                              onChange={(e) => {
-                                const raw = e.target.value.replace(',', '.');
-                                if (/^\d*\.?\d*$/.test(raw)) {
-                                  setRestMinutesInput(raw);
-                                }
-                              }}
-                              onBlur={() => {
-                                let v = parseFloat(restMinutesInput || '');
-                                if (Number.isNaN(v)) v = restMinutes;
-                                v = Math.min(10, Math.max(0.25, v)); // Clamp between 15s and 10min
-                                const stepped = Math.round(v / 0.25) * 0.25;
-                                setRestMinutes(stepped);
-                                setRestMinutesInput(String(stepped));
-                              }}
-                            />
-                            <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
-                          </div>
-                        </div>
-                      </section>
-
-                      {/* Difficulty */}
-                      {hasSelectedEmphasis && (
-                        <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
-                          <div className="difficulty-controls">
-                            <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
-                            <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
-                            <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* Advanced Settings: Voice Speed and Selection */}
-                      <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
-                        <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
-                          {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
-                        </button>
-                        {showAdvanced && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
-                            {/* Voice Speed Slider */}
-                            <div style={{ width: '100%', maxWidth: '24rem' }}>
-                              <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
-                                Voice Speed: {voiceSpeed.toFixed(2)}x
-                              </label>
-                              <input
-                                id="voice-speed"
-                                type="range"
-                                min="0.5"
-                                max="2"
-                                step="0.05"
-                                value={voiceSpeed}
-                                onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
-                                style={{ width: '100%' }}
-                              />
-                            </div>
-                            {/* Voice Selection Dropdown */}
-                            <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', minWidth: 0 }}>
-                              <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
-                                <select
-                                  value={voice?.name || ''}
-                                  onChange={e => {
-                                    const selected = voices.find(v => v.name === e.target.value) || null;
-                                    setVoice(selected);
-                                    // Test the selected voice immediately
-                                    if (selected) {
-                                      speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
-                                    }
-                                  }}
-                                  style={{
-                                    appearance: 'none',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    color: 'white',
-                                    padding: '0.75rem 1.25rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid rgba(255,255,255,0.2)',
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    position: 'relative',
-                                    // Custom arrow icon
-                                    backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f9a8d4\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5rem',
-                                  }}
-                                >
-                                  <option value="" disabled>Select a voice...</option>
-                                  {voices.map(v => (
-                                    <option key={v.name} value={v.name} style={{ padding: '0.5rem 0' }}>
-                                      {v.name} {v.default ? '(Default)' : ''}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </section>
-
-                      {/* Conditionally render Difficulty and Start button together */}
-                      {!running && !isPreRound && hasSelectedEmphasis && (
-                        <></> // REMOVE this button from inside the content
-                      )}
-
-                      {/* Footer stays visible on all pages */}
-                      <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
-                          <span>Train smart, fight smarter</span>
-                          <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
-                            Workout Logs
-                          </button>
-                          <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
-                            Help
-                          </button>
-                        </div>
-                      </footer>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Footer stays visible on all pages */}
-            <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
-                <span>Train smart, fight smarter</span>
-                <button onClick={() => setPage('logs')} style={{ ... linkButtonStyle, padding: '0.25rem 0.5rem' }}>
-                  Workout Logs
-                </button>
-                <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
-                  Help
-                </button>
-              </div>
-            </footer>
-        </main>
-
-      {/* FIX: Floating Start button at the bottom of the viewport */}
-      {!running && !isPreRound && hasSelectedEmphasis && (
-        <>
-          {/* Shadow gradient backdrop */}
-          <div
-            style={{
-              position: 'fixed',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: '32vh',
-              pointerEvents: 'none',
-              zIndex: 999, // below the button
-              background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(40,10,60,0.45) 70%, rgba(40,10,60,0.85) 100%)',
-            }}
-            aria-hidden="true"
+      {/* Main content container */}
+      <main
+        className="main-container"
+        style={{
+          minHeight: isActive ? 'auto' : '100vh',
+          color: '#fdf2f8',
+          fontFamily: 'system-ui, sans-serif',
+          padding: '2rem'
+        }}
+      >
+        {page === 'logs' ? (
+          <WorkoutLogs onBack={() => setPage('timer')} />
+        ) : page === 'editor' ? (
+          <TechniqueEditorAny
+            techniques={techniques as any}
+            onSave={persistTechniques}
+            onBack={() => setPage('timer')}
           />
-          <button
-            onClick={startSession}
-            className="start-button"
-            style={{ zIndex: 1000, position: 'fixed', left: '50%', bottom: '2.5rem', transform: 'translate(-50%, 0)' }}
-          >
-            Start Session
+        ) : (
+          <>
+            {/* Top area: Start/Timer/Controls */}
+            <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
+              {(running || isPreRound) && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    rowGap: 'clamp(16px, 3.2vh, 28px)',
+                  }}
+                >
+                  <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
+
+                  {/* Live technique subtitle (during active rounds only) */}
+                  {running && !paused && !isResting && currentCallout && (
+                    <div
+                      aria-live="polite"
+                      style={{
+                        maxWidth: '46rem',
+                        textAlign: 'center',
+                        fontSize: '2rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.5px',
+                        color: 'white',
+                        background: 'rgba(0,0,0,0.35)',
+                        border: '1px solid rgba(255,255,255,0.22)',
+                        borderRadius: '0.85rem',
+                        padding: '0.6rem 1rem',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                      }}
+                    >
+                      {currentCallout}
+                    </div>
+                  )}
+
+                  <section
+                    style={{
+                      maxWidth: '32rem',
+                      margin: '0 auto',
+                      minHeight: '4rem',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                      <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
+                        {paused ? (
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        ) : (
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        )}
+                        <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{paused ? 'Resume' : 'Pause'}</span>
+                      </button>
+                      <button onClick={stopSession} style={controlButtonStyle('#ef4444', '#ec4899')}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                        <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>Stop</span>
+                      </button>
+                    </div>
+                  </section>
+
+                  {/* NEW: Show selected emphasis icons during the session */}
+                  {emphasisList.some(e => selectedEmphases[e.key]) && (
+                    <section aria-label="Selected styles"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        marginTop: '0.25rem',
+                        padding: '0 0.75rem',
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{ fontSize: '0.875rem', color: '#f9a8d4', fontWeight: 700 }}>
+                        Selected Styles
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          maxWidth: '56rem',
+                        }}
+                      >
+                        {emphasisList.filter(e => selectedEmphases[e.key]).map(e => (
+                          <div key={e.key}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '9999px',
+                              background: 'rgba(0,0,0,0.25)',
+                              border: '1px solid rgba(255,255,255,0.18)',
+                              color: 'white',
+                            }}
+                            title={e.desc}
+                          >
+                            <ImageWithFallback
+                              srcPath={e.iconPath}
+                              alt={e.label}
+                              emoji={e.emoji}
+                              style={{ width: 20, height: 20, borderRadius: 6, objectFit: 'cover' }}
+                            />
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Settings */}
+            {!isActive && (
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                  {/* Step 1: Emphasis selection */}
+                  <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
+                      <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
+                      <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
+                    </div>
+                    <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
+                      {emphasisList.map(style => {
+                        const isSelected = selectedEmphases[style.key];
+                        return (
+                          <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
+                            position: 'relative', padding: '1.5rem', borderRadius: '1rem',
+                            border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
+                            minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
+                            backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
+                            boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
+                            transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                                  {/* replaced img + emoji fallback with ImageWithFallback */}
+                                  <ImageWithFallback
+                                    srcPath={style.iconPath}
+                                    alt={style.label}
+                                    emoji={style.emoji}
+                                    style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
+                                  />
+                                  <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>{style.label}</h3>
+                                </div>
+                                {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
+                              </div>
+                              {/* REMOVED: "Select" / "Selected" text indicator */}
+                            </div>
+                          </button>
+                        );
+                      })}
+
+                    </div>
+
+                    {/* Manage Techniques shortcut */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
+                      <button onClick={() => setPage('editor')} style={{ ...linkButtonStyle, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
+                        Manage Techniques
+                      </button>
+                    </div>
+                  </section>
+
+                  {/* Calisthenics toggle */}
+                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
+                      <span>Add Calisthenics</span>
+                      <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
+                        position: 'relative', width: '3.5rem', height: '1.75rem',
+                        backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+                        transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+                      }}>
+                        <div style={{
+                          position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
+                          width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+                          transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    </label>
+                  </section>
+
+                  {/* Step 2: Rounds/Length/Rest */}
+                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                    {/* Rounds */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Number of Rounds</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                        <button type="button" onClick={() => setRoundsCount(Math.max(1, roundsCount - 1))} style={chipButtonStyle}>−</button>
+                        <div style={{ minWidth: '4rem', textAlign: 'center' }}>
+                          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{roundsCount}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#f9a8d4', marginTop: '0.25rem' }}>rounds</div>
+                        </div>
+                        <button type="button" onClick={() => setRoundsCount(Math.min(20, roundsCount + 1))} style={chipButtonStyle}>+</button>
+                      </div>
+                    </div>
+
+                    {/* Round length */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Round Length</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          className="round-length-input"
+                          value={roundMinInput}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(',', '.');
+                            // Allow only digits and a single dot
+                            if (/^\d*\.?\d*$/.test(raw)) {
+                              setRoundMinInput(raw);
+                            }
+                          }}
+                          onBlur={() => {
+                            // Commit on blur: clamp to [0.25, 30], snap to nearest 0.25
+                            let v = parseFloat(roundMinInput || '');
+                            if (Number.isNaN(v)) v = roundMin;
+                            v = Math.min(30, Math.max(0.25, v));
+                            const stepped = Math.round(v / 0.25) * 0.25;
+                            setRoundMin(stepped);
+                            setRoundMinInput(String(stepped));
+                          }}
+                        />
+                        <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
+                      </div>
+                    </div>
+
+                    {/* Rest Time */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Rest Time</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          className="round-length-input"
+                          value={restMinutesInput}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(',', '.');
+                            if (/^\d*\.?\d*$/.test(raw)) {
+                              setRestMinutesInput(raw);
+                            }
+                          }}
+                          onBlur={() => {
+                            let v = parseFloat(restMinutesInput || '');
+                            if (Number.isNaN(v)) v = restMinutes;
+                            v = Math.min(10, Math.max(0.25, v)); // Clamp between 15s and 10min
+                            const stepped = Math.round(v / 0.25) * 0.25;
+                            setRestMinutes(stepped);
+                            setRestMinutesInput(String(stepped));
+                          }}
+                        />
+                        <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Difficulty */}
+                  {hasSelectedEmphasis && (
+                    <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
+                      <div className="difficulty-controls">
+                        <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Easy</button>
+                        <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Medium</button>
+                        <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Hard</button>
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Advanced Settings: Voice Speed and Selection */}
+                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
+                    <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
+                      {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
+                    </button>
+                    {showAdvanced && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
+                        {/* Voice Speed Slider */}
+                        <div style={{ width: '100%', maxWidth: '24rem' }}>
+                          <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
+                            Voice Speed: {voiceSpeed.toFixed(2)}x
+                          </label>
+                          <input
+                            id="voice-speed"
+                            type="range"
+                            min="0.5"
+                            max="2"
+                            step="0.05"
+                            value={voiceSpeed}
+                            onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+                        {/* Voice Selection Dropdown */}
+                        <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', minWidth: 0 }}>
+                          <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
+                            <select
+                              value={voice?.name || ''}
+                              onChange={e => {
+                                const selected = voices.find(v => v.name === e.target.value) || null;
+                                setVoice(selected);
+                                // Test the selected voice immediately
+                                if (selected) {
+                                  speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
+                                }
+                              }}
+                              style={{
+                                appearance: 'none',
+                                background: 'rgba(255,255,255,0.05)',
+                                color: 'white',
+                                padding: '0.75rem 1.25rem',
+                                borderRadius: '0.5rem',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                // Custom arrow icon
+                                backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f9a8d4\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 0.75rem center',
+                                backgroundSize: '1.5rem',
+                              }}
+                            >
+                              <option value="" disabled>Select a voice...</option>
+                              {voices.map(v => (
+                                <option key={v.name} value={v.name} style={{ padding: '0.5rem 0' }}>
+                                  {v.name} {v.default ? '(Default)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Conditionally render Difficulty and Start button together */}
+                  {!running && !isPreRound && hasSelectedEmphasis && (
+                    <>
+                      {/* Smooth, single-color gradient overlay from just above the button to the bottom */}
+                      <div
+                        style={{
+                          position: 'fixed',
+                          left: 0,
+                          right: 0,
+                          top: `calc(100vh - 2.5rem - 80px - 48px)`, // 48px above button
+                          bottom: 0,
+                          zIndex: 998,
+                          pointerEvents: 'none',
+                          background: `
+                            linear-gradient(
+                              180deg,
+                              rgba(24,24,36,0) 0%,
+                              rgba(24,24,36,0.5) 100%
+                            )
+                          `,
+                          opacity: 1,
+                          transition: 'opacity 0.3s',
+                        }}
+                        aria-hidden="true"
+                      />
+                      <button className="start-button" onClick={startSession}>
+                        Start Training
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Footer stays visible on all pages */}
+      <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
+          <span>Train smart, fight smarter</span>
+          <button onClick={() => setPage('logs')} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
+            Workout Logs
           </button>
-        </>
-      )}
-    
+          <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
+            Help
+          </button>
+        </div>
+      </footer>
     </div> {/* fixed background wrapper */}
-  </React.Fragment>
+    </>
   );
 }
