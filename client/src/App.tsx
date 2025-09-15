@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+// import PageLayout from './PageLayout'; // (unused)
 import { displayInAppBrowserWarning } from './utils/inAppBrowserDetector';
 import INITIAL_TECHNIQUES from './techniques';
 import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
-import PageLayout from './PageLayout'; // Import the new layout component
 import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
@@ -900,29 +901,48 @@ export default function App() {
 
   // New: Extracted onboarding modal to avoid JSX bracket/paren issues
   const OnboardingModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+    const escHandler = React.useCallback((e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    }, [onClose]);
+
+    React.useEffect(() => {
+      if (!open) return;
+      window.addEventListener('keydown', escHandler);
+      return () => window.removeEventListener('keydown', escHandler);
+    }, [open, escHandler]);
+
     if (!open) return null;
-    return (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        zIndex: 60,
-        padding: '1rem',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch'
-      }}>
-        <div style={{
-          maxWidth: '40rem',
-          width: 'calc(100% - 2rem)',
-          padding: '1.25rem 1.5rem',
-          borderRadius: '0.75rem',
-          background: '#0f172a',
-          color: 'white',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-        }}>
+
+    const modal = (
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={onClose} // click backdrop to close
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          zIndex: 10000, // above any running overlays
+          padding: '1rem',
+          overflowY: 'auto',
+          pointerEvents: 'auto'
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()} // prevent backdrop close when clicking content
+          style={{
+            maxWidth: '40rem',
+            width: 'calc(100% - 2rem)',
+            padding: '1.25rem 1.5rem',
+            borderRadius: '0.75rem',
+            background: '#0f172a',
+            color: 'white',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Training Philosophy</h3>
             <button onClick={onClose} style={{ ...linkButtonStyle }}>Close</button>
@@ -983,6 +1003,10 @@ export default function App() {
         </div>
       </div>
     );
+
+    const target = typeof document !== 'undefined' ? document.body : null;
+    if (!target) return null;
+    return createPortal(modal, target);
   };
 
   return (
