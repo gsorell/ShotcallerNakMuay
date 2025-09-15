@@ -1,7 +1,11 @@
 import './Header.css';
 import React, { useState, useEffect } from 'react';
 
-const Header = () => {
+type HeaderProps = {
+  onHelp?: () => void;
+};
+
+const Header: React.FC<HeaderProps> = ({ onHelp }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   useEffect(() => {
@@ -30,10 +34,17 @@ const Header = () => {
     overflowY: 'auto',
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (onHelp) {
+      e.preventDefault();
+      onHelp();
+    }
+  };
+
   return (
     <>
       <header className="app-header">
-        <div className="logo" onClick={() => setIsHelpOpen(true)} style={logoContainerStyle}>
+        <div className="logo" onClick={handleLogoClick} style={logoContainerStyle}>
           {/* Replaced two images with single combined banner */}
           <img src="/assets/Logo_Header_Banner_Smooth.png" alt="Shotcaller Nak Muay Header Banner" />
         </div>

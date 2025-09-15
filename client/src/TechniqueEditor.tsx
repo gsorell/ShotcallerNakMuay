@@ -77,15 +77,17 @@ const deleteButtonStyle: React.CSSProperties = {
   flexShrink: 0,
 };
 
+type TechniqueEditorProps = {
+  techniques: Record<string, TechniqueShape>;
+  setTechniques: (t: Record<string, TechniqueShape>) => void;
+  onBack?: () => void;
+};
+
 export default function TechniqueEditor({
   techniques,
   setTechniques,
   onBack
-}: {
-  techniques: Record<string, TechniqueShape>;
-  setTechniques: (t: Record<string, TechniqueShape>) => void;
-  onBack: () => void;
-}) {
+}: TechniqueEditorProps) {
   // start with normalized techniques so missing titles/labels are filled
   const [local, setLocal] = useState<Record<string, TechniqueShape>>(() => normalizeTechniques(techniques));
   const [newGroupName, setNewGroupName] = useState('');
@@ -166,8 +168,39 @@ export default function TechniqueEditor({
     persist(INITIAL_TECHNIQUES as any);
   }
 
+  // Optional: allow Escape to return to main page
+  React.useEffect(() => {
+    if (!onBack) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onBack();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onBack]);
+
+  const backBtnStyle: React.CSSProperties = {
+    all: 'unset',
+    cursor: 'pointer',
+    color: '#f9a8d4',
+    padding: '0.5rem 0.75rem',
+    borderRadius: 8,
+    border: '1px solid rgba(255,255,255,0.2)',
+    background: 'rgba(255,255,255,0.06)',
+    fontWeight: 700
+  };
+
   return (
-    <div className="editor-root" style={{ color: '#fdf2f8' }}>
+    <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem' }}>
+      {/* Top bar with Back button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+        <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
+        {onBack && (
+          <button type="button" onClick={onBack} style={backBtnStyle} title="Back to Training (Esc)">
+            ← Back to Training
+          </button>
+        )}
+      </div>
+
       {Object.entries(local).map(([key, group]) => {
         // prefer the explicit title when available, then label, then the group key
         const displayLabel = group.title ?? group.label ?? key;
