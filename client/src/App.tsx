@@ -24,7 +24,7 @@ import iconTwoPiece from '/assets/icon_two_piece.png';
 
 // Types and storage keys
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
-type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece';
+type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece' | 'southpaw';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs';
 
@@ -43,7 +43,13 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
   femur:  { label: 'Muay Femur',   icon: '🧠', desc: 'Technical timing and defensive counters', iconPath: '/assets/icon_femur.png' },
   sok:    { label: 'Muay Sok',     icon: '🔪', desc: 'Vicious elbows and close-range attacks', iconPath: '/assets/icon_sok.png' },
   boxing: { label: 'Boxing',       icon: '🥊', desc: 'Fundamental boxing combinations', iconPath: '/assets/icon_boxing.png' },
-  two_piece: { label: 'Two-Piece Combos', icon: '⚡️', desc: 'Short, powerful 2-strike combinations', iconPath: '/assets/icon_two_piece.png' }
+  two_piece: { label: 'Two-Piece Combos', icon: '⚡️', desc: 'Short, powerful 2-strike combinations', iconPath: '/assets/icon_two_piece.png' },
+  southpaw: {
+    label: 'Southpaw',
+    icon: '🦶',
+    desc: 'Left-handed stance with combos tailored for southpaw fighters',
+    iconPath: '/assets/icon_southpaw.png'
+  }
 };
 
 const DEFAULT_REST_MINUTES = 1;
@@ -103,7 +109,9 @@ export default function App() {
     });
 
     // Desired presentation order (from screenshot): newb, two_piece, boxing, mat, tae, khao, sok, femur
-    const desiredOrder: EmphasisKey[] = ['newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur'];
+    const desiredOrder: EmphasisKey[] = [
+      'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw'
+    ];
     const orderMap = new Map<string, number>(desiredOrder.map((k, i) => [k, i]));
 
     // Stable sort: known keys get their index, unknown keys go to the end in original order
@@ -141,7 +149,7 @@ export default function App() {
 
   // Selection and session settings
     const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-      khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
+      khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
     });
     const [addCalisthenics, setAddCalisthenics] = useState(false);
     const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -157,7 +165,7 @@ export default function App() {
           // If turning 'newb' on, turn all others off.
           // If turning 'newb' off, just turn it off.
           const allOff: Record<EmphasisKey, boolean> = {
-            khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false
+            khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
           };
           return { ...allOff, newb: isTurningOn };
         }
@@ -1134,7 +1142,7 @@ export default function App() {
         ) : page === 'editor' ? (
           <TechniqueEditorAny
             techniques={techniques as any}
-            onSave={persistTechniques}
+            setTechniques={persistTechniques}
             onBack={() => setPage('timer')}
           />
         ) : (
