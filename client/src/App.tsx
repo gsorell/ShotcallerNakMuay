@@ -1007,17 +1007,20 @@ export default function App() {
             <button onClick={onClose} style={{ ...linkButtonStyle }}>Close</button>
           </div>
 
+          {/* REPLACED: onboarding intro text */}
           <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-            Turn your shadowboxing and bagwork into guided sessions with spoken techniques and timed rounds. The app calls out strikes just like a real trainer
-            while you focus on reaction and flow.
+            Stop guessing and start training with a purpose. Our app turns your shadowboxing and bagwork into dynamic, guided sessions with spoken techniques and timed rounds. Think of it as having a personal trainer right in your ear, helping you focus on reaction time and flow.
           </p>
-          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-            Pick 1 or more emphases, set a difficulty level, and get started!
-          </p>
-          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}></p>
-          <p style={{ color: '#f9a8d4', margin: '0.25rem 0 0 0' }}>
-            Want to customize your own workout? Modify existing sets or create your own by maintaining groups, techniques, and combinations in the Technique Editor.
-          </p>
+          <div style={{ color: '#f9a8d4', margin: '0.5rem 0 0.5rem 0', fontWeight: 700 }}>Features:</div>
+          <ul style={{ color: '#f9a8d4', margin: '0 0 0.5rem 1.25rem', padding: 0 }}>
+            <li style={{ marginBottom: '0.25rem' }}>
+              <strong>Guided Sessions:</strong> Just pick one or more emphases and a difficulty level to get started.
+            </li>
+            <li>
+              <strong>Workout Customization:</strong> Want to create your own unique session? Use the Technique Editor to modify existing sets or build new ones from scratch.
+            </li>
+          </ul>
+          {/* END REPLACEMENT */}
 
           <div style={{ marginTop: '0.75rem' }}>
             <h4 style={{ margin: '0 0 0.5rem 0', color: '#f9a8d4' }}>Glossary</h4>
@@ -1076,203 +1079,201 @@ export default function App() {
       <OnboardingModal open={showOnboardingMsg} onClose={() => setShowOnboardingMsg(false)} />
 
       <style>{`
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-  body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
-  .start-button {
-    position: fixed;
-    left: 50%;
-    bottom: 18vh; /* Lowered from 33vh to 18vh */
-    transform: translate(-50%, 0);
-    min-width: 260px;
-    font-size: 2rem;
-    font-weight: 900;
-    color: white;
-    background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
-    border-radius: 1.25rem;
-    border: none;
-    box-shadow: 0 15px 30px rgba(34,197,94,0.08), 0 8px 15px rgba(59,130,246,0.06);
-    padding: 1.25rem 2.5rem;
-    z-index: 1000;
-    cursor: pointer;
-    will-change: transform, box-shadow;
-    transition: 
-      box-shadow 0.18s cubic-bezier(.4,2,.3,1),
-      transform 0.18s cubic-bezier(.4,2,.3,1),
-      background 0.18s;
-  }
-  .start-button:hover {
-    transform: translate(-50%, -4px); /* Only change Y value, keep X centered */
-    box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
-  }
-  @media (max-width: 768px) {
-    .main-container { padding: 1rem !important; }
-    .header-title { font-size: 1.75rem !important; }
-    .main-timer { font-size: 5rem !important; }
-    .difficulty-grid { grid-template-columns: 1fr !important; }
-    .emphasis-grid { grid-template-columns: 1fr !important; }
-    .start-button { bottom: 8vh !important; } /* Lowered from 18vh to 8vh on mobile */
-  }
-`}</style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
+        .start-button {
+          position: fixed;
+          left: 50%;
+          bottom: 18vh;
+          transform: translate(-50%, 0);
+          min-width: 260px;
+          font-size: 2rem;
+          font-weight: 900;
+          color: white;
+          background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
+          border-radius: 1.25rem;
+          border: none;
+          box-shadow: 0 15px 30px rgba(34,197,94,0.08), 0 8px 15px rgba(59,130,246,0.06);
+          padding: 1.25rem 2.5rem;
+          z-index: 1000;
+          cursor: pointer;
+          will-change: transform, box-shadow;
+          transition: 
+            box-shadow 0.18s cubic-bezier(.4,2,.3,1),
+            transform 0.18s cubic-bezier(.4,2,.3,1),
+            background 0.18s;
+        }
+        .start-button:hover {
+          transform: translate(-50%, -4px);
+          box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
+        }
+        @media (max-width: 768px) {
+          .main-container { padding: 1rem !important; }
+          .header-title { font-size: 1.75rem !important; }
+          .main-timer { font-size: 5rem !important; }
+          .difficulty-grid { grid-template-columns: 1fr !important; }
+          .emphasis-grid { grid-template-columns: 1fr !important; }
+          .start-button { bottom: 8vh !important; }
+        }
+      `}</style>
 
-    <Header onHelp={() => setShowOnboardingMsg(true)} />
+      <Header onHelp={() => setShowOnboardingMsg(true)} />
 
-    {/* Wrapper for background and content */}
-    <div style={{ position: 'relative', zIndex: 0 }}>
-      {/* Fixed Background Image */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
-        <picture>
-          <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
-          <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
-          <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </picture>
-        <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
-      </div>
+      <div style={{ position: 'relative', zIndex: 0 }}>
+        {/* Fixed Background Image */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+          <picture>
+            <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
+            <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
+            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </picture>
+          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+        </div>
 
-      {/* Main content container */}
-      <main
-        className="main-container"
-        style={{
-          minHeight: isActive ? 'auto' : '100vh',
-          color: '#fdf2f8',
-          fontFamily: 'system-ui, sans-serif',
-          padding: '2rem'
-        }}
-      >
-        {page === 'logs' ? (
-          <WorkoutLogs onBack={() => setPage('timer')} />
-        ) : page === 'editor' ? (
-          <TechniqueEditorAny
-            techniques={techniques as any}
-            setTechniques={persistTechniques}
-            onBack={() => setPage('timer')}
-          />
-        ) : (
-          <>
-            {/* Top area: Start/Timer/Controls */}
-            <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
-              {(running || isPreRound) && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    rowGap: 'clamp(16px, 3.2vh, 28px)',
-                  }}
-                >
-                  <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
-
-                  {/* Live technique subtitle (during active rounds only) */}
-                  {running && !paused && !isResting && currentCallout && (
-                    <div
-                      aria-live="polite"
-                      style={{
-                        maxWidth: '46rem',
-                        textAlign: 'center',
-                        fontSize: '2rem',
-                        fontWeight: 800,
-                        letterSpacing: '0.5px',
-                        color: 'white',
-                        background: 'rgba(0,0,0,0.35)',
-                        border: '1px solid rgba(255,255,255,0.22)',
-                        borderRadius: '0.85rem',
-                        padding: '0.6rem 1rem',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                      }}
-                    >
-                      {currentCallout}
-                    </div>
-                  )}
-
-                  <section
+        <main
+          className="main-container"
+          style={{
+            minHeight: isActive ? 'auto' : '100vh',
+            color: '#fdf2f8',
+            fontFamily: 'system-ui, sans-serif',
+            padding: '2rem'
+          }}
+        >
+          {page === 'logs' ? (
+            <WorkoutLogs onBack={() => setPage('timer')} />
+          ) : page === 'editor' ? (
+            <TechniqueEditorAny
+              techniques={techniques as any}
+              setTechniques={persistTechniques}
+              onBack={() => setPage('timer')}
+            />
+          ) : (
+            <>
+              {/* Top area: Start/Timer/Controls */}
+              <div style={{ minHeight: running || isPreRound ? '220px' : '0', transition: 'min-height 0.3s ease-in-out' }}>
+                {(running || isPreRound) && (
+                  <div
                     style={{
-                      maxWidth: '32rem',
-                      margin: '0 auto',
-                      minHeight: '4rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      rowGap: 'clamp(16px, 3.2vh, 28px)',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                      <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
-                        {paused ? (
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        ) : (
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                        )}
-                        <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{paused ? 'Resume' : 'Pause'}</span>
-                      </button>
-                      <button onClick={stopSession} style={controlButtonStyle('#ef4444', '#ec4899')}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
-                        <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>Stop</span>
-                      </button>
-                    </div>
-                  </section>
+                    <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
 
-                  {/* NEW: Show selected emphasis icons during the session */}
-                  {emphasisList.some(e => selectedEmphases[e.key]) && (
-                    <section aria-label="Selected styles"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        marginTop: '0.25rem',
-                        padding: '0 0.75rem',
-                        width: '100%',
-                      }}
-                    >
-                      <div style={{ fontSize: '0.875rem', color: '#f9a8d4', fontWeight: 700 }}>
-                        Selected Styles
-                      </div>
+                    {/* Live technique subtitle (during active rounds only) */}
+                    {running && !paused && !isResting && currentCallout && (
                       <div
+                        aria-live="polite"
                         style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          maxWidth: '56rem',
+                          maxWidth: '46rem',
+                          textAlign: 'center',
+                          fontSize: '2rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.5px',
+                          color: 'white',
+                          background: 'rgba(0,0,0,0.35)',
+                          border: '1px solid rgba(255,255,255,0.22)',
+                          borderRadius: '0.85rem',
+                          padding: '0.6rem 1rem',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
                         }}
                       >
-                        {emphasisList.filter(e => selectedEmphases[e.key]).map(e => (
-                          <div key={e.key}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                              padding: '0.4rem 0.6rem',
-                              borderRadius: '9999px',
-                              background: 'rgba(0,0,0,0.25)',
-                              border: '1px solid rgba(255,255,255,0.18)',
-                              color: 'white',
-                            }}
-                            title={e.desc}
-                          >
-                            <ImageWithFallback
-                              srcPath={e.iconPath}
-                              alt={e.label}
-                              emoji={e.emoji}
-                              style={{ width: 20, height: 20, borderRadius: 6, objectFit: 'cover' }}
-                            />
-                            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.label}</span>
-                          </div>
-                        ))}
+                        {currentCallout}
+                      </div>
+                    )}
+
+                    <section
+                      style={{
+                        maxWidth: '32rem',
+                        margin: '0 auto',
+                        minHeight: '4rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+                        <button onClick={pauseSession} style={controlButtonStyle('#f59e0b', '#f97316')}>
+                          {paused ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          ) : (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                          )}
+                          <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>{paused ? 'Resume' : 'Pause'}</span>
+                        </button>
+                        <button onClick={stopSession} style={controlButtonStyle('#ef4444', '#ec4899')}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                          <span style={{ fontSize: '0.875rem', lineHeight: 1 }}>Stop</span>
+                        </button>
                       </div>
                     </section>
-                  )}
-                </div>
-              )}
-            </div>
 
-            {/* Settings */}
-            {!isActive && (
-              <div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
-                  {/* Step 1: Emphasis selection */}
-                  <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
-                      <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
-                      <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
-                    </div>
-                    <div className="emphasis-grid"
+                    {/* NEW: Show selected emphasis icons during the session */}
+                    {emphasisList.some(e => selectedEmphases[e.key]) && (
+                      <section aria-label="Selected styles"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          marginTop: '0.25rem',
+                          padding: '0 0.75rem',
+                          width: '100%',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.875rem', color: '#f9a8d4', fontWeight: 700 }}>
+                          Selected Styles
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            maxWidth: '56rem',
+                          }}
+                        >
+                          {emphasisList.filter(e => selectedEmphases[e.key]).map(e => (
+                            <div key={e.key}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.4rem 0.6rem',
+                                borderRadius: '9999px',
+                                background: 'rgba(0,0,0,0.25)',
+                                border: '1px solid rgba(255,255,255,0.18)',
+                                color: 'white',
+                              }}
+                              title={e.desc}
+                            >
+                              <ImageWithFallback
+                                srcPath={e.iconPath}
+                                alt={e.label}
+                                emoji={e.emoji}
+                                style={{ width: 20, height: 20, borderRadius: 6, objectFit: 'cover' }}
+                              />
+                              <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Settings */}
+              {!isActive && (
+                <div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+                    {/* Step 1: Emphasis selection */}
+                    <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
+                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with guided programs that calls out strikes and combinations.</p>
+                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
+                      </div>
+                      <div className="emphasis-grid"
   style={{
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', // Responsive columns
@@ -1458,7 +1459,6 @@ export default function App() {
                               onChange={e => {
                                 const selected = voices.find(v => v.name === e.target.value) || null;
                                 setVoice(selected);
-                                // Test the selected voice immediately
                                 if (selected) {
                                   speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
                                 }
@@ -1473,8 +1473,7 @@ export default function App() {
                                 fontSize: '1rem',
                                 cursor: 'pointer',
                                 position: 'relative',
-                                // Custom arrow icon
-                                backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f9a8d4\'\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f9a8d4' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
                                 backgroundRepeat: 'no-repeat',
                                 backgroundPosition: 'right 0.75rem center',
                                 backgroundSize: '1.5rem',
@@ -1482,7 +1481,6 @@ export default function App() {
                             >
                               <option value="" disabled>Select a voice...</option>
                               {voices.map(v => (
-
                                 <option key={v.name} value={v.name} style={{ padding: '0.5rem 0' }}>
                                   {v.name} {v.default ? '(Default)' : ''}
                                 </option>
@@ -1562,7 +1560,7 @@ export default function App() {
           </button>
         </div>
       </footer>
-    </div> {/* fixed background wrapper */}
+    </div>
     </>
   );
 }
