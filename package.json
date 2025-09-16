@@ -1,6 +1,8 @@
 {
   "devDependencies": {
     "@types/node": "^24.3.1",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
     "gh-pages": "^6.3.0"
   },
   "scripts": {
@@ -12,6 +14,7 @@
     "deploy": "gh-pages -d client/dist -t true"
   },
   "dependencies": {
-    "nosleep.js": "^0.12.0"
+    "nosleep.js": "^0.12.0",
+    "react-select": "^5.10.2"
   }
 }
