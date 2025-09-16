@@ -1316,8 +1316,49 @@ export default function App() {
 
                     {/* Manage Techniques shortcut */}
                     <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
-                      <button onClick={() => setPage('editor')} style={{ ...linkButtonStyle, padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '0.5rem' }}>
-                        Manage Techniques
+                      <button
+                        onClick={() => setPage('editor')}
+                        style={{
+                          // Copy emphasis button background/border, but keep shape/size
+                          position: 'relative',
+                          padding: '1.5rem',
+                          borderRadius: '1rem',
+                          border: '2px solid rgba(255,255,255,0.2)',
+                          backgroundColor: 'rgba(255,255,255,0.05)',
+                          color: 'white',
+                          boxShadow: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          fontWeight: 400,
+                          fontSize: '1.05rem',
+                          transition: 'all 0.2s',
+                          cursor: 'pointer',
+                        }}
+                        className="manage-techniques-btn"
+                      >
+                        <img
+                          src="/assets/icon_edit.png"
+                          alt=""
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                            objectFit: 'cover',
+                            marginRight: 12,
+                            verticalAlign: 'middle',
+                            // filter: 'drop-shadow(0 0 4px #f9a8d4cc)', // <-- REMOVE this line to remove the backglow
+                            background: 'rgba(255,255,255,0.04)',
+                          }}
+                          aria-hidden="true"
+                        />
+                        <span style={{
+                          fontWeight: 400,
+                          letterSpacing: '0.01em',
+                          color: 'white',
+                        }}>
+                          Manage Techniques
+                        </span>
                       </button>
                     </div>
                   </section>
@@ -1560,7 +1601,7 @@ export default function App() {
           </button>
         </div>
       </footer>
-    </div>
+    </div> {/* <-- This closes the <div style={{ position: 'relative', zIndex: 0 }}> */}
     </>
   );
 }
