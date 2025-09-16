@@ -102,7 +102,8 @@ export default function App() {
       return {
         key: key as EmphasisKey,
         label: config.label || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        iconPath: config.iconPath,
+        // FIX: Use icon_user.png for custom/user styles
+        iconPath: config.iconPath || '/assets/icon_user.png',
         emoji: config.icon || '🎯',
         desc: config.desc || `Custom style: ${key}`
       };
@@ -1271,7 +1272,14 @@ export default function App() {
                       <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with a guided program that calls out strikes and combinations.</p>
                       <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
                     </div>
-                    <div className="emphasis-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', maxWidth: '60rem', margin: '0 auto' }}>
+                    <div className="emphasis-grid"
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', // Responsive columns
+    gap: '1rem',
+    maxWidth: '60rem',
+    margin: '0 auto'
+  }}>
                       {emphasisList.map(style => {
                         const isSelected = selectedEmphases[style.key];
                         return (
@@ -1466,7 +1474,7 @@ export default function App() {
                                 cursor: 'pointer',
                                 position: 'relative',
                                 // Custom arrow icon
-                                backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f9a8d4\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
+                                backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23f9a8d4\'\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")',
                                 backgroundRepeat: 'no-repeat',
                                 backgroundPosition: 'right 0.75rem center',
                                 backgroundSize: '1.5rem',
