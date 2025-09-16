@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shotcaller Nak Muay</string>
+    <string name="title_activity_main">Shotcaller Nak Muay</string>
+    <string name="package_name">com.shotcallernakmuay.app</string>
+    <string name="custom_url_scheme">com.shotcallernakmuay.app</string>
+</resources>
