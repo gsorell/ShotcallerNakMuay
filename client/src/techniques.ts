@@ -256,6 +256,32 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     ]
     // NOTE: added empty 'singles' to satisfy the required type; emphasis remains combos-focused
   },
+
+  southpaw: {
+    singles: [],
+    combos: [
+      "1, 2",
+      "1, 1, 2",
+      "1, 2, 3",
+      "1, 2, 3 to Body",
+      "Slip Outside, 2 to Body, 3 to Head",
+      "1, 2, Pivot Left, 2",
+      "1, 2, Lead Uppercut, 3",
+      "Feint 1, Step Outside, 2 to Head, 2 to Body",
+      "3, Overhand 2, 3",
+      "1, Slip, 2, 3, 2",
+      "1, 2, Left Body Kick",
+      "1, 2, 3, Right Low Kick",
+      "Lead Teep, 2, Left Round Kick",
+      "1, 2 to Body, Left High Kick",
+      "1, 2, 3, Left Low Kick",
+      "1, 2, Switch Kick, 2",
+      "Lead Teep, 2, Clinch, Right Knee, Left Elbow",
+      "Feint Left Kick, 1, 2, Left Kick",
+      "1, 2, 3, Left Elbow, Pivot Left",
+      "1, 1, 2, Left Body Kick, Clinch, Double Knees"
+    ]
+  },
 };
 
 export default INITIAL_TECHNIQUES;
