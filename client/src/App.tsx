@@ -1005,16 +1005,74 @@ export default function App() {
           </div>
 
           {/* REPLACED: onboarding intro text */}
-          <p style={{ color: '#f9a8d4', margin: '0.5rem 0' }}>
-            Stop guessing and start training with a purpose. Our app turns your shadowboxing and bagwork into dynamic, guided sessions with spoken techniques and timed rounds. Think of it as having a personal trainer right in your ear, helping you focus on reaction time and flow.
+          <p style={{
+            color: '#f9a8d4',
+            margin: '0.5rem 0 1.25rem 0',
+            fontSize: '1.05rem',
+            lineHeight: 1.7,
+            whiteSpace: 'pre-line'
+          }}>
+            <span style={{ display: 'block', marginBottom: '1.1em' }}>
+              <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>
+                Stop guessing and start training with a purpose.
+              </strong> Nak Muay Shotcaller turns your shadowboxing and bagwork into dynamic, guided sessions with spoken techniques and timed rounds. Think of it as having a personal trainer right in your ear, helping you focus on reaction time and flow.
+            </span>
+            <span style={{ display: 'block', marginBottom: '1.1em' }}>
+              <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>
+                This app assumes you already know the proper form for each strike.
+              </strong> It does not provide feedback, so if you are unfamiliar with any of the techniques, it is highly recommended that you first learn them from a qualified coach.
+            </span>
+            <span style={{ display: 'block', marginBottom: '1.1em' }}>
+              The on-screen text is there to help you get started and to double-check a technique if you miss a verbal cue. <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>However, the goal is to train without looking at the screen</strong>, so you can keep your hands up and focus on responding to the verbal commands.
+            </span>
+            <span style={{ display: 'block', marginBottom: '1.1em' }}>
+              This isn't a game to play on the subway; it's a powerful tool designed to help take you to the next level. So, <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>push play, put your phone down, and get started.</strong>
+            </span>
           </p>
-          <div style={{ color: '#f9a8d4', margin: '0.5rem 0 0.5rem 0', fontWeight: 700 }}>Features:</div>
-          <ul style={{ color: '#f9a8d4', margin: '0 0 0.5rem 1.25rem', padding: 0 }}>
-            <li style={{ marginBottom: '0.25rem' }}>
-              <strong>Guided Sessions:</strong> Just pick one or more emphases and a difficulty level to get started.
+          <div style={{
+            color: '#f9a8d4',
+            margin: '0.5rem 0 0.5rem 0',
+            fontWeight: 700,
+            fontSize: '1.08rem',
+            letterSpacing: '0.01em'
+          }}>
+            Features:
+          </div>
+          <ul style={{
+            color: '#f9a8d4',
+            margin: '0 0 0.5rem 1.25rem',
+            padding: 0,
+            listStyle: 'disc inside',
+            fontSize: '1rem'
+          }}>
+            <li style={{ marginBottom: '0.35rem', lineHeight: 1.5 }}>
+              <strong style={{ color: '#fdf2f8' }}>Guided Sessions:</strong> Just pick one or more emphases and a difficulty level to get started.
             </li>
-            <li>
-              <strong>Workout Customization:</strong> Want to create your own unique session? Use the Technique Editor to modify existing sets or build new ones from scratch.
+            <li style={{ lineHeight: 1.5 }}>
+              <strong style={{ color: '#fdf2f8' }}>Workout Customization:</strong> Want to create your own unique session?{' '}
+              <button
+                style={{
+                  all: 'unset',
+                  color: '#f9a8d4',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  padding: 0,
+                  margin: 0,
+                  background: 'none',
+                  fontSize: 'inherit',
+                  border: 'none'
+                }}
+                onClick={() => {
+                  onClose();
+                  setPage('editor');
+                }}
+                tabIndex={0}
+                aria-label="Open Technique Editor"
+              >
+                Use the Technique Editor
+              </button>
+              {' '}to modify existing sets or build new ones from scratch.
             </li>
           </ul>
           {/* END REPLACEMENT */}
