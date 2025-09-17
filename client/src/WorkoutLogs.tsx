@@ -82,7 +82,13 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {logs.slice().reverse().map(log => (
-            <div key={log.id} className="log-card log-card-flex">
+            <div key={log.id} className="log-card log-card-flex" style={{ position: 'relative' }}>
+              {/* Delete button at top right */}
+              <button
+                className="icon-btn log-delete-btn"
+                onClick={() => deleteEntry(log.id)}
+                aria-label="Delete log"
+              >✕</button>
               {/* Left: Date & Time */}
               <div className="log-card-left">
                 <div className="log-date">{new Date(log.timestamp).toLocaleString()}</div>
@@ -97,11 +103,10 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
                   <div className="log-meta">Shots Called Out: {log.shotsCalledOut}</div>
                 )}
               </div>
-              {/* Right: Rounds, Length, Delete */}
+              {/* Right: Rounds, Length */}
               <div className="log-card-right">
                 <div className="log-rounds">{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
                 <div className="log-meta">{log.roundLengthMin} min</div>
-                <button className="icon-btn" onClick={() => deleteEntry(log.id)} aria-label="Delete log">✕</button>
               </div>
             </div>
           ))}
