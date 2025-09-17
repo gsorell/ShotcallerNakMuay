@@ -216,22 +216,19 @@ export default function App() {
   useEffect(() => { voiceRef.current = voice; }, [voice]);
 
   // NEW: ensure voice speed always defaults to 1x on mount
-  useEffect(() => {
-    setVoiceSpeed(1);
-    voiceSpeedRef.current = 1;
-  }, []);
+  // useEffect(() => {
+  //   setVoiceSpeed(1);
+  //   voiceSpeedRef.current = 1;
+  // }, []);
 
-  // REMOVED: This effect is no longer needed as voice speed is now manually controlled.
-  /*
   useEffect(() => {
     if (difficulty === 'hard') {
-      setVoiceSpeed(prev => (prev < 1.3 ? 1.3 : prev));
+      setVoiceSpeed(1.3);
     } else {
       // default easy/medium to 1x
       setVoiceSpeed(1);
     }
   }, [difficulty]);
-  */
 
   // Timer state
   const [timeLeft, setTimeLeft] = useState(0);
@@ -415,8 +412,8 @@ export default function App() {
   const startTechniqueCallouts = useCallback((initialDelay = 1200) => {
     // Fixed cadence per difficulty (calls/min)
     const cadencePerMin =
-      difficulty === 'easy' ? 22 :
-      difficulty === 'hard' ? 35 : 26;
+      difficulty === 'easy' ? 26 :
+      difficulty === 'hard' ? 42 : 31;
     const baseDelayMs = Math.round(60000 / cadencePerMin);
     const minDelayMs = Math.round(baseDelayMs * 0.5);
 
