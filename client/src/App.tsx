@@ -1588,90 +1588,113 @@ export default function App() {
 
                   {/* Advanced Settings: Voice Speed and Selection */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
+                  </section>
                     <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
                       {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
                     </button>
                     {showAdvanced && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch', background: 'rgba(0,0,0,0.1)', padding: '1.5rem', borderRadius: '1rem', width: '100%' }}>
-                        {/* Voice Speed Slider */}
-                        <div style={{ width: '100%', maxWidth: '24rem' }}>
-                          <label htmlFor="voice-speed" style={{ display: 'block', color: 'white', fontWeight: 'bold', marginBottom: '0.5rem', textAlign: 'center' }}>
-                            Voice Speed: {voiceSpeed.toFixed(2)}x
-                          </label>
-                          <input
-                            id="voice-speed"
-                            type="range"
-                            min="0.5"
-                            max="2"
-                            step="0.05"
-                            value={voiceSpeed}
-                            onChange={e => setVoiceSpeed(parseFloat(e.target.value))}
-                            style={{ width: '100%' }}
-                          />
-                        </div>
-                        {/* Voice Selection Dropdown */}
-                        <div style={{ display: 'flex', alignItems: 'stretch', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%', minWidth: 0 }}>
-                          <div style={{ flex: '1 1 16rem', width: '100%', maxWidth: '24rem', minWidth: 0 }}>
-                            <select
-                              value={voice?.name || ''}
-                              onChange={e => {
-                                const selected = voices.find(v => v.name === e.target.value) || null;
-                                setVoice(selected);
-                                if (selected) {
-                                  speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
-                                }
-                              }}
-                              style={{
-                                appearance: 'none',
-                                background: '#eeeeeeff', // White background for closed select
-                                color: '#181825',   // Dark text for contrast
-                                padding: '0.75rem 1.25rem',
-                                borderRadius: '0.5rem',
-                                border: '1px solid #000000ff', // Light grey border
-                                fontSize: '1rem',
-                                cursor: 'pointer',
-                                position: 'relative',
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23181825' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5rem',
-                                outline: 'none',
-                                boxShadow: '0 0 0 2px #d1d5db33',
-                                transition: 'border-color 0.2s, box-shadow 0.2s',
-                              }}
-                            >
-                              <option value="" disabled>Select a voice...</option>
-                              {voices.map(v => (
-                                <option key={v.name} value={v.name}>
-                                  {v.name} {v.default ? '(Default)' : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
-                          <button
-                            type="button"
-                            onClick={testVoice}
-                            style={{
-                              ...linkButtonStyle,
-                              background: '#2563eb',
-                              color: 'white',
-                              fontWeight: 700,
-                              border: '1px solid #60a5fa',
-                              borderRadius: 8,
-                              padding: '0.75rem 1.5rem',
-                              fontSize: '1rem',
-                              cursor: 'pointer',
-                              margin: 0,
-                            }}
-                          >
-                            Test Voice
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </section>
+                      <div className="advanced-settings-panel">
+    <div className="voice-speed-settings">
+      {/* Voice Speed Slider */}
+      <div className="field" style={{ minWidth: 0, flex: 1 }}>
+        <label htmlFor="voice-speed" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
+          Voice Speed
+        </label>
+        <input
+          id="voice-speed"
+          type="range"
+          min={0.5}
+          max={2}
+          step={0.05}
+          value={voiceSpeed}
+          onChange={e => setVoiceSpeed(Number(e.target.value))}
+          style={{ width: '100%' }}
+        />
+        <div style={{ fontSize: '0.95rem', color: '#f9a8d4', marginTop: 2 }}>
+          {voiceSpeed.toFixed(2)}x
+        </div>
+      </div>
+
+      {/* Voice Selection Dropdown */}
+      <div className="field" style={{ minWidth: 0, flex: 2 }}>
+        <label htmlFor="voice-select" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
+          Voice
+        </label>
+        <select
+          id="voice-select"
+          value={voice?.name || ''}
+          onChange={e => {
+            const selected = voices.find(v => v.name === e.target.value) || null;
+            setVoice(selected);
+            if (selected) {
+              speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
+            }
+          }}
+          style={{
+            appearance: 'none',
+            background: '#eeeeeeff',
+            color: '#181825',
+            padding: '0.75rem 1.25rem',
+            borderRadius: '0.5rem',
+            border: '1px solid #000000ff',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            position: 'relative',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23181825' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 0.75rem center',
+            backgroundSize: '1.5rem',
+            outline: 'none',
+            boxShadow: '0 0 0 2px #d1d5db33',
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+            width: '100%',
+            minWidth: 0,
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <option value="" disabled>Select a voice...</option>
+          {voices.map(v => (
+            <option key={v.name} value={v.name}>
+              {v.name} {v.default ? '(Default)' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Test Voice Button */}
+      <div className="field" style={{ minWidth: 0, flex: '0 0 auto', display: 'flex', alignItems: 'flex-end', marginTop: 24 }}>
+        <button
+          type="button"
+          onClick={testVoice}
+          style={{
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.5rem',
+            padding: '0.7rem 1.2rem',
+            fontWeight: 700,
+            fontSize: '1rem',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(59,130,246,0.12)',
+            marginLeft: 0,
+            marginTop: 0,
+            minWidth: 0,
+          }}
+        >
+          Test Voice
+        </button>
+      </div>
+    </div>
+    <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
+      <span>
+        <strong>Tip:</strong> Choose a clear, natural voice and adjust the speed for your training pace.
+      </span>
+    </div>
+  </div>
+)}
                   {/* Conditionally render Difficulty and Start button together */}
                   {!running && !isPreRound && hasSelectedEmphasis && (
                     <>
