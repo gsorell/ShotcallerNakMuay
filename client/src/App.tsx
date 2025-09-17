@@ -1623,28 +1623,51 @@ export default function App() {
                               }}
                               style={{
                                 appearance: 'none',
-                                background: 'rgba(255,255,255,0.05)',
-                                color: 'white',
+                                background: '#fff', // White background for closed select
+                                color: '#181825',   // Dark text for contrast
                                 padding: '0.75rem 1.25rem',
                                 borderRadius: '0.5rem',
-                                border: '1px solid rgba(255,255,255,0.2)',
+                                border: '1px solid #d1d5db', // Light grey border
                                 fontSize: '1rem',
                                 cursor: 'pointer',
                                 position: 'relative',
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f9a8d4' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23181825' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
                                 backgroundRepeat: 'no-repeat',
                                 backgroundPosition: 'right 0.75rem center',
                                 backgroundSize: '1.5rem',
+                                outline: 'none',
+                                boxShadow: '0 0 0 2px #d1d5db33',
+                                transition: 'border-color 0.2s, box-shadow 0.2s',
                               }}
                             >
                               <option value="" disabled>Select a voice...</option>
                               {voices.map(v => (
-                                <option key={v.name} value={v.name} style={{ padding: '0.5rem 0' }}>
+                                <option key={v.name} value={v.name}>
                                   {v.name} {v.default ? '(Default)' : ''}
                                 </option>
                               ))}
                             </select>
                           </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }}>
+                          <button
+                            type="button"
+                            onClick={testVoice}
+                            style={{
+                              ...linkButtonStyle,
+                              background: '#2563eb',
+                              color: 'white',
+                              fontWeight: 700,
+                              border: '1px solid #60a5fa',
+                              borderRadius: 8,
+                              padding: '0.75rem 1.5rem',
+                              fontSize: '1rem',
+                              cursor: 'pointer',
+                              margin: 0,
+                            }}
+                          >
+                            Test Voice
+                          </button>
                         </div>
                       </div>
                     )}
