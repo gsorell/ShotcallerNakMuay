@@ -107,6 +107,8 @@
   background: rgba(0,0,0,0.2);
   border: 1px solid rgba(255,255,255,0.1);
   color: #fdf2f8;
+  /* Add extra right padding for delete button */
+  padding-right: 3.5rem;
 }
 .log-meta { font-size: 0.9rem; color: var(--muted-text); margin-top: 4px; }
 
@@ -165,4 +167,27 @@
     text-align: left !important;
     min-width: 0;
   }
+}
+
+.log-delete-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  background: rgba(249, 168, 212, 0.12);
+  color: #f9a8d4;
+  border: none;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.log-delete-btn:hover,
+.log-delete-btn:focus {
+  background: rgba(249, 168, 212, 0.25);
 }
