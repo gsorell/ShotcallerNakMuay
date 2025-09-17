@@ -7,6 +7,8 @@ type WorkoutEntry = {
   roundsPlanned: number;
   roundsCompleted: number;
   roundLengthMin: number;
+  difficulty?: string; // optional for backward compatibility
+  shotsCalledOut?: number; // optional for backward compatibility
   emphases: string[];
 };
 
@@ -27,6 +29,8 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
         roundsPlanned: Number.isFinite(Number(p?.roundsPlanned)) ? Number(p.roundsPlanned) : 0,
         roundsCompleted: Number.isFinite(Number(p?.roundsCompleted)) ? Number(p.roundsCompleted) : 0,
         roundLengthMin: Number.isFinite(Number(p?.roundLengthMin)) ? Number(p.roundLengthMin) : 0,
+        difficulty: typeof p?.difficulty === 'string' ? p.difficulty : undefined,
+        shotsCalledOut: Number.isFinite(Number(p?.shotsCalledOut)) ? Number(p.shotsCalledOut) : undefined,
         emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : []
       }));
       setLogs(normalized);
@@ -41,6 +45,12 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
 
   // remove clearLogs(); only individual deletes retained
   const deleteEntry = (id: string) => { if (!window.confirm('Delete this log entry?')) return; persist(logs.filter(l => l.id !== id)); };
+
+  const difficultyLabel = (diff?: string) =>
+    diff === 'easy' ? 'Amateur' :
+    diff === 'medium' ? 'Pro' :
+    diff === 'hard' ? 'Legend' :
+    undefined;
 
   return (
     <div className="editor-root">
@@ -89,6 +99,16 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontWeight: 700, color: 'white' }}>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
                   <div className="log-meta" style={{ color: '#d1d5db', fontSize: '0.875rem' }}>{log.roundLengthMin} min</div>
+                  {difficultyLabel(log.difficulty) && (
+                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.875rem' }}>
+                      Difficulty: {difficultyLabel(log.difficulty)}
+                    </div>
+                  )}
+                  {typeof log.shotsCalledOut === 'number' && (
+                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.875rem' }}>
+                      Shots Called Out: {log.shotsCalledOut}
+                    </div>
+                  )}
                   <div style={{ marginTop: 8 }}>
                     <button onClick={() => deleteEntry(log.id)} className="btn icon-btn" aria-label={`Delete log ${log.id}`} style={{
                       background: 'rgba(236, 72, 153, 0.2)',

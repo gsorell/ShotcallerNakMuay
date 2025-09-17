@@ -247,6 +247,7 @@ export default function App() {
   const calloutRef = useRef<number | null>(null);
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
+  const shotsCalledOutRef = useRef<number>(0); // Initialize shotsCalledOutRef
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
@@ -436,6 +437,9 @@ export default function App() {
       }
 
       const phrase = pickRandom(pool);
+
+      // Increment shotsCalledOut counter
+      shotsCalledOutRef.current += 1;
 
       // If Web Speech is available, sync UI to the actual utterance lifecycle
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -795,7 +799,8 @@ export default function App() {
       roundsPlanned: roundsCount,
       roundsCompleted,
       roundLengthMin: roundMin,
-      difficulty, // <-- include difficulty level in the saved log
+      difficulty, // already present
+      shotsCalledOut: shotsCalledOutRef.current, // <-- add this
       emphases: Object.entries(selectedEmphases)
         .filter(([, v]) => v)
         .map(([k]) => {
@@ -1587,7 +1592,6 @@ export default function App() {
                       </div>
                     )}
                   </section>
-
                   {/* Conditionally render Difficulty and Start button together */}
                   {!running && !isPreRound && hasSelectedEmphasis && (
                     <>
