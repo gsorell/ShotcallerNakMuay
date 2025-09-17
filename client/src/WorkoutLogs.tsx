@@ -91,24 +91,56 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
               padding: '1rem 1.5rem',
               color: '#fdf2f8'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                <div>
-                  <div id={`log-${log.id}`} style={{ fontWeight: 700, color: 'white' }}>{new Date(log.timestamp).toLocaleString()}</div>
-                  <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.875rem', marginTop: '0.25rem' }}>{log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}</div>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'stretch',
+                gap: '1rem'
+              }}>
+                {/* Left: Date & Time */}
+                <div style={{
+                  minWidth: 150,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start'
+                }}>
+                  <div id={`log-${log.id}`} style={{ fontWeight: 700, color: 'white', textAlign: 'left' }}>
+                    {new Date(log.timestamp).toLocaleString()}
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontWeight: 700, color: 'white' }}>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
-                  <div className="log-meta" style={{ color: '#d1d5db', fontSize: '0.875rem' }}>{log.roundLengthMin} min</div>
+                {/* Center: Emphases, Difficulty, Shots Called Out */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.95rem', marginTop: '0.1rem', textAlign: 'center' }}>
+                    {log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}
+                  </div>
                   {difficultyLabel(log.difficulty) && (
-                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.875rem' }}>
+                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.95rem', marginTop: '0.1rem', textAlign: 'center' }}>
                       Difficulty: {difficultyLabel(log.difficulty)}
                     </div>
                   )}
                   {typeof log.shotsCalledOut === 'number' && (
-                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.875rem' }}>
+                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.95rem', marginTop: '0.1rem', textAlign: 'center' }}>
                       Shots Called Out: {log.shotsCalledOut}
                     </div>
                   )}
+                </div>
+                {/* Right: Rounds, Length, Delete */}
+                <div style={{
+                  minWidth: 120,
+                  textAlign: 'right',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{ fontWeight: 700, color: 'white' }}>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
+                  <div className="log-meta" style={{ color: '#d1d5db', fontSize: '0.875rem' }}>{log.roundLengthMin} min</div>
                   <div style={{ marginTop: 8 }}>
                     <button onClick={() => deleteEntry(log.id)} className="btn icon-btn" aria-label={`Delete log ${log.id}`} style={{
                       background: 'rgba(236, 72, 153, 0.2)',
