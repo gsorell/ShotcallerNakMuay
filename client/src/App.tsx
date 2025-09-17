@@ -1167,6 +1167,48 @@ export default function App() {
     height: 100vh;
     overflow: hidden;
   }
+  /* Responsive grid for emphasis buttons */
+  .emphasis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    max-width: 60rem;
+    margin: 0 auto;
+    width: 100%;
+  }
+  @media (max-width: 900px) {
+    .emphasis-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+  }
+  @media (max-width: 600px) {
+    .emphasis-grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+  }
+  /* Make buttons and manage techniques full width on small screens */
+  .emphasis-grid > button,
+  .manage-techniques-btn {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    max-width: 100%;
+    word-break: break-word;
+  }
+  @media (max-width: 600px) {
+    .emphasis-grid > button,
+    .manage-techniques-btn {
+      padding: 1.1rem !important;
+      font-size: 1rem !important;
+    }
+  }
+  /* Prevent horizontal scroll on mobile */
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
 `}</style>
 
       <Header onHelp={() => setShowOnboardingMsg(true)} />
