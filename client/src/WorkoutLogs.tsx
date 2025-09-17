@@ -7,8 +7,8 @@ type WorkoutEntry = {
   roundsPlanned: number;
   roundsCompleted: number;
   roundLengthMin: number;
-  difficulty?: string; // optional for backward compatibility
-  shotsCalledOut?: number; // optional for backward compatibility
+  difficulty?: string;
+  shotsCalledOut?: number;
   emphases: string[];
 };
 
@@ -43,7 +43,6 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
     try { localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(next)); setLogs(next); } catch { /* ignore */ }
   };
 
-  // remove clearLogs(); only individual deletes retained
   const deleteEntry = (id: string) => { if (!window.confirm('Delete this log entry?')) return; persist(logs.filter(l => l.id !== id)); };
 
   const difficultyLabel = (diff?: string) =>
@@ -76,7 +75,6 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
         <div style={{ width: '4rem' }} />
       </div>
 
-      {/* The header and back button are now handled here */}
       {logs.length === 0 ? (
         <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
           <p style={{ margin: 0, textAlign: 'center', color: '#d1d5db' }}>No workouts logged yet. Sessions are logged automatically when they are stopped or completed.</p>
@@ -84,77 +82,26 @@ export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {logs.slice().reverse().map(log => (
-            <div key={log.id} className="log-card" role="article" aria-labelledby={`log-${log.id}`} style={{
-              background: 'rgba(0,0,0,0.2)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '0.75rem',
-              padding: '1rem 1.5rem',
-              color: '#fdf2f8'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'stretch',
-                gap: '1rem'
-              }}>
-                {/* Left: Date & Time */}
-                <div style={{
-                  minWidth: 150,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start'
-                }}>
-                  <div id={`log-${log.id}`} style={{ fontWeight: 700, color: 'white', textAlign: 'left' }}>
-                    {new Date(log.timestamp).toLocaleString()}
-                  </div>
-                </div>
-                {/* Center: Emphases, Difficulty, Shots Called Out */}
-                <div style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.95rem', marginTop: '0.1rem', textAlign: 'center' }}>
-                    {log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}
-                  </div>
-                  {difficultyLabel(log.difficulty) && (
-                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.95rem', marginTop: '0.1rem', textAlign: 'center' }}>
-                      Difficulty: {difficultyLabel(log.difficulty)}
-                    </div>
-                  )}
-                  {typeof log.shotsCalledOut === 'number' && (
-                    <div className="log-meta" style={{ color: '#f9a8d4', fontSize: '0.95rem', marginTop: '0.1rem', textAlign: 'center' }}>
-                      Shots Called Out: {log.shotsCalledOut}
-                    </div>
-                  )}
-                </div>
-                {/* Right: Rounds, Length, Delete */}
-                <div style={{
-                  minWidth: 120,
-                  textAlign: 'right',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  justifyContent: 'center'
-                }}>
-                  <div style={{ fontWeight: 700, color: 'white' }}>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
-                  <div className="log-meta" style={{ color: '#d1d5db', fontSize: '0.875rem' }}>{log.roundLengthMin} min</div>
-                  <div style={{ marginTop: 8 }}>
-                    <button onClick={() => deleteEntry(log.id)} className="btn icon-btn" aria-label={`Delete log ${log.id}`} style={{
-                      background: 'rgba(236, 72, 153, 0.2)',
-                      color: '#f9a8d4',
-                      border: '1px solid rgba(236, 72, 153, 0.4)',
-                      borderRadius: '0.5rem',
-                      width: '2rem',
-                      height: '2rem',
-                      display: 'grid',
-                      placeItems: 'center',
-                      cursor: 'pointer'
-                    }}>✕</button>
-                  </div>
-                </div>
+            <div key={log.id} className="log-card log-card-flex">
+              {/* Left: Date & Time */}
+              <div className="log-card-left">
+                <div className="log-date">{new Date(log.timestamp).toLocaleString()}</div>
+              </div>
+              {/* Center: Emphases, Difficulty, Shots Called Out */}
+              <div className="log-card-center">
+                <div className="log-meta">{log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}</div>
+                {difficultyLabel(log.difficulty) && (
+                  <div className="log-meta">Difficulty: {difficultyLabel(log.difficulty)}</div>
+                )}
+                {typeof log.shotsCalledOut === 'number' && (
+                  <div className="log-meta">Shots Called Out: {log.shotsCalledOut}</div>
+                )}
+              </div>
+              {/* Right: Rounds, Length, Delete */}
+              <div className="log-card-right">
+                <div className="log-rounds">{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
+                <div className="log-meta">{log.roundLengthMin} min</div>
+                <button className="icon-btn" onClick={() => deleteEntry(log.id)} aria-label="Delete log">✕</button>
               </div>
             </div>
           ))}
