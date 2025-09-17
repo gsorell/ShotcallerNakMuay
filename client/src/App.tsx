@@ -1623,11 +1623,11 @@ export default function App() {
                               }}
                               style={{
                                 appearance: 'none',
-                                background: '#fff', // White background for closed select
+                                background: '#eeeeeeff', // White background for closed select
                                 color: '#181825',   // Dark text for contrast
                                 padding: '0.75rem 1.25rem',
                                 borderRadius: '0.5rem',
-                                border: '1px solid #d1d5db', // Light grey border
+                                border: '1px solid #000000ff', // Light grey border
                                 fontSize: '1rem',
                                 cursor: 'pointer',
                                 position: 'relative',
