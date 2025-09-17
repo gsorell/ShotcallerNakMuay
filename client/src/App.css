@@ -382,3 +382,44 @@ html, body { overflow-x: hidden; }
   transform: translate(-50%, -8px); /* Only change Y value, keep X centered */
   box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3);
 }
+
+/* Responsive grid for emphasis buttons */
+.emphasis-grid > button {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* FIX: Only auto width for Manage Techniques button, never stretch on desktop */
+.manage-techniques-btn {
+  width: auto !important;
+  max-width: 32rem;
+  min-width: 0;
+  box-sizing: border-box;
+  word-break: break-word;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Remove parent flex stretch for the button container */
+.manage-techniques-btn-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* On mobile, allow full width for touch usability */
+@media (max-width: 600px) {
+  .manage-techniques-btn {
+    width: 100% !important;
+    padding: 1.1rem !important;
+    font-size: 1rem !important;
+    max-width: 100vw;
+  }
+  .manage-techniques-btn-container {
+    width: 100%;
+  }
+}
