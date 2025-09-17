@@ -5,6 +5,7 @@ import { displayInAppBrowserWarning } from './utils/inAppBrowserDetector';
 import INITIAL_TECHNIQUES from './techniques';
 import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
+import WorkoutCompleted from './WorkoutCompleted';
 import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
@@ -26,7 +27,7 @@ import iconTwoPiece from '/assets/icon_two_piece.png';
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
 type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece' | 'southpaw';
 type Difficulty = 'easy' | 'medium' | 'hard';
-type Page = 'timer' | 'editor' | 'logs';
+type Page = 'timer' | 'editor' | 'logs' | 'completed';
 
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
@@ -61,6 +62,7 @@ export default function App() {
 
   // Routing
   const [page, setPage] = useState<Page>('timer');
+  const [lastWorkout, setLastWorkout] = useState<any>(null);
 
   // Technique data (seed + persist + version)
   const [techniques, setTechniques] = useState<TechniquesShape>(() => {
@@ -647,9 +649,23 @@ export default function App() {
     if (currentRound >= roundsCount) {
       // Session finished naturally, log it and stop.
       try { autoLogWorkout(roundsCount); } catch {}
+      // NEW: Save stats and show completed page
+      setLastWorkout({
+        timestamp: new Date().toISOString(),
+        emphases: Object.entries(selectedEmphases).filter(([, v]) => v).map(([k]) => {
+          const found = emphasisList.find(e => e.key === (k as EmphasisKey));
+          return found ? found.label : k;
+        }),
+        difficulty,
+        shotsCalledOut: shotsCalledOutRef.current,
+        roundsCompleted: roundsCount,
+        roundsPlanned: roundsCount,
+        roundLengthMin: roundMin,
+      });
       setRunning(false);
       setPaused(false);
       setIsResting(false);
+      setPage('completed'); // <-- show completed page
       return;
     }
     setIsResting(true);
@@ -1264,6 +1280,16 @@ export default function App() {
               techniques={techniques as any}
               setTechniques={persistTechniques}
               onBack={() => setPage('timer')}
+            />
+          ) : page === 'completed' && lastWorkout ? (
+            <WorkoutCompleted
+              stats={lastWorkout}
+              onRestart={() => {
+                setPage('timer');
+                setTimeout(() => startSession(), 0);
+              }}
+              onReset={() => setPage('timer')}
+              onViewLog={() => setPage('logs')}
             />
           ) : (
             <>
