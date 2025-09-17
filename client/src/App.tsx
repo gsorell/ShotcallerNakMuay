@@ -1139,55 +1139,47 @@ export default function App() {
       <OnboardingModal open={showOnboardingMsg} onClose={() => setShowOnboardingMsg(false)} />
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
-        .start-button {
-          position: fixed;
-          left: 50%;
-          bottom: 18vh;
-          transform: translate(-50%, 0);
-          min-width: 260px;
-          font-size: 2rem;
-          font-weight: 900;
-          color: white;
-          background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
-          border-radius: 1.25rem;
-          border: none;
-          box-shadow: 0 15px 30px rgba(34,197,94,0.08), 0 8px 15px rgba(59,130,246,0.06);
-          padding: 1.25rem 2.5rem;
-          z-index: 1000;
-          cursor: pointer;
-          will-change: transform, box-shadow;
-          transition: 
-            box-shadow 0.18s cubic-bezier(.4,2,.3,1),
-            transform 0.18s cubic-bezier(.4,2,.3,1),
-            background 0.18s;
-        }
-        .start-button:hover {
-          transform: translate(-50%, -4px);
-          box-shadow: 0 15px 30px rgba(34,197,94,0.4), 0 8px 15px rgba(59,130,246,0.3) !important;
-        }
-        @media (max-width: 768px) {
-          .main-container { padding: 1rem !important; }
-          .header-title { font-size: 1.75rem !important; }
-          .main-timer { font-size: 5rem !important; }
-          .difficulty-grid { grid-template-columns: 1fr !important; }
-          .emphasis-grid { grid-template-columns: 1fr !important; }
-          .start-button { bottom: 8vh !important; }
-        }
-      `}</style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+  body { background: linear-gradient(135deg, #831843 0%, #581c87 50%, #155e75 100%); background-attachment: fixed; }
+  .main-timer {
+    font-size: 8vw;
+    font-weight: 900;
+    color: white;
+    letter-spacing: 0.05em;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    font-family: "system-ui, -apple-system, 'Segoe UI', sans-serif";
+    text-align: center;
+    width: 100%;
+    margin: 0 auto;
+    line-height: 1.1;
+  }
+  @media (max-width: 768px) {
+    .main-timer { font-size: 12vw !important; }
+  }
+  @media (max-width: 480px) {
+    .main-timer { font-size: 16vw !important; }
+  }
+  .hero-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+`}</style>
 
       <Header onHelp={() => setShowOnboardingMsg(true)} />
 
       <div style={{ position: 'relative', zIndex: 0 }}>
         {/* Fixed Background Image */}
-        <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+        <div className="hero-bg">
           <picture>
             <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
             <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
-            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100vw', height: '100vh', objectFit: 'cover' }} />
           </picture>
-          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100vw', height: '100vh', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
         </div>
 
         <main
