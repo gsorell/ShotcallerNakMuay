@@ -1219,9 +1219,33 @@ export default function App() {
           <picture>
             <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
             <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
-            <img src="/assets/hero_mobile.png" alt="" style={{ width: '100vw', height: '100vh', objectFit: 'cover' }} />
+            <img
+              src="/assets/hero_mobile.png"
+              alt=""
+              style={{
+                width: '100vw',
+                height: '100vh',
+                minHeight: '100dvh', // Ensures full viewport coverage on iPad/iOS
+                objectFit: 'cover'
+              }}
+            />
           </picture>
-          <img src="/assets/texture_overlay.png" alt="" aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100vw', height: '100vh', objectFit: 'cover', mixBlendMode: 'overlay', opacity: 0.12, pointerEvents: 'none' }} />
+          <img
+            src="/assets/texture_overlay.png"
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100vw',
+              height: '100vh',
+              minHeight: '100dvh', // Ensures overlay matches background height
+              objectFit: 'cover',
+              mixBlendMode: 'overlay',
+              opacity: 0.12,
+              pointerEvents: 'none'
+            }}
+          />
         </div>
 
         <main
@@ -1544,7 +1568,7 @@ export default function App() {
                             setRestMinutes(stepped);
                             setRestMinutesInput(String(stepped));
                           }}
- />
+                        />
                         <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
                       </div>
                     </div>
