@@ -1368,94 +1368,93 @@ export default function App() {
                         <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
                       </div>
                       <div className="emphasis-grid"
-  style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', // Responsive columns
-    gap: '1rem',
-    maxWidth: '60rem',
-    margin: '0 auto'
-  }}>
-                      {emphasisList.map(style => {
-                        const isSelected = selectedEmphases[style.key];
-                        return (
-                          <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
-                            position: 'relative', padding: '1.5rem', borderRadius: '1rem',
-                            border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
-                            minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
-                            backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
-                            boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
-                            transform: isSelected ? 'scale(1.02)' : 'scale(1)'
-                          }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                  {/* replaced img + emoji fallback with ImageWithFallback */}
-                                  <ImageWithFallback
-                                    srcPath={style.iconPath}
-                                    alt={style.label}
-                                    emoji={style.emoji}
-                                    style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
-                                  />
-                                  <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>{style.label}</h3>
-                                </div>
-                                {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
-                              </div>
-                              {/* REMOVED: "Select" / "Selected" text indicator */}
-                            </div>
-                          </button>
-                        );
-                      })}
+    style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+      gap: '1rem',
+      maxWidth: '60rem',
+      margin: '0 auto'
+    }}>
+    {emphasisList.map(style => {
+      const isSelected = selectedEmphases[style.key];
+      return (
+        <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
+          position: 'relative', padding: '1.5rem', borderRadius: '1rem',
+          border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
+          minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
+          backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
+          boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
+          transform: isSelected ? 'scale(1.02)' : 'scale(1)'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <ImageWithFallback
+                  srcPath={style.iconPath}
+                  alt={style.label}
+                  emoji={style.emoji}
+                  style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
+                />
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>{style.label}</h3>
+              </div>
+              {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
+            </div>
+          </div>
+        </button>
+      );
+    })}
+  </div>
 
-                    </div>
-
-                    {/* Manage Techniques shortcut */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
-                      <button
-                        onClick={() => setPage('editor')}
-                        style={{
-                          // Copy emphasis button background/border, but keep shape/size
-                          position: 'relative',
-                          padding: '1.5rem',
-                          borderRadius: '1rem',
-                          border: '2px solid rgba(255,255,255,0.2)',
-                          backgroundColor: 'rgba(255,255,255,0.05)',
-                          color: 'white',
-                          boxShadow: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          fontWeight: 400,
-                          fontSize: '1.05rem',
-                          transition: 'all 0.2s',
-                          cursor: 'pointer',
-                        }}
-                        className="manage-techniques-btn"
-                      >
-                        <img
-                          src="/assets/icon_edit.png"
-                          alt=""
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            objectFit: 'cover',
-                            marginRight: 12,
-                            verticalAlign: 'middle',
-                            // filter: 'drop-shadow(0 0 4px #f9a8d4cc)', // <-- REMOVE this line to remove the backglow
-                            background: 'rgba(255,255,255,0.04)',
-                          }}
-                          aria-hidden="true"
-                        />
-                        <span style={{
-                          fontWeight: 400,
-                          letterSpacing: '0.01em',
-                          color: 'white',
-                        }}>
-                          Manage Techniques
-                        </span>
-                      </button>
-                    </div>
-                  </section>
+  {/* Move Manage Techniques button OUTSIDE the .emphasis-grid */}
+  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
+    <button
+      onClick={() => setPage('editor')}
+      style={{
+        position: 'relative',
+        padding: '1.5rem',
+        borderRadius: '1rem',
+        border: '2px solid rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        color: 'white',
+        boxShadow: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        fontWeight: 400,
+        fontSize: '1.05rem',
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+        minWidth: 0,
+        // REMOVE width: '100%',
+        // REMOVE maxWidth if you want it to shrink to content
+        // maxWidth: '32rem',
+      }}
+      className="manage-techniques-btn"
+    >
+      <img
+        src="/assets/icon_edit.png"
+        alt=""
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          objectFit: 'cover',
+          marginRight: 12,
+          verticalAlign: 'middle',
+          background: 'rgba(255,255,255,0.04)',
+        }}
+        aria-hidden="true"
+      />
+      <span style={{
+        fontWeight: 400,
+        letterSpacing: '0.01em',
+        color: 'white',
+      }}>
+        Manage Techniques
+      </span>
+    </button>
+  </div>
+</section>
 
                   {/* Calisthenics toggle */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -1545,7 +1544,7 @@ export default function App() {
                             setRestMinutes(stepped);
                             setRestMinutesInput(String(stepped));
                           }}
-                        />
+ />
                         <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
                       </div>
                     </div>
