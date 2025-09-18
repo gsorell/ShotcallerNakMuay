@@ -37,7 +37,7 @@ const TECHNIQUES_VERSION = 'v12'; // Increment this version to force a reset on 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
 const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string; iconPath: string; } } = {
-  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start with one move at a time to learn the basics', iconPath: '/assets/icon_newb.png' },
+  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start here with one move at a time (can\'t be combined with other styles)', iconPath: '/assets/icon_newb.png' },
   khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations', iconPath: '/assets/icon_khao.png' },
   mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees', iconPath: '/assets/icon_mat.png' },
   tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks', iconPath: '/assets/icon_tae.png' },
