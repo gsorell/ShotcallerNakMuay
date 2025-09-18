@@ -1449,7 +1449,7 @@ export default function App() {
                     <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                       <div style={{ textAlign: 'center' }}>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
-                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with guided programs that calls out strikes and combinations.</p>
+                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with guided programs that call out strikes and combinations.</p>
                         <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
                       </div>
                       <div className="emphasis-grid"
