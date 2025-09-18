@@ -1,11 +1,12 @@
 import './Header.css';
 import React, { useState, useEffect } from 'react';
 
-type HeaderProps = {
-  onHelp?: () => void;
-};
+export interface HeaderProps {
+  onHelp: () => void;
+  onLogoClick?: () => void; // Add onLogoClick as an optional property
+}
 
-const Header: React.FC<HeaderProps> = ({ onHelp }) => {
+const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   useEffect(() => {
@@ -20,6 +21,11 @@ const Header: React.FC<HeaderProps> = ({ onHelp }) => {
     borderRadius: '8px',
     display: 'flex',
     alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    minHeight: 0,
+    minWidth: 0,
+    overflow: 'hidden',
   };
 
   const modalOverlayStyle: React.CSSProperties = {
@@ -35,18 +41,28 @@ const Header: React.FC<HeaderProps> = ({ onHelp }) => {
   };
 
   const handleLogoClick = (e: React.MouseEvent) => {
-    if (onHelp) {
+    if (onLogoClick) {
       e.preventDefault();
-      onHelp();
+      onLogoClick();
     }
   };
 
   return (
     <>
-      <header className="app-header">
+      <header className="app-header" style={{ width: '100%', padding: 0, margin: 0 }}>
         <div className="logo" onClick={handleLogoClick} style={logoContainerStyle}>
-          {/* Replaced two images with single combined banner */}
-          <img src="/assets/Logo_Header_Banner_Smooth.png" alt="Shotcaller Nak Muay Header Banner" />
+          <img
+            src="/assets/Logo_Header_Banner_Smooth.png"
+            alt="Shotcaller Nak Muay"
+            style={{
+              cursor: onLogoClick ? 'pointer' : 'default',
+              width: '100%',
+              height: 'auto',
+              maxHeight: '120px',
+              objectFit: 'contain',
+              display: 'block',
+            }}
+          />
         </div>
       </header>
       {isHelpOpen && (
