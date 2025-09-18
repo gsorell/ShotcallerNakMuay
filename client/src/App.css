@@ -437,3 +437,20 @@ html, body { overflow-x: hidden; }
     padding: 1rem !important;
   }
 }
+
+/* Only show backglow on hover and active, not on focus */
+.emphasis-grid > button {
+  transition: box-shadow 0.2s;
+  box-shadow: none;
+}
+
+.emphasis-grid > button:hover,
+.emphasis-grid > button:active {
+  box-shadow: 0 0 0 4px #a21caf66, 0 2px 16px #a21caf44;
+  z-index: 2;
+}
+
+.emphasis-grid > button:focus {
+  box-shadow: none;
+  outline: none;
+}

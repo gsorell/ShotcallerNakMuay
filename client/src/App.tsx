@@ -1269,7 +1269,13 @@ export default function App() {
   }
 `}</style>
 
-      <Header onHelp={() => setShowOnboardingMsg(true)} />
+      <Header
+        onHelp={() => setShowOnboardingMsg(true)}
+        onLogoClick={() => {
+          setPage('timer');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
       <div style={{ position: 'relative', zIndex: 0 }}>
         {/* Fixed Background Image */}
@@ -1456,8 +1462,34 @@ export default function App() {
                     <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                       <div style={{ textAlign: 'center' }}>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
-                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Transform your solo training with guided programs that call out strikes and combinations.</p>
-                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>Select one or more styles to get started.</p>
+                        <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>
+                          Transform your solo training with guided programs that call out strikes and combinations.
+                          Select one or more styles to get started.
+                          <span style={{ marginLeft: 8 }}>
+                            See{' '}
+                            <button
+                              type="button"
+                              onClick={() => setShowOnboardingMsg(true)}
+                              style={{
+                                all: 'unset',
+                                color: '#60a5fa',
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontSize: 'inherit',
+                                border: 'none',
+                                background: 'none',
+                                padding: 0,
+                                margin: 0,
+                              }}
+                              tabIndex={0}
+                              aria-label="Open help"
+                            >
+                              help
+                            </button>
+                            .
+                          </span>
+                        </p>
                       </div>
                       <div className="emphasis-grid"
     style={{
@@ -1477,7 +1509,7 @@ export default function App() {
           backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
           boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
           transform: isSelected ? 'scale(1.02)' : 'scale(1)'
-        }}>
+        }} onMouseUp={e => e.currentTarget.blur()}>
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
