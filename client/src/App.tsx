@@ -1089,7 +1089,7 @@ export default function App() {
               The on-screen text is there to help you get started and to double-check a technique if you miss a verbal cue. <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>However, the goal is to train without looking at the screen</strong>, so you can keep your hands up and focus on responding to the verbal commands.
             </span>
             <span style={{ display: 'block', marginBottom: '1.1em' }}>
-              This isn't a game to play on the subway -- it's a powerful tool designed to help take you to the next level -- so <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>Let's Go!.</strong>
+              This isn't a game to play on the subway -- it's a powerful tool designed to help take you to the next level -- so <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>Let's Go!</strong>
             </span>
           </p>
           <div style={{
