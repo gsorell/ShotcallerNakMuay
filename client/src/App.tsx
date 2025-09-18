@@ -10,7 +10,6 @@ import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
 import Header from './components/Header';
-import { useLocation } from 'react-router-dom'; // if using react-router
 
 // REMOVE: The image imports are not needed for files in /public
 /*
@@ -55,15 +54,6 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
 };
 
 const DEFAULT_REST_MINUTES = 1;
-
-function usePageView() {
-  const location = useLocation();
-  useEffect(() => {
-    if (window.gtag) {
-      window.gtag('config', 'G-SGR3TYZW8V', { page_path: location.pathname });
-    }
-  }, [location]);
-}
 
 export default function App() {
   useEffect(() => {
