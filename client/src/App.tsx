@@ -812,6 +812,13 @@ export default function App() {
     setCurrentCallout(''); // clear subtitle on stop
   }
 
+  // Scroll to top when opening Technique Editor (especially for mobile)
+  useEffect(() => {
+    if (page === 'editor') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [page]);
+
   // Keep selectedEmphases in sync: if a selected emphasis no longer maps to any persisted technique, unselect it.
   useEffect(() => {
     setSelectedEmphases(prev => {
