@@ -17,6 +17,11 @@ const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 export default function WorkoutLogs({ onBack }: { onBack: () => void }) {
   const [logs, setLogs] = useState<WorkoutEntry[]>([]);
 
+  // Scroll to top when WorkoutLogs mounts (especially for mobile)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, []);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
