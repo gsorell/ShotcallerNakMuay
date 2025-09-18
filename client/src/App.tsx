@@ -299,11 +299,33 @@ export default function App() {
         for (const v of node) extractStrings(v, out);
         return;
       }
-      // FIX: Instead of iterating all object values, only look in expected keys.
-      // This prevents the group name itself from being added to the pool.
       if (typeof node === 'object') {
-        if (node.singles) extractStrings(node.singles, out);
-        if (node.combos) extractStrings(node.combos, out); // for calisthenics
+        // Handle singles/combos as array of {text, favorite}
+        if (node.singles) {
+          for (const single of node.singles) {
+            if (typeof single === 'string') {
+              out.push(single);
+            } else if (single && typeof single.text === 'string') {
+              out.push(single.text);
+              // If favorited, add again for ~35% higher chance
+              if (single.favorite) {
+                if (Math.random() < 0.35) out.push(single.text);
+              }
+            }
+          }
+        }
+        if (node.combos) {
+          for (const combo of node.combos) {
+            if (typeof combo === 'string') {
+              out.push(combo);
+            } else if (combo && typeof combo.text === 'string') {
+              out.push(combo.text);
+              if (combo.favorite) {
+                if (Math.random() < 0.35) out.push(combo.text);
+              }
+            }
+          }
+        }
         if (node.breakdown) extractStrings(node.breakdown, out); // for calisthenics
       }
     };
