@@ -10,8 +10,8 @@ type TechniqueDetail = {
 export interface TechniqueShape {
   label: string;
   title?: string;
-  singles?: string[];
-  combos?: string[];
+  singles?: (string | { text: string; favorite?: boolean })[];
+  combos?: (string | { text: string; favorite?: boolean })[];
   techniques?: Record<string, TechniqueDetail>;
 }
 
@@ -33,6 +33,24 @@ function normalizeTechniques(src: Record<string, TechniqueShape>) {
     out[key] = { ...g, label, title };
   });
   return out;
+}
+
+// Helper: normalize singles/combos to array of objects { text, favorite }
+function normalizeArray(arr: any[] | undefined): { text: string, favorite?: boolean }[] {
+  if (!arr) return [];
+  return arr.map(item =>
+    typeof item === 'string'
+      ? { text: item }
+      : { text: item.text ?? '', favorite: !!item.favorite }
+  );
+}
+
+// Helper: denormalize back to original format (for backward compatibility)
+function denormalizeArray(arr: { text: string, favorite?: boolean }[]): (string | { text: string, favorite?: boolean })[] {
+  // If none are favorited, save as string array for compactness
+  if (arr.every(item => !item.favorite)) return arr.map(item => item.text);
+  // Otherwise, save as objects
+  return arr;
 }
 
 // Reusable styles for the new theme
@@ -110,47 +128,67 @@ export default function TechniqueEditor({
 
   function updateSingle(groupKey: string, idx: number, value: string) {
     const next = { ...local };
-    const singles = [...(next[groupKey].singles || [])];
-    singles[idx] = value;
-    next[groupKey] = { ...next[groupKey], singles };
+    const singles = normalizeArray(next[groupKey].singles);
+    singles[idx].text = value;
+    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
+    persist(next);
+  }
+
+  function toggleSingleFavorite(groupKey: string, idx: number) {
+    const next = { ...local };
+    const singles = normalizeArray(next[groupKey].singles);
+    singles[idx].favorite = !singles[idx].favorite;
+    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function addSingle(groupKey: string) {
     const next = { ...local };
-    next[groupKey] = { ...next[groupKey], singles: [...(next[groupKey].singles || []), ''] };
+    const singles = normalizeArray(next[groupKey].singles);
+    singles.push({ text: '' });
+    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function removeSingle(groupKey: string, idx: number) {
     if (!window.confirm('Are you sure you want to delete this single?')) return;
     const next = { ...local };
-    const singles = [...(next[groupKey].singles || [])];
+    const singles = normalizeArray(next[groupKey].singles);
     singles.splice(idx, 1);
-    next[groupKey] = { ...next[groupKey], singles };
+    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function updateCombo(groupKey: string, idx: number, value: string) {
     const next = { ...local };
-    const combos = [...(next[groupKey].combos || [])];
-    combos[idx] = value;
-    next[groupKey] = { ...next[groupKey], combos };
+    const combos = normalizeArray(next[groupKey].combos);
+    combos[idx].text = value;
+    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
+    persist(next);
+  }
+
+  function toggleComboFavorite(groupKey: string, idx: number) {
+    const next = { ...local };
+    const combos = normalizeArray(next[groupKey].combos);
+    combos[idx].favorite = !combos[idx].favorite;
+    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
     persist(next);
   }
 
   function addCombo(groupKey: string) {
     const next = { ...local };
-    next[groupKey] = { ...next[groupKey], combos: [...(next[groupKey].combos || []), ''] };
+    const combos = normalizeArray(next[groupKey].combos);
+    combos.push({ text: '' });
+    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
     persist(next);
   }
 
   function removeCombo(groupKey: string, idx: number) {
     if (!window.confirm('Are you sure you want to delete this combo?')) return;
     const next = { ...local };
-    const combos = [...(next[groupKey].combos || [])];
+    const combos = normalizeArray(next[groupKey].combos);
     combos.splice(idx, 1);
-    next[groupKey] = { ...next[groupKey], combos };
+    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
     persist(next);
   }
 
@@ -191,6 +229,38 @@ export default function TechniqueEditor({
 
   return (
     <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem' }}>
+      {/* Info message at the top */}
+      <div
+        style={{
+          background: 'rgba(30, 27, 75, 0.85)',
+          border: '1.5px solid #a31caf86',
+          borderRadius: '1rem',
+          padding: '1.5rem 1.25rem',
+          marginBottom: '2.5rem',
+          color: '#fff',
+          fontSize: '1.12rem',
+          lineHeight: 1.7,
+          boxShadow: '0 4px 24px 0 rgba(168,85,247,0.10)',
+          textAlign: 'center' // Center the text for a cleaner look
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: '1.25rem', color: '#f9a8d4', marginBottom: '0.5em', letterSpacing: '0.5px' }}>
+          Technique Manager
+        </div>
+        <div style={{ marginBottom: '0.7em' }}>
+          Customize the techniques and combos used during your training sessions.
+        </div>
+        <div style={{ margin: '0.5em 0 0 0', padding: 0, color: '#fff', fontSize: '1.05rem', textAlign: 'center' }}>
+          Add, edit, rename, or remove techniques and combos for each emphasis group. You call the shots here.<br />
+          <span style={{ color: '#fde047', fontWeight: 700 }}>★</span>
+          <span style={{ color: '#fde047', fontWeight: 500 }}> Star</span>
+          <span style={{ color: '#fff' }}> your favorites to have them called out more often.<br /></span>
+          To restore to default, click the button at the bottom of the page.
+        </div>
+        <div style={{ marginTop: '0.8em', color: '#a5b4fc', fontSize: '1rem', fontStyle: 'italic' }}>
+          Tip: Use this page to tailor your training experience, reinforce key skills, or experiment with new combinations.
+        </div>
+      </div>
       {/* Top bar with Back button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
@@ -205,6 +275,8 @@ export default function TechniqueEditor({
         // prefer the explicit title when available, then label, then the group key
         const displayLabel = group.title ?? group.label ?? key;
         const isCoreStyle = Object.keys(INITIAL_TECHNIQUES).includes(key);
+        const singles = normalizeArray(group.singles);
+        const combos = normalizeArray(group.combos);
         return (
           <div key={key} style={panelStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -225,15 +297,30 @@ export default function TechniqueEditor({
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Singles (individual moves)</h4>
               <div style={{ display: 'grid', gap: '0.75rem' }}>
-                {(group.singles || []).map((single, idx) => (
+                {singles.map((single, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     <input
                       type="text"
-                      value={single}
+                      value={single.text}
                       onChange={e => updateSingle(key, idx, e.target.value)}
                       style={{ ...inputStyle, flexGrow: 1 }}
                       placeholder="e.g., jab"
                     />
+                    <button
+                      onClick={() => toggleSingleFavorite(key, idx)}
+                      style={{
+                        ...buttonStyle,
+                        background: single.favorite ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.08)',
+                        color: single.favorite ? '#facc15' : '#f9a8d4',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        fontSize: '1.3rem',
+                        padding: 0,
+                        lineHeight: '2.5rem'
+                      }}
+                      aria-label={single.favorite ? "Unstar" : "Star"}
+                      title={single.favorite ? "Unstar (favorite)" : "Star (favorite)"}
+                    >★</button>
                     <button onClick={() => removeSingle(key, idx)} style={deleteButtonStyle} aria-label="Delete single">✕</button>
                   </div>
                 ))}
@@ -244,15 +331,30 @@ export default function TechniqueEditor({
             <div>
               <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Combos</h4>
               <div style={{ display: 'grid', gap: '0.75rem' }}>
-                {(group.combos || []).map((combo, idx) => (
+                {combos.map((combo, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     <input
                       type="text"
-                      value={combo}
+                      value={combo.text}
                       onChange={e => updateCombo(key, idx, e.target.value)}
                       style={{ ...inputStyle, flexGrow: 1 }}
                       placeholder="e.g., 1, 2, 3"
                     />
+                    <button
+                      onClick={() => toggleComboFavorite(key, idx)}
+                      style={{
+                        ...buttonStyle,
+                        background: combo.favorite ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.08)',
+                        color: combo.favorite ? '#facc15' : '#f9a8d4',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        fontSize: '1.3rem',
+                        padding: 0,
+                        lineHeight: '2.5rem'
+                      }}
+                      aria-label={combo.favorite ? "Unstar" : "Star"}
+                      title={combo.favorite ? "Unstar (favorite)" : "Star (favorite)"}
+                    >★</button>
                     <button onClick={() => removeCombo(key, idx)} style={deleteButtonStyle} aria-label="Delete combo">✕</button>
                   </div>
                 ))}
