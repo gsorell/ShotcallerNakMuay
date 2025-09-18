@@ -1586,7 +1586,7 @@ export default function App() {
                           value={roundMinInput}
                           onChange={(e) => {
                             const raw = e.target.value.replace(',', '.');
-                                                       // Allow only digits and a single dot
+                                                                                                             // Allow only digits and a single dot
                             if (/^\d*\.?\d*$/.test(raw)) {
                               setRoundMinInput(raw);
                             }
@@ -1648,13 +1648,11 @@ export default function App() {
                   )}
 
                   {/* Advanced Settings: Voice Speed and Selection */}
-                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'stretch' }}>
-                  </section>
-                    <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
-                      {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
-                    </button>
-                    {showAdvanced && (
-                      <div className="advanced-settings-panel">
+                  <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
+                    {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
+                  </button>
+                  {showAdvanced && (
+                    <div className="advanced-settings-panel">
     <div className="voice-speed-settings">
       {/* Voice Speed Slider */}
       <div className="field" style={{ minWidth: 0, flex: 1 }}>
