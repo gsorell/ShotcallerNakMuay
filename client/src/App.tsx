@@ -1042,8 +1042,21 @@ export default function App() {
             boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.125rem' }}>How to Use Nak Muay Shot Caller</h3>
+          {/* ADD: Help icon at the top */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <img
+              src="/assets/icon_help.png"
+              alt="Help"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(59,130,246,0.10)'
+              }}
+            />
+            <h3 style={{ margin: 0, fontSize: '1.125rem', flex: 1 }}>How to Use Nak Muay Shot Caller</h3>
             <button onClick={onClose} style={{ ...linkButtonStyle }}>Close</button>
           </div>
 
@@ -1573,7 +1586,7 @@ export default function App() {
                           value={roundMinInput}
                           onChange={(e) => {
                             const raw = e.target.value.replace(',', '.');
-                            // Allow only digits and a single dot
+                                                       // Allow only digits and a single dot
                             if (/^\d*\.?\d*$/.test(raw)) {
                               setRoundMinInput(raw);
                             }
