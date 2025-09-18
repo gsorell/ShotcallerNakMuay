@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components; 
-@tailwind utilities;
+/* Removed Tailwind directives for troubleshooting */
 
 /* Test class to verify Tailwind is working */
 .test-tailwind {
