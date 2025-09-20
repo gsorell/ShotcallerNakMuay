@@ -361,6 +361,31 @@ export default function TechniqueEditor({
               </div>
               <button onClick={() => addCombo(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Combo</button>
             </div>
+
+            {!isCoreStyle && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Delete group "${group.label}" and all its techniques? This cannot be undone.`)) {
+                      const next = { ...local };
+                      delete next[key];
+                      persist(next);
+                    }
+                  }}
+                  style={{
+                    ...deleteButtonStyle,
+                    width: 'auto',
+                    height: '2.5rem',
+                    padding: '0 1.5rem',
+                    fontSize: '1rem',
+                    marginLeft: 'auto'
+                  }}
+                  aria-label={`Delete group ${group.label}`}
+                >
+                  🗑️ Delete Group
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
