@@ -193,6 +193,9 @@ export default function App() {
   // ADD: advanced panel toggle (was missing)
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // ADD: toggle for showing all emphases
+  const [showAllEmphases, setShowAllEmphases] = useState(false);
+
   // ADD: subtle onboarding modal toggle
   const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
 
@@ -1460,7 +1463,7 @@ export default function App() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                     {/* Step 1: Emphasis selection */}
                     <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                      <div style={{ textAlign: 'center' }}>
+                      <div style={{ textAlign: 'center', position: 'relative' }}>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
                         <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>
                           Transform your solo training with guided programs that call out strikes and combinations.
@@ -1491,7 +1494,8 @@ export default function App() {
                           </span>
                         </p>
                       </div>
-                      <div className="emphasis-grid"
+                      <div style={{ position: 'relative', width: '100%', maxWidth: '60rem', margin: '0 auto' }}>
+                        <div className="emphasis-grid"
     style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -1499,7 +1503,7 @@ export default function App() {
       maxWidth: '60rem',
       margin: '0 auto'
     }}>
-    {emphasisList.map(style => {
+    {(showAllEmphases ? emphasisList : emphasisList.slice(0, 9)).map(style => {
       const isSelected = selectedEmphases[style.key];
       return (
         <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
@@ -1528,11 +1532,54 @@ export default function App() {
       );
     })}
   </div>
+  {emphasisList.length > 9 && (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'flex-end',
+      marginTop: '1rem'
+    }}>
+      <button
+        type="button"
+        onClick={() => setShowAllEmphases(v => !v)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.4em',
+          padding: '0.45em 1.2em',
+          fontSize: '.75rem',
+          fontWeight: 600,
+          color: '#ffffffff',
+          background: 'transparent',
+          border: '1.5px solid rgba(255,255,255,0.2)',
+          borderRadius: '0.75rem',
+          boxShadow: '0 2px 8px rgba(59,130,246,0.10)',
+          cursor: 'pointer',
+          transition: 'background 0.2s, border-color 0.2s, color 0.2s',
+          outline: 'none'
+        }}
+        tabIndex={0}
+        aria-label={showAllEmphases ? 'See less styles' : 'See more styles'}
+        title={showAllEmphases ? 'Show fewer styles' : 'Show more styles'}
+      >
+        {showAllEmphases ? 'See Less' : 'See More'}
+        <span style={{
+          display: 'inline-block',
+          transition: 'transform 0.2s',
+          fontSize: '1.1em',
+          marginLeft: 2,
+          transform: showAllEmphases ? 'rotate(180deg)' : 'rotate(0deg)'
+        }}>
+          ▼
+        </span>
+      </button>
+    </div>
+  )}
 
-  {/* Move Manage Techniques button OUTSIDE the .emphasis-grid */}
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.75rem' }}>
+  {/* Restore Manage Techniques button here */}
+  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
     <button
       onClick={() => setPage('editor')}
+      className="manage-techniques-btn"
       style={{
         position: 'relative',
         padding: '1.5rem',
@@ -1549,11 +1596,7 @@ export default function App() {
         transition: 'all 0.2s',
         cursor: 'pointer',
         minWidth: 0,
-        // REMOVE width: '100%',
-        // REMOVE maxWidth if you want it to shrink to content
-        // maxWidth: '32rem',
       }}
-      className="manage-techniques-btn"
     >
       <img
         src="/assets/icon_edit.png"
@@ -1578,7 +1621,8 @@ export default function App() {
       </span>
     </button>
   </div>
-</section>
+                      </div>
+                    </section>
 
                   {/* Calisthenics toggle */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -1609,7 +1653,7 @@ export default function App() {
                           <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{roundsCount}</div>
                           <div style={{ fontSize: '0.75rem', color: '#f9a8d4', marginTop: '0.25rem' }}>rounds</div>
                         </div>
-                        <button type="button" onClick={() => setRoundsCount(Math.min(20, roundsCount + 1))} style={chipButtonStyle}>+</button>
+                        <button type="button" onClick={() => setRoundsCount(Math.min(20, roundsCount +   1))} style={chipButtonStyle}>+</button>
                       </div>
                     </div>
 
@@ -1738,16 +1782,6 @@ export default function App() {
             fontSize: '1rem',
             cursor: 'pointer',
             position: 'relative',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23181825' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.75rem center',
-            backgroundSize: '1.5rem',
-            outline: 'none',
-            boxShadow: '0 0 0 2px #d1d5db33',
-            transition: 'border-color 0.2s, box-shadow 0.2s',
-            width: '100%',
-            minWidth: 0,
-            maxWidth: '100%',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
