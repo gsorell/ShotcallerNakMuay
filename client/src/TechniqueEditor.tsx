@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './editor.css';
 import INITIAL_TECHNIQUES from './techniques';
 
@@ -25,12 +25,12 @@ function humanizeKey(k: string) {
 }
 
 // ensure every group has label + title so the UI never falls back to the raw key
-function normalizeTechniques(src: Record<string, TechniqueShape>) {
+function normalizeTechniques(src: Record<string, Partial<TechniqueShape>>) {
   const out: Record<string, TechniqueShape> = {};
   Object.entries(src || {}).forEach(([key, g]) => {
-    const label = (g && (g.label ?? g.title)) ? (g.label ?? g.title) : key;
-    const title = g?.title ?? g?.label ?? humanizeKey(key);
-    out[key] = { ...g, label, title };
+    const label = (g?.label ?? g?.title ?? key); // always a string
+    const title = (g?.title ?? g?.label ?? humanizeKey(key));
+    out[key] = { ...g, label, title } as TechniqueShape;
   });
   return out;
 }
@@ -52,6 +52,12 @@ function denormalizeArray(arr: { text: string, favorite?: boolean }[]): (string 
   // Otherwise, save as objects
   return arr;
 }
+
+// Define the path to the download icon
+const downloadIcon = '/assets/icon_download.png';
+
+// Define the path to the upload icon
+const uploadIcon = '/assets/icon_upload.png';
 
 // Reusable styles for the new theme
 const panelStyle: React.CSSProperties = {
@@ -227,6 +233,89 @@ export default function TechniqueEditor({
     fontWeight: 700
   };
 
+  // --- NEW: Export/Import logic ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Export techniques (user + custom only, never core)
+  function handleExport() {
+    const data = JSON.stringify(local, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'techniques_backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Import techniques (validate before applying)
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const imported = JSON.parse(evt.target?.result as string);
+        // Basic validation: must be an object with at least one group
+        if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
+          alert('Invalid file format.');
+          return;
+        }
+        // Confirm before overwrite
+        if (!window.confirm('Importing will overwrite your current techniques (custom and user sets only). Core sets will remain unchanged. Continue?')) return;
+        // Merge: keep core sets from INITIAL_TECHNIQUES, overwrite/add others from import
+        const merged: Record<string, TechniqueShape> = normalizeTechniques(INITIAL_TECHNIQUES as Record<string, Partial<TechniqueShape>>);
+        Object.entries(imported).forEach(([k, v]) => {
+          if (!INITIAL_TECHNIQUES[k]) merged[k] = normalizeTechniques({ [k]: v as Partial<TechniqueShape> })[k];
+        });
+        persist(merged);
+        alert('Techniques imported! (Core sets unchanged)');
+      } catch {
+        alert('Failed to import: Invalid or corrupted file.');
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-imported if needed
+    e.target.value = '';
+  }
+
+  // Duplicate a core set for editing
+  function duplicateCoreSet(key: string) {
+    let base = local[key];
+    if (!base) return;
+    let newKey = key + '_copy';
+    let i = 2;
+    while (local[newKey]) {
+      newKey = key + `_copy${i++}`;
+    }
+    const next = {
+      ...local,
+      [newKey]: {
+        ...base,
+        label: base.label + ' (Copy)',
+        title: (base.title || base.label) + ' (Copy)'
+      }
+    };
+    persist(next);
+    alert(`Duplicated "${base.label}" as "${base.label} (Copy)"`);
+  }
+
+  // Map group keys to their thumbnail image paths (should match home page)
+  const GROUP_THUMBNAILS: Record<string, string> = {
+    newb: '/assets/icon_newb.png',
+    khao: '/assets/icon_khao.png',
+    mat: '/assets/icon_mat.png',
+    tae: '/assets/icon_tae.png',
+    femur: '/assets/icon_femur.png',
+    sok: '/assets/icon_sok.png',
+    boxing: '/assets/icon_boxing.png',
+    two_piece: '/assets/icon_two_piece.png',
+    southpaw: '/assets/icon_southpaw.png'
+  };
+
+  // Replace the delete button icon with the custom trash icon
+  const trashIcon = '/assets/icon_trash.png';
+
   return (
     <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem' }}>
       {/* Info message at the top */}
@@ -261,25 +350,68 @@ export default function TechniqueEditor({
           Tip: Use this page to tailor your training experience, reinforce key skills, or experiment with new combinations.
         </div>
       </div>
-      {/* Top bar with Back button */}
+      {/* Top bar with Back button and Export/Import */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
-        {onBack && (
-          <button type="button" onClick={onBack} style={backBtnStyle} title="Back to Training (Esc)">
-            ← Back to Training
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={handleExport}
+            style={buttonStyle}
+            title="Export your techniques as a backup"
+          >
+            <img src={uploadIcon} alt="Export" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
+            Export
           </button>
-        )}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={buttonStyle}
+            title="Import techniques from a backup file"
+          >
+            <img src={downloadIcon} alt="Import" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
+            Import
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            style={{ display: 'none' }}
+            onChange={handleImport}
+          />
+          {onBack && (
+            <button type="button" onClick={onBack} style={backBtnStyle} title="Back to Training (Esc)">
+              ← Back to Training
+            </button>
+          )}
+        </div>
       </div>
 
       {Object.entries(local).map(([key, group]) => {
-        // prefer the explicit title when available, then label, then the group key
         const displayLabel = group.title ?? group.label ?? key;
         const isCoreStyle = Object.keys(INITIAL_TECHNIQUES).includes(key);
         const singles = normalizeArray(group.singles);
         const combos = normalizeArray(group.combos);
+        const thumbnail = isCoreStyle && GROUP_THUMBNAILS[key]
+          ? GROUP_THUMBNAILS[key]
+          : undefined;
         return (
           <div key={key} style={panelStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+              {isCoreStyle && thumbnail && (
+                <img
+                  src={thumbnail}
+                  alt={`${displayLabel} thumbnail`}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    objectFit: 'cover',
+                    boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
+                    background: '#18181b'
+                  }}
+                />
+              )}
               <h3 style={{ margin: 0, color: 'white', flexGrow: 1, fontSize: '1.5rem', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
                 {displayLabel}
               </h3>
@@ -292,6 +424,15 @@ export default function TechniqueEditor({
                   aria-label="Custom Group Name"
                 />
               )}
+              {isCoreStyle && (
+                <button
+                  onClick={() => duplicateCoreSet(key)}
+                  style={{ ...buttonStyle, marginLeft: 8 }}
+                  title="Duplicate this core set to create an editable copy"
+                >
+                  Duplicate
+                </button>
+              )}
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
@@ -302,30 +443,45 @@ export default function TechniqueEditor({
                     <input
                       type="text"
                       value={single.text}
-                      onChange={e => updateSingle(key, idx, e.target.value)}
-                      style={{ ...inputStyle, flexGrow: 1 }}
+                      onChange={e => !isCoreStyle && updateSingle(key, idx, e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        flexGrow: 1,
+                        background: isCoreStyle ? 'rgba(0,0,0,0.15)' : inputStyle.background,
+                        color: isCoreStyle ? '#a3a3a3' : inputStyle.color
+                      }}
                       placeholder="e.g., jab"
+                      readOnly={isCoreStyle}
+                      tabIndex={isCoreStyle ? -1 : 0}
                     />
                     <button
                       onClick={() => toggleSingleFavorite(key, idx)}
                       style={{
                         ...buttonStyle,
-                        background: single.favorite ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.08)',
+                        background: single.favorite ? 'rgba(36, 229, 251, 0.25)' : 'rgba(255,255,255,0.08)',
                         color: single.favorite ? '#facc15' : '#f9a8d4',
                         width: '2.5rem',
                         height: '2.5rem',
                         fontSize: '1.3rem',
                         padding: 0,
-                        lineHeight: '2.5rem'
+                        lineHeight: '2.5rem',
+                        opacity: 1,
+                        cursor: 'pointer'
                       }}
                       aria-label={single.favorite ? "Unstar" : "Star"}
                       title={single.favorite ? "Unstar (favorite)" : "Star (favorite)"}
                     >★</button>
-                    <button onClick={() => removeSingle(key, idx)} style={deleteButtonStyle} aria-label="Delete single">✕</button>
+                    {!isCoreStyle && (
+                      <button onClick={() => removeSingle(key, idx)} style={deleteButtonStyle} aria-label="Delete single">
+                        <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
-              <button onClick={() => addSingle(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Single</button>
+              {!isCoreStyle && (
+                <button onClick={() => addSingle(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Single</button>
+              )}
             </div>
 
             <div>
@@ -336,9 +492,16 @@ export default function TechniqueEditor({
                     <input
                       type="text"
                       value={combo.text}
-                      onChange={e => updateCombo(key, idx, e.target.value)}
-                      style={{ ...inputStyle, flexGrow: 1 }}
+                      onChange={e => !isCoreStyle && updateCombo(key, idx, e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        flexGrow: 1,
+                        background: isCoreStyle ? 'rgba(0,0,0,0.15)' : inputStyle.background,
+                        color: isCoreStyle ? '#a3a3a3' : inputStyle.color
+                      }}
                       placeholder="e.g., 1, 2, 3"
+                      readOnly={isCoreStyle}
+                      tabIndex={isCoreStyle ? -1 : 0}
                     />
                     <button
                       onClick={() => toggleComboFavorite(key, idx)}
@@ -350,16 +513,24 @@ export default function TechniqueEditor({
                         height: '2.5rem',
                         fontSize: '1.3rem',
                         padding: 0,
-                        lineHeight: '2.5rem'
+                        lineHeight: '2.5rem',
+                        opacity: 1,
+                        cursor: 'pointer'
                       }}
                       aria-label={combo.favorite ? "Unstar" : "Star"}
                       title={combo.favorite ? "Unstar (favorite)" : "Star (favorite)"}
                     >★</button>
-                    <button onClick={() => removeCombo(key, idx)} style={deleteButtonStyle} aria-label="Delete combo">✕</button>
+                    {!isCoreStyle && (
+                      <button onClick={() => removeCombo(key, idx)} style={deleteButtonStyle} aria-label="Delete combo">
+                        <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
-              <button onClick={() => addCombo(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Combo</button>
+              {!isCoreStyle && (
+                <button onClick={() => addCombo(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Combo</button>
+              )}
             </div>
 
             {!isCoreStyle && (
@@ -378,11 +549,15 @@ export default function TechniqueEditor({
                     height: '2.5rem',
                     padding: '0 1.5rem',
                     fontSize: '1rem',
-                    marginLeft: 'auto'
+                    marginLeft: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
                   }}
                   aria-label={`Delete group ${group.label}`}
                 >
-                  🗑️ Delete Group
+                  <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                  Delete Group
                 </button>
               </div>
             )}
