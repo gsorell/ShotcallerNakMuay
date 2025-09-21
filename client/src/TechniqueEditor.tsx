@@ -351,6 +351,9 @@ export default function TechniqueEditor({
           <span style={{ color: '#fde047', fontWeight: 700 }}>★</span>
           <span style={{ color: '#fde047', fontWeight: 500 }}> Star</span>
           <span style={{ color: '#fff' }}> your favorites to have them called out more often.<br /></span>
+          <span style={{ color: '#fff', fontWeight: 500 }}>
+            Use <b>Export</b> to back up your custom techniques, and <b>Import</b> to restore or share them.<br />
+          </span>
           To restore to default, click the button at the bottom of the page.
         </div>
         <div style={{ marginTop: '0.8em', color: '#a5b4fc', fontSize: '1rem', fontStyle: 'italic' }}>
@@ -358,40 +361,53 @@ export default function TechniqueEditor({
         </div>
       </div>
       {/* Top bar with Back button and Export/Import */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-        <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={handleExport}
-            style={buttonStyle}
-            title="Export your techniques as a backup"
-          >
-            <img src={uploadIcon} alt="Export" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
-            Export
-          </button>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            style={buttonStyle}
-            title="Import techniques from a backup file"
-          >
-            <img src={downloadIcon} alt="Import" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
-            Import
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-          />
-          {onBack && (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          justifyContent: 'space-between',
+          marginBottom: '1rem',
+          gap: '0.5rem'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={handleExport}
+              style={buttonStyle}
+              title="Export your techniques as a backup"
+            >
+              <img src={uploadIcon} alt="Export" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
+              Export
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={buttonStyle}
+              title="Import techniques from a backup file"
+            >
+              <img src={downloadIcon} alt="Import" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
+              Import
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json"
+              style={{ display: 'none' }}
+              onChange={handleImport}
+            />
+          </div>
+        </div>
+        {onBack && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
             <button type="button" onClick={onBack} style={backBtnStyle} title="Back to Training (Esc)">
               ← Back to Training
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {Object.entries(local).map(([key, group]) => {
