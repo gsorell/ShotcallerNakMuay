@@ -50,6 +50,43 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
     icon: '🦶',
     desc: 'Left-handed stance with combos tailored for southpaw fighters',
     iconPath: '/assets/icon_southpaw.png'
+  },
+  // --- Custom icons for new groups ---
+  meat_potatoes: {
+    label: 'Meat & Potatoes',
+    icon: '🥔',
+    desc: 'Classic, high-percentage strikes and combos for all levels',
+    iconPath: '/assets/icon_meat_potatoes.png'
+  },
+  buakaw: {
+    label: 'Buakaws Corner',
+    icon: '🥋',
+    desc: 'Aggressive clinch, knees, and sweeps inspired by Buakaw',
+    iconPath: '/assets/icon.buakaw.png'
+  },
+  low_kick_legends: {
+    label: 'Low Kick Legends',
+    icon: '🦵',
+    desc: 'Devastating low kicks and classic Dutch-style combinations',
+    iconPath: '/assets/icon_lowkicklegends.png'
+  },
+  elbow_arsenal: {
+    label: 'Elbow Arsenal',
+    icon: '💥',
+    desc: 'Sharp elbow strikes and creative close-range attacks',
+    iconPath: '/assets/icon.elbow arsenal.png'
+  },
+  muay_tech: {
+    label: 'Muay Tech',
+    icon: '🧠',
+    desc: 'Technical timing, feints, sweeps, and counters',
+    iconPath: '/assets/icon.muaytech.png'
+  },
+  ko_setups: {
+    label: 'KO Setups',
+    icon: '💣',
+    desc: 'Explosive knockout setups and finishing combinations',
+    iconPath: '/assets/icon.ko.png'
   }
 };
 

@@ -310,7 +310,14 @@ export default function TechniqueEditor({
     sok: '/assets/icon_sok.png',
     boxing: '/assets/icon_boxing.png',
     two_piece: '/assets/icon_two_piece.png',
-    southpaw: '/assets/icon_southpaw.png'
+    southpaw: '/assets/icon_southpaw.png',
+    // --- Custom icons for new groups ---
+    meat_potatoes: '/assets/icon_meat_potatoes.png',
+    buakaw: '/assets/icon.buakaw.png',
+    low_kick_legends: '/assets/icon_lowkicklegends.png',
+    elbow_arsenal: '/assets/icon.elbow arsenal.png',
+    muay_tech: '/assets/icon.muaytech.png',
+    ko_setups: '/assets/icon.ko.png'
   };
 
   // Replace the delete button icon with the custom trash icon
@@ -392,13 +399,12 @@ export default function TechniqueEditor({
         const isCoreStyle = Object.keys(INITIAL_TECHNIQUES).includes(key);
         const singles = normalizeArray(group.singles);
         const combos = normalizeArray(group.combos);
-        const thumbnail = isCoreStyle && GROUP_THUMBNAILS[key]
-          ? GROUP_THUMBNAILS[key]
-          : undefined;
+        // Always show a thumbnail if available in GROUP_THUMBNAILS
+        const thumbnail = GROUP_THUMBNAILS[key];
         return (
           <div key={key} style={panelStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              {isCoreStyle && thumbnail && (
+              {thumbnail && (
                 <img
                   src={thumbnail}
                   alt={`${displayLabel} thumbnail`}
