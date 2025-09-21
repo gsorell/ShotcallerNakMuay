@@ -101,13 +101,13 @@ export default function App() {
     const techniqueKeys = Object.keys(techniques || {}).filter(k => k !== 'calisthenics');
     const list = techniqueKeys.map(key => {
       const config = BASE_EMPHASIS_CONFIG[key] || {};
+      const technique = techniques[key];
       return {
         key: key as EmphasisKey,
-        label: config.label || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        // FIX: Use icon_user.png for custom/user styles
+        label: config.label || technique.title || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
         iconPath: config.iconPath || '/assets/icon_user.png',
         emoji: config.icon || '🎯',
-        desc: config.desc || `Custom style: ${key}`
+        desc: config.desc || technique.description || `Custom style: ${key}` // <-- add technique.description here
       };
     });
 
@@ -1636,7 +1636,7 @@ export default function App() {
                         <div style={{
                           position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
                           width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-                          transition: 'left 0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                          transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                         }} />
                       </div>
                     </label>

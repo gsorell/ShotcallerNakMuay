@@ -1,4 +1,4 @@
-export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[]; exclusive?: boolean; label?: string; title?: string }> = {
+export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[]; exclusive?: boolean; label?: string; title?: string; description?: string }> = {
   // Nak Muay Newb - Start here to learn the Art of 8 Limbs
   // exclusive: true means this emphasis should not be combined with other styles
   newb: {
@@ -280,6 +280,175 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Feint Left Kick, 1, 2, Left Kick",
       "1, 2, 3, Left Elbow, Pivot Left",
       "1, 1, 2, Left Body Kick, Clinch, Double Knees"
+    ]
+  },
+
+  muay_tech: {
+    label: "muay_tech",
+    title: "Muay Tech",
+    description: "Technical timing, feints, sweeps, and counters",
+    // Custom style: technical feints, sweeps, and counters
+    singles: [
+      "Feint Jab",
+      "Cross",
+      "Lead Hook",
+      "Right Kick",
+      "Left Teep",
+      "Right Teep",
+      "Slip",
+      "Parry Jab",
+      "Sweep Left",
+      "Lean Back"
+    ],
+    combos: [
+      "Feint Teep, Cross, Lead Hook",
+      "Parry Jab, Cross, Rear Kick",
+      "Lean Back, Counter Right Kick",
+      "Slip, Cross, Lead Hook, Sweep",
+      "Check, Cross, Pivot Left",
+      "Fake Kick, Cross, Lead Hook",
+      "Teep, Step-in Elbow",
+      "Oley Left, Head Kick",
+      "Parry, Cross, Hook, Kick",
+      "1, Lean Back, Cross, Low Kick"
+    ]
+  },
+  meat_potatoes: {
+    label: "meat_potatoes",
+    title: "Meat & Potatoes",
+    description: "Classic, high-percentage strikes and combos for all levels",
+    singles: [
+      "Jab",
+      "Cross",
+      "Left Hook",
+      "Right Kick",
+      "Left Body Kick",
+      "Right Low Kick",
+      "Left Teep",
+      "Right Teep"
+    ],
+    combos: [
+      "1, 2, Right Kick",
+      "2, 3, Low Kick",
+      "1, 2, 3, 2, Low Kick",
+      "Jab, Rear Teep",
+      "Cross, Lead Hook, Rear Kick",
+      "Double Jab, Cross, Left Body Kick",
+      "Slip, Cross, Right Kick",
+      "1, 2, Switch Kick",
+      "Cross, Low Kick",
+      "1, 2, 3, Right Kick"
+    ]
+  },
+  buakaw: {
+    label: "buakaw",
+    title: "Buakaws Corner",
+    description: "Aggressive clinch, knees, and sweeps inspired by Buakaw",
+    singles: [
+      "Jab",
+      "Cross",
+      "Lead Hook",
+      "Left Knee",
+      "Right Knee",
+      "Clinch",
+      "Elbow",
+      "Teep",
+      "Sweep Right"
+    ],
+    combos: [
+      "Jab, Step-in Clinch, Double Knees",
+      "Cross, Long Guard, Rear Knee",
+      "1, 2, Clinch, Knee, Elbow",
+      "Teep, Step-in, Double Knees",
+      "Clinch, Knee, Knee, Elbow",
+      "1, 4, Clinch, Double Knees",
+      "Inside Low Kick, Clinch, Knee",
+      "Cross, Clinch Entry, Sweep",
+      "Clinch Break, Elbow",
+      "Catch Kick, Clinch, Knee"
+    ]
+  },
+  low_kick_legends: {
+    label: "low_kick_legends",
+    title: "Low Kick Legends",
+    description: "Devastating low kicks and classic Dutch-style combinations",
+    singles: [
+      "Cross",
+      "Left Hook",
+      "Right Low Kick",
+      "Inside Low Kick",
+      "Switch Kick",
+      "Slip Right",
+      "Overhand",
+      "Double Jab"
+    ],
+    combos: [
+      "1, 2, Low Kick",
+      "2, 3, Low Kick",
+      "Cross, Lead Hook, Low Kick",
+      "Double Jab, Cross, Low Kick",
+      "Overhand, Low Kick",
+      "Slip, Cross, Low Kick",
+      "Inside Low Kick, Cross",
+      "3, Low Kick, 3",
+      "Cross, Low Kick, Switch Kick",
+      "Low Kick, High Kick"
+    ]
+  },
+  elbow_arsenal: {
+    label: "elbow_arsenal",
+    title: "Elbow Arsenal",
+    description: "Sharp elbow strikes and creative close-range attacks",
+    singles: [
+      "Jab",
+      "Cross",
+      "Lead Hook",
+      "Right Elbow",
+      "Left Elbow",
+      "Spinning Elbow",
+      "Step-in Elbow",
+      "Up Elbow",
+      "Clinch"
+    ],
+    combos: [
+      "1, 2, Step-in Elbow",
+      "Lead Hook, Rear Elbow",
+      "Cross, Up Elbow",
+      "Jab, Pull Back, Up Elbow",
+      "Clinch Break, Spinning Elbow",
+      "Rear Kick, Step-in Elbow",
+      "2, Left Elbow, Right Elbow",
+      "1, 4, Elbow, Knee",
+      "Slip, Elbow",
+      "Jumping Elbow, Cross"
+    ]
+  },
+  ko_setups: {
+    label: "ko_setups",
+    title: "KO Setups",
+    description: "Explosive knockout setups and finishing combinations",
+    singles: [
+      "Jab",
+      "Cross",
+      "Left Hook",
+      "Overhand",
+      "Right Kick",
+      "Left High Kick",
+      "Slip",
+      "Rear Knee",
+      "Elbow"
+    ],
+    combos: [
+      "1, 2, Head Kick",
+      "Slip, Cross, Rear Kick",
+      "Low Kick, High Kick",
+      "Double Jab, Cross, Head Kick",
+      "Cross, Lead Hook, Head Kick",
+      "1, 2, 3, Overhand",
+      "Slip, Uppercut, Hook, Cross",
+      "Overhand, Lead Hook to Body, Low Kick",
+      "Cross, Rear Knee, Elbow",
+      "Teep, Step-in, Head Kick"
     ]
   },
 };
