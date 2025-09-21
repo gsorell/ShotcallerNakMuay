@@ -25,7 +25,7 @@ import iconTwoPiece from '/assets/icon_two_piece.png';
 
 // Types and storage keys
 type TechniquesShape = typeof INITIAL_TECHNIQUES;
-type EmphasisKey = 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece' | 'southpaw';
+type EmphasisKey = 'timer_only' | 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'boxing' | 'newb' | 'two_piece' | 'southpaw';
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs' | 'completed';
 
@@ -37,6 +37,12 @@ const TECHNIQUES_VERSION = 'v16'; // Increment this version to force a reset on 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
 const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc: string; iconPath: string; } } = {
+  timer_only: {
+    label: 'Timer Only',
+    icon: '⏱️',
+    desc: 'Just a round timer — no shotcalling, no techniques.',
+    iconPath: '/assets/icon.stopwatch.png'
+  },
   newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start here with one move at a time (can\'t be combined with other styles)', iconPath: '/assets/icon_newb.png' },
   khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations', iconPath: '/assets/icon_khao.png' },
   mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees', iconPath: '/assets/icon_mat.png' },
@@ -136,20 +142,23 @@ export default function App() {
   // Dynamically generate emphasis list from techniques, merging with base config for icons/descriptions.
   const emphasisList = React.useMemo(() => {
     const techniqueKeys = Object.keys(techniques || {}).filter(k => k !== 'calisthenics');
-    const list = techniqueKeys.map(key => {
+    // Always include timer_only at the start
+    const allKeys = ['timer_only', ...techniqueKeys.filter(k => k !== 'timer_only')];
+    const list = allKeys.map(key => {
       const config = BASE_EMPHASIS_CONFIG[key] || {};
       const technique = techniques[key];
       return {
         key: key as EmphasisKey,
-        label: config.label || technique.title || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        label: config.label || technique?.title || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
         iconPath: config.iconPath || '/assets/icon_user.png',
         emoji: config.icon || '🎯',
-        desc: config.desc || technique.description || `Custom style: ${key}` // <-- add technique.description here
+        desc: config.desc || technique?.description || `Custom style: ${key}`
       };
     });
 
-    // Desired presentation order (from screenshot): newb, two_piece, boxing, mat, tae, khao, sok, femur
+    // Place timer_only first, then the rest in desired order
     const desiredOrder: EmphasisKey[] = [
+      'timer_only', // <-- new first entry
       'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw'
     ];
     const orderMap = new Map<string, number>(desiredOrder.map((k, i) => [k, i]));
@@ -189,6 +198,7 @@ export default function App() {
 
   // Selection and session settings
     const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
+      timer_only: false,
       khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
     });
     const [addCalisthenics, setAddCalisthenics] = useState(false);
@@ -201,19 +211,20 @@ export default function App() {
     const toggleEmphasis = (k: EmphasisKey) => {
       setSelectedEmphases(prev => {
         const isTurningOn = !prev[k];
-        if (k === 'newb') {
-          // If turning 'newb' on, turn all others off.
-          // If turning 'newb' off, just turn it off.
+        if (k === 'timer_only') {
+          // If turning timer_only on, turn all others off.
+          // If turning timer_only off, just turn it off.
           const allOff: Record<EmphasisKey, boolean> = {
+            timer_only: false,
             khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
           };
-          return { ...allOff, newb: isTurningOn };
+          return { ...allOff, timer_only: isTurningOn };
         }
     
-        // For any other key, toggle it. If turning it on, ensure 'newb' is off.
+        // For any other key, toggle it. If turning it on, ensure timer_only is off.
         const next = { ...prev, [k]: isTurningOn };
         if (isTurningOn) {
-          next.newb = false;
+          next.timer_only = false;
         }
         return next;
       });
@@ -298,6 +309,8 @@ export default function App() {
 
   // Build a phrase pool from selected emphases (strict: only read exact keys from techniques)
   const getTechniquePool = useCallback((): string[] => {
+    if (selectedEmphases.timer_only) return [];
+
     const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
       .filter(([, v]) => v).map(([k]) => k);
 
@@ -789,7 +802,9 @@ export default function App() {
   function startSession() {
     if (!hasSelectedEmphasis) return;
     const pool = getTechniquePool();
-    if (!pool.length) {
+    // FIX: Allow "Timer Only" to start even if pool is empty
+    const timerOnlySelected = selectedEmphases.timer_only && Object.values(selectedEmphases).filter(Boolean).length === 1;
+    if (!pool.length && !timerOnlySelected) {
       alert('No techniques found for the selected emphasis(es). Check the technique lists or choose a different emphasis.');
       console.warn('startSession blocked: empty technique pool for selected emphases', selectedEmphases);
       return;
