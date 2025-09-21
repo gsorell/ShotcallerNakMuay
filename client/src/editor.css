@@ -191,3 +191,13 @@
 .log-delete-btn:focus {
   background: rgba(249, 168, 212, 0.25);
 }
+
+@media (max-width: 600px) {
+  .add-emphasis-panel,
+  .reset-panel {
+    padding: 1rem !important;
+  }
+  h2 {
+    font-size: 1.2rem !important;
+  }
+}
