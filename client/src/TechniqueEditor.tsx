@@ -426,43 +426,68 @@ export default function TechniqueEditor({
         const thumbnail = GROUP_THUMBNAILS[key];
         return (
           <div key={key} style={panelStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              {thumbnail && (
-                <img
-                  src={thumbnail}
-                  alt={`${displayLabel} thumbnail`}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 8,
-                    objectFit: 'cover',
-                    boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
-                    background: '#18181b'
-                  }}
-                />
-              )}
-              <h3 style={{ margin: 0, color: 'white', flexGrow: 1, fontSize: '1.5rem', fontWeight: 700, textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
-                {displayLabel}
-              </h3>
-              {!isCoreStyle && (
-                <input
-                  type="text"
-                  value={group.label}
-                  onChange={e => updateGroupLabel(key, e.target.value)}
-                  style={{ ...inputStyle, flexGrow: 1 }}
-                  aria-label="Custom Group Name"
-                />
-              )}
-              {isCoreStyle && (
-                <button
-                  onClick={() => duplicateCoreSet(key)}
-                  style={{ ...buttonStyle, marginLeft: 8 }}
-                  title="Duplicate this core set to create an editable copy"
-                >
-                  Duplicate
-                </button>
-              )}
-            </div>
+            <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start'
+  }}
+>
+  {thumbnail && (
+    <img
+      src={thumbnail}
+      alt={`${displayLabel} thumbnail`}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        objectFit: 'cover',
+        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
+        background: '#18181b'
+      }}
+    />
+  )}
+  <h3
+    style={{
+      margin: 0,
+      color: 'white',
+      fontSize: '1.5rem',
+      fontWeight: 700,
+      textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+      minWidth: 0,
+      wordBreak: 'break-word'
+    }}
+  >
+    {displayLabel}
+  </h3>
+  {isCoreStyle && (
+    <div style={{ marginLeft: 'auto', marginTop: 8 }}>
+      <button
+        onClick={() => duplicateCoreSet(key)}
+        style={{
+          ...buttonStyle,
+          maxWidth: '100%',
+          whiteSpace: 'nowrap'
+        }}
+        title="Duplicate this core set to create an editable copy"
+      >
+        Duplicate
+      </button>
+    </div>
+  )}
+  {!isCoreStyle && (
+    <input
+      type="text"
+      value={group.label}
+      onChange={e => updateGroupLabel(key, e.target.value)}
+      style={{ ...inputStyle, flexGrow: 1, minWidth: 0 }}
+      aria-label="Custom Group Name"
+    />
+  )}
+</div>
 
             {/* --- Description field for custom groups --- */}
             {!isCoreStyle && (
@@ -489,7 +514,7 @@ export default function TechniqueEditor({
             {/* --- End description field --- */}
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Singles (individual moves)</h4>
+              <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Single Strikes</h4>
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 {singles.map((single, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
