@@ -147,9 +147,24 @@ export default function App() {
     const list = allKeys.map(key => {
       const config = BASE_EMPHASIS_CONFIG[key] || {};
       const technique = techniques[key];
+
+      // --- CUSTOM GROUP TITLE LOGIC ---
+      // If this is a custom group (duplicated from a core group), and the user has entered a custom name,
+      // use the user-entered name as the label for the card, instead of the file name or "Copy" name.
+      // Assume custom groups have a .title property that is user-editable.
+      let label: string;
+      if (technique?.title && typeof technique.title === 'string' && technique.title.trim()) {
+        label = technique.title.trim();
+      } else if (config.label) {
+        label = config.label;
+      } else {
+        // Remove (Copy) from key for prettification, but only if no .title
+        label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s*\(Copy\)$/i, '');
+      }
+
       return {
         key: key as EmphasisKey,
-        label: config.label || technique?.title || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        label,
         iconPath: config.iconPath || '/assets/icon_user.png',
         emoji: config.icon || '🎯',
         desc: config.desc || technique?.description || `Custom style: ${key}`
@@ -1575,7 +1590,9 @@ export default function App() {
                   emoji={style.emoji}
                   style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
                 />
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>{style.label}</h3>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>
+                  {techniques[style.key]?.title?.trim() || style.label}
+                </h3>
               </div>
               {style.desc && <p style={{ color: '#f9a8d4', margin: 0, fontSize: '0.875rem' }}>{style.desc}</p>}
             </div>
@@ -1730,7 +1747,7 @@ export default function App() {
                             // Commit on blur: clamp to [0.25, 30], snap to nearest 0.25
                             let v = parseFloat(roundMinInput || '');
                             if (Number.isNaN(v)) v = roundMin;
-                            v = Math.min(30, Math.max(0.25, v));
+                            v = Math.min(30, Math.max(0.25, v)); // Clamp between 15s and 10min
                             const stepped = Math.round(v / 0.25) * 0.25;
                             setRoundMin(stepped);
                             setRoundMinInput(String(stepped));
@@ -1858,8 +1875,6 @@ export default function App() {
             color: 'white',
             border: 'none',
             borderRadius: '0.5rem',
-            padding: '0.7rem 1.2rem',
-            fontWeight: 700,
             fontSize: '1rem',
             cursor: 'pointer',
             boxShadow: '0 2px 8px rgba(59,130,246,0.12)',

@@ -13,6 +13,7 @@ export interface TechniqueShape {
   singles?: (string | { text: string; favorite?: boolean })[];
   combos?: (string | { text: string; favorite?: boolean })[];
   techniques?: Record<string, TechniqueDetail>;
+  description?: string; // Added description property
 }
 
 // helper: create a readable title from a short key
@@ -126,9 +127,15 @@ export default function TechniqueEditor({
   function updateGroupLabel(groupKey: string, label: string) {
     const next = { ...local };
     const existing = next[groupKey] || {};
-    // prefer preserving an explicit title but if none exists, create a humanized title
-    const title = existing.title ?? humanizeKey(label);
-    next[groupKey] = { ...existing, label, title };
+    // Always update both label and title to the new value
+    next[groupKey] = { ...existing, label, title: label };
+    persist(next);
+  }
+
+  function updateGroupDescription(groupKey: string, description: string) {
+    const next = { ...local };
+    const existing = next[groupKey] || {};
+    next[groupKey] = { ...existing, description };
     persist(next);
   }
 
@@ -456,6 +463,30 @@ export default function TechniqueEditor({
                 </button>
               )}
             </div>
+
+            {/* --- Description field for custom groups --- */}
+            {!isCoreStyle && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor={`desc-${key}`} style={{ color: '#a5b4fc', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                  Description (shown on homepage)
+                </label>
+                <textarea
+                  id={`desc-${key}`}
+                  value={group.description ?? ''}
+                  onChange={e => updateGroupDescription(key, e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    minHeight: 60,
+                    resize: 'vertical',
+                    fontSize: '1rem',
+                    color: 'white'
+                  }}
+                  placeholder="Describe this group (purpose, focus, etc.)"
+                  aria-label="Group Description"
+                />
+              </div>
+            )}
+            {/* --- End description field --- */}
 
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Singles (individual moves)</h4>
