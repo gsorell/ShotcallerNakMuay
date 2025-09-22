@@ -1392,7 +1392,7 @@ export default function App() {
           }}
         >
           {page === 'logs' ? (
-            <WorkoutLogs onBack={() => setPage('timer')} />
+            <WorkoutLogs onBack={() => setPage('timer')} emphasisList={emphasisList} />
           ) : page === 'editor' ? (
             <TechniqueEditorAny
               techniques={techniques as any}
@@ -1966,3 +1966,8 @@ export default function App() {
     </>
   );
 }
+
+type WorkoutLogsProps = {
+  onBack: () => void;
+  emphasisList: { key: string; label: string; iconPath: string; emoji: string; desc: string; }[];
+};

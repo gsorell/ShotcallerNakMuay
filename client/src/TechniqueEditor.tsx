@@ -229,17 +229,6 @@ export default function TechniqueEditor({
     return () => window.removeEventListener('keydown', handler);
   }, [onBack]);
 
-  const backBtnStyle: React.CSSProperties = {
-    all: 'unset',
-    cursor: 'pointer',
-    color: '#f9a8d4',
-    padding: '0.5rem 0.75rem',
-    borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.2)',
-    background: 'rgba(255,255,255,0.06)',
-    fontWeight: 700
-  };
-
   // --- NEW: Export/Import logic ---
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -331,7 +320,41 @@ export default function TechniqueEditor({
   const trashIcon = '/assets/icon_trash.png';
 
   return (
-    <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem' }}>
+    <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem', position: 'relative' }}>
+      {/* Top-left Back button, visually aligned and not overlapping */}
+      {onBack && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          position: 'relative',
+          marginBottom: '1.5rem',
+          marginLeft: '0.5rem',
+          zIndex: 2
+        }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              color: '#f9a8d4',
+              border: '1.5px solid rgba(255,255,255,0.2)',
+              borderRadius: 8,
+              padding: '0.5rem 1.1rem',
+              fontWeight: 700,
+              fontSize: '1rem',
+              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.10)',
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+              outline: 'none'
+            }}
+            title="Back to Training (Esc)"
+            onMouseOver={e => (e.currentTarget.style.background = 'rgba(249,168,212,0.13)')}
+            onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+          >
+            ← Back
+          </button>
+        </div>
+      )}
       {/* Info message at the top */}
       <div
         style={{
@@ -344,7 +367,7 @@ export default function TechniqueEditor({
           fontSize: '1.12rem',
           lineHeight: 1.7,
           boxShadow: '0 4px 24px 0 rgba(168,85,247,0.10)',
-          textAlign: 'center' // Center the text for a cleaner look
+          textAlign: 'center'
         }}
       >
         <div style={{ fontWeight: 700, fontSize: '1.25rem', color: '#f9a8d4', marginBottom: '0.5em', letterSpacing: '0.5px' }}>
@@ -367,7 +390,7 @@ export default function TechniqueEditor({
           Tip: Use this page to tailor your training experience, reinforce key skills, or experiment with new combinations.
         </div>
       </div>
-      {/* Top bar with Back button and Export/Import */}
+      {/* Top bar with Export/Import */}
       <div
         style={{
           display: 'flex',
@@ -408,13 +431,6 @@ export default function TechniqueEditor({
             />
           </div>
         </div>
-        {onBack && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
-            <button type="button" onClick={onBack} style={backBtnStyle} title="Back to Training (Esc)">
-              ← Back to Training
-            </button>
-          </div>
-        )}
       </div>
 
       {Object.entries(local).map(([key, group]) => {
