@@ -198,9 +198,10 @@ export default function WorkoutLogs({
             alignItems: 'stretch',
             marginBottom: '2rem',
             flexWrap: 'wrap',
-            maxWidth: 900,
-            marginLeft: 'auto',
-            marginRight: 'auto'
+            maxWidth: '100%',
+            width: '100%',
+            marginLeft: 0,
+            marginRight: 0
           }}
         >
           {/* Summary Card */}
@@ -210,9 +211,9 @@ export default function WorkoutLogs({
               minWidth: 260,
               maxWidth: 480,
               padding: '1.5rem 2rem',
-              background: 'rgba(24, 24, 37, 0.72)',
-              border: '1.5px solid rgba(139,92,246,0.13)',
-              borderRadius: '1.25rem',
+              background: 'rgba(24, 24, 37, 0.48)',
+              border: '1px solid rgba(255,255,255,0.10)', // match log card border
+              borderRadius: '0.5rem', // match log card radius
               color: '#fff',
               boxShadow: '0 2px 16px 0 rgba(139,92,246,0.08)',
               display: 'flex',
@@ -284,9 +285,9 @@ export default function WorkoutLogs({
                 minWidth: 160,
                 maxWidth: 220,
                 padding: '1.2rem 1.2rem 1rem 1.2rem',
-                background: 'rgba(24, 24, 37, 0.72)',
-                border: '1.5px solid rgba(139,92,246,0.13)',
-                borderRadius: '1.25rem',
+                background: 'rgba(24, 24, 37, 0.48)', // lowered opacity
+                border: '1px solid rgba(255,255,255,0.10)', // match log card border
+                borderRadius: '0.5rem', // match log card radius
                 color: '#fff',
                 boxShadow: '0 2px 16px 0 rgba(139,92,246,0.08)',
                 display: 'flex',
