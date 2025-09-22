@@ -32,7 +32,7 @@ type Page = 'timer' | 'editor' | 'logs' | 'completed';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v17'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v18'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
@@ -212,38 +212,41 @@ export default function App() {
   }, [techniques]);
 
   // Selection and session settings
-    const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
-      timer_only: false,
-      khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
-    });
-    const [addCalisthenics, setAddCalisthenics] = useState(false);
-    const [difficulty, setDifficulty] = useState<Difficulty>('medium');
-    const [roundsCount, setRoundsCount] = useState(5);
-    const [roundMin, setRoundMin] = useState(3);
-    const [restMinutes, setRestMinutes] = useState(DEFAULT_REST_MINUTES);
+  const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
+    timer_only: false,
+    khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
+  });
+  const [addCalisthenics, setAddCalisthenics] = useState(false);
+
+  // ADD: Read in order toggle
+  const [readInOrder, setReadInOrder] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [roundsCount, setRoundsCount] = useState(5);
+  const [roundMin, setRoundMin] = useState(3);
+  const [restMinutes, setRestMinutes] = useState(DEFAULT_REST_MINUTES);
   
-    // Toggle an emphasis on/off
-    const toggleEmphasis = (k: EmphasisKey) => {
-      setSelectedEmphases(prev => {
-        const isTurningOn = !prev[k];
-        if (k === 'timer_only') {
-          // If turning timer_only on, turn all others off.
-          // If turning timer_only off, just turn it off.
-          const allOff: Record<EmphasisKey, boolean> = {
-            timer_only: false,
-            khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
-          };
-          return { ...allOff, timer_only: isTurningOn };
-        }
+  // Toggle an emphasis on/off
+  const toggleEmphasis = (k: EmphasisKey) => {
+    setSelectedEmphases(prev => {
+      const isTurningOn = !prev[k];
+      if (k === 'timer_only') {
+        // If turning timer_only on, turn all others off.
+        // If turning timer_only off, just turn it off.
+        const allOff: Record<EmphasisKey, boolean> = {
+          timer_only: false,
+          khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
+        };
+        return { ...allOff, timer_only: isTurningOn };
+      }
     
-        // For any other key, toggle it. If turning it on, ensure timer_only is off.
-        const next = { ...prev, [k]: isTurningOn };
-        if (isTurningOn) {
-          next.timer_only = false;
-        }
-        return next;
-      });
-    };
+      // For any other key, toggle it. If turning it on, ensure timer_only is off.
+      const next = { ...prev, [k]: isTurningOn };
+      if (isTurningOn) {
+        next.timer_only = false;
+      }
+      return next;
+    });
+  };
 
   // NEW: keep a friendly text field state for the round length input
   const [roundMinInput, setRoundMinInput] = useState<string>(String(roundMin));
@@ -316,6 +319,7 @@ export default function App() {
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
   const shotsCalledOutRef = useRef<number>(0); // Initialize shotsCalledOutRef
+  const orderedIndexRef = useRef<number>(0); // Initialize orderedIndexRef
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
@@ -528,14 +532,20 @@ export default function App() {
         return;
       }
 
-      const phrase = pickRandom(pool);
+      // Pick technique in order if readInOrder is true
+      let phrase: string;
+      if (readInOrder) {
+        phrase = pool[orderedIndexRef.current % pool.length];
+        orderedIndexRef.current += 1;
+      } else {
+        phrase = pickRandom(pool);
+      }
 
       // Increment shotsCalledOut counter
       shotsCalledOutRef.current += 1;
 
       // If Web Speech is available, sync UI to the actual utterance lifecycle
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        // Ensure no backlog so visual and audio stay aligned
         try { window.speechSynthesis.cancel(); } catch { /* noop */ }
 
         const u = new SpeechSynthesisUtterance(phrase);
@@ -543,7 +553,6 @@ export default function App() {
         if (v) u.voice = v;
         u.rate = voiceSpeedRef.current;
 
-        // Display the text when the utterance actually begins
         u.onstart = () => {
           if (ttsGuardRef.current || !runningRef.current) {
             try { window.speechSynthesis.cancel(); } catch { /* noop */ }
@@ -552,7 +561,6 @@ export default function App() {
           setCurrentCallout(phrase);
         };
 
-        // Schedule the next callout when this one finishes
         u.onend = () => {
           utteranceRef.current = null;
           if (ttsGuardRef.current || !runningRef.current) return;
@@ -564,13 +572,12 @@ export default function App() {
         u.onerror = () => {
           utteranceRef.current = null;
           if (ttsGuardRef.current || !runningRef.current) return;
-          // Try again quickly on error
           scheduleNext(250);
         };
 
         utteranceRef.current = u;
         window.speechSynthesis.speak(u);
-        return; // scheduling handled in onend
+        return;
       }
 
       // Fallback (no TTS): update immediately and use timer cadence
@@ -827,6 +834,9 @@ export default function App() {
 
     // Unlock audio while we still have a user gesture
     void ensureMediaUnlocked();
+
+    // ADD THIS LINE:
+    orderedIndexRef.current = 0;
 
     try {
       const priming = new SpeechSynthesisUtterance(' ');
@@ -1695,22 +1705,38 @@ export default function App() {
                     </section>
 
                   {/* Calisthenics toggle */}
-                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
-                      <span>Add Calisthenics</span>
-                      <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
-                        position: 'relative', width: '3.5rem', height: '1.75rem',
-                        backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-                        transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-                      }}>
-                        <div style={{
-                          position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
-                          width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-                          transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                        }} />
-                      </div>
-                    </label>
-                  </section>
+                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem' }}>
+  {/* Add Calisthenics */}
+  <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
+    <span>Add Calisthenics</span>
+    <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
+      position: 'relative', width: '3.5rem', height: '1.75rem',
+      backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+      transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
+        width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+        transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+      }} />
+    </div>
+  </label>
+  {/* Read In Listed Order Toggle */}
+  <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
+    <span>Read Techniques In Order</span>
+    <div onClick={() => setReadInOrder(!readInOrder)} style={{
+      position: 'relative', width: '3.5rem', height: '1.75rem',
+      backgroundColor: readInOrder ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+      transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, left: readInOrder ? 'calc(100% - 1.5rem - 2px)' : 2,
+        width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+        transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+      }} />
+    </div>
+  </label>
+</section>
 
                   {/* Step 2: Rounds/Length/Rest */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
@@ -1752,35 +1778,6 @@ export default function App() {
                             const stepped = Math.round(v / 0.25) * 0.25;
                             setRoundMin(stepped);
                             setRoundMinInput(String(stepped));
-                          }}
-                        />
-                        <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
-                      </div>
-                    </div>
-
-                    {/* Rest Time */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Rest Time</h3>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          pattern="[0-9]*[.,]?[0-9]*"
-                          className="round-length-input"
-                          value={restMinutesInput}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(',', '.');
-                            if (/^\d*\.?\d*$/.test(raw)) {
-                              setRestMinutesInput(raw);
-                            }
-                          }}
-                          onBlur={() => {
-                            let v = parseFloat(restMinutesInput || '');
-                            if (Number.isNaN(v)) v = restMinutes;
-                            v = Math.min(10, Math.max(0.25, v)); // Clamp between 15s and 10min
-                            const stepped = Math.round(v / 0.25) * 0.25;
-                            setRestMinutes(stepped);
-                            setRestMinutesInput(String(stepped));
                           }}
                         />
                         <div style={{ fontSize: '0.75rem', color: '#f9a8d4' }}>minutes</div>
