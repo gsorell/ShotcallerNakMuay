@@ -57,8 +57,31 @@ function denormalizeArray(arr: { text: string, favorite?: boolean }[]): (string 
 // Define the path to the download icon
 const downloadIcon = '/assets/icon_download.png';
 
+// Define thumbnails for groups (example mapping)
+const GROUP_THUMBNAILS: Record<string, string> = {
+  timer_only: '/assets/icon.stopwatch.png',
+  newb: '/assets/icon_newb.png',
+  two_piece: '/assets/icon_two_piece.png',
+  boxing: '/assets/icon_boxing.png',
+  mat: '/assets/icon_mat.png',
+  tae: '/assets/icon_tae.png',
+  khao: '/assets/icon_khao.png',
+  sok: '/assets/icon_sok.png',
+  femur: '/assets/icon_femur.png',
+  southpaw: '/assets/icon_southpaw.png',
+  muay_tech: '/assets/icon.muaytech.png',
+  meat_potatoes: '/assets/icon_meat_potatoes.png',
+  buakaw: '/assets/icon.buakaw.png',
+  low_kick_legends: '/assets/icon_lowkicklegends.png',
+  elbow_arsenal: '/assets/icon.elbow arsenal.png',
+  ko_setups: '/assets/icon.ko.png'
+};
+
 // Define the path to the upload icon
 const uploadIcon = '/assets/icon_upload.png';
+
+// Define the path to the trash icon
+const trashIcon = '/assets/icon_trash.png';
 
 // Reusable styles for the new theme
 const panelStyle: React.CSSProperties = {
@@ -117,6 +140,18 @@ export default function TechniqueEditor({
   const [local, setLocal] = useState<Record<string, TechniqueShape>>(() => normalizeTechniques(techniques));
   const [newGroupName, setNewGroupName] = useState('');
 
+  // --- NEW: Scroll to top on group creation/duplication ---
+  const topRef = useRef<HTMLDivElement>(null);
+  function scrollToTop() {
+    setTimeout(() => {
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+    }, 0);
+  }
+
   useEffect(() => setLocal(normalizeTechniques(techniques)), [techniques]);
 
   function persist(next: Record<string, TechniqueShape>) {
@@ -127,7 +162,6 @@ export default function TechniqueEditor({
   function updateGroupLabel(groupKey: string, label: string) {
     const next = { ...local };
     const existing = next[groupKey] || {};
-    // Always update both label and title to the new value
     next[groupKey] = { ...existing, label, title: label };
     persist(next);
   }
@@ -205,6 +239,7 @@ export default function TechniqueEditor({
     persist(next);
   }
 
+  // --- MODIFIED: Add group and scroll to top ---
   function addGroup(key: string) {
     const k = key.trim();
     if (!k) return;
@@ -212,6 +247,7 @@ export default function TechniqueEditor({
     const next = { ...local, [k]: { label: k, title: humanizeKey(k), singles: [], combos: [] } };
     persist(next);
     setNewGroupName('');
+    scrollToTop();
   }
 
   function resetToDefault() {
@@ -232,7 +268,6 @@ export default function TechniqueEditor({
   // --- NEW: Export/Import logic ---
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Export techniques (user + custom only, never core)
   function handleExport() {
     const data = JSON.stringify(local, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
@@ -244,7 +279,6 @@ export default function TechniqueEditor({
     URL.revokeObjectURL(url);
   }
 
-  // Import techniques (validate before applying)
   function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -252,14 +286,11 @@ export default function TechniqueEditor({
     reader.onload = evt => {
       try {
         const imported = JSON.parse(evt.target?.result as string);
-        // Basic validation: must be an object with at least one group
         if (!imported || typeof imported !== 'object' || Array.isArray(imported)) {
           alert('Invalid file format.');
           return;
         }
-        // Confirm before overwrite
         if (!window.confirm('Importing will overwrite your current techniques (custom and user sets only). Core sets will remain unchanged. Continue?')) return;
-        // Merge: keep core sets from INITIAL_TECHNIQUES, overwrite/add others from import
         const merged: Record<string, TechniqueShape> = normalizeTechniques(INITIAL_TECHNIQUES as Record<string, Partial<TechniqueShape>>);
         Object.entries(imported).forEach(([k, v]) => {
           if (!INITIAL_TECHNIQUES[k]) merged[k] = normalizeTechniques({ [k]: v as Partial<TechniqueShape> })[k];
@@ -271,11 +302,10 @@ export default function TechniqueEditor({
       }
     };
     reader.readAsText(file);
-    // Reset input so same file can be re-imported if needed
     e.target.value = '';
   }
 
-  // Duplicate a core set for editing
+  // --- MODIFIED: Duplicate core set and scroll to top ---
   function duplicateCoreSet(key: string) {
     let base = local[key];
     if (!base) return;
@@ -294,33 +324,53 @@ export default function TechniqueEditor({
     };
     persist(next);
     alert(`Duplicated "${base.label}" as "${base.label} (Copy)"`);
+    scrollToTop();
   }
 
-  // Map group keys to their thumbnail image paths (should match home page)
-  const GROUP_THUMBNAILS: Record<string, string> = {
-    newb: '/assets/icon_newb.png',
-    khao: '/assets/icon_khao.png',
-    mat: '/assets/icon_mat.png',
-    tae: '/assets/icon_tae.png',
-    femur: '/assets/icon_femur.png',
-    sok: '/assets/icon_sok.png',
-    boxing: '/assets/icon_boxing.png',
-    two_piece: '/assets/icon_two_piece.png',
-    southpaw: '/assets/icon_southpaw.png',
-    // --- Custom icons for new groups ---
-    meat_potatoes: '/assets/icon_meat_potatoes.png',
-    buakaw: '/assets/icon.buakaw.png',
-    low_kick_legends: '/assets/icon_lowkicklegends.png',
-    elbow_arsenal: '/assets/icon.elbow arsenal.png',
-    muay_tech: '/assets/icon.muaytech.png',
-    ko_setups: '/assets/icon.ko.png'
-  };
+  // --- NEW: Group sorting logic ---
+  // Home page order (excluding user and calisthenics)
+  const CORE_ORDER = [
+    'timer_only',
+    'newb',
+    'two_piece',
+    'boxing',
+    'mat',
+    'tae',
+    'khao',
+    'sok',
+    'femur',
+    'southpaw',
+    'muay_tech',
+    'meat_potatoes',
+    'buakaw',
+    'low_kick_legends',
+    'elbow_arsenal',
+    'ko_setups'
+  ];
 
-  // Replace the delete button icon with the custom trash icon
-  const trashIcon = '/assets/icon_trash.png';
+  // User-created groups: not in INITIAL_TECHNIQUES and not 'calisthenics'
+  const userGroups = Object.entries(local)
+    .filter(([k]) => !Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, k) && k !== 'calisthenics');
+  // Core groups in correct order
+  const coreGroups = CORE_ORDER
+    .map(k => [k, local[k]] as [string, TechniqueShape])
+    .filter(([k, v]) => !!v);
+  // Any other core groups not in CORE_ORDER (fallback)
+  const otherCoreGroups = Object.entries(local)
+    .filter(([k]) => Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, k) && !CORE_ORDER.includes(k) && k !== 'calisthenics');
+  // Calisthenics always last if present
+  const calisthenicsGroup = Object.entries(local).find(([k]) => k === 'calisthenics');
+
+  // Final sorted group list
+  const sortedGroups: [string, TechniqueShape][] = [
+    ...userGroups,
+    ...coreGroups,
+    ...otherCoreGroups,
+    ...(calisthenicsGroup ? [calisthenicsGroup] : [])
+  ];
 
   return (
-    <div style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem', position: 'relative' }}>
+    <div ref={topRef} style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem', position: 'relative' }}>
       {/* Top-left Back button, visually aligned and not overlapping */}
       {onBack && (
         <div style={{
@@ -433,7 +483,7 @@ export default function TechniqueEditor({
         </div>
       </div>
 
-      {Object.entries(local).map(([key, group]) => {
+      {sortedGroups.map(([key, group]) => {
         const displayLabel = group.title ?? group.label ?? key;
         const isCoreStyle = Object.keys(INITIAL_TECHNIQUES).includes(key);
         const singles = normalizeArray(group.singles);
