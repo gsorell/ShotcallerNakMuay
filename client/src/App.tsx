@@ -320,6 +320,7 @@ export default function App() {
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
   const shotsCalledOutRef = useRef<number>(0); // Initialize shotsCalledOutRef
   const orderedIndexRef = useRef<number>(0); // Initialize orderedIndexRef
+  const currentPoolRef = useRef<string[]>([]); // Initialize currentPoolRef
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
@@ -525,20 +526,21 @@ export default function App() {
     const doCallout = () => {
       if (ttsGuardRef.current || !runningRef.current) return;
 
-      const pool = getTechniquePool();
+      const pool = currentPoolRef.current;
       if (!pool.length) {
         console.warn('No techniques available for callouts — stopping callouts');
         stopTechniqueCallouts();
         return;
       }
 
-      // Pick technique in order if readInOrder is true
       let phrase: string;
       if (readInOrder) {
         phrase = pool[orderedIndexRef.current % pool.length];
         orderedIndexRef.current += 1;
       } else {
-        phrase = pickRandom(pool);
+        // Use the shuffled pool in order, looping if needed
+        phrase = pool[orderedIndexRef.current % pool.length];
+        orderedIndexRef.current += 1;
       }
 
       // Increment shotsCalledOut counter
@@ -589,7 +591,7 @@ export default function App() {
 
     if (ttsGuardRef.current || !runningRef.current) return;
     scheduleNext(initialDelay);
-  }, [difficulty, getTechniquePool, stopTechniqueCallouts]);
+  }, [difficulty, stopTechniqueCallouts]);
 
   // Guard TTS on state changes
   useEffect(() => {
@@ -835,7 +837,12 @@ export default function App() {
     // Unlock audio while we still have a user gesture
     void ensureMediaUnlocked();
 
-    // ADD THIS LINE:
+    // Reset pool and index for the session
+    if (readInOrder) {
+      currentPoolRef.current = pool;
+    } else {
+      currentPoolRef.current = pool.sort(() => Math.random() - 0.5);
+    }
     orderedIndexRef.current = 0;
 
     try {
@@ -1347,6 +1354,13 @@ export default function App() {
     max-width: 100vw;
     overflow-x: hidden;
   }
+  @media (max-width: 600px) {
+  .settings-toggle-row {
+    flex-direction: column !important;
+    gap: 1.25rem !important;
+    align-items: stretch !important;
+  }
+}
 `}</style>
 
       <Header
@@ -1642,6 +1656,10 @@ export default function App() {
         title={showAllEmphases ? 'Show fewer styles' : 'Show more styles'}
       >
         {showAllEmphases ? 'See Less' : 'See More'}
+       
+
+       
+
         <span style={{
           display: 'inline-block',
           transition: 'transform 0.2s',
@@ -1704,39 +1722,85 @@ export default function App() {
                       </div>
                     </section>
 
-                  {/* Calisthenics toggle */}
-                  <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2.5rem' }}>
-  {/* Add Calisthenics */}
-  <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
-    <span>Add Calisthenics</span>
-    <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
-      position: 'relative', width: '3.5rem', height: '1.75rem',
-      backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-      transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-    }}>
-      <div style={{
-        position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
-        width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-        transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-      }} />
-    </div>
-  </label>
-  {/* Read In Listed Order Toggle */}
-  <label style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', fontSize: '1rem', fontWeight: 600, color: '#f9a8d4', userSelect: 'none' }}>
-    <span>Read Techniques In Order</span>
-    <div onClick={() => setReadInOrder(!readInOrder)} style={{
-      position: 'relative', width: '3.5rem', height: '1.75rem',
-      backgroundColor: readInOrder ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-      transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-    }}>
-      <div style={{
-        position: 'absolute', top: 2, left: readInOrder ? 'calc(100% - 1.5rem - 2px)' : 2,
-        width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-        transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-      }} />
-    </div>
-  </label>
-</section>
+                  {/* Calisthenics and Read In Order toggles */}
+                  <section
+                    className="settings-toggle-row"
+                    style={{
+                      maxWidth: '48rem',
+                      margin: '0 auto',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '2.5rem',
+                      flexWrap: 'wrap',
+                      flexDirection: 'row',
+                    }}
+                  >
+                    {/* Add Calisthenics */}
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: '#f9a8d4',
+                      userSelect: 'none',
+                      marginBottom: 0,
+                      marginTop: 0,
+                      flex: 1,
+                      minWidth: 0,
+                    }}>
+                      <span>Add Calisthenics</span>
+                      <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
+                        position: 'relative', width: '3.5rem', height: '1.75rem',
+                        backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+                        transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+                      }}>
+                        <div style={{
+                          position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
+                          width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+                          transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    </label>
+                    {/* Read In Listed Order Toggle */}
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      color: '#f9a8d4',
+                      userSelect: 'none',
+                      marginBottom: 0,
+                      marginTop: 0,
+                      flex: 1,
+                      minWidth: 0,
+                    }}>
+                      <span>Read In Order</span>
+                      <div
+    onClick={() => {
+      setReadInOrder(v => {
+        const next = !v;
+        orderedIndexRef.current = 0;
+        return next;
+      });
+    }}
+                        style={{
+                          position: 'relative', width: '3.5rem', height: '1.75rem',
+                          backgroundColor: readInOrder ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
+                          transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
+                        }}>
+                        <div style={{
+                          position: 'absolute', top: 2, left: readInOrder ? 'calc(100% - 1.5rem - 2px)' : 2,
+                          width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
+                          transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    </label>
+                  </section>
 
                   {/* Step 2: Rounds/Length/Rest */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
