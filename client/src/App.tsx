@@ -1611,20 +1611,21 @@ export default function App() {
         type="button"
         onClick={() => setShowAllEmphases(v => !v)}
         style={{
+          position: 'relative',
+          padding: '.75rem',
+          borderRadius: '1rem',
+          border: '2px solid rgba(255,255,255,0.2)',
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          color: 'white',
+          boxShadow: 'none',
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '0.4em',
-          padding: '0.45em 1.2em',
-          fontSize: '.75rem',
-          fontWeight: 600,
-          color: '#ffffffff',
-          background: 'transparent',
-          border: '1.5px solid rgba(255,255,255,0.2)',
-          borderRadius: '0.75rem',
-          boxShadow: '0 2px 8px rgba(59,130,246,0.10)',
+          gap: '0.75rem',
+          fontWeight: 400,
+          fontSize: '1.05rem',
+          transition: 'all 0.2s',
           cursor: 'pointer',
-          transition: 'background 0.2s, border-color 0.2s, color 0.2s',
-          outline: 'none'
+          minWidth: 0,
         }}
         tabIndex={0}
         aria-label={showAllEmphases ? 'See less styles' : 'See more styles'}
