@@ -639,7 +639,7 @@ export default function TechniqueEditor({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className="export-import-bar" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <button
               type="button"
               onClick={handleExport}
