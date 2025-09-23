@@ -431,7 +431,11 @@ export default function TechniqueEditor({
           userSelect: 'none',
           position: 'relative',
           minHeight: 56,
+          // Responsive: stack on small screens
+          gap: 12,
+          flexDirection: 'row',
         }}
+        className="group-header"
       >
         {thumbnail && (
           <img
@@ -448,57 +452,64 @@ export default function TechniqueEditor({
             }}
           />
         )}
-        {/* Only user groups are editable */}
-        {expanded && !isCoreStyle ? (
-          <input
-            type="text"
-            value={editLabel}
-            onChange={e => setEditLabel(e.target.value)}
-            onBlur={e => {
-              if (editLabel.trim() !== (group.title ?? group.label ?? keyName)) {
-                updateGroupLabel(keyName, editLabel.trim());
-              }
-            }}
-            style={{
-              ...inputStyle,
-              maxWidth: 320,
-              fontWeight: 700,
-              fontSize: '1.5rem',
-              background: 'rgba(0,0,0,0.25)',
-              color: '#f9a8d4',
-              border: 'none',
-              outline: 'none'
-            }}
-            aria-label="Rename group"
-            placeholder="Group Name"
-          />
-        ) : (
-          <h3
-            style={{
-              margin: 0,
-              color: 'white',
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-              minWidth: 0,
-              wordBreak: 'break-word',
-              flexGrow: 1
-            }}
-          >
-            {group.title ?? group.label ?? keyName}
-          </h3>
-        )}
+        <div style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}>
+          {/* Only user groups are editable */}
+          {expanded && !isCoreStyle ? (
+            <input
+              type="text"
+              value={editLabel}
+              onChange={e => setEditLabel(e.target.value)}
+              onBlur={e => {
+                if (editLabel.trim() !== (group.title ?? group.label ?? keyName)) {
+                  updateGroupLabel(keyName, editLabel.trim());
+                }
+              }}
+              style={{
+                ...inputStyle,
+                maxWidth: 320,
+                fontWeight: 700,
+                fontSize: '1.5rem',
+                background: 'rgba(0,0,0,0.25)',
+                color: '#f9a8d4',
+                border: 'none',
+                outline: 'none'
+              }}
+              aria-label="Rename group"
+              placeholder="Group Name"
+            />
+          ) : (
+            <h3
+              style={{
+                margin: 0,
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                minWidth: 0,
+                wordBreak: 'break-word',
+                flexGrow: 1
+              }}
+            >
+              {group.title ?? group.label ?? keyName}
+            </h3>
+          )}
+        </div>
         {/* Button container for top-right controls */}
         <div
           style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
             display: 'flex',
             gap: 8,
             alignItems: 'center',
             height: '100%',
+            flexWrap: 'wrap',
           }}
+          className="group-header-buttons"
         >
           {onDuplicate && !expanded && (
             <button
@@ -511,6 +522,7 @@ export default function TechniqueEditor({
                 padding: '0.25rem 0.75rem',
                 zIndex: 1,
                 position: 'relative',
+                whiteSpace: 'nowrap'
               }}
               aria-label="Duplicate group"
             >

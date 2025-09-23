@@ -200,4 +200,32 @@
   h2 {
     font-size: 1.2rem !important;
   }
+  .group-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .group-header-buttons {
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    margin-top: 8px;
+  }
+}
+@media (max-width: 400px) {
+  .group-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .group-header h3 {
+    font-size: 1.05rem !important;
+    margin: 0 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1 1 0%;
+  }
+  .group-header-buttons {
+    margin-top: 0 !important;
+  }
 }
