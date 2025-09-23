@@ -483,7 +483,23 @@ export default function TechniqueEditor({
         </div>
       </div>
 
-      {sortedGroups.map(([key, group]) => {
+      {/* --- Move Create New Emphasis block to the top --- */}
+      <div className="add-emphasis-panel" style={panelStyle}>
+        <h3 style={{ marginTop: 0, color: 'white' }}>Create New Emphasis</h3>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder="short-key (e.g., mystyle)"
+            value={newGroupName}
+            onChange={e => setNewGroupName(e.target.value)}
+            style={{ ...inputStyle, flexGrow: 1 }}
+          />
+          <button onClick={() => addGroup(newGroupName)} style={buttonStyle}>Add Emphasis</button>
+        </div>
+      </div>
+
+      {/* --- Render user-created groups directly beneath --- */}
+      {userGroups.map(([key, group]) => {
         const displayLabel = group.title ?? group.label ?? key;
         const isCoreStyle = Object.keys(INITIAL_TECHNIQUES).includes(key);
         const singles = normalizeArray(group.singles);
@@ -709,19 +725,232 @@ export default function TechniqueEditor({
         );
       })}
 
-      <div className="add-emphasis-panel" style={panelStyle}>
-        <h3 style={{ marginTop: 0, color: 'white' }}>Create New Emphasis</h3>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <input
-            type="text"
-            placeholder="short-key (e.g., mystyle)"
-            value={newGroupName}
-            onChange={e => setNewGroupName(e.target.value)}
-            style={{ ...inputStyle, flexGrow: 1 }}
-          />
-          <button onClick={() => addGroup(newGroupName)} style={buttonStyle}>Add Emphasis</button>
-        </div>
-      </div>
+      {/* --- Render core, other, and calisthenics groups after user groups --- */}
+      {[...coreGroups, ...otherCoreGroups, ...(calisthenicsGroup ? [calisthenicsGroup] : [])].map(([key, group]) => {
+        const displayLabel = group.title ?? group.label ?? key;
+        const isCoreStyle = Object.keys(INITIAL_TECHNIQUES).includes(key);
+        const singles = normalizeArray(group.singles);
+        const combos = normalizeArray(group.combos);
+        // Always show a thumbnail if available in GROUP_THUMBNAILS
+        const thumbnail = GROUP_THUMBNAILS[key];
+        return (
+          <div key={key} style={panelStyle}>
+            <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    marginBottom: '1.5rem',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start'
+  }}
+>
+  {thumbnail && (
+    <img
+      src={thumbnail}
+      alt={`${displayLabel} thumbnail`}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        objectFit: 'cover',
+        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
+        background: '#18181b'
+      }}
+    />
+  )}
+  <h3
+    style={{
+      margin: 0,
+      color: 'white',
+      fontSize: '1.5rem',
+      fontWeight: 700,
+      textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+      minWidth: 0,
+      wordBreak: 'break-word'
+    }}
+  >
+    {displayLabel}
+  </h3>
+  {isCoreStyle && (
+    <div style={{ marginLeft: 'auto', marginTop: 8 }}>
+      <button
+        onClick={() => duplicateCoreSet(key)}
+        style={{
+          ...buttonStyle,
+          maxWidth: '100%',
+          whiteSpace: 'nowrap'
+        }}
+        title="Duplicate this core set to create an editable copy"
+      >
+        Duplicate
+      </button>
+    </div>
+  )}
+  {!isCoreStyle && (
+    <input
+      type="text"
+      value={group.label}
+      onChange={e => updateGroupLabel(key, e.target.value)}
+      style={{ ...inputStyle, flexGrow: 1, minWidth: 0 }}
+      aria-label="Custom Group Name"
+    />
+  )}
+</div>
+
+            {/* --- Description field for custom groups --- */}
+            {!isCoreStyle && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor={`desc-${key}`} style={{ color: '#a5b4fc', fontWeight: 500, display: 'block', marginBottom: 6 }}>
+                  Description (shown on homepage)
+                </label>
+                <textarea
+                  id={`desc-${key}`}
+                  value={group.description ?? ''}
+                  onChange={e => updateGroupDescription(key, e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    minHeight: 60,
+                    resize: 'vertical',
+                    fontSize: '1rem',
+                    color: 'white'
+                  }}
+                  placeholder="Describe this group (purpose, focus, etc.)"
+                  aria-label="Group Description"
+                />
+              </div>
+            )}
+            {/* --- End description field --- */}
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Single Strikes</h4>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {singles.map((single, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={single.text}
+                      onChange={e => !isCoreStyle && updateSingle(key, idx, e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        flexGrow: 1,
+                        background: isCoreStyle ? 'rgba(0,0,0,0.15)' : inputStyle.background,
+                        color: isCoreStyle ? '#a3a3a3' : inputStyle.color
+                      }}
+                      placeholder="e.g., jab"
+                      readOnly={isCoreStyle}
+                      tabIndex={isCoreStyle ? -1 : 0}
+                    />
+                    <button
+                      onClick={() => toggleSingleFavorite(key, idx)}
+                      style={{
+                        ...buttonStyle,
+                        background: single.favorite ? 'rgba(36, 229, 251, 0.25)' : 'rgba(255,255,255,0.08)',
+                        color: single.favorite ? '#facc15' : '#f9a8d4',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        fontSize: '1.3rem',
+                        padding: 0,
+                        lineHeight: '2.5rem',
+                        opacity: 1,
+                        cursor: 'pointer'
+                      }}
+                      aria-label={single.favorite ? "Unstar" : "Star"}
+                      title={single.favorite ? "Unstar (favorite)" : "Star (favorite)"}
+                    >★</button>
+                    {!isCoreStyle && (
+                      <button onClick={() => removeSingle(key, idx)} style={deleteButtonStyle} aria-label="Delete single">
+                        <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {!isCoreStyle && (
+                <button onClick={() => addSingle(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Single</button>
+              )}
+            </div>
+
+            <div>
+              <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Combos</h4>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {combos.map((combo, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={combo.text}
+                      onChange={e => !isCoreStyle && updateCombo(key, idx, e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        flexGrow: 1,
+                        background: isCoreStyle ? 'rgba(0,0,0,0.15)' : inputStyle.background,
+                        color: isCoreStyle ? '#a3a3a3' : inputStyle.color
+                      }}
+                      placeholder="e.g., 1, 2, 3"
+                      readOnly={isCoreStyle}
+                      tabIndex={isCoreStyle ? -1 : 0}
+                    />
+                    <button
+                      onClick={() => toggleComboFavorite(key, idx)}
+                      style={{
+                        ...buttonStyle,
+                        background: combo.favorite ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.08)',
+                        color: combo.favorite ? '#facc15' : '#f9a8d4',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        fontSize: '1.3rem',
+                        padding: 0,
+                        lineHeight: '2.5rem',
+                        opacity: 1,
+                        cursor: 'pointer'
+                      }}
+                      aria-label={combo.favorite ? "Unstar" : "Star"}
+                      title={combo.favorite ? "Unstar (favorite)" : "Star (favorite)"}
+                    >★</button>
+                    {!isCoreStyle && (
+                      <button onClick={() => removeCombo(key, idx)} style={deleteButtonStyle} aria-label="Delete combo">
+                        <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {!isCoreStyle && (
+                <button onClick={() => addCombo(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Combo</button>
+              )}
+            </div>
+
+            {!isCoreStyle && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Delete group "${group.label}" and all its techniques? This cannot be undone.`)) {
+                      const next = { ...local };
+                      delete next[key];
+                      persist(next);
+                    }
+                  }}
+                  style={{
+                    ...deleteButtonStyle,
+                    width: 'auto',
+                    height: '2.5rem',
+                    padding: '0 1.5rem',
+                    fontSize: '1rem',
+                    marginLeft: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  aria-label={`Delete group ${group.label}`}
+                >
+                  <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                  Delete Group
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       <div className="reset-panel" style={{ ...panelStyle, background: 'rgba(159, 18, 57, 0.2)', borderColor: 'rgba(251, 113, 133, 0.3)' }}>
         <h3 style={{ marginTop: 0, color: '#fca5a5' }}>Reset Data</h3>
