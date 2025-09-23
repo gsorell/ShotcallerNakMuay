@@ -582,36 +582,36 @@ export default function TechniqueEditor({
       {/* Info message at the top */}
       <div
         style={{
-          background: 'rgba(30, 27, 75, 0.85)',
-          border: '1.5px solid #a31caf86',
-          borderRadius: '1rem',
-          padding: '1.5rem 1.25rem',
+          background: 'rgba(30, 27, 75, 0.75)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '0.75rem',
+          padding: '1.5rem',
           marginBottom: '2.5rem',
           color: '#fff',
-          fontSize: '1.12rem',
+          fontSize: '1.08rem',
           lineHeight: 1.7,
-          boxShadow: '0 4px 24px 0 rgba(168,85,247,0.10)',
+          boxShadow: '0 2px 12px 0 rgba(168,85,247,0.10)',
           textAlign: 'center'
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: '1.25rem', color: '#f9a8d4', marginBottom: '0.5em', letterSpacing: '0.5px' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.22rem', color: '#f9a8d4', marginBottom: '0.5em', letterSpacing: '0.5px' }}>
           Technique Manager
         </div>
         <div style={{ marginBottom: '0.7em' }}>
-          Customize the techniques and combos used during your training sessions.
+          Use this page to customize the strikes and combos available in your training routines.<br />
+          Create new emphasis groups, duplicate core sets, or edit your custom groups to match your goals.
         </div>
-        <div style={{ margin: '0.5em 0 0 0', padding: 0, color: '#fff', fontSize: '1.05rem', textAlign: 'center' }}>
-          Add, edit, rename, or remove techniques and combos for each emphasis group. You call the shots here.<br />
+        <div style={{ margin: '0.5em 0 0 0', padding: 0, color: '#fff', fontSize: '1.01rem', textAlign: 'center' }}>
           <span style={{ color: '#fde047', fontWeight: 700 }}>★</span>
-          <span style={{ color: '#fde047', fontWeight: 500 }}> Star</span>
+          <span style={{ color: '#fde047', fontWeight: 700 }}> Star</span>
           <span style={{ color: '#fff' }}> your favorites to have them called out more often.<br /></span>
           <span style={{ color: '#fff', fontWeight: 500 }}>
             Use <b>Export</b> to back up your custom techniques, and <b>Import</b> to restore or share them.<br />
           </span>
           To restore to default, click the button at the bottom of the page.
         </div>
-        <div style={{ marginTop: '0.8em', color: '#a5b4fc', fontSize: '1rem', fontStyle: 'italic' }}>
-          Tip: Use this page to tailor your training experience, reinforce key skills, or experiment with new combinations.
+        <div style={{ marginTop: '0.8em', color: '#a5b4fc', fontSize: '0.98rem', fontStyle: 'italic' }}>
+          Tip: Tailor your training experience, reinforce key skills, or experiment with new combinations.
         </div>
       </div>
       {/* Top bar with Export/Import */}
