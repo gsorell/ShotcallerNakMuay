@@ -69,17 +69,17 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Spinning Elbow"
     ],
     combos: [
-      "1, Step-in Right Knee, Pivot Left",
-      "2, Step-in Left Knee",
+      "1, Step-in, Right Knee, Pivot Left",
+      "2, Step-in, Left Knee",
       "High Block March, Left Knee, Right Knee",
       "1 2, Clinch, Double Knees",
       "1 4, Switch Knee, Elbow",
       "Left Check, 2 3 2",
       "Right Check, 3 2 3",
       "2, Left Elbow, Right Elbow",
-      "Knee, Elbow, knee",
-      "1 2, 3 to body, 3 to the head",
-      "Knee, Knee, knee",
+      "Knee, Elbow, Knee",
+      "1 2, 3 to the Body, 3 to the Head",
+      "Knee, Knee, Knee",
       "1 4, Switch Knee"
     ]
   },
@@ -97,15 +97,15 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 2 3",
       "3, Low Kick, 3",
       "2, Inside Leg Kick, 2 3",
-      "1, 2 to  Body, 3",
+      "1, 2 to the Body, 3 to the Head",
       "Overhand, Left Knee, 6 3",
       "Catch Body Kick, 2 3",
-      "1, Overhand, 3 to Body, 3",
+      "1, Overhand, 3 to the Body, 3 to the Head",
       "1 2 3, Step-in Right Elbow",
       "1 1 2",
       "2 3 2",
-      "1 to Body, 2",
-      "Overhand, 4 to Body, 3 to Body",
+      "1 to the Body, 2",
+      "Overhand, 4 to the Body, 3 to the Body",
     ]
   },
 
@@ -148,7 +148,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Sweep Left", "Sweep Right", "Left Check", "Right Check"
     ],
     combos: [
-      "Check Kick, Right Low Kick",
+      "Right Check, Right Low Kick",
       "6 3, Right Knee, Right Elbow",
       "Parry Jab, Left Kick",
       "Lean Back, Right Low Kick",
@@ -180,14 +180,14 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     ],
     combos: [
       "1 2, Right Elbow",
-      "1 Right Elbow",
-      "3 Right Elbow",
+      "1, Right Elbow",
+      "3, Right Elbow",
       "Parry Jab, Left Up Elbow",
       "2, Roll Right, Right Elbow",
       "Clinch, Left Up Elbow, Right Elbow",
       "Left Elbow, Right Elbow, Left Elbow",
       "1 1 2, Jumping Elbow",
-      "2 3 Right Up Elbow",
+      "2 3, Right Up Elbow",
       "Switch Knee, Right Elbow",
       "1 2 3, Spinning Elbow"
     ]
@@ -211,10 +211,10 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "3 3 3",
       "2 2 2",
       "1, Slip Right, 2",
-      "1 2, 3 to Body, 3",
+      "1 2, 3 to the Body, 3 to the Head",
       "1 2, Roll Right, 2 3",
       "2 3, Roll Left, 3 2",
-      "1, 2 to Body, 3",
+      "1, 2 to the Body, 3 to the Head",
       "1 2",
       "1, Slip Left, 5 2, Pivot Left",
       "2, Slip Right, 6 3, Pivot Right"
@@ -224,9 +224,9 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   calisthenics: {
     singles: [
       "Breakdown",
-      "3 Pushups",
+      "High Knees",
       "Alternating Checks",
-      "3 Jumping Jacks",
+      "Jumping Jacks",
       "1 2 1 2 1 2",
       "2 3 2 3 2 3",
       "3 Jumpsquats",
@@ -264,11 +264,11 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 2",
       "1 1 2",
       "1 2 3",
-      "1 2 3 to Body",
-      "Slip Outside, 2 to Body, 3 to Head",
+      "1 2, 3 to the Body",
+      "Slip Outside, 2 to the Body, 3 to the Head",
       "1 2, Pivot Left, 2",
       "1 2, Left Uppercut, 3",
-      "Feint 1, Step Outside, 2, 2 to Body",
+      "Feint 1, Step Outside, 2, 2 to the Body",
       "3, Overhand, 2 3",
       "1, Slip, 2 3 2",
       "1 2, Left Body Kick",
@@ -441,13 +441,13 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     ],
     combos: [
       "1 2, Head Kick",
-      "Slip, 2, Rear Kick",
-      "Low Kick, High Kick",
+      "Slip Right, 2, Rear Kick",
+      "Right Low Kick, Right Head Kick",
       "1 1 2, Head Kick",
       "2 3, Head Kick",
       "1 2 3, Overhand",
       "Slip, 6 3 2",
-      "Overhand, 3 to Body, Low Kick",
+      "Overhand, 3 to the Body, Low Kick",
       "2, Rear Knee, Elbow",
       "Teep, Step-in, Head Kick"
     ]
