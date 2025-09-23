@@ -112,12 +112,18 @@ export default function App() {
     try {
       const raw = localStorage.getItem(TECHNIQUES_STORAGE_KEY);
       const ver = localStorage.getItem(TECHNIQUES_VERSION_KEY);
+      let loaded = INITIAL_TECHNIQUES;
       if (!raw || ver !== TECHNIQUES_VERSION) {
         localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(INITIAL_TECHNIQUES));
         localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
-        return INITIAL_TECHNIQUES;
+      } else {
+        loaded = JSON.parse(raw);
       }
-      return JSON.parse(raw);
+      // Ensure timer_only is always present
+      if (!loaded.timer_only) {
+        loaded.timer_only = INITIAL_TECHNIQUES.timer_only;
+      }
+      return loaded;
     } catch {
       return INITIAL_TECHNIQUES;
     }
@@ -141,49 +147,84 @@ export default function App() {
 
   // Dynamically generate emphasis list from techniques, merging with base config for icons/descriptions.
   const emphasisList = React.useMemo(() => {
-    const techniqueKeys = Object.keys(techniques || {}).filter(k => k !== 'calisthenics');
-    // Always include timer_only at the start
-    const allKeys = ['timer_only', ...techniqueKeys.filter(k => k !== 'timer_only')];
-    const list = allKeys.map(key => {
-      const config = BASE_EMPHASIS_CONFIG[key] || {};
-      const technique = techniques[key];
+    // Exclude calisthenics from the tile list
+    const techniqueKeys = Object.keys(techniques || {}).filter(
+      k => k !== 'calisthenics'
+    );
 
-      // --- CUSTOM GROUP TITLE LOGIC ---
-      // If this is a custom group (duplicated from a core group), and the user has entered a custom name,
-      // use the user-entered name as the label for the card, instead of the file name or "Copy" name.
-      // Assume custom groups have a .title property that is user-editable.
+    // Core group keys in preferred order
+    const CORE_ORDER: string[] = [
+      'timer_only', 'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw',
+      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', 'muay_tech', 'ko_setups'
+    ];
+
+    // Always include timer_only as the first tile, using INITIAL_TECHNIQUES if missing
+    const timerOnlyTile = (() => {
+      const key = 'timer_only';
+      const config = BASE_EMPHASIS_CONFIG[key] || {};
+      const technique = techniques[key] || INITIAL_TECHNIQUES[key];
       let label: string;
       if (technique?.title && typeof technique.title === 'string' && technique.title.trim()) {
         label = technique.title.trim();
       } else if (config.label) {
         label = config.label;
       } else {
-        // Remove (Copy) from key for prettification, but only if no .title
         label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s*\(Copy\)$/i, '');
       }
-
       return {
-        key: key as EmphasisKey,
+        key,
         label,
         iconPath: config.iconPath || '/assets/icon_user.png',
         emoji: config.icon || '🎯',
         desc: config.desc || technique?.description || `Custom style: ${key}`
       };
-    });
+    })();
 
-    // Place timer_only first, then the rest in desired order
-    const desiredOrder: EmphasisKey[] = [
-      'timer_only', // <-- new first entry
-      'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw'
-    ];
-    const orderMap = new Map<string, number>(desiredOrder.map((k, i) => [k, i]));
+    // Core groups: those present in CORE_ORDER and in techniques, EXCLUDING timer_only
+    const coreGroups = CORE_ORDER
+      .filter(key => key !== 'timer_only' && techniqueKeys.includes(key))
+      .map(key => {
+        const config = BASE_EMPHASIS_CONFIG[key] || {};
+        const technique = techniques[key];
+        let label: string;
+        if (technique?.title && typeof technique.title === 'string' && technique.title.trim()) {
+          label = technique.title.trim();
+        } else if (config.label) {
+          label = config.label;
+        } else {
+          label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s*\(Copy\)$/i, '');
+        }
+        return {
+          key,
+          label,
+          iconPath: config.iconPath || '/assets/icon_user.png',
+          emoji: config.icon || '🎯',
+          desc: config.desc || technique?.description || `Custom style: ${key}`
+        };
+      });
 
-    // Stable sort: known keys get their index, unknown keys go to the end in original order
-    return list.slice().sort((a, b) => {
-      const ai = orderMap.has(a.key) ? orderMap.get(a.key)! : Number.MAX_SAFE_INTEGER;
-      const bi = orderMap.has(b.key) ? orderMap.get(b.key)! : Number.MAX_SAFE_INTEGER;
-      return ai - bi;
-    });
+    // User-created groups: not in CORE_ORDER and not calisthenics
+    const userGroups = techniqueKeys
+      .filter(key => !CORE_ORDER.includes(key))
+      .map(key => {
+        const technique = techniques[key];
+        let label: string;
+        if (technique?.title && typeof technique.title === 'string' && technique.title.trim()) {
+          label = technique.title.trim();
+        } else {
+          label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/\s*\(Copy\)$/i, '');
+        }
+        return {
+          key,
+          label,
+          iconPath: '/assets/icon_user.png',
+          emoji: '🎯',
+          desc: technique?.description || `Custom style: ${key}`
+        };
+      });
+
+    // Final list: timer_only first, then core groups, then user-created groups (no calisthenics)
+    return [timerOnlyTile, ...coreGroups, ...userGroups];
   }, [techniques]);
 
   // Keep a mutable ref for the techniques object so callbacks can access the latest value without re-rendering.
@@ -1494,7 +1535,7 @@ export default function App() {
                     </section>
 
                     {/* NEW: Show selected emphasis icons during the session */}
-                    {emphasisList.some(e => selectedEmphases[e.key]) && (
+                    {emphasisList.some(e => selectedEmphases[e.key as EmphasisKey]) && (
                       <section aria-label="Selected styles"
                         style={{
                           display: 'flex',
@@ -1518,7 +1559,7 @@ export default function App() {
                             maxWidth: '56rem',
                           }}
                         >
-                          {emphasisList.filter(e => selectedEmphases[e.key]).map(e => (
+                          {emphasisList.filter(e => selectedEmphases[e.key as EmphasisKey]).map(e => (
                             <div key={e.key}
                               style={{
                                 display: 'inline-flex',
@@ -1595,9 +1636,9 @@ export default function App() {
       margin: '0 auto'
     }}>
     {(showAllEmphases ? emphasisList : emphasisList.slice(0, 9)).map(style => {
-      const isSelected = selectedEmphases[style.key];
+      const isSelected = selectedEmphases[style.key as EmphasisKey];
       return (
-        <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key)} style={{
+        <button key={style.key} type="button" onClick={() => toggleEmphasis(style.key as EmphasisKey)} style={{
           position: 'relative', padding: '1.5rem', borderRadius: '1rem',
           border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
           minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
@@ -1742,28 +1783,44 @@ export default function App() {
                       alignItems: 'center',
                       gap: '1rem',
                       cursor: 'pointer',
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      color: '#f9a8d4',
-                      userSelect: 'none',
-                      marginBottom: 0,
-                      marginTop: 0,
-                      flex: 1,
-                      minWidth: 0,
                     }}>
-                      <span>Add Calisthenics</span>
-                      <div onClick={() => setAddCalisthenics(!addCalisthenics)} style={{
-                        position: 'relative', width: '3.5rem', height: '1.75rem',
-                        backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)', borderRadius: '9999px',
-                        transition: 'background-color 0.2s ease-in-out', border: '1px solid rgba(255,255,255,0.3)'
-                      }}>
+                      <input
+                        type="checkbox"
+                        checked={addCalisthenics}
+                        onChange={e => setAddCalisthenics(e.target.checked)}
+                        style={{ display: 'none' }}
+                        aria-label="Toggle calisthenics"
+                      />
+                      <div
+                        style={{
+                          position: 'relative',
+                          width: '2.5rem',
+                          height: '1.25rem',
+                          backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)',
+                          borderRadius: '9999px',
+                          transition: 'background-color 0.2s ease-in-out',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: addCalisthenics ? 'flex-end' : 'flex-start',
+                          padding: '0.2rem',
+                        }}
+                      >
                         <div style={{
-                          position: 'absolute', top: 2, left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
-                          width: '1.5rem', height: '1.5rem', backgroundColor: 'white', borderRadius: '50%',
-                          transition: 'left   0.2s ease-in-out', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                          width: '1rem',
+                          height: '1rem',
+                          borderRadius: '50%',
+                          backgroundColor: 'white',
+                          transition: 'transform 0.2s',
+                          transform: addCalisthenics ? 'translateX(100%)' : 'translateX(0%)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                         }} />
                       </div>
+                      <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: 600 }}>
+                        Include Calisthenics
+                      </span>
                     </label>
+
                     {/* Read In Listed Order Toggle */}
                     <label style={{
                       display: 'flex',
@@ -1933,19 +1990,35 @@ export default function App() {
           type="button"
           onClick={testVoice}
           style={{
-            background: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.5rem',
-            fontSize: '1rem',
+            all: 'unset',
             cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(59,130,246,0.12)',
-            marginLeft: 0,
-            marginTop: 0,
-            minWidth: 0,
+            color: '#f9a8d4',
+            padding: '0.5rem 0.75rem',
+            borderRadius: 8,
+            border: '1px solid transparent',
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #4f46e5 0%, #9333ea 100%)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            textAlign: 'center',
+            transition: 'transform 0.2s, background 0.3s',
+            position: 'relative',
+            overflow: 'hidden',
+            zIndex: 1,
           }}
         >
-          Test Voice
+          <span style={{ position: 'relative', zIndex: 2 }}>Test Voice</span>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 'inherit',
+            background: 'rgba(255,255,255,0.1)',
+            zIndex: 1,
+            pointerEvents: 'none',
+            transform: 'translateY(2px) translateX(2px)',
+            transition: 'transform 0.3s',
+          }} />
         </button>
       </div>
     </div>
