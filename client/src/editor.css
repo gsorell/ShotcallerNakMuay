@@ -192,68 +192,51 @@
   background: rgba(249, 168, 212, 0.25);
 }
 
+/* --- Fix group header layout for mobile --- */
 @media (max-width: 600px) {
-  .add-emphasis-panel,
-  .reset-panel {
-    padding: 1rem !important;
-  }
-  h2 {
-    font-size: 1.2rem !important;
-  }
   .group-header {
-    flex-direction: row !important;
-    align-items: center !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
     gap: 8px !important;
-    position: relative;
-  }
-  .group-header h3 {
-    font-size: 1.05rem !important;
-    margin: 0 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1 1 0%;
-  }
-  /* Move expand button to bottom right */
-  .group-header-buttons .expand-btn {
-    position: absolute;
-    right: 12px;
-    bottom: 12px;
-    margin: 0 !important;
-    z-index: 2;
   }
   .group-header-buttons {
     flex-direction: row !important;
+    justify-content: flex-end !important;
     align-items: center !important;
-    margin-top: 0 !important;
-    gap: 8px !important;
+    margin-top: 8px !important;
+    position: static !important;
   }
-  .editor-actions,
+  .group-header-buttons .expand-btn {
+    position: static !important;
+    margin: 0 !important;
+  }
+}
+
+/* Stack group header buttons vertically on very small screens */
+@media (max-width: 400px) {
+  .group-header-buttons {
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+}
+
+/* Stack export/import buttons vertically on very small screens */
+@media (max-width: 400px) {
   .export-import-bar {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
   .export-import-bar button {
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
   }
 }
-@media (max-width: 400px) {
-  .group-header {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-  }
-  .group-header h3 {
-    font-size: 1.05rem !important;
-    margin: 0 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1 1 0%;
-  }
-  .group-header-buttons {
-    margin-top: 0 !important;
-  }
+
+/* Add spacing below the Technique Manager title */
+.export-import-bar {
+  margin-top: 8px; /* Add a little space above the buttons */
 }

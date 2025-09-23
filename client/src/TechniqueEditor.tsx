@@ -412,10 +412,8 @@ export default function TechniqueEditor({
     toggleGroupExpanded: (key: string) => void,
     updateGroupLabel: (key: string, label: string) => void,
   }) {
-    // Local state for editing the group label
     const [editLabel, setEditLabel] = React.useState(group.title ?? group.label ?? keyName);
 
-    // Keep local state in sync if group changes (e.g., after save)
     React.useEffect(() => {
       setEditLabel(group.title ?? group.label ?? keyName);
     }, [group.title, group.label, keyName]);
@@ -424,90 +422,90 @@ export default function TechniqueEditor({
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
           marginBottom: expanded ? '1.5rem' : 0,
-          flexWrap: 'wrap',
-          justifyContent: 'flex-start',
           userSelect: 'none',
           position: 'relative',
           minHeight: 56,
-          // Responsive: stack on small screens
-          gap: 12,
-          flexDirection: 'row',
+          gap: 0,
         }}
         className="group-header"
       >
-        {thumbnail && (
-          <img
-            src={thumbnail}
-            alt={`${group.title ?? group.label ?? keyName} thumbnail`}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              objectFit: 'cover',
-              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
-              background: '#18181b',
-              marginRight: 16,
-            }}
-          />
-        )}
+        {/* Top row: icon and title only */}
         <div style={{
-          flex: 1,
-          minWidth: 0,
           display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
+          alignItems: 'center',
+          gap: 12,
+          flexDirection: 'row',
+          minHeight: 56,
         }}>
-          {/* Only user groups are editable */}
-          {expanded && !isCoreStyle ? (
-            <input
-              type="text"
-              value={editLabel}
-              onChange={e => setEditLabel(e.target.value)}
-              onBlur={e => {
-                if (editLabel.trim() !== (group.title ?? group.label ?? keyName)) {
-                  updateGroupLabel(keyName, editLabel.trim());
-                }
-              }}
+          {thumbnail && (
+            <img
+              src={thumbnail}
+              alt={`${group.title ?? group.label ?? keyName} thumbnail`}
               style={{
-                ...inputStyle,
-                maxWidth: 320,
-                fontWeight: 700,
-                fontSize: '1.5rem',
-                background: 'rgba(0,0,0,0.25)',
-                color: '#f9a8d4',
-                border: 'none',
-                outline: 'none'
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                objectFit: 'cover',
+                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
+                background: '#18181b',
+                marginRight: 16,
               }}
-              aria-label="Rename group"
-              placeholder="Group Name"
             />
-          ) : (
-            <h3
-              style={{
-                margin: 0,
-                color: 'white',
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-                minWidth: 0,
-                wordBreak: 'break-word',
-                flexGrow: 1
-              }}
-            >
-              {group.title ?? group.label ?? keyName}
-            </h3>
           )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {expanded && !isCoreStyle ? (
+              <input
+                type="text"
+                value={editLabel}
+                onChange={e => setEditLabel(e.target.value)}
+                onBlur={e => {
+                  if (editLabel.trim() !== (group.title ?? group.label ?? keyName)) {
+                    updateGroupLabel(keyName, editLabel.trim());
+                  }
+                }}
+                style={{
+                  ...inputStyle,
+                  maxWidth: 320,
+                  fontWeight: 700,
+                  fontSize: '1.5rem',
+                  background: 'rgba(0,0,0,0.25)',
+                  color: '#f9a8d4',
+                  border: 'none',
+                  outline: 'none'
+                }}
+                aria-label="Rename group"
+                placeholder="Group Name"
+              />
+            ) : (
+              <h3
+                style={{
+                  margin: 0,
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                  minWidth: 0,
+                  wordBreak: 'break-word',
+                  flexGrow: 1
+                }}
+              >
+                {group.title ?? group.label ?? keyName}
+              </h3>
+            )}
+          </div>
         </div>
-        {/* Button container for top-right controls */}
+        {/* Buttons row: right justified, below title */}
         <div
           style={{
             display: 'flex',
             gap: 8,
             alignItems: 'center',
-            height: '100%',
+            justifyContent: 'flex-end',
+            marginTop: 12,
             flexWrap: 'wrap',
+            width: '100%',
           }}
           className="group-header-buttons"
         >
