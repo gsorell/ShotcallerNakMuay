@@ -511,7 +511,7 @@ export default function TechniqueEditor({
           }}
           className="group-header-buttons"
         >
-          {onDuplicate && !expanded && (
+          {onDuplicate && (
             <button
               onClick={onDuplicate}
               style={{
