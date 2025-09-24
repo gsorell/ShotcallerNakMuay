@@ -1778,48 +1778,46 @@ export default function App() {
                     }}
                   >
                     {/* Add Calisthenics */}
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '1rem',
-                      cursor: 'pointer',
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={addCalisthenics}
-                        onChange={e => setAddCalisthenics(e.target.checked)}
-                        style={{ display: 'none' }}
-                        aria-label="Toggle calisthenics"
-                      />
-                      <div
-                        style={{
-                          position: 'relative',
-                          width: '2.5rem',
-                          height: '1.25rem',
-                          backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)',
-                          borderRadius: '9999px',
-                          transition: 'background-color 0.2s ease-in-out',
-                          border: '1px solid rgba(255,255,255,0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: addCalisthenics ? 'flex-end' : 'flex-start',
-                          padding: '0.2rem',
-                        }}
-                      >
-                        <div style={{
-                          width: '1rem',
-                          height: '1rem',
-                          borderRadius: '50%',
-                          backgroundColor: 'white',
-                          transition: 'transform 0.2s',
-                          transform: addCalisthenics ? 'translateX(100%)' : 'translateX(0%)',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        }} />
-                      </div>
-                      <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: 600 }}>
-                        Include Calisthenics
-                      </span>
-                    </label>
+<label style={{
+  display: 'flex',
+  alignItems: 'center',
+  gap: '1rem',
+  cursor: 'pointer',
+  fontSize: '1rem',
+  fontWeight: 600,
+  color: '#f9a8d4',
+  userSelect: 'none',
+  marginBottom: 0,
+  marginTop: 0,
+  flex: 1,
+  minWidth: 0,
+}}>
+  <span>Include Calisthenics</span>
+  <div
+    onClick={() => setAddCalisthenics(v => !v)}
+    style={{
+      position: 'relative',
+      width: '3.5rem',
+      height: '1.75rem',
+      backgroundColor: addCalisthenics ? '#3b82f6' : 'rgba(255,255,255,0.2)',
+      borderRadius: '9999px',
+      transition: 'background-color 0.2s ease-in-out',
+      border: '1px solid rgba(255,255,255,0.3)'
+    }}
+  >
+    <div style={{
+      position: 'absolute',
+      top: 2,
+      left: addCalisthenics ? 'calc(100% - 1.5rem - 2px)' : 2,
+      width: '1.5rem',
+      height: '1.5rem',
+      backgroundColor: 'white',
+      borderRadius: '50%',
+      transition: 'left 0.2s ease-in-out',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+    }} />
+  </div>
+</label>
 
                     {/* Read In Listed Order Toggle */}
                     <label style={{
@@ -1862,6 +1860,9 @@ export default function App() {
                   {/* Step 2: Rounds/Length/Rest */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
                     {/* Rounds */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Number of Rounds</h3>
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                       <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Number of Rounds</h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem 2rem', borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.2)' }}>
