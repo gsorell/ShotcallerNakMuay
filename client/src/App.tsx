@@ -33,7 +33,7 @@ type Page = 'timer' | 'editor' | 'logs' | 'completed';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v21'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v22'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
@@ -83,12 +83,7 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
     desc: 'Sharp elbow strikes and creative close-range attacks',
     iconPath: '/assets/icon.elbow arsenal.png'
   },
-  muay_tech: {
-    label: 'Muay Tech',
-    icon: '🧠',
-    desc: 'Technical timing, feints, sweeps, and counters',
-    iconPath: '/assets/icon.muaytech.png'
-  },
+  // REMOVE muay_tech entry entirely
   ko_setups: {
     label: 'KO Setups',
     icon: '💣',
@@ -156,7 +151,7 @@ export default function App() {
     // Core group keys in preferred order
     const CORE_ORDER: string[] = [
       'timer_only', 'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw',
-      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', 'muay_tech', 'ko_setups'
+      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', /* REMOVE: 'muay_tech', */ 'ko_setups'
     ];
 
     // Always include timer_only as the first tile, using INITIAL_TECHNIQUES if missing
