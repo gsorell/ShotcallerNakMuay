@@ -1898,35 +1898,39 @@ export default function App() {
                     </div>
                   </section>
 
+                  {/* Step 4: Extra Options */}
+                  <section style={{ maxWidth: '48rem', margin: '1.5rem auto 0 auto', display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {/* Calisthenics toggle */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, color: '#f9a8d4', fontSize: '1rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={addCalisthenics}
+                        onChange={e => setAddCalisthenics(e.target.checked)}
+                        style={{ accentColor: '#60a5fa', width: 20, height: 20 }}
+                      />
+                      Include Calisthenics
+                    </label>
+                    {/* Read in order toggle */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, color: '#f9a8d4', fontSize: '1rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={readInOrder}
+                        onChange={e => setReadInOrder(e.target.checked)}
+                        style={{ accentColor: '#60a5fa', width: 20, height: 20 }}
+                      />
+                      Read Techniques in Order
+                    </label>
+                  </section>
+                  
                   {/* Advanced Settings: Voice Speed and Selection */}
                   <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
                     {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
                   </button>
                   {showAdvanced && (
-                    <div className="advanced-settings-panel">
-    <div className="voice-speed-settings">
-      {/* Voice Speed Slider */}
-      <div className="field" style={{ minWidth: 0, flex: 1 }}>
-        <label htmlFor="voice-speed" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
-          Voice Speed
-        </label>
-        <input
-          id="voice-speed"
-          type="range"
-          min={0.5}
-          max={2}
-          step={0.05}
-          value={voiceSpeed}
-          onChange={e => setVoiceSpeed(Number(e.target.value))}
-          style={{ width: '100%' }}
-        />
-        <div style={{ fontSize: '0.95rem', color: '#f9a8d4', marginTop: 2 }}>
-          {voiceSpeed.toFixed(2)}x
-        </div>
-      </div>
-
-      {/* Voice Selection Dropdown */}
-      <div className="field" style={{ minWidth: 0, flex: 2 }}>
+                    <div className="advanced-settings-panel" style={{ marginTop: '2rem', maxWidth: '32rem', marginLeft: 'auto', marginRight: 'auto' }}>
+    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+      {/* Voice Dropdown */}
+      <div style={{ flex: 2, minWidth: '180px' }}>
         <label htmlFor="voice-select" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
           Voice
         </label>
@@ -1949,6 +1953,8 @@ export default function App() {
             border: '1px solid #000000ff',
             fontSize: '1rem',
             cursor: 'pointer',
+            width: '100%',
+            minWidth: '160px',
           }}
         >
           <option value="" disabled>Select a voice</option>
@@ -1958,6 +1964,46 @@ export default function App() {
             </option>
           ))}
         </select>
+      </div>
+      {/* Test Voice Button */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', minWidth: '120px' }}>
+        <button
+          type="button"
+          onClick={testVoice}
+          style={{
+            padding: '0.5rem 1.2rem',
+            borderRadius: '0.5rem',
+            border: '1px solid #60a5fa',
+            background: 'linear-gradient(90deg, #60a5fa 0%, #818cf8 100%)',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '1rem',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(59,130,246,0.10)',
+            width: '100%',
+          }}
+        >
+          Test Voice
+        </button>
+      </div>
+    </div>
+    {/* Voice Speed Slider */}
+    <div style={{ marginBottom: '0.5rem' }}>
+      <label htmlFor="voice-speed" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
+        Voice Speed
+      </label>
+      <input
+        id="voice-speed"
+        type="range"
+        min={0.5}
+        max={2}
+        step={0.05}
+        value={voiceSpeed}
+        onChange={e => setVoiceSpeed(Number(e.target.value))}
+        style={{ width: '100%' }}
+      />
+      <div style={{ fontSize: '0.95rem', color: '#f9a8d4', marginTop: 2 }}>
+        {voiceSpeed.toFixed(2)}x
       </div>
     </div>
     <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
