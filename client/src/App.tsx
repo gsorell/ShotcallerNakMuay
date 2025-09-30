@@ -1927,7 +1927,7 @@ export default function App() {
                     {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
                   </button>
                   {showAdvanced && (
-                    <div className="advanced-settings-panel" style={{ marginTop: '2rem', maxWidth: '32rem', marginLeft: 'auto', marginRight: 'auto' }}>
+                    <div className="advanced-settings-panel" style={{ marginTop: '0', maxWidth: '32rem', marginLeft: 'auto', marginRight: 'auto' }}>
     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
       {/* Voice Dropdown */}
       <div style={{ flex: 2, minWidth: '180px' }}>
