@@ -2033,6 +2033,34 @@ export default function App() {
           <button onClick={() => setShowOnboardingMsg(true)} style={{ ...linkButtonStyle, padding: '0.25rem 0.5rem' }}>
             Help
           </button>
+          <a
+            href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              opacity: 0.7,
+              transition: 'opacity 0.2s',
+              height: '32px',
+              marginLeft: '0.5rem',
+            }}
+            aria-label="Instagram"
+            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+          >
+            <img
+              src="/assets/icon.instagram.png"
+              alt="Instagram"
+              style={{
+                height: '24px',
+                width: '24px',
+                objectFit: 'contain',
+                borderRadius: '6px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+              }}
+            />
+          </a>
         </div>
       </footer>
     </div> {/* <-- This closes the <div style={{ position: 'relative', zIndex: 0 }}> */}
