@@ -145,7 +145,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
       "Right Check", "Flying Knee", "Left Kick", "Right Kick", "Head Kick",
       "Left Elbow", "Right Elbow", "Spinning Elbow", "Question Mark Kick",
-      "Sweep Left", "Sweep Right", "Left Check", "Right Check"
+      "Sweep Left", "Sweep Right", "Left Check", "Right Check",
     ],
     combos: [
       "Right Check, Right Low Kick",
@@ -165,7 +165,17 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Left Teep, Switch Knee, Right Elbow",
       "Switch Kick, 2 3 2",
       "1, Lean Back, Cross, Low Kick",
-      "2, Switch Kick, 2 3, Low Kick"
+      "2, Switch Kick, 2 3, Low Kick",
+      "Feint Teep, 2 3",
+      "Parry, 2, Rear Kick",
+      "Lean Back, Counter Right Kick",
+      "Slip Right, 2 3, Sweep Right",
+      "Switch Kick, 2, Pivot Left",
+      "Fake Kick, 2 3",
+      "Teep, Step-in Right Elbow",
+      "Oley Left, Head Kick",
+      "Parry, 2 3, Right Teep",
+      "1, Lean Back, 2, Low Kick"
     ]
   },
 
@@ -284,36 +294,6 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     ]
   },
 
-  muay_tech: {
-    label: "muay_tech",
-    title: "Muay Tech",
-    description: "Technical timing, feints, sweeps, and counters",
-    // Custom style: technical feints, sweeps, and counters
-    singles: [
-      "Feint Jab",
-      "Cross",
-      "Left Hook",
-      "Right Kick",
-      "Left Teep",
-      "Right Teep",
-      "Slip",
-      "Parry Jab",
-      "Sweep Left",
-      "Lean Back"
-    ],
-    combos: [
-      "Feint Teep, 2, Left Hook",
-      "Parry Jab, 2, Rear Kick",
-      "Lean Back, Counter Right Kick",
-      "Slip, 2 3, Sweep",
-      "Check, 2, Pivot Left",
-      "Fake Kick, 2 3",
-      "Teep, Step-in Right Elbow",
-      "Oley Left, Head Kick",
-      "Parry, 2 3, Right Teep",
-      "1, Lean Back, Cross, Low Kick"
-    ]
-  },
   meat_potatoes: {
     label: "meat_potatoes",
     title: "Meat & Potatoes",
