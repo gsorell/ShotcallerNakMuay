@@ -1175,8 +1175,8 @@ export default function App() {
           }}>
             <span style={{ display: 'block', marginBottom: '1.1em' }}>
               <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>
-                Stop guessing and start training with a purpose.
-              </strong> Nak Muay Shotcaller turns your shadowboxing and bagwork into dynamic, guided sessions with spoken techniques and timed rounds. Think of it as having a personal trainer right in your ear, helping you focus on reaction time and flow.
+                Turn your shadowboxing and bagwork into dynamic, guided sessions with spoken techniques and timed rounds.
+              </strong> Think of it as having a personal trainer right in your ear, helping you focus on reaction time and flow.
             </span>
             <span style={{ display: 'block', marginBottom: '1.1em' }}>
               <strong style={{ color: '#fdf2f8', fontWeight: 800 }}>
@@ -1598,10 +1598,8 @@ export default function App() {
                       <div style={{ textAlign: 'center', position: 'relative' }}>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
                         <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>
-                          Transform your solo training with guided programs that call out strikes and combinations.
-                          Select one or more styles to get started.
+                        Select one or more styles to get started.
                           <span style={{ marginLeft: 8 }}>
-                            See{' '}
                             <button
                               type="button"
                               onClick={() => setShowOnboardingMsg(true)}
@@ -1620,9 +1618,9 @@ export default function App() {
                               tabIndex={0}
                               aria-label="Open help"
                             >
-                              help
+                              Help
                             </button>
-                            .
+                            
                           </span>
                         </p>
                       </div>
