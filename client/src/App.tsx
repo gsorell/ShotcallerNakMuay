@@ -553,7 +553,7 @@ export default function App() {
     // Fixed cadence per difficulty (calls/min)
     const cadencePerMin =
       difficulty === 'easy' ? 26 :
-      difficulty === 'hard' ? 42 : 31;
+      difficulty === 'hard' ? 60 : 31;
     const baseDelayMs = Math.round(60000 / cadencePerMin);
     const minDelayMs = Math.round(baseDelayMs * 0.5);
 
