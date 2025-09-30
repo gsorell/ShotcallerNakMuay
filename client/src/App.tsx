@@ -10,6 +10,7 @@ import './App.css';
 import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
 import Header from './components/Header';
+import StatusTimer from './components/StatusTimer'; // <-- Make sure this import exists
 
 // REMOVE: The image imports are not needed for files in /public
 /*
@@ -522,7 +523,7 @@ export default function App() {
     utterance.rate = speed;
     utterance.onstart = () => {
       if (ttsGuardRef.current || !runningRef.current) {
-        try { window.speechSynthesis.cancel(); } catch {}
+        try { window.speechSynthesis.cancel(); } catch { /* noop */ }
       }
     };
     window.speechSynthesis.speak(utterance);
@@ -991,62 +992,31 @@ export default function App() {
     }
   }
 
-  // Small status/timer component
-  function StatusTimer({
-    time, round, totalRounds, status
-  }: {
-    time: string; round: number; totalRounds: number;
-    status: 'ready' | 'running' | 'paused' | 'stopped' | 'resting' | 'pre-round'
-  }) {
-    const statusColor = {
-      ready: '#4ade80', running: '#60a5fa', paused: '#fbbf24', stopped: '#9ca3af', resting: '#a5b4fc', 'pre-round': '#facc15'
-    }[status];
-    const statusText = {
-      ready: 'Ready to Start', running: 'Training Active', paused: 'Paused', stopped: 'Session Complete', resting: 'Rest Period', 'pre-round': 'Get Ready!'
-    }[status];
-    return (
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 0, textAlign: 'center' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1rem', width: '100%' }}>
-          <div className="main-timer" style={{
-            fontSize: '8rem', fontWeight: 900, color: 'white', letterSpacing: '0.05em',
-            textShadow: '0 4px 8px rgba(0,0,0,0.3)', fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-            textAlign: 'center', width: '100%', margin: '0 auto'
-          }}>
-            {isResting ? fmtTime(restTimeLeft) : (isPreRound ? preRoundTimeLeft : time)}
-          </div>
-        </div>
-        <div style={{ fontSize: '1.125rem', fontWeight: 'bold', color: statusColor, marginBottom: '1rem', textAlign: 'center' }}>
-          {statusText}
-        </div>
-        {round > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ fontSize: '0.875rem', color: '#f9a8d4', textAlign: 'center' }}>
-              Round {round} of {totalRounds}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                gap: '0.5rem',
-                alignItems: 'center',
-                justifyContent: 'center',
-                // keep a tiny inner gap; outer wrapper controls final spacing
-                marginBottom: '8px',
-              }}
-            >
-              {Array.from({ length: totalRounds }).map((_, index) => (
-                <div key={index} style={{
-                  width: '0.75rem', height: '0.75rem', borderRadius: '50%',
-                  transition: 'background-color 0.3s',
-                  backgroundColor: index < round ? '#f9a8d4' : 'rgba(255,255,255,0.2)',
-                  border: index < round ? '1px solid #ec4899' : '1px solid rgba(255,255,255,0.4)'
-                }} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
+  // REMOVE this block (it's a plain <div> showing round/time/status):
+  /*
+  <div>
+    <p>Round: {currentRound}/{roundsCount}</p>
+    <p>Status: {getStatus()}</p>
+    <p>Time Left: {fmtTime(timeLeft)}</p>
+    {isResting && <p>Rest Time Left: {fmtTime(restTimeLeft)}</p>}
+    {isPreRound && <p>Pre-Round Time Left: {fmtTime(preRoundTimeLeft)}</p>}
+  </div>
+  */
+
+  // RESTORE the styled timer by replacing the above with:
+  {(running || isPreRound) && (
+    <StatusTimer
+      time={fmtTime(timeLeft)}
+      round={currentRound}
+      totalRounds={roundsCount}
+      status={getStatus()}
+      isResting={isResting}
+      restTimeLeft={restTimeLeft}
+      isPreRound={isPreRound}
+      preRoundTimeLeft={preRoundTimeLeft}
+      fmtTime={fmtTime}
+    />
+  )}
 
   // ADD: missing shared inline style helpers (fixes many "Cannot find name" TS errors)
   const controlButtonStyle = (bg: string, border = bg): React.CSSProperties => ({
@@ -1487,7 +1457,37 @@ export default function App() {
                       rowGap: 'clamp(16px, 3.2vh, 28px)',
                     }}
                   >
-                    <StatusTimer time={fmtTime(timeLeft)} round={currentRound} totalRounds={roundsCount} status={getStatus()} />
+                    {/* REPLACE THIS BLOCK */}
+                    {/* Old plain timer block: */}
+                    {/*
+<div
+  style={{
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+  }}
+>
+  Round {currentRound}/{roundsCount} - {getStatus()}
+  <br />
+  Time Left: {fmtTime(timeLeft)}
+  {isResting && <div>Rest Time Left: {fmtTime(restTimeLeft)}</div>}
+  {isPreRound && <div>Pre-Round Time Left: {fmtTime(preRoundTimeLeft)}</div>}
+</div>
+                    */}
+
+                    {/* NEW: Use styled StatusTimer component */}
+                    <StatusTimer
+                      time={fmtTime(timeLeft)}
+                      round={currentRound}
+                      totalRounds={roundsCount}
+                      status={getStatus()}
+                      isResting={isResting}
+                      restTimeLeft={restTimeLeft}
+                      isPreRound={isPreRound}
+                      preRoundTimeLeft={preRoundTimeLeft}
+                      fmtTime={fmtTime}
+                    />
 
                     {/* Live technique subtitle (during active rounds only) */}
                     {running && !paused && !isResting && currentCallout && (
@@ -1653,7 +1653,7 @@ export default function App() {
                   srcPath={style.iconPath}
                   alt={style.label}
                   emoji={style.emoji}
-                  style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', display: 'inline-block' }}
+                  style={{ width: 48, height: 48, borderRadius:  8, objectFit: 'cover', display: 'inline-block' }}
                 />
                 <h3 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>
                   {techniques[style.key]?.title?.trim() || style.label}
@@ -1686,7 +1686,7 @@ export default function App() {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.75rem',
-          fontWeight: 400,
+          fontWeight:  400,
           fontSize: '1.05rem',
           transition: 'all 0.2s',
           cursor: 'pointer',
@@ -1951,54 +1951,15 @@ export default function App() {
             border: '1px solid #000000ff',
             fontSize: '1rem',
             cursor: 'pointer',
-            position: 'relative',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
           }}
         >
-          <option value="" disabled>Select a voice...</option>
+          <option value="" disabled>Select a voice</option>
           {voices.map(v => (
-            <option key={v.name} value={v.name}>
-              {v.name} {v.default ? '(Default)' : ''}
+            <option key={v.name} value={v.name} style={{ padding: '0.5rem 0.75rem' }}>
+              {v.name}
             </option>
           ))}
         </select>
-      </div>
-
-      {/* Test Voice Button */}
-      <div className="field" style={{ minWidth: 0, flex: '0 0 auto', display: 'flex', alignItems: 'flex-end', marginTop: 24 }}>
-        <button
-          type="button"
-          onClick={testVoice}
-          style={{
-            all: 'unset',
-            cursor: 'pointer',
-            color: '#f9a8d4',
-            padding: '0.5rem 0.75rem',
-            borderRadius: 8,
-            border: '1px solid transparent',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #4f46e5 0%, #9333ea 100%)',
-            textAlign: 'center',
-            transition: 'transform 0.2s, background 0.3s',
-            position: 'relative',
-            overflow: 'hidden',
-            zIndex: 1,
-          }}
-        >
-          <span style={{ position: 'relative', zIndex: 2 }}>Test Voice</span>
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: 'inherit',
-            background: 'rgba(255,255,255,0.1)',
-            zIndex: 1,
-            pointerEvents: 'none',
-            transform: 'translateY(2px) translateX(2px)',
-            transition: 'transform 0.3s',
-          }} />
-        </button>
       </div>
     </div>
     <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
