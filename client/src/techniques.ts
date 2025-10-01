@@ -38,7 +38,18 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Long Guard",
       "High Guard Block"
     ],
-    combos: [],
+    combos: [
+      "1, Right Low Kick",
+      "1 2, Right Body Kick",
+      "1 2, Left Body Kick",
+      "1 2 3, Right Low Kick",
+      "1 2, Left Elbow",
+      "1 2 3,Right Uppercut Elbow",
+      "Left Kick, 2 3, Right Low Kick",
+      "Right Kick, 3 2, Left Body Kick",
+      "Left Teep, 2 3, Right Low Kick", 
+      "1 3 2, Left Body Kick"
+    ],
     exclusive: true
   },
 
