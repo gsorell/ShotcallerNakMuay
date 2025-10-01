@@ -1,6 +1,5 @@
 export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[]; exclusive?: boolean; label?: string; title?: string; description?: string }> = {
   // Nak Muay Newb - Start here to learn the Art of 8 Limbs
-  // exclusive: true means this emphasis should not be combined with other styles
   newb: {
     label: 'newb',
     title: 'Nak Muay Newb',
@@ -269,7 +268,15 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "6 3",
       "1, Right Kick",
       "2, Switch Kick",
+      "2, Low Kick",
+      "3, Right Kick",
+      "Right Teep, 2",
+      "2, Left Knee",
+      "1, Right Knee",
+      "3, Right Elbow",
+      "1, Right Elbow",
       "Inside Leg Kick, 2",
+      "Inside Leg Kick, Left Kick",
       "3, Low Kick",
       "Right Kick, 3",
       "Left Teep, Right Kick",
