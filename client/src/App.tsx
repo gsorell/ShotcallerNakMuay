@@ -33,7 +33,7 @@ type Page = 'timer' | 'editor' | 'logs' | 'completed';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v22'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v23'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
@@ -44,7 +44,7 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
     desc: 'Just a round timer — no shotcalling, no techniques.',
     iconPath: '/assets/icon.stopwatch.png'
   },
-  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start here with one move at a time', iconPath: '/assets/icon_newb.png' },
+  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start here to learn the basics', iconPath: '/assets/icon_newb.png' },
   khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations', iconPath: '/assets/icon_khao.png' },
   mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees', iconPath: '/assets/icon_mat.png' },
   tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks', iconPath: '/assets/icon_tae.png' },
