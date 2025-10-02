@@ -351,6 +351,40 @@ input[type='number'] {
 /* Optional safety to avoid page-wide horizontal scroll */
 html, body { overflow-x: hidden; }
 
+/* Sticky start button in the bottom container */
+.sticky-start-button {
+  all: unset;
+  min-width: 260px;
+  font-size: 2rem;
+  font-weight: 900;
+  color: white;
+  background: linear-gradient(90deg, #4ade80 0%, #38bdf8 100%);
+  border-radius: 1.25rem;
+  border: none;
+  box-shadow: 0 15px 30px rgba(34,197,94,0.2), 0 8px 15px rgba(59,130,246,0.15);
+  padding: 1.25rem 2.5rem;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(.4,2,.3,1);
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  text-align: center;
+  display: inline-block;
+}
+
+.sticky-start-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(34,197,94,0.3), 0 12px 20px rgba(59,130,246,0.25);
+}
+
+/* Responsive adjustments for the sticky container */
+@media (max-width: 600px) {
+  .sticky-start-button {
+    min-width: calc(100vw - 64px);
+    font-size: 1.5rem;
+    padding: 1rem 2rem;
+  }
+}
+
 /* Floating Start button at bottom (visible when rendered) */
 .start-button {
   position: fixed;

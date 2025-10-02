@@ -57,6 +57,24 @@
   box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
 }
 
+/* Responsive adjustments for mobile screens */
+@media (max-width: 600px) {
+  .difficulty-controls {
+    gap: 0.5rem;
+  }
+  
+  .difficulty-btn {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  /* Ensure buttons remain readable in sticky container on mobile */
+  .difficulty-btn:not(.active) {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+}
+
 /* Basic difficulty selector styles — replace with your design */
 .difficulty-container {
     display: flex;
