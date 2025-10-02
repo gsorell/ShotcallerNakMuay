@@ -1459,12 +1459,24 @@ export default function App() {
     overflow-x: hidden;
   }
   @media (max-width: 600px) {
-  .settings-toggle-row {
-    flex-direction: column !important;
-    gap: 1.25rem !important;
-    align-items: stretch !important;
+    .settings-toggle-row {
+      flex-direction: column !important;
+      gap: 1.25rem !important;
+      align-items: stretch !important;
+    }
+    .section-header-with-button {
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center !important;
+      gap: 1rem !important;
+    }
+    .section-header-with-button h2 {
+      text-align: center !important;
+    }
+    .section-header-with-button p {
+      text-align: center !important;
+    }
   }
-}
 `}</style>
 
       <Header
@@ -1832,20 +1844,29 @@ export default function App() {
         onClick={() => setShowAllEmphases(v => !v)}
         style={{
           position: 'relative',
-          padding: '.75rem',
+          padding: '.75rem 1rem',
           borderRadius: '1rem',
-          border: '2px solid rgba(255,255,255,0.2)',
-          backgroundColor: 'rgba(255,255,255,0.05)',
-          color: 'white',
+          border: 'none',
+          backgroundColor: 'transparent',
+          color: '#f9a8d4',
           boxShadow: 'none',
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '0.75rem',
-          fontWeight:  400,
-          fontSize: '1.05rem',
+          gap: '0.5rem',
+          fontWeight: 500,
+          fontSize: '0.95rem',
           transition: 'all 0.2s',
           cursor: 'pointer',
           minWidth: 0,
+          opacity: 0.8
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '1';
+          e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = '0.8';
+          e.currentTarget.style.backgroundColor = 'transparent';
         }}
         tabIndex={0}
         aria-label={showAllEmphases ? 'See less styles' : 'See more styles'}
@@ -1869,52 +1890,55 @@ export default function App() {
     </div>
   )}
 
-  {/* Restore Manage Techniques button here */}
+  {/* Customize button positioned underneath the styles selection */}
   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
     <button
       onClick={() => setPage('editor')}
-      className="manage-techniques-btn"
       style={{
-        position: 'relative',
-        padding: '1.5rem',
-        borderRadius: '1rem',
-        border: '2px solid rgba(255,255,255,0.2)',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        color: 'white',
-        boxShadow: 'none',
-        display: 'inline-flex',
+        padding: '1rem 1.5rem',
+        borderRadius: '0.75rem',
+        border: '2px solid #3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.15)',
+        color: '#60a5fa',
+        fontWeight: 600,
+        fontSize: '1rem',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        display: 'flex',
         alignItems: 'center',
         gap: '0.75rem',
-        fontWeight: 400,
-        fontSize: '1.05rem',
-        transition: 'all 0.2s',
-        cursor: 'pointer',
-        minWidth: 0,
+        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+        backdropFilter: 'blur(8px)',
+        minWidth: 'auto'
       }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
+        e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.3)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
+      }}
+      title="Create custom techniques and modify existing ones"
     >
       <img
         src="/assets/icon_edit.png"
         alt=""
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 8,
-          objectFit: 'cover',
-          marginRight: 12,
-          verticalAlign: 'middle',
-          background: 'rgba(255,255,255,0.04)',
+          width: 24,
+          height: 24,
+          borderRadius: 6,
+          objectFit: 'cover'
         }}
         aria-hidden="true"
       />
-      <span style={{
-        fontWeight: 400,
-        letterSpacing: '0.01em',
-        color: 'white',
-      }}>
-        Manage Techniques
-      </span>
+      <span>Customize Techniques</span>
     </button>
   </div>
+
+
                     </div>
                   </section>
 
