@@ -174,190 +174,255 @@ export default function WorkoutLogs({
           style={{
             all: 'unset',
             cursor: 'pointer',
-            color: '#f9a8d4',
-            padding: '0.5rem 0.75rem',
-            borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.2)',
-            background: 'rgba(255,255,255,0.06)'
+            color: 'white',
+            padding: '0.625rem 1.125rem',
+            borderRadius: '0.75rem',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.08)',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
-          ← Back
+          <span style={{ fontSize: '1rem' }}>←</span>
+          Back
         </button>
         <h2 style={{ margin: 0, color: 'white', fontSize: '1.25rem' }}>Workout Logs</h2>
         <div style={{ width: '4rem' }} />
       </div>
 
-      {/* --- Workout Summary + Favorite --- */}
+      {/* --- Compact Stats --- */}
       {stats && (
         <div
-          className="main-container"
           style={{
-            display: 'flex',
-            gap: '2rem',
-            justifyContent: 'center',
-            alignItems: 'stretch',
-            marginBottom: '2rem',
-            flexWrap: 'wrap',
-            maxWidth: '100%',
-            width: '100%',
-            marginLeft: 0,
-            marginRight: 0
+            marginBottom: '1rem',
+            padding: '0.75rem',
+            background: 'rgba(24, 24, 37, 0.48)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: '0.5rem',
           }}
         >
-          {/* Summary Card */}
-          <div
-            style={{
-              flex: '1 1 320px',
-              minWidth: 260,
-              maxWidth: 480,
-              padding: '1.5rem 2rem',
-              background: 'rgba(24, 24, 37, 0.48)',
-              border: '1px solid rgba(255,255,255,0.10)', // match log card border
-              borderRadius: '0.5rem', // match log card radius
-              color: '#fff',
-              boxShadow: '0 2px 16px 0 rgba(139,92,246,0.08)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <div style={{
-              fontWeight: 700,
-              fontSize: '1.13rem',
-              letterSpacing: '0.01em',
-              marginBottom: '1.1rem',
-              color: '#a5b4fc'
-            }}>
-              Workout Summary
-            </div>
-            <div style={{
-              display: 'flex',
-              gap: '2rem',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: '1.08rem',
-              fontWeight: 500,
-              letterSpacing: '0.01em'
-            }}>
-              <div title="Total sessions completed">
-                <span style={{ fontWeight: 700 }}>{stats.totalWorkouts}</span>
-                <span style={{ opacity: 0.85 }}> sessions</span>
-              </div>
-              <div title="Total rounds completed">
-                <span style={{ fontWeight: 700 }}>{stats.totalRounds}</span>
-                <span style={{ opacity: 0.85 }}> rounds</span>
-              </div>
-              <div title="Total minutes trained">
-                <span style={{ fontWeight: 700 }}>{stats.totalMinutes}</span>
-                <span style={{ opacity: 0.85 }}> min</span>
-              </div>
-            </div>
-            <div style={{
-              display: 'flex',
-              gap: '2rem',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginTop: '1.1rem',
-              fontSize: '1.08rem',
-              fontWeight: 500,
-              letterSpacing: '0.01em'
-            }}>
-              <div title="Current streak: consecutive days with a workout" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span role="img" aria-label="flame">🔥</span>
-                <span style={{ fontWeight: 700 }}>{stats.current}</span>
-                <span style={{ opacity: 0.85 }}> day streak</span>
-              </div>
-              <div title="Longest streak: most consecutive days with a workout" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span role="img" aria-label="trophy">🏆</span>
-                <span style={{ fontWeight: 700 }}>{stats.longest}</span>
-                <span style={{ opacity: 0.85 }}> day - longest streak</span>
-              </div>
-            </div>
-          </div>
-          {/* Favorite Card */}
+          {/* Favorite Style */}
           {favoriteConfig && (
-            <div
-              style={{
-                flex: '0 1 180px',
-                minWidth: 160,
-                maxWidth: 220,
-                padding: '1.2rem 1.2rem 1rem 1.2rem',
-                background: 'rgba(24, 24, 37, 0.48)', // lowered opacity
-                border: '1px solid rgba(255,255,255,0.10)', // match log card border
-                borderRadius: '0.5rem', // match log card radius
-                color: '#fff',
-                boxShadow: '0 2px 16px 0 rgba(139,92,246,0.08)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginBottom: '0.5rem'
+            }}>
               <div style={{
-                fontWeight: 700,
-                fontSize: '1.08rem',
-                letterSpacing: '0.01em',
-                marginBottom: '0.7rem',
-                color: '#a5b4fc'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                fontSize: '0.75rem',
+                color: 'rgba(255,255,255,0.8)'
               }}>
-                Favorite
-              </div>
-              <div style={{ marginBottom: '0.7rem', minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img
                   src={favoriteConfig.iconPath}
                   alt={favoriteConfig.label}
-                  style={{ width: 48, height: 48, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px #0006)' }}
+                  style={{ width: 16, height: 16, objectFit: 'contain' }}
                 />
-              </div>
-              <div style={{ fontWeight: 600, fontSize: '1.08rem', textAlign: 'center', wordBreak: 'break-word' }}>
-                {favoriteConfig.label}
+                <span>Favorite: {favoriteConfig.label}</span>
               </div>
             </div>
           )}
+          
+          {/* Streaks */}
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            justifyContent: 'center',
+            fontSize: '0.8rem'
+          }}>
+            {/* Current Streak */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '0.25rem',
+                marginBottom: '0.125rem'
+              }}>
+                <span style={{ fontSize: '1rem' }}>🔥</span>
+                <span style={{ fontWeight: 700, color: 'white', fontSize: '1.125rem' }}>
+                  {stats.current}
+                </span>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Current Streak
+              </div>
+            </div>
+            
+            {/* Longest Streak */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '0.25rem',
+                marginBottom: '0.125rem'
+              }}>
+                <span style={{ fontSize: '1rem' }}>🏆</span>
+                <span style={{ fontWeight: 700, color: 'white', fontSize: '1.125rem' }}>
+                  {stats.longest}
+                </span>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>
+                Best Streak
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Log items (unchanged) */}
+      {/* Enhanced Log Entries */}
       <div ref={logsContainerRef}>
         {logs.length === 0 ? (
-          <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <p style={{ margin: 0, textAlign: 'center', color: '#d1d5db' }}>No workouts logged yet. Sessions are logged automatically when they are stopped or completed.</p>
+          <div style={{ 
+            padding: '2rem', 
+            background: 'rgba(24, 24, 37, 0.48)', 
+            borderRadius: '0.75rem', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 }}>📝</div>
+            <p style={{ margin: 0, color: '#d1d5db', fontSize: '0.9rem' }}>
+              No workouts logged yet.<br/>
+              <span style={{ opacity: 0.7, fontSize: '0.8rem' }}>Sessions are logged automatically when completed.</span>
+            </p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {logs.slice().reverse().map(log => (
-              <div key={log.id} className="log-card log-card-flex" style={{ position: 'relative' }}>
-                {/* Delete button at top right */}
-                <button
-                  className="icon-btn log-delete-btn"
-                  onClick={() => deleteEntry(log.id)}
-                  aria-label="Delete log"
-                >✕</button>
-                {/* Left: Date & Time */}
-                <div className="log-card-left">
-                  <div className="log-date">{new Date(log.timestamp).toLocaleString()}</div>
-                </div>
-                {/* Center: Emphases, Difficulty, Shots Called Out */}
-                <div className="log-card-center">
-                  <div className="log-meta">{log.emphases.length ? log.emphases.join(', ') : 'No emphasis selected'}</div>
-                  {difficultyLabel(log.difficulty) && (
-                    <div className="log-meta">Difficulty: {difficultyLabel(log.difficulty)}</div>
-                  )}
-                  {typeof log.shotsCalledOut === 'number' && (
-                    <div className="log-meta">Shots Called Out: {log.shotsCalledOut}</div>
-                  )}
-                </div>
-                {/* Right: Rounds, Length */}
-                <div className="log-card-right">
-                  <div className="log-rounds">{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
-                  <div className="log-meta">{log.roundLengthMin} min</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <>
+            {/* Simple Activity Header */}
+            <h3 style={{ 
+              margin: '0 0 1rem 0',
+              fontSize: '1rem',
+              fontWeight: 600,
+              color: 'white'
+            }}>
+              Recent Workouts ({logs.length})
+            </h3>
+            
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {logs.slice().reverse().map((log, index) => {
+                const isToday = new Date(log.timestamp).toDateString() === new Date().toDateString();
+                const difficultyColors = {
+                  easy: '#10b981',
+                  medium: '#f59e0b', 
+                  hard: '#ef4444'
+                };
+                const difficultyColor = difficultyColors[log.difficulty as keyof typeof difficultyColors] || '#6b7280';
+                
+                return (
+                  <div 
+                    key={log.id} 
+                    style={{ 
+                      position: 'relative',
+                      padding: '1rem 2.5rem 1rem 1rem',
+                      background: 'rgba(24, 24, 37, 0.48)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '0.5rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '1rem'
+                    }}
+                  >
+                    {/* Delete button */}
+                    <button
+                      onClick={() => deleteEntry(log.id)}
+                      style={{
+                        position: 'absolute',
+                        top: '0.75rem',
+                        right: '0.75rem',
+                        background: 'rgba(0,0,0,0.2)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'rgba(255,255,255,0.5)',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        padding: 0,
+                        width: '1.5rem',
+                        height: '1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '0.375rem',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.color = '#ef4444';
+                        e.currentTarget.style.background = 'rgba(239,68,68,0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+                        e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                      }}
+                      aria-label="Delete log"
+                    >
+                      ✕
+                    </button>
+                    
+                    {/* Left: Date and Style */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: '0.875rem', 
+                        fontWeight: 600, 
+                        color: 'white',
+                        marginBottom: '0.25rem'
+                      }}>
+                        {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.8rem', 
+                        color: 'rgba(255,255,255,0.7)'
+                      }}>
+                        {log.emphases.length ? log.emphases.join(', ') : 'Timer Only'}
+                      </div>
+                    </div>
+                    
+                    {/* Right: Stats */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '1rem',
+                      fontSize: '0.8rem'
+                    }}>
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        background: `${difficultyColor}15`,
+                        color: difficultyColor,
+                        borderRadius: '0.375rem',
+                        fontSize: '0.7rem',
+                        fontWeight: 600
+                      }}>
+                        {difficultyLabel(log.difficulty)}
+                      </span>
+                      <div style={{ 
+                        textAlign: 'right',
+                        color: 'rgba(255,255,255,0.8)'
+                      }}>
+                        <div>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{log.roundLengthMin} min</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
