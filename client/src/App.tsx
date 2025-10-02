@@ -982,6 +982,8 @@ export default function App() {
       const arr = raw ? JSON.parse(raw) : [];
       arr.push(entry);
       localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(arr));
+      // Trigger home page stats refresh
+      setStatsRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error('Failed to auto-log workout:', err);
     }
@@ -1097,6 +1099,7 @@ export default function App() {
   // Main Timer UI
   // --- Stats calculation functions (similar to WorkoutLogs) ---
   const [homePageStats, setHomePageStats] = useState<any>(null);
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
 
   // Calculate streaks from workout logs
   const calculateStreaks = (logs: any[]) => {
@@ -1184,7 +1187,7 @@ export default function App() {
     } catch {
       setHomePageStats(null);
     }
-  }, [page]); // Recalculate when page changes (e.g., returning from logs)
+  }, [page, statsRefreshTrigger]); // Recalculate when page changes or new workout is saved
 
   // Find the favorite emphasis config by label (case-insensitive)
   const favoriteConfig = homePageStats?.mostCommonEmphasis
@@ -2221,7 +2224,7 @@ export default function App() {
                           right: 0,
                           bottom: 0,
                           zIndex: 999,
-                          padding: '1rem 1rem 1.5rem 1rem',
+                          padding: '1rem 1rem 2.5rem 1rem',
                           background: 'linear-gradient(180deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.98) 100%)',
                           backdropFilter: 'blur(24px)',
                           borderTop: '1px solid rgba(255,255,255,0.12)',
@@ -2343,96 +2346,6 @@ export default function App() {
                         >
                           Let's Go!
                         </button>
-
-                        {/* Minimal footer */}
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          gap: '0.75rem', 
-                          flexWrap: 'wrap', 
-                          color: 'rgba(249,168,212,0.8)',
-                          fontSize: '0.75rem',
-                          paddingTop: '0.5rem',
-                          borderTop: '1px solid rgba(255,255,255,0.06)',
-                          width: '100%',
-                          opacity: 0.9
-                        }}>
-                          <img
-                            src="/assets/logo_icon.png"
-                            alt="Logo"
-                            style={{ 
-                              height: '16px', 
-                              marginRight: '0.25rem', 
-                              verticalAlign: 'middle', 
-                              borderRadius: '4px', 
-                              background: 'rgba(255,255,255,0.04)', 
-                              cursor: 'pointer' 
-                            }}
-                            onClick={() => {
-                              setPage('timer');
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            tabIndex={0}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                setPage('timer');
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                              }
-                            }}
-                            role="button"
-                            aria-label="Go to home"
-                          />
-                          <span style={{ fontSize: '0.7rem' }}>Train smart, fight smarter</span>
-                          <button 
-                            onClick={() => setPage('logs')} 
-                            style={{ 
-                              ...linkButtonStyle, 
-                              padding: '0.125rem 0.25rem',
-                              fontSize: '0.7rem'
-                            }}
-                          >
-                            Logs
-                          </button>
-                          <button 
-                            onClick={() => setShowOnboardingMsg(true)} 
-                            style={{ 
-                              ...linkButtonStyle, 
-                              padding: '0.125rem 0.25rem',
-                              fontSize: '0.7rem'
-                            }}
-                          >
-                            Help
-                          </button>
-                          <a
-                            href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              opacity: 0.7,
-                              transition: 'opacity 0.2s',
-                              height: '16px',
-                              marginLeft: '0.25rem',
-                            }}
-                            aria-label="Instagram"
-                            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
-                          >
-                            <img
-                              src="/assets/icon.instagram.png"
-                              alt="Instagram"
-                              style={{
-                                height: '14px',
-                                width: '14px',
-                                objectFit: 'contain',
-                                borderRadius: '3px',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
-                              }}
-                            />
-                          </a>
-                        </div>
                       </div>
                     </>
                   )}
@@ -2444,7 +2357,13 @@ export default function App() {
       </main>
 
       {/* Footer stays visible on all pages */}
-      <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      <footer style={{ 
+        textAlign: 'center', 
+        marginTop: '4rem', 
+        padding: '2rem', 
+        paddingBottom: !isActive && hasSelectedEmphasis ? '200px' : '2rem',
+        borderTop: '1px solid rgba(255,255,255,0.1)' 
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', color: '#f9a8d4' }}>
           <img
             src="/assets/logo_icon.png"
