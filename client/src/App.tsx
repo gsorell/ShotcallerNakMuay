@@ -1095,6 +1095,104 @@ export default function App() {
   };
 
   // Main Timer UI
+  // --- Stats calculation functions (similar to WorkoutLogs) ---
+  const [homePageStats, setHomePageStats] = useState<any>(null);
+
+  // Calculate streaks from workout logs
+  const calculateStreaks = (logs: any[]) => {
+    if (!logs.length) return { current: 0, longest: 0 };
+    
+    // Get unique workout days, sorted chronologically
+    const days = Array.from(
+      new Set(
+        logs
+          .map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
+          .sort((a, b) => a.localeCompare(b))
+      )
+    );
+    
+    if (days.length === 0) return { current: 0, longest: 0 };
+    if (days.length === 1) return { current: 1, longest: 1 };
+
+    // Calculate longest streak
+    let longest = 1, current = 1, max = 1;
+    for (let i = 1; i < days.length; ++i) {
+      const prev = new Date(days[i - 1]);
+      const curr = new Date(days[i]);
+      const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff === 1) {
+        current += 1;
+        if (current > max) max = current;
+      } else {
+        current = 1;
+      }
+    }
+    
+    // Calculate current streak (must end on today or yesterday to be "current")
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const lastWorkoutDay = days[days.length - 1];
+    
+    // Only count as current streak if last workout was today or yesterday
+    if (lastWorkoutDay !== today && lastWorkoutDay !== yesterday) {
+      return { current: 0, longest: max };
+    }
+    
+    // Count backwards from the most recent workout day
+    let currentStreak = 1;
+    for (let i = days.length - 1; i > 0; --i) {
+      const prev = new Date(days[i - 1]);
+      const curr = new Date(days[i]);
+      const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff === 1) {
+        currentStreak += 1;
+      } else {
+        break;
+      }
+    }
+    
+    return { current: currentStreak, longest: max };
+  };
+
+  // Load and calculate home page stats
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
+      if (!raw) { setHomePageStats(null); return; }
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) { 
+        setHomePageStats(null); 
+        return; 
+      }
+      
+      // Normalize workout entries
+      const logs = parsed.map((p: any, i: number) => ({
+        id: String(p?.id ?? `log-${i}-${Date.now()}`),
+        timestamp: String(p?.timestamp ?? new Date().toISOString()),
+        emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : []
+      }));
+      
+      // Calculate stats
+      const emphasesCount: Record<string, number> = {};
+      logs.forEach((l: any) => l.emphases.forEach((e: string) => { 
+        emphasesCount[e] = (emphasesCount[e] || 0) + 1; 
+      }));
+      const mostCommonEmphasis = Object.entries(emphasesCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+      const streaks = calculateStreaks(logs);
+      
+      setHomePageStats({ mostCommonEmphasis, ...streaks });
+    } catch {
+      setHomePageStats(null);
+    }
+  }, [page]); // Recalculate when page changes (e.g., returning from logs)
+
+  // Find the favorite emphasis config by label (case-insensitive)
+  const favoriteConfig = homePageStats?.mostCommonEmphasis
+    ? emphasisList.find(
+        e => e.label.trim().toLowerCase() === homePageStats.mostCommonEmphasis.trim().toLowerCase()
+      )
+    : null;
+
   // Add this helper right before the return
   const isActive = running || isPreRound;
 
@@ -1587,6 +1685,91 @@ export default function App() {
               {/* Settings */}
               {!isActive && (
                 <div>
+                  {/* Streak Counter and Favorite Style - NEW */}
+                  {homePageStats && (
+                    <div style={{
+                      display: 'flex',
+                      gap: '1rem',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginBottom: '2rem',
+                      flexWrap: 'wrap'
+                    }}>
+                      {/* Streak Counter */}
+                      <button
+                        type="button"
+                        onClick={() => setPage('logs')}
+                        style={{
+                          all: 'unset',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '9999px',
+                          background: 'rgba(0,0,0,0.25)',
+                          border: '1px solid rgba(255,255,255,0.18)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.35)';
+                          e.currentTarget.style.transform = 'scale(1.02)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                        title="Click to view workout logs"
+                        aria-label={`${homePageStats.current} day streak - click to view workout logs`}
+                      >
+                        <span role="img" aria-label="flame" style={{ fontSize: '1.2rem' }}>🔥</span>
+                        <span style={{ fontSize: '1rem', fontWeight: 700 }}>{homePageStats.current}</span>
+                        <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Streak</span>
+                      </button>
+                      
+                      {/* Favorite Style */}
+                      {favoriteConfig && (
+                        <button
+                          type="button"
+                          onClick={() => setPage('logs')}
+                          style={{
+                            all: 'unset',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '9999px',
+                            background: 'rgba(0,0,0,0.25)',
+                            border: '1px solid rgba(255,255,255,0.18)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.35)';
+                            e.currentTarget.style.transform = 'scale(1.02)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }}
+                          title="Click to view workout logs"
+                          aria-label={`Favorite style: ${favoriteConfig.label} - click to view workout logs`}
+                        >
+                          <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Favorite Style:</span>
+                          <ImageWithFallback
+                            srcPath={favoriteConfig.iconPath}
+                            alt={favoriteConfig.label}
+                            emoji={favoriteConfig.emoji || '🎯'}
+                            style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }}
+                          />
+                          <span style={{ fontSize: '1rem', fontWeight: 700 }}>{favoriteConfig.label}</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                     {/* Step 1: Emphasis selection */}
                     <section style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
