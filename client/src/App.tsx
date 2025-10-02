@@ -1685,49 +1685,16 @@ export default function App() {
               {/* Settings */}
               {!isActive && (
                 <div>
-                  {/* Streak Counter and Favorite Style - NEW */}
+                  {/* Compact Favorite Style and Streak Counter */}
                   {homePageStats && (
                     <div style={{
                       display: 'flex',
-                      gap: '1rem',
+                      gap: '0.5rem',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      marginBottom: '2rem',
+                      marginBottom: '1rem',
                       flexWrap: 'wrap'
                     }}>
-                      {/* Streak Counter */}
-                      <button
-                        type="button"
-                        onClick={() => setPage('logs')}
-                        style={{
-                          all: 'unset',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '9999px',
-                          background: 'rgba(0,0,0,0.25)',
-                          border: '1px solid rgba(255,255,255,0.18)',
-                          color: 'white',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(0,0,0,0.35)';
-                          e.currentTarget.style.transform = 'scale(1.02)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
-                          e.currentTarget.style.transform = 'scale(1)';
-                        }}
-                        title="Click to view workout logs"
-                        aria-label={`${homePageStats.current} day streak - click to view workout logs`}
-                      >
-                        <span role="img" aria-label="flame" style={{ fontSize: '1.2rem' }}>🔥</span>
-                        <span style={{ fontSize: '1rem', fontWeight: 700 }}>{homePageStats.current}</span>
-                        <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Streak</span>
-                      </button>
-                      
                       {/* Favorite Style */}
                       {favoriteConfig && (
                         <button
@@ -1737,36 +1704,71 @@ export default function App() {
                             all: 'unset',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.75rem 1rem',
+                            gap: '0.25rem',
+                            padding: '0.375rem 0.625rem',
                             borderRadius: '9999px',
-                            background: 'rgba(0,0,0,0.25)',
-                            border: '1px solid rgba(255,255,255,0.18)',
+                            background: 'rgba(0,0,0,0.2)',
+                            border: '1px solid rgba(255,255,255,0.12)',
                             color: 'white',
                             cursor: 'pointer',
                             transition: 'all 0.2s ease',
+                            fontSize: '0.8rem',
+                            opacity: 0.9,
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(0,0,0,0.35)';
-                            e.currentTarget.style.transform = 'scale(1.02)';
+                            e.currentTarget.style.opacity = '1';
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
-                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.opacity = '0.9';
+                            e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
                           }}
                           title="Click to view workout logs"
                           aria-label={`Favorite style: ${favoriteConfig.label} - click to view workout logs`}
                         >
-                          <span style={{ fontSize: '0.9rem', opacity: 0.9 }}>Favorite Style:</span>
                           <ImageWithFallback
                             srcPath={favoriteConfig.iconPath}
                             alt={favoriteConfig.label}
                             emoji={favoriteConfig.emoji || '🎯'}
-                            style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }}
+                            style={{ width: 14, height: 14, borderRadius: 3, objectFit: 'cover' }}
                           />
-                          <span style={{ fontSize: '1rem', fontWeight: 700 }}>{favoriteConfig.label}</span>
+                          <span style={{ fontWeight: 600 }}>{favoriteConfig.label}</span>
                         </button>
                       )}
+                      
+                      {/* Streak Counter */}
+                      <button
+                        type="button"
+                        onClick={() => setPage('logs')}
+                        style={{
+                          all: 'unset',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          padding: '0.375rem 0.625rem',
+                          borderRadius: '9999px',
+                          background: 'rgba(0,0,0,0.2)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontSize: '0.8rem',
+                          opacity: 0.9,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '1';
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '0.9';
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
+                        }}
+                        title="Click to view workout logs"
+                        aria-label={`${homePageStats.current} day streak - click to view workout logs`}
+                      >
+                        <span role="img" aria-label="flame" style={{ fontSize: '0.9rem' }}>🔥</span>
+                        <span style={{ fontWeight: 700 }}>{homePageStats.current}</span>
+                      </button>
                     </div>
                   )}
                   
@@ -1777,29 +1779,6 @@ export default function App() {
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: '0 0 1rem 0' }}>Choose Your Fighting Style</h2>
                         <p style={{ color: '#f9a8d4', fontSize: '0.875rem', margin: 0 }}>
                         Select one or more styles to get started.
-                          <span style={{ marginLeft: 8 }}>
-                            <button
-                              type="button"
-                              onClick={() => setShowOnboardingMsg(true)}
-                              style={{
-                                all: 'unset',
-                                color: '#60a5fa',
-                                textDecoration: 'underline',
-                                cursor: 'pointer',
-                                fontWeight: 700,
-                                fontSize: 'inherit',
-                                border: 'none',
-                                background: 'none',
-                                padding: 0,
-                                margin: 0,
-                              }}
-                              tabIndex={0}
-                              aria-label="Open help"
-                            >
-                              Help
-                            </button>
-                            
-                          </span>
                         </p>
                       </div>
                       <div style={{ position: 'relative', width: '100%', maxWidth: '60rem', margin: '0 auto' }}>
@@ -1939,17 +1918,7 @@ export default function App() {
                     </div>
                   </section>
 
-                  {/* Step 2: Difficulty Level (moved up) */}
-                  {hasSelectedEmphasis && (
-                    <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem', marginBottom: '1.5rem' }}>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0 }}>Difficulty Level</h3>
-                      <div className="difficulty-controls" style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                        <button className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} onClick={() => setDifficulty('easy')} aria-pressed={difficulty === 'easy'}>Amateur</button>
-                        <button className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} onClick={() => setDifficulty('medium')} aria-pressed={difficulty === 'medium'}>Pro</button>
-                        <button className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} onClick={() => setDifficulty('hard')} aria-pressed={difficulty === 'hard'}>Legend</button>
-                      </div>
-                    </section>
-                  )}
+
 
                   {/* Step 3: Rounds/Length/Rest */}
                   <section style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
@@ -2191,17 +2160,19 @@ export default function App() {
     </div>
   </div>
 )}
-                  {/* Conditionally render Difficulty and Start button together */}
+
+
+                  {/* Conditionally render Difficulty and Start button together in sticky bottom container */}
                   {!running && !isPreRound && hasSelectedEmphasis && (
                     <>
-                      {/* Smooth, single-color gradient overlay from just above the button to the bottom */}
+                      {/* Smooth, single-color gradient overlay from just above the container to the bottom */}
                       <div
                         style={{
                           position: 'fixed',
                           left: 0,
                           right: 0,
-                          // Raise the overlay so it starts further above the button for more focus
-                          top: `calc(75vh - 80px - 48px)`, // was 82vh
+                          // Raise the overlay higher to accommodate the difficulty controls
+                          top: `calc(70vh - 120px)`, // Adjusted to accommodate difficulty controls
                           bottom: 0,
                           zIndex: 998,
                           pointerEvents: 'none',
@@ -2209,7 +2180,7 @@ export default function App() {
                             linear-gradient(
                               180deg,
                               rgba(24,24,36,0) 0%,
-                              rgba(24,24,36,0.5) 100%
+                              rgba(24,24,36,0.7) 100%
                             )
                           `,
                           opacity: 1,
@@ -2217,9 +2188,180 @@ export default function App() {
                         }}
                         aria-hidden="true"
                       />
-                      <button className="start-button" onClick={startSession}>
-                        Let's Go!
-                      </button>
+                      
+                      {/* Sticky bottom container with start button and difficulty controls */}
+                      <div
+                        style={{
+                          position: 'fixed',
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          zIndex: 999,
+                          padding: '0.75rem 1rem 1.25rem 1rem',
+                          background: 'rgba(15,23,42,0.95)',
+                          backdropFilter: 'blur(20px)',
+                          borderTop: '1px solid rgba(255,255,255,0.1)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        {/* Start button */}
+                        <button 
+                          onClick={startSession}
+                          className="sticky-start-button"
+                          style={{
+                            all: 'unset',
+                            minWidth: '260px',
+                            fontSize: '1.5rem',
+                            fontWeight: 900,
+                            color: 'white',
+                            background: 'linear-gradient(90deg, #4ade80 0%, #38bdf8 100%)',
+                            borderRadius: '1rem',
+                            border: 'none',
+                            boxShadow: '0 8px 20px rgba(34,197,94,0.2), 0 4px 10px rgba(59,130,246,0.15)',
+                            padding: '0.75rem 2rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.18s cubic-bezier(.4,2,.3,1)',
+                            maxWidth: 'calc(100vw - 32px)',
+                            boxSizing: 'border-box',
+                            textAlign: 'center',
+                            display: 'inline-block',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.transform = 'translateY(-4px)';
+                            e.currentTarget.style.boxShadow = '0 20px 40px rgba(34,197,94,0.3), 0 12px 20px rgba(59,130,246,0.25)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 15px 30px rgba(34,197,94,0.2), 0 8px 15px rgba(59,130,246,0.15)';
+                          }}
+                        >
+                          Let's Go!
+                        </button>
+
+                        {/* Difficulty controls in sticky container */}
+                        <section style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', width: '100%', maxWidth: 'calc(100vw - 32px)' }}>
+                          <h3 style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0, opacity: 0.9 }}>
+                            Difficulty Level
+                          </h3>
+                          <div className="difficulty-controls" style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', width: '100%', minWidth: '260px' }}>
+                            <button 
+                              className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} 
+                              onClick={() => setDifficulty('easy')} 
+                              aria-pressed={difficulty === 'easy'}
+                              style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
+                            >
+                              Amateur
+                            </button>
+                            <button 
+                              className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} 
+                              onClick={() => setDifficulty('medium')} 
+                              aria-pressed={difficulty === 'medium'}
+                              style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
+                            >
+                              Pro
+                            </button>
+                            <button 
+                              className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} 
+                              onClick={() => setDifficulty('hard')} 
+                              aria-pressed={difficulty === 'hard'}
+                              style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
+                            >
+                              Legend
+                            </button>
+                          </div>
+                        </section>
+
+                        {/* Compact footer in sticky container - matching main footer style */}
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '0.5rem', 
+                          flexWrap: 'wrap', 
+                          color: '#f9a8d4',
+                          paddingTop: '0.375rem',
+                          borderTop: '1px solid rgba(255,255,255,0.1)',
+                          width: '100%'
+                        }}>
+                          <img
+                            src="/assets/logo_icon.png"
+                            alt="Logo"
+                            style={{ 
+                              height: '16px', 
+                              marginRight: '0.25rem', 
+                              verticalAlign: 'middle', 
+                              borderRadius: '4px', 
+                              background: 'rgba(255,255,255,0.04)', 
+                              cursor: 'pointer' 
+                            }}
+                            onClick={() => {
+                              setPage('timer');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            tabIndex={0}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                setPage('timer');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }
+                            }}
+                            role="button"
+                            aria-label="Go to home"
+                          />
+                          <span style={{ fontSize: '0.7rem' }}>Train smart, fight smarter</span>
+                          <button 
+                            onClick={() => setPage('logs')} 
+                            style={{ 
+                              ...linkButtonStyle, 
+                              padding: '0.125rem 0.25rem',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            Logs
+                          </button>
+                          <button 
+                            onClick={() => setShowOnboardingMsg(true)} 
+                            style={{ 
+                              ...linkButtonStyle, 
+                              padding: '0.125rem 0.25rem',
+                              fontSize: '0.7rem'
+                            }}
+                          >
+                            Help
+                          </button>
+                          <a
+                            href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              opacity: 0.7,
+                              transition: 'opacity 0.2s',
+                              height: '16px',
+                              marginLeft: '0.25rem',
+                            }}
+                            aria-label="Instagram"
+                            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+                          >
+                            <img
+                              src="/assets/icon.instagram.png"
+                              alt="Instagram"
+                              style={{
+                                height: '14px',
+                                width: '14px',
+                                objectFit: 'contain',
+                                borderRadius: '3px',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                              }}
+                            />
+                          </a>
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
