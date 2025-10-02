@@ -88,8 +88,8 @@ const panelStyle: React.CSSProperties = {
   background: 'rgba(0,0,0,0.2)',
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '0.75rem',
-  padding: '1.5rem',
-  marginBottom: '1.5rem'
+  padding: '1rem',
+  marginBottom: '1rem'
 };
 
 const inputStyle: React.CSSProperties = {
@@ -103,13 +103,21 @@ const inputStyle: React.CSSProperties = {
 };
 
 const buttonStyle: React.CSSProperties = {
-  background: 'rgba(236, 72, 153, 0.2)',
+  background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)',
   color: '#f9a8d4',
-  border: '1px solid rgba(236, 72, 153, 0.4)',
-  borderRadius: '0.5rem',
+  border: '1px solid rgba(236, 72, 153, 0.3)',
+  borderRadius: '0.75rem',
   padding: '0.5rem 1rem',
   cursor: 'pointer',
-  fontWeight: 600
+  fontWeight: 500,
+  fontSize: '0.875rem',
+  transition: 'all 0.2s ease',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)',
+  backdropFilter: 'blur(8px)',
+  height: '36px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
 };
 
 const deleteButtonStyle: React.CSSProperties = {
@@ -123,6 +131,28 @@ const deleteButtonStyle: React.CSSProperties = {
   lineHeight: '2.5rem',
   textAlign: 'center' as const,
   flexShrink: 0,
+};
+
+// Compact technique item style for mobile-friendly layout
+const techniqueItemStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '0.5rem',
+  alignItems: 'center',
+  padding: '0.75rem',
+  background: 'rgba(0,0,0,0.15)',
+  borderRadius: '0.5rem',
+  border: '1px solid rgba(255,255,255,0.05)'
+};
+
+// Compact section header style
+const sectionHeaderStyle: React.CSSProperties = {
+  color: '#f9a8d4',
+  fontSize: '1rem',
+  fontWeight: '600',
+  margin: '1rem 0 0.5rem 0',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5rem'
 };
 
 type TechniqueEditorProps = {
@@ -198,7 +228,6 @@ export default function TechniqueEditor({
   }
 
   function removeSingle(groupKey: string, idx: number) {
-    if (!window.confirm('Are you sure you want to delete this single?')) return;
     const next = { ...local };
     const singles = normalizeArray(next[groupKey].singles);
     singles.splice(idx, 1);
@@ -231,7 +260,6 @@ export default function TechniqueEditor({
   }
 
   function removeCombo(groupKey: string, idx: number) {
-    if (!window.confirm('Are you sure you want to delete this combo?')) return;
     const next = { ...local };
     const combos = normalizeArray(next[groupKey].combos);
     combos.splice(idx, 1);
@@ -253,6 +281,8 @@ export default function TechniqueEditor({
       next[groupKey] = value;
     });
     persist(next);
+    // Expand the newly created group so user can immediately start adding techniques
+    setExpandedGroups(prev => ({ ...prev, [k]: true }));
     setNewGroupName('');
     scrollToTop();
   }
@@ -423,10 +453,10 @@ export default function TechniqueEditor({
         style={{
           display: 'flex',
           flexDirection: 'column',
-          marginBottom: expanded ? '1.5rem' : 0,
+          marginBottom: expanded ? '1rem' : 0,
           userSelect: 'none',
           position: 'relative',
-          minHeight: 56,
+          minHeight: 48,
           gap: 0,
         }}
         className="group-header"
@@ -435,26 +465,26 @@ export default function TechniqueEditor({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 8,
           flexDirection: 'row',
-          minHeight: 56,
+          minHeight: 48,
         }}>
           {thumbnail && (
             <img
               src={thumbnail}
               alt={`${group.title ?? group.label ?? keyName} thumbnail`}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
+                width: 32,
+                height: 32,
+                borderRadius: 6,
                 objectFit: 'cover',
-                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.18)',
+                boxShadow: '0 1px 4px 0 rgba(0,0,0,0.18)',
                 background: '#18181b',
-                marginRight: 16,
+                marginRight: 8,
               }}
             />
           )}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
             {expanded && !isCoreStyle ? (
               <input
                 type="text"
@@ -468,12 +498,13 @@ export default function TechniqueEditor({
                 style={{
                   ...inputStyle,
                   maxWidth: 320,
-                  fontWeight: 700,
-                  fontSize: '1.5rem',
+                  fontWeight: 500,
+                  fontSize: '1.125rem',
                   background: 'rgba(0,0,0,0.25)',
-                  color: '#f9a8d4',
+                  color: 'white',
                   border: 'none',
-                  outline: 'none'
+                  outline: 'none',
+                  fontFamily: 'inherit'
                 }}
                 aria-label="Rename group"
                 placeholder="Group Name"
@@ -483,8 +514,8 @@ export default function TechniqueEditor({
                 style={{
                   margin: 0,
                   color: 'white',
-                  fontSize: '1.5rem',
-                  fontWeight: 700,
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
                   textShadow: '0 1px 3px rgba(0,0,0,0.4)',
                   minWidth: 0,
                   wordBreak: 'break-word',
@@ -496,52 +527,82 @@ export default function TechniqueEditor({
             )}
           </div>
         </div>
-        {/* Buttons row: right justified, below title */}
+        {/* Buttons row: copy on left, expand on right */}
         <div
           style={{
             display: 'flex',
-            gap: 8,
+            gap: 6,
             alignItems: 'center',
-            justifyContent: 'flex-end',
-            marginTop: 12,
+            justifyContent: 'space-between',
+            marginTop: 8,
             flexWrap: 'wrap',
             width: '100%',
           }}
           className="group-header-buttons"
         >
-          {onDuplicate && (
+          {/* Copy button for core styles on the left */}
+          {onDuplicate ? (
             <button
               onClick={onDuplicate}
               style={{
                 ...buttonStyle,
-                background: 'rgba(236, 72, 153, 0.15)',
-                color: '#f9a8d4',
-                fontSize: '1rem',
-                padding: '0.25rem 0.75rem',
-                zIndex: 1,
-                position: 'relative',
-                whiteSpace: 'nowrap'
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
+                color: '#22c55e',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                fontSize: '0.75rem',
+                padding: '0.375rem 0.75rem',
+                fontWeight: 500,
+                height: '32px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.35) 100%)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
               aria-label="Duplicate group"
+              title="Create a custom copy of this core style"
             >
-              Duplicate
+              Copy
             </button>
+          ) : (
+            <div></div>
           )}
+          
+          {/* Expand/collapse button on the right */}
           <button
             onClick={() => toggleGroupExpanded(keyName)}
             style={{
-              ...buttonStyle,
-              background: 'rgba(255,255,255,0.10)',
-              color: '#f9a8d4',
+              background: expanded 
+                ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.3) 100%)'
+                : 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.15) 100%)',
+              color: expanded ? '#a78bfa' : '#f9a8d4',
+              border: expanded 
+                ? '1px solid rgba(139, 92, 246, 0.4)'
+                : '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '0.75rem',
               width: 36,
               height: 36,
-              fontSize: 22,
+              fontSize: 16,
               padding: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 2,
               position: 'relative',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
             }}
             aria-label={expanded ? "Collapse group" : "Expand group"}
             tabIndex={0}
@@ -569,108 +630,66 @@ export default function TechniqueEditor({
             type="button"
             onClick={onBack}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              color: '#f9a8d4',
-              border: '1.5px solid rgba(255,255,255,0.2)',
-              borderRadius: 8,
-              padding: '0.5rem 1.1rem',
-              fontWeight: 700,
-              fontSize: '1rem',
-              boxShadow: '0 2px 8px 0 rgba(0,0,0,0.10)',
+              all: 'unset',
               cursor: 'pointer',
-              transition: 'background 0.15s',
-              outline: 'none'
+              color: 'white',
+              padding: '0.625rem 1.125rem',
+              borderRadius: '0.75rem',
+              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'rgba(255,255,255,0.08)',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              transition: 'all 0.2s ease'
             }}
             title="Back to Training (Esc)"
-            onMouseOver={e => (e.currentTarget.style.background = 'rgba(249,168,212,0.13)')}
-            onMouseOut={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
           >
-            ← Back
+            <span style={{ fontSize: '1rem' }}>←</span>
+            Back
           </button>
         </div>
       )}
-      {/* Info message at the top */}
-      <div
-        style={{
-          background: 'rgba(30, 27, 75, 0.75)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '0.75rem',
-          padding: '1.5rem',
-          marginBottom: '2.5rem',
-          color: '#fff',
-          fontSize: '1.08rem',
-          lineHeight: 1.7,
-          boxShadow: '0 2px 12px 0 rgba(168,85,247,0.10)',
+      {/* Clean Header & Quick Actions */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        {/* Page Title */}
+        <h1 style={{
+          margin: '0 0 0.75rem 0',
+          fontSize: '1.5rem',
+          fontWeight: 700,
+          color: 'white',
           textAlign: 'center'
-        }}
-      >
-        <div style={{ fontWeight: 700, fontSize: '1.22rem', color: '#f9a8d4', marginBottom: '0.5em', letterSpacing: '0.5px' }}>
+        }}>
           Technique Manager
-        </div>
-        <div style={{ marginBottom: '0.7em' }}>
-          Use this page to customize the strikes and combos available in your training routines.<br />
-          Create new emphasis groups, duplicate core sets, or edit your custom groups to match your goals.
-        </div>
-        <div style={{ margin: '0.5em 0 0 0', padding: 0, color: '#fff', fontSize: '1.01rem', textAlign: 'center' }}>
-          <span style={{ color: '#fde047', fontWeight: 700 }}>★</span>
-          <span style={{ color: '#fde047', fontWeight: 700 }}> Star</span>
-          <span style={{ color: '#fff' }}> your favorites to have them called out more often.<br /></span>
-          <span style={{ color: '#fff', fontWeight: 500 }}>
-            Use <b>Export</b> to back up your custom techniques, and <b>Import</b> to restore or share them.<br />
-          </span>
-          To restore to default, click the button at the bottom of the page.
-        </div>
-        <div style={{ marginTop: '0.8em', color: '#a5b4fc', fontSize: '0.98rem', fontStyle: 'italic' }}>
-          Tip: Tailor your training experience, reinforce key skills, or experiment with new combinations.
-        </div>
+        </h1>
+        
+        {/* Subtitle */}
+        <p style={{
+          margin: '0 0 1rem 0',
+          fontSize: '0.9rem',
+          color: 'rgba(255,255,255,0.7)',
+          textAlign: 'center',
+          lineHeight: 1.4
+        }}>
+          Customize your training routines • Star favorites • Manage technique sets
+        </p>
       </div>
-      {/* Top bar with Export/Import */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          justifyContent: 'space-between',
-          marginBottom: '1rem',
-          gap: '0.5rem'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0, color: 'white' }}>Technique Manager</h2>
-          <div className="export-import-bar" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={handleExport}
-              style={buttonStyle}
-              title="Export your techniques as a backup"
-            >
-              <img src={uploadIcon} alt="Export" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
-              Export
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              style={buttonStyle}
-              title="Import techniques from a backup file"
-            >
-              <img src={downloadIcon} alt="Import" style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 6 }} />
-              Import
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              style={{ display: 'none' }}
-              onChange={handleImport}
-            />
-          </div>
-        </div>
-      </div>
+
 
       {/* --- Move Create New Emphasis block to the top --- */}
       <div className="add-emphasis-panel" style={panelStyle}>
-        <h3 style={{ marginTop: 0, color: 'white' }}>Create New Emphasis</h3>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <h3 style={{ marginTop: 0, color: 'white' }}>Create New Style</h3>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="text"
             placeholder="Title (e.g., My Style)"
@@ -678,7 +697,30 @@ export default function TechniqueEditor({
             onChange={e => setNewGroupName(e.target.value)}
             style={{ ...inputStyle, flexGrow: 1 }}
           />
-          <button onClick={() => addGroup(newGroupName)} style={buttonStyle}>Add Emphasis</button>
+          <button 
+            onClick={() => addGroup(newGroupName)} 
+            style={{
+              ...buttonStyle,
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
+              color: '#22c55e',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              fontWeight: 600,
+              minWidth: '120px',
+              marginLeft: 'auto'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.35) 100%)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)';
+            }}
+          >
+            Create Style
+          </button>
         </div>
       </div>
 
@@ -702,35 +744,65 @@ export default function TechniqueEditor({
               toggleGroupExpanded={toggleGroupExpanded}
               updateGroupLabel={updateGroupLabel}
             />
+
+            
             {expanded && (
               <>
                 {/* Description for all groups */}
                 <div style={{ marginBottom: '1.5rem' }}>
                   <label htmlFor={`desc-${key}`} style={{ color: '#a5b4fc', fontWeight: 500, display: 'block', marginBottom: 6 }}>
-                    Description (shown on homepage)
+                    Description
                   </label>
-                  <textarea
-                    id={`desc-${key}`}
-                    value={group.description ?? ''}
-                    onChange={e => !isCoreStyle && updateGroupDescription(key, e.target.value)}
-                    style={{
+                  {isCoreStyle ? (
+                    <div style={{
                       ...inputStyle,
-                      minHeight: 60,
-                      resize: 'vertical',
-                      fontSize: '1rem',
-                      color: 'white'
-                    }}
-                    placeholder="Describe this group (purpose, focus, etc.)"
-                    aria-label="Group Description"
-                    readOnly={isCoreStyle}
-                    tabIndex={isCoreStyle ? -1 : 0}
-                  />
+                      minHeight: 'auto',
+                      fontSize: '0.875rem',
+                      color: '#a3a3a3',
+                      background: 'rgba(0,0,0,0.15)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '0.75rem',
+                      fontStyle: 'italic',
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {group.description || 'No description available'}
+                    </div>
+                  ) : (
+                    <textarea
+                      id={`desc-${key}`}
+                      value={group.description ?? ''}
+                      onChange={e => updateGroupDescription(key, e.target.value)}
+                      style={{
+                        ...inputStyle,
+                        minHeight: 'auto',
+                        height: 'auto',
+                        resize: 'vertical',
+                        fontSize: '0.875rem',
+                        color: 'white',
+                        fontFamily: 'inherit',
+                        lineHeight: 1.5,
+                        overflow: 'hidden'
+                      }}
+                      placeholder="Describe this group (purpose, focus, etc.)"
+                      aria-label="Group Description"
+                      rows={Math.max(2, (group.description || '').split('\n').length)}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }}
+                    />
+                  )}
                 </div>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Single Strikes</h4>
-                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <h4 style={sectionHeaderStyle}>
+                    Single Strikes
+                    <span style={{ color: 'rgba(249, 168, 212, 0.6)', fontSize: '0.875rem', marginLeft: 'auto' }}>({singles.length})</span>
+                  </h4>
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
                     {singles.map((single, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <div key={idx} style={techniqueItemStyle}>
                         <input
                           type="text"
                           value={single.text}
@@ -738,8 +810,11 @@ export default function TechniqueEditor({
                           style={{
                             ...inputStyle,
                             flexGrow: 1,
-                            background: isCoreStyle ? 'rgba(0,0,0,0.15)' : inputStyle.background,
-                            color: isCoreStyle ? '#a3a3a3' : inputStyle.color
+                            background: 'transparent',
+                            border: 'none',
+                            padding: '0.25rem',
+                            fontSize: '0.875rem',
+                            color: isCoreStyle ? '#a3a3a3' : 'white'
                           }}
                           placeholder="e.g., jab"
                           readOnly={isCoreStyle}
@@ -751,35 +826,60 @@ export default function TechniqueEditor({
                             ...buttonStyle,
                             background: single.favorite ? 'rgba(36, 229, 251, 0.25)' : 'rgba(255,255,255,0.08)',
                             color: single.favorite ? '#facc15' : '#f9a8d4',
-                            width: '2.5rem',
-                            height: '2.5rem',
-                            fontSize: '1.3rem',
+                            width: '2rem',
+                            height: '2rem',
+                            fontSize: '1rem',
                             padding: 0,
-                            lineHeight: '2.5rem',
+                            lineHeight: '2rem',
                             opacity: 1,
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            borderRadius: '0.25rem'
                           }}
                           aria-label={single.favorite ? "Unstar" : "Star"}
                           title={single.favorite ? "Unstar (favorite)" : "Star (favorite)"}
-                          // STAR is always enabled for all groups
                         >★</button>
                         {!isCoreStyle && (
-                          <button onClick={() => removeSingle(key, idx)} style={deleteButtonStyle} aria-label="Delete single">
-                            <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                          <button onClick={() => removeSingle(key, idx)} style={{ ...deleteButtonStyle, width: '2rem', height: '2rem', lineHeight: '2rem', borderRadius: '0.25rem', fontSize: '1rem', fontWeight: '600' }} aria-label="Delete single">
+                            ×
                           </button>
                         )}
                       </div>
                     ))}
                   </div>
                   {!isCoreStyle && (
-                    <button onClick={() => addSingle(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Single</button>
+                    <button 
+                      onClick={() => addSingle(key)} 
+                      style={{
+                        ...buttonStyle,
+                        marginTop: '0.75rem',
+                        fontSize: '0.875rem',
+                        padding: '0.5rem 0.75rem',
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)',
+                        color: '#3b82f6',
+                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                        fontWeight: 500
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      Add Single
+                    </button>
                   )}
                 </div>
                 <div>
-                  <h4 style={{ color: '#f9a8d4', marginBottom: '0.75rem' }}>Combos</h4>
-                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  <h4 style={sectionHeaderStyle}>
+                    Combos
+                    <span style={{ color: 'rgba(249, 168, 212, 0.6)', fontSize: '0.875rem', marginLeft: 'auto' }}>({combos.length})</span>
+                  </h4>
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
                     {combos.map((combo, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <div key={idx} style={techniqueItemStyle}>
                         <input
                           type="text"
                           value={combo.text}
@@ -787,8 +887,11 @@ export default function TechniqueEditor({
                           style={{
                             ...inputStyle,
                             flexGrow: 1,
-                            background: isCoreStyle ? 'rgba(0,0,0,0.15)' : inputStyle.background,
-                            color: isCoreStyle ? '#a3a3a3' : inputStyle.color
+                            background: 'transparent',
+                            border: 'none',
+                            padding: '0.25rem',
+                            fontSize: '0.875rem',
+                            color: isCoreStyle ? '#a3a3a3' : 'white'
                           }}
                           placeholder="e.g., 1, 2, 3"
                           readOnly={isCoreStyle}
@@ -800,54 +903,72 @@ export default function TechniqueEditor({
                             ...buttonStyle,
                             background: combo.favorite ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.08)',
                             color: combo.favorite ? '#facc15' : '#f9a8d4',
-                            width: '2.5rem',
-                            height: '2.5rem',
-                            fontSize: '1.3rem',
+                            width: '2rem',
+                            height: '2rem',
+                            fontSize: '1rem',
                             padding: 0,
-                            lineHeight: '2.5rem',
+                            lineHeight: '2rem',
                             opacity: 1,
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            borderRadius: '0.25rem'
                           }}
                           aria-label={combo.favorite ? "Unstar" : "Star"}
                           title={combo.favorite ? "Unstar (favorite)" : "Star (favorite)"}
-                          // STAR is always enabled for all groups
                         >★</button>
                         {!isCoreStyle && (
-                          <button onClick={() => removeCombo(key, idx)} style={deleteButtonStyle} aria-label="Delete combo">
-                            <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
+                          <button onClick={() => removeCombo(key, idx)} style={{ ...deleteButtonStyle, width: '2rem', height: '2rem', lineHeight: '2rem', borderRadius: '0.25rem', fontSize: '1rem', fontWeight: '600' }} aria-label="Delete combo">
+                            ×
                           </button>
                         )}
                       </div>
                     ))}
                   </div>
                   {!isCoreStyle && (
-                    <button onClick={() => addCombo(key)} style={{ ...buttonStyle, marginTop: '1rem' }}>Add Combo</button>
+                    <button 
+                      onClick={() => addCombo(key)} 
+                      style={{
+                        ...buttonStyle,
+                        marginTop: '0.75rem',
+                        fontSize: '0.875rem',
+                        padding: '0.5rem 0.75rem',
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)',
+                        color: '#3b82f6',
+                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                        fontWeight: 500
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      Add Combo
+                    </button>
                   )}
                 </div>
                 {!isCoreStyle && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete group "${group.label}" and all its techniques? This cannot be undone.`)) {
-                          const next = { ...local };
-                          delete next[key];
-                          persist(next);
-                        }
+                        const next = { ...local };
+                        delete next[key];
+                        persist(next);
                       }}
                       style={{
                         ...deleteButtonStyle,
                         width: 'auto',
-                        height: '2.5rem',
-                        padding: '0 1.5rem',
-                        fontSize: '1rem',
-                        marginLeft: 'auto',
+                        height: '32px',
+                        padding: '0 1rem',
+                        fontSize: '0.875rem',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem'
+                        borderRadius: '0.75rem'
                       }}
                       aria-label={`Delete group ${group.label}`}
                     >
-                      <img src={trashIcon} alt="Delete" style={{ width: 20, height: 20, verticalAlign: 'middle', pointerEvents: 'none' }} />
                       Delete Group
                     </button>
                   </div>
@@ -858,13 +979,97 @@ export default function TechniqueEditor({
         );
       })}
 
-      <div className="reset-panel" style={{ ...panelStyle, background: 'rgba(159, 18, 57, 0.2)', borderColor: 'rgba(251, 113, 133, 0.3)' }}>
-        <h3 style={{ marginTop: 0, color: '#fca5a5' }}>Reset Data</h3>
+      {/* Backup Actions - Moved to end of interface */}
+      <div style={{
+        display: 'flex',
+        gap: '0.75rem',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        margin: '1rem 0'
+      }}>
+        <button
+          onClick={handleExport}
+          style={{
+            ...buttonStyle,
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            color: '#22c55e',
+            fontSize: '0.875rem',
+            padding: '0.625rem 1.25rem',
+            fontWeight: 500
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.35) 100%)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          Export Backup
+        </button>
+        
+        <button
+          onClick={() => document.getElementById('technique-import-input')?.click()}
+          style={{
+            ...buttonStyle,
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)',
+            border: '1px solid rgba(59, 130, 246, 0.3)',
+            color: '#3b82f6',
+            fontSize: '0.875rem',
+            padding: '0.625rem 1.25rem',
+            fontWeight: 500
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          Import Backup
+        </button>
+      </div>
+        
+      {/* Hidden file input for import */}
+      <input
+        id="technique-import-input"
+        type="file"
+        accept=".json"
+        onChange={handleImport}
+        style={{ display: 'none' }}
+      />
+      
+      {/* Reset Data - Moved to bottom */}
+      <div className="reset-panel" style={{ ...panelStyle, background: 'rgba(159, 18, 57, 0.2)', borderColor: 'rgba(251, 113, 133, 0.3)', marginTop: '2rem' }}>
+        <h3 style={{ marginTop: 0, color: '#fca5a5', fontSize: '1rem' }}>Reset Data</h3>
         <p style={{ margin: '0 0 1rem 0', color: '#fecdd3', fontSize: '0.875rem' }}>
           This will restore the original set of techniques and remove any custom ones you have added. This action cannot be undone.
         </p>
-        <button onClick={resetToDefault} style={{ ...buttonStyle, background: 'rgba(220, 38, 38, 0.4)', color: '#fca5a5', border: '1px solid rgba(220, 38, 38, 0.6)' }}>
-          Reset Techniques to Default
+        <button 
+          onClick={resetToDefault} 
+          style={{
+            ...buttonStyle,
+            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)',
+            color: '#fca5a5',
+            border: '1px solid rgba(220, 38, 38, 0.4)',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            padding: '0.625rem 1.25rem'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(220, 38, 38, 0.4) 100%)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          Reset to Default Techniques
         </button>
       </div>
     </div>

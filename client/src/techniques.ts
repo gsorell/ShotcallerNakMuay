@@ -3,6 +3,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   newb: {
     label: 'newb',
     title: 'Nak Muay Newb',
+    description: 'Start here to learn the basics of the Art of 8 Limbs',
     singles: [
       "Jab",
       "Cross",
@@ -55,6 +56,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   khao: {
     label: 'khao',
     title: 'Muay Khao',
+    description: 'Close-range clinch work and knee combinations',
     // Close-range, clinch-focused combos and strikes
     singles: [
       "1",
@@ -97,6 +99,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   mat: {
     label: 'mat',
     title: 'Muay Mat',
+    description: 'Blending Heavy hands with Kicks and Knees',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
@@ -122,6 +125,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   tae: {
     label: 'tae',
     title: 'Muay Tae',
+    description: 'Kicking specialist with long-range attacks',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left Teep", "Right Teep", "Left Knee", "Right Knee",
@@ -150,6 +154,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   femur: {
     label: 'femur',
     title: 'Muay Femur',
+    description: 'Technical timing and defensive counters',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
@@ -192,6 +197,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   sok: {
     label: 'sok',
     title: 'Muay Sok',
+    description: 'Vicious elbows and close-range attacks',
     singles: [
       "1", "2", "3", "4", "5", "6",
       "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
@@ -216,6 +222,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   boxing: {
     label: 'boxing',
     title: 'Boxing',
+    description: 'Fundamental boxing combinations',
     singles: [
       "Jab", "Cross", "3", "4", "5", "6", "Overhand", 
       "High Guard Block", "Parry Jab", "Catch Cross",
@@ -259,6 +266,9 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   two_piece: {
+    label: 'two_piece',
+    title: 'Two-Piece Combos',
+    description: 'Short, powerful 2-strike combinations',
     singles: [],
     combos: [
       "1 2",
@@ -287,6 +297,9 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   },
 
   southpaw: {
+    label: 'southpaw',
+    title: 'Southpaw',
+    description: 'Left-handed stance with combos tailored for southpaw fighters',
     singles: [],
     combos: [
       "1 2",
