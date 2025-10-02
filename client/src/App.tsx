@@ -2197,94 +2197,142 @@ export default function App() {
                           right: 0,
                           bottom: 0,
                           zIndex: 999,
-                          padding: '0.75rem 1rem 1.25rem 1rem',
-                          background: 'rgba(15,23,42,0.95)',
-                          backdropFilter: 'blur(20px)',
-                          borderTop: '1px solid rgba(255,255,255,0.1)',
+                          padding: '1rem 1rem 1.5rem 1rem',
+                          background: 'linear-gradient(180deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.98) 100%)',
+                          backdropFilter: 'blur(24px)',
+                          borderTop: '1px solid rgba(255,255,255,0.12)',
+                          boxShadow: '0 -8px 32px rgba(0,0,0,0.3), 0 -2px 8px rgba(0,0,0,0.2)',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '0.5rem',
+                          gap: '0.875rem',
                         }}
                       >
+                        {/* Elegant difficulty selector */}
+                        <div style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          gap: '0.625rem', 
+                          width: '280px',
+                          maxWidth: 'calc(100vw - 32px)',
+                          margin: '0 auto',
+                          padding: '0.75rem 0.625rem',
+                          borderRadius: '1rem',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
+                        }}>
+                          <label style={{ 
+                            fontSize: '0.8rem', 
+                            fontWeight: 500, 
+                            color: 'rgba(255,255,255,0.9)', 
+                            textAlign: 'center', 
+                            margin: 0,
+                            letterSpacing: '0.025em',
+                            textTransform: 'uppercase' 
+                          }}>
+                            Difficulty
+                          </label>
+                          <div style={{ 
+                            display: 'flex', 
+                            gap: '0.5rem'
+                          }}>
+                          <button 
+                            className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} 
+                            onClick={() => setDifficulty('easy')} 
+                            aria-pressed={difficulty === 'easy'}
+                            style={{ 
+                              flex: 1,
+                              fontSize: '0.7rem', 
+                              padding: '0.375rem 0.5rem',
+                              borderRadius: '1rem',
+                              opacity: difficulty === 'easy' ? 1 : 0.7,
+                              fontWeight: difficulty === 'easy' ? 600 : 500
+                            }}
+                          >
+                            Amateur
+                          </button>
+                          <button 
+                            className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} 
+                            onClick={() => setDifficulty('medium')} 
+                            aria-pressed={difficulty === 'medium'}
+                            style={{ 
+                              flex: 1,
+                              fontSize: '0.7rem', 
+                              padding: '0.375rem 0.5rem',
+                              borderRadius: '1rem',
+                              opacity: difficulty === 'medium' ? 1 : 0.7,
+                              fontWeight: difficulty === 'medium' ? 600 : 500
+                            }}
+                          >
+                            Pro
+                          </button>
+                            <button 
+                              className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} 
+                              onClick={() => setDifficulty('hard')} 
+                              aria-pressed={difficulty === 'hard'}
+                              style={{ 
+                                flex: 1,
+                                fontSize: '0.7rem', 
+                                padding: '0.375rem 0.5rem',
+                                borderRadius: '1rem',
+                                opacity: difficulty === 'hard' ? 1 : 0.7,
+                                fontWeight: difficulty === 'hard' ? 600 : 500
+                              }}
+                            >
+                              Legend
+                            </button>
+                          </div>
+                        </div>
+
                         {/* Start button */}
                         <button 
                           onClick={startSession}
                           className="sticky-start-button"
                           style={{
                             all: 'unset',
-                            minWidth: '260px',
-                            fontSize: '1.5rem',
-                            fontWeight: 900,
+                            width: '280px',
+                            fontSize: '1.375rem',
+                            fontWeight: 700,
                             color: 'white',
-                            background: 'linear-gradient(90deg, #4ade80 0%, #38bdf8 100%)',
+                            background: 'linear-gradient(135deg, #4ade80 0%, #22d3ee 50%, #3b82f6 100%)',
                             borderRadius: '1rem',
-                            border: 'none',
-                            boxShadow: '0 8px 20px rgba(34,197,94,0.2), 0 4px 10px rgba(59,130,246,0.15)',
-                            padding: '0.75rem 2rem',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 12px 24px rgba(34,197,94,0.25), 0 6px 12px rgba(59,130,246,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+                            padding: '0.875rem 2rem',
                             cursor: 'pointer',
-                            transition: 'all 0.18s cubic-bezier(.4,2,.3,1)',
+                            transition: 'all 0.2s cubic-bezier(.4,2,.3,1)',
                             maxWidth: 'calc(100vw - 32px)',
                             boxSizing: 'border-box',
                             textAlign: 'center',
                             display: 'inline-block',
+                            letterSpacing: '0.025em',
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-4px)';
-                            e.currentTarget.style.boxShadow = '0 20px 40px rgba(34,197,94,0.3), 0 12px 20px rgba(59,130,246,0.25)';
+                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                            e.currentTarget.style.boxShadow = '0 16px 32px rgba(34,197,94,0.35), 0 8px 16px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.3)';
                           }}
                           onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 15px 30px rgba(34,197,94,0.2), 0 8px 15px rgba(59,130,246,0.15)';
+                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                            e.currentTarget.style.boxShadow = '0 12px 24px rgba(34,197,94,0.25), 0 6px 12px rgba(59,130,246,0.2), inset 0 1px 0 rgba(255,255,255,0.2)';
                           }}
                         >
                           Let's Go!
                         </button>
 
-                        {/* Difficulty controls in sticky container */}
-                        <section style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', width: '100%', maxWidth: 'calc(100vw - 32px)' }}>
-                          <h3 style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'white', textAlign: 'center', margin: 0, opacity: 0.9 }}>
-                            Difficulty Level
-                          </h3>
-                          <div className="difficulty-controls" style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', width: '100%', minWidth: '260px' }}>
-                            <button 
-                              className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} 
-                              onClick={() => setDifficulty('easy')} 
-                              aria-pressed={difficulty === 'easy'}
-                              style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
-                            >
-                              Amateur
-                            </button>
-                            <button 
-                              className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} 
-                              onClick={() => setDifficulty('medium')} 
-                              aria-pressed={difficulty === 'medium'}
-                              style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
-                            >
-                              Pro
-                            </button>
-                            <button 
-                              className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} 
-                              onClick={() => setDifficulty('hard')} 
-                              aria-pressed={difficulty === 'hard'}
-                              style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem 0.75rem' }}
-                            >
-                              Legend
-                            </button>
-                          </div>
-                        </section>
-
-                        {/* Compact footer in sticky container - matching main footer style */}
+                        {/* Minimal footer */}
                         <div style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center', 
-                          gap: '0.5rem', 
+                          gap: '0.75rem', 
                           flexWrap: 'wrap', 
-                          color: '#f9a8d4',
-                          paddingTop: '0.375rem',
-                          borderTop: '1px solid rgba(255,255,255,0.1)',
-                          width: '100%'
+                          color: 'rgba(249,168,212,0.8)',
+                          fontSize: '0.75rem',
+                          paddingTop: '0.5rem',
+                          borderTop: '1px solid rgba(255,255,255,0.06)',
+                          width: '100%',
+                          opacity: 0.9
                         }}>
                           <img
                             src="/assets/logo_icon.png"
