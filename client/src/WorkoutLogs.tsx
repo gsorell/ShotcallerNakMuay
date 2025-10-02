@@ -166,7 +166,7 @@ export default function WorkoutLogs({
   return (
     <div className="editor-root">
       {/* Header with Back button */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
         <button
           type="button"
           onClick={onBack}
@@ -185,7 +185,8 @@ export default function WorkoutLogs({
             display: 'flex',
             alignItems: 'center',
             gap: '0.375rem',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            marginBottom: '0.75rem'
           }}
           onMouseEnter={e => {
             e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
@@ -199,19 +200,20 @@ export default function WorkoutLogs({
           <span style={{ fontSize: '1rem' }}>←</span>
           Back
         </button>
-        <h2 style={{ margin: 0, color: 'white', fontSize: '1.25rem' }}>Workout Logs</h2>
-        <div style={{ width: '4rem' }} />
+        <h2 style={{ margin: 0, color: 'white', fontSize: '1.25rem', textAlign: 'center' }}>Summary</h2>
       </div>
 
       {/* --- Compact Stats --- */}
       {stats && (
         <div
           style={{
-            marginBottom: '1rem',
-            padding: '0.75rem',
+            padding: '1rem',
             background: 'rgba(24, 24, 37, 0.48)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '0.5rem',
+            marginBottom: '1rem',
+            position: 'relative',
+            display: 'block'
           }}
         >
           {/* Favorite Style */}
@@ -231,7 +233,7 @@ export default function WorkoutLogs({
                 <img
                   src={favoriteConfig.iconPath}
                   alt={favoriteConfig.label}
-                  style={{ width: 16, height: 16, objectFit: 'contain' }}
+                  style={{ width: 24, height: 24, objectFit: 'contain' }}
                 />
                 <span>Favorite: {favoriteConfig.label}</span>
               </div>
