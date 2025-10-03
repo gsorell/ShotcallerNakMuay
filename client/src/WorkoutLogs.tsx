@@ -39,6 +39,8 @@ const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 // --- Utility: Calculate streaks (days with at least one workout) ---
 function calculateStreaks(logs: WorkoutEntry[]) {
   if (!logs.length) return { current: 0, longest: 0 };
+  
+  // Get unique workout days, sorted chronologically
   const days = Array.from(
     new Set(
       logs
@@ -46,11 +48,16 @@ function calculateStreaks(logs: WorkoutEntry[]) {
         .sort((a, b) => a.localeCompare(b))
     )
   );
+  
+  if (days.length === 0) return { current: 0, longest: 0 };
+  if (days.length === 1) return { current: 1, longest: 1 };
+
+  // Calculate longest streak
   let longest = 1, current = 1, max = 1;
   for (let i = 1; i < days.length; ++i) {
     const prev = new Date(days[i - 1]);
     const curr = new Date(days[i]);
-    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
     if (diff === 1) {
       current += 1;
       if (current > max) max = current;
@@ -58,15 +65,31 @@ function calculateStreaks(logs: WorkoutEntry[]) {
       current = 1;
     }
   }
-  let streak = 1;
+  
+  // Calculate current streak (must end on today or yesterday to be "current")
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const lastWorkoutDay = days[days.length - 1];
+  
+  // Only count as current streak if last workout was today or yesterday
+  if (lastWorkoutDay !== today && lastWorkoutDay !== yesterday) {
+    return { current: 0, longest: max };
+  }
+  
+  // Count backwards from the most recent workout day
+  let currentStreak = 1;
   for (let i = days.length - 1; i > 0; --i) {
     const prev = new Date(days[i - 1]);
     const curr = new Date(days[i]);
-    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-    if (diff === 1) streak += 1;
-    else break;
+    const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 1) {
+      currentStreak += 1;
+    } else {
+      break;
+    }
   }
-  return { current: streak, longest: max };
+  
+  return { current: currentStreak, longest: max };
 }
 
 // Utility to normalize emphasis for icon lookup
