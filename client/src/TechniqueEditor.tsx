@@ -74,7 +74,8 @@ const GROUP_THUMBNAILS: Record<string, string> = {
   buakaw: '/assets/icon.buakaw.png',
   low_kick_legends: '/assets/icon_lowkicklegends.png',
   elbow_arsenal: '/assets/icon.elbow arsenal.png',
-  ko_setups: '/assets/icon.ko.png'
+  ko_setups: '/assets/icon.ko.png',
+  tricky_traps: '/assets/icon.trickytraps.png'
 };
 
 // Define the path to the upload icon
@@ -385,7 +386,8 @@ export default function TechniqueEditor({
     'buakaw',
     'low_kick_legends',
     'elbow_arsenal',
-    'ko_setups'
+    'ko_setups',
+    'tricky_traps'
   ];
 
   // User-created groups: not in INITIAL_TECHNIQUES and not 'calisthenics' or 'timer_only'
@@ -624,7 +626,15 @@ export default function TechniqueEditor({
   }
 
   return (
-    <div ref={topRef} style={{ maxWidth: '64rem', margin: '0 auto', padding: '1rem', position: 'relative' }}>
+    <div ref={topRef} style={{ 
+      maxWidth: 'none', 
+      margin: 0, 
+      padding: '0.25rem', 
+      paddingTop: '1rem',
+      position: 'relative',
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
       {/* Top-left Back button, visually aligned and not overlapping */}
       {onBack && (
         <div style={{
@@ -1078,12 +1088,13 @@ export default function TechniqueEditor({
       />
       
       {/* Reset Data - Moved to bottom */}
-      <div className="reset-panel" style={{ ...panelStyle, background: 'rgba(159, 18, 57, 0.2)', borderColor: 'rgba(251, 113, 133, 0.3)', marginTop: '2rem' }}>
+      <div className="reset-panel" style={{ ...panelStyle, background: 'rgba(159, 18, 57, 0.2)', borderColor: 'rgba(251, 113, 133, 0.3)', marginTop: '2rem', textAlign: 'center' }}>
         <h3 style={{ marginTop: 0, color: '#fca5a5', fontSize: '1rem' }}>Reset Data</h3>
         <p style={{ margin: '0 0 1rem 0', color: '#fecdd3', fontSize: '0.875rem' }}>
           This will restore the original set of techniques and remove any custom ones you have added. This action cannot be undone.
         </p>
-        <button 
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button 
           onClick={resetToDefault} 
           style={{
             ...buttonStyle,
@@ -1105,6 +1116,7 @@ export default function TechniqueEditor({
         >
           Reset to Default Techniques
         </button>
+        </div>
       </div>
     </div>
   );

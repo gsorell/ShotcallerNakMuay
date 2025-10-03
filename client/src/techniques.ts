@@ -464,6 +464,45 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Teep, Step-in, Head Kick"
     ]
   },
+
+  tricky_traps: {
+    label: "tricky_traps",
+    title: "Tricky Traps and Spinning Shit",
+    description: "Advanced spinning techniques and deceptive setups",
+    singles: [
+      "1",
+      "2",
+      "3",
+      "4",
+      "Teep",
+      "Body Kick",
+      "Low Kick",
+      "Overhand",
+      "Question Mark Kick",
+      "Step-Off Elbow",
+      "Spinning Elbow",
+      "Spinning Back Kick",
+      "Spinning Hook Kick",
+      "Spinning Heel Kick",
+      "Jump Switch Knee",
+      "Flying Knee"
+    ],
+    combos: [
+      "1, Step back, Spinning Elbow",
+      "Teep, Pull back, Spinning Heel Kick",
+      "1 2, Slip, Spinning Elbow",
+      "Low Kick, Fake Switch Kick, Spinning Hook Kick",
+      "Check Kick, 2, Spinning Elbow",
+      "1, Slip Left, Spinning Elbow",
+      "Fake Teep, Jump Switch Knee, Spinning Back Kick",
+      "1 2 3, Duck, Spinning Elbow",
+      "Body Kick, Spin Through, Back Kick",
+      "Fake 1 to the body, Step Off, Spinning Hook Kick",
+      "Overhand Right, Spinning Elbow",
+      "3 2, Spinning Elbow",
+      "1 1, Inside Low Kick, Spinning Back Kick"
+    ]
+  },
 };
 
 export default INITIAL_TECHNIQUES;

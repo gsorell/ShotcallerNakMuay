@@ -147,9 +147,9 @@ export default function WorkoutLogs({
   const deleteEntry = (id: string) => { if (!window.confirm('Delete this log entry?')) return; persist(logs.filter(l => l.id !== id)); };
 
   const difficultyLabel = (diff?: string) =>
-    diff === 'easy' ? 'Amateur' :
-    diff === 'medium' ? 'Pro' :
-    diff === 'hard' ? 'Legend' :
+    diff === 'easy' ? 'Novice' :
+    diff === 'medium' ? 'Amateur' :
+    diff === 'hard' ? 'Pro' :
     undefined;
 
   // --- Compute summary stats ---
@@ -187,7 +187,14 @@ export default function WorkoutLogs({
     : null;
 
   return (
-    <div className="editor-root">
+    <div className="editor-root" style={{
+      padding: '0.25rem',
+      paddingTop: '1rem',
+      margin: 0,
+      maxWidth: 'none',
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
       {/* Header with Back button */}
       <div style={{ marginBottom: '1rem' }}>
         <button
@@ -228,15 +235,16 @@ export default function WorkoutLogs({
 
       {/* --- Compact Stats --- */}
       {stats && (
-        <div
+      <div
           style={{
-            padding: '1rem',
+            padding: '0.75rem',
             background: 'rgba(24, 24, 37, 0.48)',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: '0.5rem',
             marginBottom: '1rem',
             position: 'relative',
-            display: 'block'
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {/* Favorite Style */}
@@ -354,14 +362,13 @@ export default function WorkoutLogs({
                     key={log.id} 
                     style={{ 
                       position: 'relative',
-                      padding: '1rem 2.5rem 1rem 1rem',
+                      padding: '0.75rem',
+                      paddingRight: '2.5rem', // Extra space for delete button
                       background: 'rgba(24, 24, 37, 0.48)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '0.5rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '1rem'
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                   >
                     {/* Delete button */}
@@ -369,20 +376,20 @@ export default function WorkoutLogs({
                       onClick={() => deleteEntry(log.id)}
                       style={{
                         position: 'absolute',
-                        top: '0.75rem',
-                        right: '0.75rem',
+                        top: '0.5rem',
+                        right: '0.5rem',
                         background: 'rgba(0,0,0,0.2)',
                         border: '1px solid rgba(255,255,255,0.1)',
                         color: 'rgba(255,255,255,0.5)',
                         fontSize: '0.75rem',
                         cursor: 'pointer',
                         padding: 0,
-                        width: '1.5rem',
-                        height: '1.5rem',
+                        width: '1.25rem',
+                        height: '1.25rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderRadius: '0.375rem',
+                        borderRadius: '0.25rem',
                         transition: 'all 0.2s ease'
                       }}
                       onMouseEnter={e => {
@@ -400,47 +407,76 @@ export default function WorkoutLogs({
                       ✕
                     </button>
                     
-                    {/* Left: Date and Style */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        fontSize: '0.875rem', 
-                        fontWeight: 600, 
-                        color: 'white',
-                        marginBottom: '0.25rem'
-                      }}>
-                        {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                      <div style={{ 
-                        fontSize: '0.8rem', 
-                        color: 'rgba(255,255,255,0.7)'
-                      }}>
-                        {log.emphases.length ? log.emphases.join(', ') : 'Timer Only'}
-                      </div>
-                    </div>
-                    
-                    {/* Right: Stats */}
+                    {/* Mobile-Responsive Layout */}
                     <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '1rem',
-                      fontSize: '0.8rem'
+                      minWidth: 0, // Allow shrinking
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}>
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        background: `${difficultyColor}15`,
-                        color: difficultyColor,
-                        borderRadius: '0.375rem',
-                        fontSize: '0.7rem',
-                        fontWeight: 600
-                      }}>
-                        {difficultyLabel(log.difficulty)}
-                      </span>
+                      {/* Row 1: Date/Time and Difficulty */}
                       <div style={{ 
-                        textAlign: 'right',
-                        color: 'rgba(255,255,255,0.8)'
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '0.5rem',
+                        minWidth: 0
                       }}>
-                        <div>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
-                        <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{log.roundLengthMin} min</div>
+                        <div style={{ 
+                          fontSize: '0.8rem', 
+                          fontWeight: 600, 
+                          color: 'white',
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          marginRight: '0.5rem'
+                        }}>
+                          {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <span style={{
+                          padding: '0.125rem 0.375rem',
+                          background: `${difficultyColor}15`,
+                          color: difficultyColor,
+                          borderRadius: '0.25rem',
+                          fontSize: '0.65rem',
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0
+                        }}>
+                          {difficultyLabel(log.difficulty)}
+                        </span>
+                      </div>
+                      
+                      {/* Row 2: Style and Stats */}
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        fontSize: '0.75rem',
+                        minWidth: 0
+                      }}>
+                        <div style={{ 
+                          color: 'rgba(255,255,255,0.7)',
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          marginRight: '0.5rem'
+                        }}>
+                          {log.emphases.length ? log.emphases.join(', ') : 'Timer Only'}
+                        </div>
+                        <div style={{ 
+                          color: 'rgba(255,255,255,0.8)',
+                          fontSize: '0.7rem',
+                          flexShrink: 0,
+                          textAlign: 'right',
+                          lineHeight: 1.2
+                        }}>
+                          <div>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
+                          <div>{log.roundLengthMin} min</div>
+                        </div>
                       </div>
                     </div>
                   </div>
