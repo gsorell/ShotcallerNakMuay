@@ -360,6 +360,8 @@ export default function TechniqueEditor({
       }
     };
     persist(next);
+    // Expand the newly duplicated group so user can immediately start editing
+    setExpandedGroups(prev => ({ ...prev, [newKey]: true }));
     alert(`Duplicated "${base.label}" as "${base.label} (Copy)"`);
     scrollToTop();
   }
