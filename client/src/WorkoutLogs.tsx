@@ -368,7 +368,10 @@ export default function WorkoutLogs({
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '0.5rem',
                       width: '100%',
-                      boxSizing: 'border-box'
+                      maxWidth: '100vw',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                      overflow: 'hidden'
                     }}
                   >
                     {/* Delete button */}
@@ -411,7 +414,9 @@ export default function WorkoutLogs({
                     <div style={{ 
                       minWidth: 0, // Allow shrinking
                       width: '100%',
-                      boxSizing: 'border-box'
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      overflow: 'hidden'
                     }}>
                       {/* Row 1: Date/Time and Difficulty */}
                       <div style={{ 
@@ -460,12 +465,17 @@ export default function WorkoutLogs({
                           color: 'rgba(255,255,255,0.7)',
                           flex: 1,
                           minWidth: 0,
+                          maxWidth: '100%',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           marginRight: '0.5rem'
                         }}>
-                          {log.emphases.length ? log.emphases.join(', ') : 'Timer Only'}
+                          {log.emphases.length ? (
+                            log.emphases.length > 3 
+                              ? `${log.emphases.slice(0, 3).join(', ')} +${log.emphases.length - 3} more`
+                              : log.emphases.join(', ')
+                          ) : 'Timer Only'}
                         </div>
                         <div style={{ 
                           color: 'rgba(255,255,255,0.8)',
