@@ -88,8 +88,8 @@ const panelStyle: React.CSSProperties = {
   background: 'rgba(0,0,0,0.2)',
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: '0.75rem',
-  padding: '1rem',
-  marginBottom: '1rem'
+  padding: '0.75rem',
+  marginBottom: '0.75rem'
 };
 
 const inputStyle: React.CSSProperties = {
@@ -138,18 +138,19 @@ const techniqueItemStyle: React.CSSProperties = {
   display: 'flex',
   gap: '0.5rem',
   alignItems: 'center',
-  padding: '0.75rem',
+  padding: '0.5rem 0.75rem',
   background: 'rgba(0,0,0,0.15)',
-  borderRadius: '0.5rem',
-  border: '1px solid rgba(255,255,255,0.05)'
+  borderRadius: '0.375rem',
+  border: '1px solid rgba(255,255,255,0.05)',
+  minHeight: '36px'
 };
 
 // Compact section header style
 const sectionHeaderStyle: React.CSSProperties = {
   color: '#f9a8d4',
-  fontSize: '1rem',
+  fontSize: '0.95rem',
   fontWeight: '600',
-  margin: '1rem 0 0.5rem 0',
+  margin: '0.75rem 0 0.375rem 0',
   display: 'flex',
   alignItems: 'center',
   gap: '0.5rem'
@@ -797,7 +798,8 @@ export default function TechniqueEditor({
                     />
                   )}
                 </div>
-                <div style={{ marginBottom: '1rem' }}>
+                <div className="technique-sections" style={{ marginBottom: '1rem' }}>
+                <div>
                   <h4 style={sectionHeaderStyle}>
                     Single Strikes
                     <span style={{ color: 'rgba(249, 168, 212, 0.6)', fontSize: '0.875rem', marginLeft: 'auto' }}>({singles.length})</span>
@@ -814,9 +816,10 @@ export default function TechniqueEditor({
                             flexGrow: 1,
                             background: 'transparent',
                             border: 'none',
-                            padding: '0.25rem',
-                            fontSize: '0.875rem',
-                            color: isCoreStyle ? '#a3a3a3' : 'white'
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.825rem',
+                            color: isCoreStyle ? '#a3a3a3' : 'white',
+                            minHeight: '28px'
                           }}
                           placeholder="e.g., jab"
                           readOnly={isCoreStyle}
@@ -828,11 +831,11 @@ export default function TechniqueEditor({
                             ...buttonStyle,
                             background: single.favorite ? 'rgba(36, 229, 251, 0.25)' : 'rgba(255,255,255,0.08)',
                             color: single.favorite ? '#facc15' : '#f9a8d4',
-                            width: '2rem',
-                            height: '2rem',
-                            fontSize: '1rem',
+                            width: '1.75rem',
+                            height: '1.75rem',
+                            fontSize: '0.875rem',
                             padding: 0,
-                            lineHeight: '2rem',
+                            lineHeight: '1.75rem',
                             opacity: 1,
                             cursor: 'pointer',
                             borderRadius: '0.25rem'
@@ -841,7 +844,7 @@ export default function TechniqueEditor({
                           title={single.favorite ? "Unstar (favorite)" : "Star (favorite)"}
                         >★</button>
                         {!isCoreStyle && (
-                          <button onClick={() => removeSingle(key, idx)} style={{ ...deleteButtonStyle, width: '2rem', height: '2rem', lineHeight: '2rem', borderRadius: '0.25rem', fontSize: '1rem', fontWeight: '600' }} aria-label="Delete single">
+                          <button onClick={() => removeSingle(key, idx)} style={{ ...deleteButtonStyle, width: '1.75rem', height: '1.75rem', lineHeight: '1.75rem', borderRadius: '0.25rem', fontSize: '0.875rem', fontWeight: '600' }} aria-label="Delete single">
                             ×
                           </button>
                         )}
@@ -891,9 +894,10 @@ export default function TechniqueEditor({
                             flexGrow: 1,
                             background: 'transparent',
                             border: 'none',
-                            padding: '0.25rem',
-                            fontSize: '0.875rem',
-                            color: isCoreStyle ? '#a3a3a3' : 'white'
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.825rem',
+                            color: isCoreStyle ? '#a3a3a3' : 'white',
+                            minHeight: '28px'
                           }}
                           placeholder="e.g., 1, 2, 3"
                           readOnly={isCoreStyle}
@@ -905,11 +909,11 @@ export default function TechniqueEditor({
                             ...buttonStyle,
                             background: combo.favorite ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.08)',
                             color: combo.favorite ? '#facc15' : '#f9a8d4',
-                            width: '2rem',
-                            height: '2rem',
-                            fontSize: '1rem',
+                            width: '1.75rem',
+                            height: '1.75rem',
+                            fontSize: '0.875rem',
                             padding: 0,
-                            lineHeight: '2rem',
+                            lineHeight: '1.75rem',
                             opacity: 1,
                             cursor: 'pointer',
                             borderRadius: '0.25rem'
@@ -918,7 +922,7 @@ export default function TechniqueEditor({
                           title={combo.favorite ? "Unstar (favorite)" : "Star (favorite)"}
                         >★</button>
                         {!isCoreStyle && (
-                          <button onClick={() => removeCombo(key, idx)} style={{ ...deleteButtonStyle, width: '2rem', height: '2rem', lineHeight: '2rem', borderRadius: '0.25rem', fontSize: '1rem', fontWeight: '600' }} aria-label="Delete combo">
+                          <button onClick={() => removeCombo(key, idx)} style={{ ...deleteButtonStyle, width: '1.75rem', height: '1.75rem', lineHeight: '1.75rem', borderRadius: '0.25rem', fontSize: '0.875rem', fontWeight: '600' }} aria-label="Delete combo">
                             ×
                           </button>
                         )}
@@ -950,6 +954,7 @@ export default function TechniqueEditor({
                       Add Combo
                     </button>
                   )}
+                </div>
                 </div>
                 {!isCoreStyle && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>

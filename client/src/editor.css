@@ -240,3 +240,58 @@
 .export-import-bar {
   margin-top: 8px; /* Add a little space above the buttons */
 }
+
+/* Responsive technique grid */
+.technique-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .technique-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Compact technique items for better mobile experience */
+.technique-item-compact {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.15);
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  min-height: 36px;
+}
+
+/* Two-column layout for sections on wider screens */
+.technique-sections {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0rem;
+}
+
+@media (min-width: 768px) {
+  .technique-sections {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* More compact spacing for mobile */
+@media (max-width: 640px) {
+  .technique-item-compact {
+    padding: 0.375rem 0.5rem;
+    min-height: 32px;
+  }
+  
+  .technique-sections {
+    gap: 0;
+  }
+  
+  .technique-sections > div {
+    margin-bottom: 0.75rem;
+  }
+}
