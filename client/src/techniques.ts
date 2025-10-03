@@ -500,7 +500,12 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Fake 1 to the body, Step Off, Spinning Hook Kick",
       "Overhand Right, Spinning Elbow",
       "3 2, Spinning Elbow",
-      "1 1, Inside Low Kick, Spinning Back Kick"
+      "1 1, Inside Low Kick, Spinning Back Kick",
+      "Right Kick, Right Teep, Question Mark Kick",
+      "Inside Foot Sweep, Switch Knee",
+      "Low Kick, Feint Low Kick, Sweep Right",
+      "Low Kick, Feint Low Kick, Spinning Hook Kick",
+      "1 4, Spinning Elbow"
     ]
   },
 };
