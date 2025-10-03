@@ -343,8 +343,8 @@ export default function TechniqueEditor({
     e.target.value = '';
   }
 
-  // --- MODIFIED: Duplicate core set and scroll to top ---
-  function duplicateCoreSet(key: string) {
+  // --- MODIFIED: Duplicate any group (core or user-created) and scroll to top ---
+  function duplicateGroup(key: string) {
     let base = local[key];
     if (!base) return;
     let newKey = key + '_copy';
@@ -543,30 +543,38 @@ export default function TechniqueEditor({
           }}
           className="group-header-buttons"
         >
-          {/* Copy button for core styles on the left */}
+          {/* Copy button for all groups on the left */}
           {onDuplicate ? (
             <button
               onClick={onDuplicate}
               style={{
-                ...buttonStyle,
-                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
-                color: '#22c55e',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                fontSize: '0.75rem',
                 padding: '0.375rem 0.75rem',
+                borderRadius: '0.75rem',
+                border: 'none',
+                backgroundColor: 'transparent',
+                color: '#f9a8d4',
+                boxShadow: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
                 fontWeight: 500,
+                fontSize: '0.875rem',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+                minWidth: 0,
+                opacity: 0.8,
                 height: '32px'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.35) 100%)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)';
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.opacity = '0.8';
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
               aria-label="Duplicate group"
-              title="Create a custom copy of this core style"
+              title="Create a copy of this style"
             >
               Copy
             </button>
@@ -578,34 +586,32 @@ export default function TechniqueEditor({
           <button
             onClick={() => toggleGroupExpanded(keyName)}
             style={{
-              background: expanded 
-                ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.3) 100%)'
-                : 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.15) 100%)',
-              color: expanded ? '#a78bfa' : '#f9a8d4',
-              border: expanded 
-                ? '1px solid rgba(139, 92, 246, 0.4)'
-                : '1px solid rgba(255,255,255,0.2)',
+              padding: '0.5rem',
               borderRadius: '0.75rem',
-              width: 36,
-              height: 36,
-              fontSize: 16,
-              padding: 0,
-              display: 'flex',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#f9a8d4',
+              boxShadow: 'none',
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 2,
-              position: 'relative',
+              fontWeight: 500,
+              fontSize: '1rem',
+              transition: 'all 0.2s',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              width: 36,
+              height: 36,
+              opacity: 0.8,
+              zIndex: 2,
+              position: 'relative'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+              e.currentTarget.style.opacity = '0.8';
+              e.currentTarget.style.backgroundColor = 'transparent';
             }}
             aria-label={expanded ? "Collapse group" : "Expand group"}
             tabIndex={0}
@@ -703,23 +709,30 @@ export default function TechniqueEditor({
           <button 
             onClick={() => addGroup(newGroupName)} 
             style={{
-              ...buttonStyle,
-              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
-              color: '#22c55e',
-              border: '1px solid rgba(34, 197, 94, 0.3)',
-              fontWeight: 600,
+              padding: '.75rem 1rem',
+              borderRadius: '1rem',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#f9a8d4',
+              boxShadow: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: 500,
+              fontSize: '0.95rem',
+              transition: 'all 0.2s',
+              cursor: 'pointer',
               minWidth: '120px',
+              opacity: 0.8,
               marginLeft: 'auto'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.35) 100%)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)';
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)';
+              e.currentTarget.style.opacity = '0.8';
+              e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
             Create Style
@@ -737,18 +750,16 @@ export default function TechniqueEditor({
         const expanded = !!expandedGroups[key];
         return (
           <div key={key} style={panelStyle}>
-            <GroupHeader
-              keyName={key}
-              group={group}
-              isCoreStyle={isCoreStyle}
-              thumbnail={thumbnail}
-              onDuplicate={isCoreStyle ? () => duplicateCoreSet(key) : undefined}
-              expanded={expanded}
-              toggleGroupExpanded={toggleGroupExpanded}
-              updateGroupLabel={updateGroupLabel}
-            />
-
-            
+        <GroupHeader
+          keyName={key}
+          group={group}
+          isCoreStyle={isCoreStyle}
+          thumbnail={thumbnail}
+          onDuplicate={() => duplicateGroup(key)}
+          expanded={expanded}
+          toggleGroupExpanded={toggleGroupExpanded}
+          updateGroupLabel={updateGroupLabel}
+        />            
             {expanded && (
               <>
                 {/* Description for all groups */}
@@ -997,21 +1008,29 @@ export default function TechniqueEditor({
         <button
           onClick={handleExport}
           style={{
-            ...buttonStyle,
-            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#22c55e',
-            fontSize: '0.875rem',
-            padding: '0.625rem 1.25rem',
-            fontWeight: 500
+            padding: '.75rem 1rem',
+            borderRadius: '1rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: '#f9a8d4',
+            boxShadow: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 500,
+            fontSize: '0.95rem',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+            minWidth: 0,
+            opacity: 0.8
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.35) 100%)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.25) 100%)';
-            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.opacity = '0.8';
+            e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
           Export Backup
@@ -1020,21 +1039,29 @@ export default function TechniqueEditor({
         <button
           onClick={() => document.getElementById('technique-import-input')?.click()}
           style={{
-            ...buttonStyle,
-            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)',
-            border: '1px solid rgba(59, 130, 246, 0.3)',
-            color: '#3b82f6',
-            fontSize: '0.875rem',
-            padding: '0.625rem 1.25rem',
-            fontWeight: 500
+            padding: '.75rem 1rem',
+            borderRadius: '1rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: '#f9a8d4',
+            boxShadow: 'none',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 500,
+            fontSize: '0.95rem',
+            transition: 'all 0.2s',
+            cursor: 'pointer',
+            minWidth: 0,
+            opacity: 0.8
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)';
-            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.opacity = '0.8';
+            e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
           Import Backup
