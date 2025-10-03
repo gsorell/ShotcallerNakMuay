@@ -44,7 +44,7 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
     desc: 'Just a round timer — no shotcalling, no techniques.',
     iconPath: '/assets/icon.stopwatch.png'
   },
-  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start here to learn the basics of the Art of 8 Limbs', iconPath: '/assets/icon_newb.png' },
+  newb:   { label: 'Nak Muay Newb', icon: '👶', desc: 'Start here to learn the basic strikes', iconPath: '/assets/icon_newb.png' },
   khao:   { label: 'Muay Khao',    icon: '🙏', desc: 'Close-range clinch work and knee combinations', iconPath: '/assets/icon_khao.png' },
   mat:    { label: 'Muay Mat',     icon: '👊', desc: 'Blending Heavy hands with Kicks and Knees', iconPath: '/assets/icon_mat.png' },
   tae:    { label: 'Muay Tae',     icon: '🦵', desc: 'Kicking specialist with long-range attacks', iconPath: '/assets/icon_tae.png' },

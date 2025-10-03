@@ -3,7 +3,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
   newb: {
     label: 'newb',
     title: 'Nak Muay Newb',
-    description: 'Start here to learn the basics of the Art of 8 Limbs',
+    description: 'Start here to learn the basic strikes',
     singles: [
       "Jab",
       "Cross",
