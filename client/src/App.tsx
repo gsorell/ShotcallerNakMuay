@@ -89,6 +89,12 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
     icon: '💣',
     desc: 'Explosive knockout setups and finishing combinations',
     iconPath: '/assets/icon.ko.png'
+  },
+  tricky_traps: {
+    label: 'Tricky Traps and Spinning Shit',
+    icon: '🌪️',
+    desc: 'Advanced spinning techniques and deceptive setups',
+    iconPath: '/assets/icon.trickytraps.png'
   }
 };
 
@@ -151,7 +157,7 @@ export default function App() {
     // Core group keys in preferred order
     const CORE_ORDER: string[] = [
       'timer_only', 'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw',
-      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', /* REMOVE: 'muay_tech', */ 'ko_setups'
+      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', /* REMOVE: 'muay_tech', */ 'ko_setups', 'tricky_traps'
     ];
 
     // Always include timer_only as the first tile, using INITIAL_TECHNIQUES if missing
@@ -1836,66 +1842,18 @@ export default function App() {
       );
     })}
   </div>
-  <div 
-    className="manage-techniques-container"
-    style={{
+  {/* More Button - Right Justified, Above Manage Techniques */}
+  {emphasisList.length > 9 && (
+    <div style={{
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'flex-end',
       marginTop: '1rem',
-      position: 'relative',
-      minHeight: '48px'
+      paddingRight: '0.5rem'
     }}>
-    <button
-      onClick={() => setPage('editor')}
-      className="manage-techniques-btn"
-      style={{
-        padding: '.75rem 1rem',
-        borderRadius: '1rem',
-        border: 'none',
-        backgroundColor: 'transparent',
-        color: '#f9a8d4',
-        boxShadow: 'none',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        fontWeight: 500,
-        fontSize: '0.95rem',
-        transition: 'all 0.2s',
-        cursor: 'pointer',
-        minWidth: 0,
-        opacity: 0.8
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = '1';
-        e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = '0.8';
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
-      title="Create custom techniques and modify existing ones"
-    >
-      <img
-        src="/assets/icon_edit.png"
-        alt=""
-        style={{
-          width: 24,
-          height: 24,
-          borderRadius: 4,
-          objectFit: 'cover'
-        }}
-        aria-hidden="true"
-      />
-      <span>Manage Techniques</span>
-    </button>
-    {emphasisList.length > 9 && (
       <button
         type="button"
         onClick={() => setShowAllEmphases(v => !v)}
         style={{
-          position: 'absolute',
-          right: 0,
           padding: '.75rem 1rem',
           borderRadius: '1rem',
           border: 'none',
@@ -1910,8 +1868,7 @@ export default function App() {
           transition: 'all 0.2s',
           cursor: 'pointer',
           minWidth: 0,
-          opacity: 0.8,
-          zIndex: 2
+          opacity: 1
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = '1';
@@ -1940,9 +1897,73 @@ export default function App() {
           ▼
         </span>
       </button>
-    )}
-  </div>
+    </div>
+  )}
 
+  {/* Manage Techniques Button - Center Justified, Below More Button */}
+  <div 
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: '0.5rem',
+      minHeight: '48px',
+      paddingLeft: '0',
+      paddingRight: '0',
+      width: '100%'
+    }}>
+    <button
+      onClick={() => setPage('editor')}
+      style={{
+        padding: '.75rem 1rem',
+        borderRadius: '1rem',
+        border: 'none',
+        backgroundColor: 'transparent',
+        color: '#f9a8d4',
+        boxShadow: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        fontWeight: 500,
+        fontSize: '0.95rem',
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+        minWidth: 0,
+        opacity: 1,
+        position: 'static',
+        transform: 'none',
+        left: 'auto',
+        marginRight: '0',
+        marginLeft: '0',
+        textDecoration: 'none',
+        outline: 'none'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.opacity = '1';
+        e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
+        e.currentTarget.style.color = '#f9a8d4';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.opacity = '1';
+        e.currentTarget.style.backgroundColor = 'transparent';
+        e.currentTarget.style.color = '#f9a8d4';
+      }}
+      title="Create custom techniques and modify existing ones"
+    >
+      <img
+        src="/assets/icon_edit.png"
+        alt=""
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 4,
+          objectFit: 'cover'
+        }}
+        aria-hidden="true"
+      />
+      <span>Manage Techniques</span>
+    </button>
+  </div>
 
                     </div>
                   </section>
@@ -2293,7 +2314,7 @@ export default function App() {
                               fontWeight: difficulty === 'easy' ? 600 : 500
                             }}
                           >
-                            Amateur
+                            Novice
                           </button>
                           <button 
                             className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} 
@@ -2308,7 +2329,7 @@ export default function App() {
                               fontWeight: difficulty === 'medium' ? 600 : 500
                             }}
                           >
-                            Pro
+                            Amateur
                           </button>
                             <button 
                               className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} 
@@ -2323,7 +2344,7 @@ export default function App() {
                                 fontWeight: difficulty === 'hard' ? 600 : 500
                               }}
                             >
-                              Legend
+                              Pro
                             </button>
                           </div>
                         </div>
