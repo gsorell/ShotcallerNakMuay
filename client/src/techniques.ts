@@ -173,6 +173,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1, Shift Left, Head Kick",
       "1, Shift Right, Head Kick",
       "Catch Kick, 2 3, Right Knee, Sweep Right",
+      "Catch kick, Sweep the leg",
       "Parry Jab, 1 2 3, Right Kick",
       "Right Kick, Right Teep",
       "Right Teep, Question Mark Kick",
