@@ -295,3 +295,27 @@
     margin-bottom: 0.75rem;
   }
 }
+
+/* Responsive positioning for Manage Techniques button */
+.manage-techniques-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .manage-techniques-btn {
+    position: static;
+    transform: none;
+    left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Ensure More button has enough space */
+@media (min-width: 769px) {
+  .manage-techniques-btn {
+    max-width: calc(100% - 200px); /* Leave space for More button */
+  }
+}
