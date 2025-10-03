@@ -1836,17 +1836,64 @@ export default function App() {
       );
     })}
   </div>
-  {emphasisList.length > 9 && (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'flex-end',
-      marginTop: '1rem'
-    }}>
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '1rem',
+    position: 'relative',
+    minHeight: '48px'
+  }}>
+    <button
+      onClick={() => setPage('editor')}
+      className="manage-techniques-btn"
+      style={{
+        padding: '.75rem 1rem',
+        borderRadius: '1rem',
+        border: 'none',
+        backgroundColor: 'transparent',
+        color: '#f9a8d4',
+        boxShadow: 'none',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        fontWeight: 500,
+        fontSize: '0.95rem',
+        transition: 'all 0.2s',
+        cursor: 'pointer',
+        minWidth: 0,
+        opacity: 0.8
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.opacity = '1';
+        e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.opacity = '0.8';
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }}
+      title="Create custom techniques and modify existing ones"
+    >
+      <img
+        src="/assets/icon_edit.png"
+        alt=""
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 4,
+          objectFit: 'cover'
+        }}
+        aria-hidden="true"
+      />
+      <span>Manage Techniques</span>
+    </button>
+    {emphasisList.length > 9 && (
       <button
         type="button"
         onClick={() => setShowAllEmphases(v => !v)}
         style={{
-          position: 'relative',
+          position: 'absolute',
+          right: 0,
           padding: '.75rem 1rem',
           borderRadius: '1rem',
           border: 'none',
@@ -1861,7 +1908,8 @@ export default function App() {
           transition: 'all 0.2s',
           cursor: 'pointer',
           minWidth: 0,
-          opacity: 0.8
+          opacity: 0.8,
+          zIndex: 2
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = '1';
@@ -1875,7 +1923,7 @@ export default function App() {
         aria-label={showAllEmphases ? 'See less styles' : 'See more styles'}
         title={showAllEmphases ? 'Show fewer styles' : 'Show more styles'}
       >
-        {showAllEmphases ? 'See Less' : 'See More'}
+        {showAllEmphases ? 'Less' : 'More'}
        
 
        
@@ -1886,59 +1934,11 @@ export default function App() {
           fontSize: '1.1em',
           marginLeft: 2,
           transform: showAllEmphases ? 'rotate(180deg)' : 'rotate(0deg)'
-        }}>
+        }}>  
           ▼
         </span>
       </button>
-    </div>
-  )}
-
-  {/* Customize button positioned underneath the styles selection */}
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
-    <button
-      onClick={() => setPage('editor')}
-      style={{
-        padding: '1rem 1.5rem',
-        borderRadius: '0.75rem',
-        border: '2px solid #3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-        color: '#60a5fa',
-        fontWeight: 600,
-        fontSize: '1rem',
-        cursor: 'pointer',
-        transition: 'all 0.2s',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
-        backdropFilter: 'blur(8px)',
-        minWidth: 'auto'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.25)';
-        e.currentTarget.style.transform = 'translateY(-1px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.3)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
-      }}
-      title="Create custom techniques and modify existing ones"
-    >
-      <img
-        src="/assets/icon_edit.png"
-        alt=""
-        style={{
-          width: 24,
-          height: 24,
-          borderRadius: 6,
-          objectFit: 'cover'
-        }}
-        aria-hidden="true"
-      />
-      <span>Customize Techniques</span>
-    </button>
+    )}
   </div>
 
 
@@ -2080,7 +2080,14 @@ export default function App() {
                         type="checkbox"
                         checked={addCalisthenics}
                         onChange={e => setAddCalisthenics(e.target.checked)}
-                        style={{ accentColor: '#60a5fa', width: 20, height: 20 }}
+                        style={{ 
+                          accentColor: '#60a5fa', 
+                          width: 20, 
+                          height: 20, 
+                          borderRadius: '6px',
+                          border: '2px solid rgba(96, 165, 250, 0.3)',
+                          cursor: 'pointer'
+                        }}
                       />
                       Include Calisthenics
                     </label>
@@ -2090,7 +2097,14 @@ export default function App() {
                         type="checkbox"
                         checked={readInOrder}
                         onChange={e => setReadInOrder(e.target.checked)}
-                        style={{ accentColor: '#60a5fa', width: 20, height: 20 }}
+                        style={{ 
+                          accentColor: '#60a5fa', 
+                          width: 20, 
+                          height: 20, 
+                          borderRadius: '6px',
+                          border: '2px solid rgba(96, 165, 250, 0.3)',
+                          cursor: 'pointer'
+                        }}
                       />
                       Read Techniques in Order
                     </label>
@@ -2102,7 +2116,7 @@ export default function App() {
                   </button>
                   {showAdvanced && (
                     <div className="advanced-settings-panel" style={{ marginTop: '0', maxWidth: '32rem', marginLeft: 'auto', marginRight: 'auto' }}>
-    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1.25rem', marginTop: '0' }}>
       {/* Voice Dropdown */}
       <div style={{ flex: 2, minWidth: '180px' }}>
         <label htmlFor="voice-select" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
@@ -2397,14 +2411,14 @@ export default function App() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              opacity: 0.7,
+              opacity: 1,
               transition: 'opacity 0.2s',
               height: '32px',
               marginLeft: '0.5rem',
             }}
             aria-label="Instagram"
             onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
+            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
           >
             <img
               src="/assets/icon.instagram.png"
