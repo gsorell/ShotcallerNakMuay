@@ -1836,14 +1836,16 @@ export default function App() {
       );
     })}
   </div>
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: '1rem',
-    position: 'relative',
-    minHeight: '48px'
-  }}>
+  <div 
+    className="manage-techniques-container"
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: '1rem',
+      position: 'relative',
+      minHeight: '48px'
+    }}>
     <button
       onClick={() => setPage('editor')}
       className="manage-techniques-btn"
