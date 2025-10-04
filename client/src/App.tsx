@@ -13,7 +13,6 @@ import Header from './components/Header';
 import StatusTimer from './components/StatusTimer'; // <-- Make sure this import exists
 import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
-import PWAStatus from './components/PWAStatus';
 
 // REMOVE: The image imports are not needed for files in /public
 /*
@@ -1827,8 +1826,7 @@ export default function App() {
                     marginBottom: '1rem',
                     flexWrap: 'wrap'
                   }}>
-                    {/* PWA Status */}
-                    <PWAStatus isInstalled={pwa.isInstalled} />
+
                     
 
                     
