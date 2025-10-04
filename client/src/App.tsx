@@ -11,6 +11,9 @@ import './difficulty.css';
 import { useWakeLock } from './useWakeLock';
 import Header from './components/Header';
 import StatusTimer from './components/StatusTimer'; // <-- Make sure this import exists
+import { usePWA } from './hooks/usePWA';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import PWAStatus from './components/PWAStatus';
 
 // REMOVE: The image imports are not needed for files in /public
 /*
@@ -33,7 +36,7 @@ type Page = 'timer' | 'editor' | 'logs' | 'completed';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v25'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v27'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
@@ -105,7 +108,85 @@ export default function App() {
     displayInAppBrowserWarning();
   }, []);
 
-  // Routing
+  // PWA functionality
+  const pwa = usePWA();
+  
+  // User engagement tracking for PWA prompting
+  const [userEngagement, setUserEngagement] = useState(() => {
+    const stored = localStorage.getItem('user_engagement_stats');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        return {
+          visitCount: parsed.visitCount || 0,
+          timeOnSite: 0, // Reset time for new session
+          completedWorkouts: parsed.completedWorkouts || 0,
+          lastVisit: parsed.lastVisit ? new Date(parsed.lastVisit) : new Date()
+        };
+      } catch {
+        return { visitCount: 0, timeOnSite: 0, completedWorkouts: 0, lastVisit: new Date() };
+      }
+    }
+    return { visitCount: 0, timeOnSite: 0, completedWorkouts: 0, lastVisit: new Date() };
+  });
+  
+  const [sessionStartTime] = useState(Date.now());
+  const [showPWAPrompt, setShowPWAPrompt] = useState(false);
+
+  // Register service worker for PWA
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .catch(() => {
+          // Service worker registration failed - app will still work without it
+        });
+    }
+  }, []);
+
+  // Track user engagement and update visit count
+  useEffect(() => {
+    // Increment visit count on first load
+    const newEngagement = {
+      ...userEngagement,
+      visitCount: userEngagement.visitCount + 1,
+      lastVisit: new Date()
+    };
+    setUserEngagement(newEngagement);
+    
+    // Save to localStorage with ISO string
+    localStorage.setItem('user_engagement_stats', JSON.stringify({
+      ...newEngagement,
+      lastVisit: newEngagement.lastVisit.toISOString()
+    }));
+  }, []); // Only run once on mount
+
+  // Track time on site and show install prompt after 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const timeOnSite = Math.floor((Date.now() - sessionStartTime) / 1000);
+      setUserEngagement(prev => ({ ...prev, timeOnSite }));
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [sessionStartTime, userEngagement]);
+  
+  // Show install prompt automatically after 30 seconds if not installed and not dismissed
+  useEffect(() => {
+    // Don't show if already installed or previously dismissed permanently
+    if (!pwa.isInstalled) {
+      const dismissed = localStorage.getItem('pwa_install_dismissed');
+      if (!dismissed) {
+        const timer = setTimeout(() => {
+          // Double-check install status before showing (in case user installed during the 30 seconds)
+          if (!pwa.isInstalled) {
+            setShowPWAPrompt(true);
+          }
+        }, 30000); // 30 seconds
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [pwa.isInstalled]);  // Routing
   const [page, setPage] = useState<Page>('timer');
   const [lastWorkout, setLastWorkout] = useState<any>(null);
 
@@ -251,7 +332,14 @@ export default function App() {
 
   // Expose techniques to window for quick debugging in DevTools.
   useEffect(() => {
-    try { (window as any).__techniques = techniquesRef.current; } catch { /* noop */ }
+    try { 
+      (window as any).__techniques = techniquesRef.current;
+      // Debug helper for testing PWA prompt
+      (window as any).__testPWAPrompt = () => {
+        localStorage.removeItem('pwa_install_dismissed');
+        setShowPWAPrompt(true);
+      };
+    } catch { /* noop */ }
   }, [techniques]);
 
   // Selection and session settings
@@ -290,6 +378,14 @@ export default function App() {
       return next;
     });
   };
+  
+  // Clear all selected emphases
+  const clearAllEmphases = () => {
+    setSelectedEmphases({
+      timer_only: false,
+      khao: false, mat: false, tae: false, femur: false, sok: false, boxing: false, newb: false, two_piece: false, southpaw: false
+    });
+  };
 
   // NEW: keep a friendly text field state for the round length input
   const [roundMinInput, setRoundMinInput] = useState<string>(String(roundMin));
@@ -307,6 +403,8 @@ export default function App() {
 
   // ADD: subtle onboarding modal toggle
   const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
+  
+
 
   // TTS controls
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
@@ -803,6 +901,8 @@ export default function App() {
         roundsCompleted: roundsCount,
         roundsPlanned: roundsCount,
         roundLengthMin: roundMin,
+        // Flag for post-workout install suggestion
+        suggestInstall: !pwa.isInstalled && userEngagement.completedWorkouts >= 1
       });
       setRunning(false);
       setPaused(false);
@@ -988,6 +1088,18 @@ export default function App() {
       const arr = raw ? JSON.parse(raw) : [];
       arr.push(entry);
       localStorage.setItem(WORKOUTS_STORAGE_KEY, JSON.stringify(arr));
+      
+      // Update engagement stats for completed workout
+      const updatedEngagement = {
+        ...userEngagement,
+        completedWorkouts: userEngagement.completedWorkouts + 1
+      };
+      setUserEngagement(updatedEngagement);
+      localStorage.setItem('user_engagement_stats', JSON.stringify({
+        ...updatedEngagement,
+        lastVisit: updatedEngagement.lastVisit.toISOString()
+      }));
+      
       // Trigger home page stats refresh
       setStatsRefreshTrigger(prev => prev + 1);
     } catch (err) {
@@ -1706,16 +1818,23 @@ export default function App() {
               {/* Settings */}
               {!isActive && (
                 <div>
-                  {/* Compact Favorite Style and Streak Counter */}
-                  {homePageStats && (
-                    <div style={{
-                      display: 'flex',
-                      gap: '0.5rem',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      marginBottom: '1rem',
-                      flexWrap: 'wrap'
-                    }}>
+                  {/* Compact Favorite Style, Streak Counter, and PWA Status */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: '1rem',
+                    flexWrap: 'wrap'
+                  }}>
+                    {/* PWA Status */}
+                    <PWAStatus isInstalled={pwa.isInstalled} />
+                    
+
+                    
+                    {/* Stats only show if we have data */}
+                    {homePageStats && (
+                      <React.Fragment>
                       {/* Favorite Style */}
                       {favoriteConfig && (
                         <button
@@ -1790,8 +1909,11 @@ export default function App() {
                         <span role="img" aria-label="flame" style={{ fontSize: '0.9rem' }}>🔥</span>
                         <span style={{ fontWeight: 700 }}>{homePageStats.current}</span>
                       </button>
-                    </div>
-                  )}
+                      </React.Fragment>
+                    )}
+                  </div>
+                  
+
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                     {/* Step 1: Emphasis selection */}
@@ -2269,7 +2391,7 @@ export default function App() {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '0.875rem',
+                          gap: '0.875rem'
                         }}
                       >
                         {/* Elegant difficulty selector */}
@@ -2284,19 +2406,62 @@ export default function App() {
                           borderRadius: '1rem',
                           background: 'rgba(255,255,255,0.03)',
                           border: '1px solid rgba(255,255,255,0.08)',
-                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
+                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                          position: 'relative'
                         }}>
-                          <label style={{ 
-                            fontSize: '0.8rem', 
-                            fontWeight: 500, 
-                            color: 'rgba(255,255,255,0.9)', 
-                            textAlign: 'center', 
-                            margin: 0,
-                            letterSpacing: '0.025em',
-                            textTransform: 'uppercase' 
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative'
                           }}>
-                            Difficulty
-                          </label>
+                            <label style={{ 
+                              fontSize: '0.8rem', 
+                              fontWeight: 500, 
+                              color: 'rgba(255,255,255,0.9)', 
+                              margin: 0,
+                              letterSpacing: '0.025em',
+                              textTransform: 'uppercase' 
+                            }}>
+                              Difficulty
+                            </label>
+                            <button
+                              onClick={clearAllEmphases}
+                              title="Clear all selections"
+                              aria-label="Clear all emphasis selections"
+                              style={{
+                                position: 'absolute',
+                                right: 0,
+                                width: '20px',
+                                height: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'rgba(255,255,255,0.1)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '50%',
+                                color: 'rgba(255,255,255,0.7)',
+                                fontSize: '12px',
+                                fontWeight: 400,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                padding: 0,
+                                lineHeight: 1
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                                e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
                           <div style={{ 
                             display: 'flex', 
                             gap: '0.5rem'
@@ -2458,6 +2623,23 @@ export default function App() {
         </div>
       </footer>
     </div> {/* <-- This closes the <div style={{ position: 'relative', zIndex: 0 }}> */}
+    
+    {/* PWA Install Prompt - shows automatically after 30 seconds */}
+    <PWAInstallPrompt
+      isVisible={showPWAPrompt && !pwa.isInstalled}
+      onInstall={async () => {
+        const success = await pwa.promptInstall();
+        setShowPWAPrompt(false);
+        return success;
+      }}
+      onDismiss={() => {
+        setShowPWAPrompt(false);
+      }}
+      onDismissPermanently={() => {
+        localStorage.setItem('pwa_install_dismissed', 'true');
+        setShowPWAPrompt(false);
+      }}
+    />
     </>
   );
 }
