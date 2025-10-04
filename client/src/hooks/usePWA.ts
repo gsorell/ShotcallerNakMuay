@@ -26,19 +26,51 @@ interface UserEngagementStats {
 }
 
 export function usePWA(): PWAHook {
-  const [state, setState] = useState<PWAState>({
-    isInstallable: false,
-    isInstalled: false,
-    showInstallPrompt: false,
-    installPrompt: null
+  const [state, setState] = useState<PWAState>(() => {
+    // Check localStorage for persistent install status
+    const storedInstallStatus = localStorage.getItem('pwa_installed') === 'true';
+    return {
+      isInstallable: false,
+      isInstalled: storedInstallStatus,
+      showInstallPrompt: false,
+      installPrompt: null
+    };
   });
 
   // Check if app is already installed/running as PWA
   const checkInstallStatus = useCallback(() => {
-    const isInstalled = 
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true ||
-      document.referrer.includes('android-app://');
+    // Multiple detection methods for better compatibility
+    const standaloneDisplay = window.matchMedia('(display-mode: standalone)').matches;
+    const iOSStandalone = (window.navigator as any).standalone === true;
+    const androidApp = document.referrer.includes('android-app://');
+    
+    // Additional checks for common PWA environments
+    const windowControlsOverlay = window.matchMedia('(display-mode: window-controls-overlay)').matches;
+    const minimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
+    const fullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+    
+    // Check URL parameters that might indicate PWA launch
+    const urlParams = new URLSearchParams(window.location.search);
+    const launchedAsPWA = urlParams.has('pwa') || urlParams.has('standalone');
+    
+    // Check stored install status from localStorage
+    const storedInstallStatus = localStorage.getItem('pwa_installed') === 'true';
+    
+    const isInstalled = storedInstallStatus || standaloneDisplay || iOSStandalone || androidApp || windowControlsOverlay || minimalUI || fullscreen || launchedAsPWA;
+    
+    // Debug logging (remove in production)
+    console.log('PWA Detection Debug:', {
+      standaloneDisplay,
+      iOSStandalone,
+      androidApp,
+      windowControlsOverlay,
+      minimalUI,
+      fullscreen,
+      launchedAsPWA,
+      finalResult: isInstalled,
+      userAgent: navigator.userAgent,
+      displayMode: window.matchMedia('(display-mode: standalone)').media
+    });
     
     // Also check if the app meets basic PWA criteria
     const hasManifest = document.querySelector('link[rel="manifest"]');
@@ -72,6 +104,9 @@ export function usePWA(): PWAHook {
     };
 
     const handleAppInstalled = () => {
+      // Persist install status to localStorage
+      localStorage.setItem('pwa_installed', 'true');
+      
       setState(prev => ({
         ...prev,
         isInstalled: true,
