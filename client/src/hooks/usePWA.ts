@@ -1,0 +1,197 @@
+import { useState, useEffect, useCallback } from 'react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+interface PWAState {
+  isInstallable: boolean;
+  isInstalled: boolean;
+  showInstallPrompt: boolean;
+  installPrompt: BeforeInstallPromptEvent | null;
+}
+
+interface PWAHook extends PWAState {
+  promptInstall: () => Promise<boolean>;
+  dismissPrompt: () => void;
+  shouldShowPrompt: (userStats: UserEngagementStats) => boolean;
+}
+
+interface UserEngagementStats {
+  visitCount: number;
+  timeOnSite: number;
+  completedWorkouts: number;
+  lastVisit?: Date;
+}
+
+export function usePWA(): PWAHook {
+  const [state, setState] = useState<PWAState>({
+    isInstallable: false,
+    isInstalled: false,
+    showInstallPrompt: false,
+    installPrompt: null
+  });
+
+  // Check if app is already installed/running as PWA
+  const checkInstallStatus = useCallback(() => {
+    const isInstalled = 
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://');
+    
+    // Also check if the app meets basic PWA criteria
+    const hasManifest = document.querySelector('link[rel="manifest"]');
+    const hasServiceWorker = 'serviceWorker' in navigator;
+    const isSecureContext = location.protocol === 'https:' || location.hostname === 'localhost';
+    
+    const isPWAReady = hasManifest && hasServiceWorker && isSecureContext;
+    
+    setState(prev => ({ 
+      ...prev, 
+      isInstalled,
+      // If we meet PWA criteria but no beforeinstallprompt, still mark as installable
+      isInstallable: prev.isInstallable || (isPWAReady && !isInstalled)
+    }));
+    
+
+  }, []);
+
+  // Handle beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent Chrome from automatically showing the prompt
+      e.preventDefault();
+      
+      const promptEvent = e as BeforeInstallPromptEvent;
+      setState(prev => ({
+        ...prev,
+        isInstallable: true,
+        installPrompt: promptEvent
+      }));
+    };
+
+    const handleAppInstalled = () => {
+      setState(prev => ({
+        ...prev,
+        isInstalled: true,
+        isInstallable: false,
+        showInstallPrompt: false,
+        installPrompt: null
+      }));
+      
+      // Track install event
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'pwa_install', {
+          event_category: 'engagement',
+          event_label: 'app_installed'
+        });
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    
+    // Check initial install status
+    checkInstallStatus();
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [checkInstallStatus]);
+
+  // Determine if we should show install prompt based on user engagement
+  const shouldShowPrompt = useCallback((userStats: UserEngagementStats): boolean => {
+    if (state.isInstalled) return false;
+    
+    // Check if user has dismissed prompt recently
+    const dismissedKey = 'pwa_prompt_dismissed';
+    const lastDismissed = localStorage.getItem(dismissedKey);
+    if (lastDismissed) {
+      const dismissedDate = new Date(lastDismissed);
+      const daysSinceDismissal = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismissal < 7) return false; // Don't show again for a week
+    }
+
+    // Engagement-based criteria
+    const criteria = {
+      // Returning user (2+ visits)
+      returningUser: userStats.visitCount >= 2,
+      
+      // Engaged user (spent 2+ minutes exploring)  
+      timeEngaged: userStats.timeOnSite >= 120,
+      
+      // Completed at least one workout
+      completedWorkout: userStats.completedWorkouts > 0,
+      
+      // Been on site for at least 30 seconds this session
+      currentSessionEngagement: userStats.timeOnSite >= 30
+    };
+
+    // Show prompt if user meets any of the engagement criteria
+    // CHANGED: Remove dependency on isInstallable - show instructions even without beforeinstallprompt
+    return criteria.returningUser || 
+           criteria.timeEngaged || 
+           criteria.completedWorkout ||
+           criteria.currentSessionEngagement;
+  }, [state.isInstalled]);
+
+  // Trigger install prompt
+  const promptInstall = useCallback(async (): Promise<boolean> => {
+    // If we have the native prompt, use it
+    if (state.installPrompt) {
+      try {
+        await state.installPrompt.prompt();
+        const choiceResult = await state.installPrompt.userChoice;
+        
+        // Track user choice
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'pwa_prompt_response', {
+            event_category: 'engagement',
+            event_label: choiceResult.outcome
+          });
+        }
+
+        if (choiceResult.outcome === 'accepted') {
+          setState(prev => ({
+            ...prev,
+            showInstallPrompt: false,
+            installPrompt: null
+          }));
+          return true;
+        } else {
+          // User dismissed - remember this
+          localStorage.setItem('pwa_prompt_dismissed', new Date().toISOString());
+          setState(prev => ({ ...prev, showInstallPrompt: false }));
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    }
+    
+    return false;
+  }, [state.installPrompt]);
+
+  // Manually dismiss prompt
+  const dismissPrompt = useCallback(() => {
+    localStorage.setItem('pwa_prompt_dismissed', new Date().toISOString());
+    setState(prev => ({ ...prev, showInstallPrompt: false }));
+    
+    // Track dismissal
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', 'pwa_prompt_dismissed', {
+        event_category: 'engagement',
+        event_label: 'manual_dismiss'
+      });
+    }
+  }, []);
+
+  return {
+    ...state,
+    promptInstall,
+    dismissPrompt,
+    shouldShowPrompt
+  };
+}
