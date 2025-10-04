@@ -51,7 +51,7 @@ export function usePWA(): PWAHook {
       ...prev, 
       isInstalled,
       // If we meet PWA criteria but no beforeinstallprompt, still mark as installable
-      isInstallable: prev.isInstallable || (isPWAReady && !isInstalled)
+      isInstallable: Boolean(prev.isInstallable || (isPWAReady && !isInstalled))
     }));
     
 
