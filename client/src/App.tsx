@@ -14,6 +14,9 @@ import StatusTimer from './components/StatusTimer'; // <-- Make sure this import
 import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
+// Global state to persist modal scroll position across re-renders
+let modalScrollPosition = 0;
+
 // REMOVE: The image imports are not needed for files in /public
 /*
 import iconNewb from '/assets/icon_newb.png';
@@ -402,6 +405,11 @@ export default function App() {
 
   // ADD: subtle onboarding modal toggle
   const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
+  
+  // Stable callback to prevent modal re-renders
+  const closeOnboardingModal = useCallback(() => {
+    setShowOnboardingMsg(false);
+  }, []);
   
 
 
@@ -1317,7 +1325,9 @@ export default function App() {
   const isActive = running || isPreRound;
 
   // New: Extracted onboarding modal to avoid JSX bracket/paren issues
-  const OnboardingModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  const OnboardingModal: React.FC<{ open: boolean; onClose: () => void }> = React.memo(({ open, onClose }) => {
+    const modalRef = React.useRef<HTMLDivElement>(null);
+
     const escHandler = React.useCallback((e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     }, [onClose]);
@@ -1328,6 +1338,28 @@ export default function App() {
       return () => window.removeEventListener('keydown', escHandler);
     }, [open, escHandler]);
 
+    // Restore and save scroll position using global variable
+    React.useLayoutEffect(() => {
+      if (!open || !modalRef.current) return;
+      
+      // Restore scroll position immediately
+      modalRef.current.scrollTop = modalScrollPosition;
+      
+      // Save scroll position on scroll
+      const handleScroll = () => {
+        if (modalRef.current) {
+          modalScrollPosition = modalRef.current.scrollTop;
+        }
+      };
+      
+      modalRef.current.addEventListener('scroll', handleScroll, { passive: true });
+      return () => {
+        if (modalRef.current) {
+          modalRef.current.removeEventListener('scroll', handleScroll);
+        }
+      };
+    }, [open]);
+
     if (!open) return null;
 
     const modal = (
@@ -1335,6 +1367,7 @@ export default function App() {
         role="dialog"
         aria-modal="true"
         onClick={onClose} // click backdrop to close
+        ref={modalRef}
         style={{
           position: 'fixed',
           inset: 0,
@@ -1498,14 +1531,14 @@ export default function App() {
     const target = typeof document !== 'undefined' ? document.body : null;
     if (!target) return null;
     return createPortal(modal, target);
-  };
+  });
 
   const TechniqueEditorAny = TechniqueEditor as unknown as React.ComponentType<any>;
 
   return (
     <>
       {/* Onboarding Modal */}
-      <OnboardingModal open={showOnboardingMsg} onClose={() => setShowOnboardingMsg(false)} />
+      <OnboardingModal open={showOnboardingMsg} onClose={closeOnboardingModal} />
 
       <style>{`
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
