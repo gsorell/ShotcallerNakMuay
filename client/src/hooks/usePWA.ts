@@ -58,19 +58,7 @@ export function usePWA(): PWAHook {
     
     const isInstalled = storedInstallStatus || standaloneDisplay || iOSStandalone || androidApp || windowControlsOverlay || minimalUI || fullscreen || launchedAsPWA;
     
-    // Debug logging (remove in production)
-    console.log('PWA Detection Debug:', {
-      standaloneDisplay,
-      iOSStandalone,
-      androidApp,
-      windowControlsOverlay,
-      minimalUI,
-      fullscreen,
-      launchedAsPWA,
-      finalResult: isInstalled,
-      userAgent: navigator.userAgent,
-      displayMode: window.matchMedia('(display-mode: standalone)').media
-    });
+    // Debug logging removed
     
     // Also check if the app meets basic PWA criteria
     const hasManifest = document.querySelector('link[rel="manifest"]');
