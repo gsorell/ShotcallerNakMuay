@@ -134,6 +134,8 @@ export default function App() {
   
   const [sessionStartTime] = useState(Date.now());
   const [showPWAPrompt, setShowPWAPrompt] = useState(false);
+  // Track whether we're on the Technique Editor to gate periodic updates that can steal focus on mobile
+  const isEditorRef = useRef(false);
 
   // Register service worker for PWA
   useEffect(() => {
@@ -165,22 +167,26 @@ export default function App() {
   // Track time on site and show install prompt after 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
+      // Skip updating while editing techniques to avoid focus drops on mobile
+      if (isEditorRef.current) return;
       const timeOnSite = Math.floor((Date.now() - sessionStartTime) / 1000);
       setUserEngagement(prev => ({ ...prev, timeOnSite }));
     }, 5000); // Check every 5 seconds
 
     return () => clearInterval(interval);
-  }, [sessionStartTime, userEngagement]);
+  }, [sessionStartTime]);
   
   // Show install prompt automatically after 30 seconds if not installed and not dismissed
   useEffect(() => {
+    // Don't interrupt the Technique Editor with prompts
+    if (isEditorRef.current) return;
     // Don't show if already installed or previously dismissed permanently
     if (!pwa.isInstalled) {
       const dismissed = localStorage.getItem('pwa_install_dismissed');
       if (!dismissed) {
         const timer = setTimeout(() => {
           // Double-check install status before showing (in case user installed during the 30 seconds)
-          if (!pwa.isInstalled) {
+          if (!pwa.isInstalled && !isEditorRef.current) {
             setShowPWAPrompt(true);
           }
         }, 30000); // 30 seconds
@@ -190,6 +196,10 @@ export default function App() {
     }
   }, [pwa.isInstalled]);  // Routing
   const [page, setPage] = useState<Page>('timer');
+  // Keep a ref of whether we're on the Technique Editor page for gating timers and prompts
+  useEffect(() => {
+    isEditorRef.current = (page === 'editor');
+  }, [page]);
   const [lastWorkout, setLastWorkout] = useState<any>(null);
 
   // Technique data (seed + persist + version)

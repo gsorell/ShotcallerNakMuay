@@ -426,9 +426,15 @@ export default function TechniqueEditor({
   function toggleGroupExpanded(key: string) {
     setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
   }
+  // Track which group title is currently being edited to suppress re-renders
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const beginEdit = (key: string) => setEditingKey(key);
+  const endEdit = () => setEditingKey(null);
+
+  // Note: Title editing uses the same controlled pattern as description; no edit suppression needed
 
   // --- Helper: Collapsible group header (applies to all groups) ---
-  function GroupHeader({
+  const GroupHeader = React.memo(function GroupHeader({
     keyName,
     group,
     isCoreStyle,
@@ -437,6 +443,9 @@ export default function TechniqueEditor({
     expanded,
     toggleGroupExpanded,
     updateGroupLabel,
+    editingKey,
+    onBeginEdit,
+    onEndEdit,
   }: {
     keyName: string,
     group: TechniqueShape,
@@ -446,12 +455,50 @@ export default function TechniqueEditor({
     expanded: boolean,
     toggleGroupExpanded: (key: string) => void,
     updateGroupLabel: (key: string, label: string) => void,
+    editingKey: string | null,
+    onBeginEdit: (key: string) => void,
+    onEndEdit: () => void,
   }) {
-    const [editLabel, setEditLabel] = React.useState(group.title ?? group.label ?? keyName);
+    // Instrumentation: track renders for this row (placed after state declarations)
+    // Local buffered state for stable editing (commit on blur/Enter)
+    const inputRef = React.useRef<HTMLInputElement>(null);
+  const [editLabel, setEditLabel] = React.useState<string>(group.title ?? group.label ?? keyName);
+  const [isEditing, setIsEditing] = React.useState<boolean>(false);
+    // Instrumentation: track renders for this row
+    const renderCountRef = React.useRef(0);
+    renderCountRef.current += 1;
+    if (renderCountRef.current % 10 === 1) {
+      console.log('[GroupHeader render]', keyName, {
+        count: renderCountRef.current,
+        editingRow: editingKey === keyName,
+        isEditing
+      });
+    }
+  const justSavedRef = React.useRef<string | null>(null);
 
+    // Sync from props when not actively editing
     React.useEffect(() => {
-      setEditLabel(group.title ?? group.label ?? keyName);
-    }, [group.title, group.label, keyName]);
+      if (!isEditing) {
+        const externalValue = group.title ?? group.label ?? keyName;
+        // If we just saved and upstream hasn't reflected the saved value yet, avoid overwriting
+        if (justSavedRef.current !== null) {
+          if (externalValue !== justSavedRef.current) {
+            // Wait until external matches saved value before syncing
+            return;
+          }
+          // Upstream now reflects our saved value; clear flag and sync
+          justSavedRef.current = null;
+        }
+        setEditLabel(externalValue);
+      }
+    }, [group.title, group.label, keyName, isEditing]);
+
+
+
+
+
+    
+
 
     return (
       <div
@@ -492,12 +539,48 @@ export default function TechniqueEditor({
           <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
             {expanded && !isCoreStyle ? (
               <input
+                ref={inputRef}
                 type="text"
                 value={editLabel}
                 onChange={e => setEditLabel(e.target.value)}
-                onBlur={e => {
-                  if (editLabel.trim() !== (group.title ?? group.label ?? keyName)) {
-                    updateGroupLabel(keyName, editLabel.trim());
+                onFocus={() => {
+                  setIsEditing(true);
+                  onBeginEdit(keyName);
+                }}
+                onBlur={() => {
+                  const trimmed = editLabel.trim();
+                  const original = group.title ?? group.label ?? keyName;
+                  if (trimmed && trimmed !== original) {
+                    // Mark as just saved to avoid immediate revert before parent updates
+                    justSavedRef.current = trimmed;
+                    updateGroupLabel(keyName, trimmed);
+                  } else if (!trimmed) {
+                    setEditLabel(original);
+                  }
+                  setIsEditing(false);
+                  onEndEdit();
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const trimmed = editLabel.trim();
+                    const original = group.title ?? group.label ?? keyName;
+                    if (trimmed && trimmed !== original) {
+                      justSavedRef.current = trimmed;
+                      updateGroupLabel(keyName, trimmed);
+                    } else if (!trimmed) {
+                      setEditLabel(original);
+                    }
+                    setIsEditing(false);
+                    onEndEdit();
+                    (e.currentTarget as HTMLInputElement).blur();
+                  }
+                  if (e.key === 'Escape') {
+                    const original = group.title ?? group.label ?? keyName;
+                    setEditLabel(original);
+                    setIsEditing(false);
+                    onEndEdit();
+                    (e.currentTarget as HTMLInputElement).blur();
                   }
                 }}
                 style={{
@@ -511,7 +594,15 @@ export default function TechniqueEditor({
                   outline: 'none',
                   fontFamily: 'inherit'
                 }}
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="text"
+                enterKeyHint="done"
                 aria-label="Rename group"
+                id={`group-title-${keyName}`}
+                name={`group-title-${keyName}`}
                 placeholder="Group Name"
               />
             ) : (
@@ -623,7 +714,23 @@ export default function TechniqueEditor({
         </div>
       </div>
     );
-  }
+  }, (prev, next) => {
+    // Suppress re-renders while editing the current row (mobile focus stability)
+    const prevEditingThis = prev.editingKey === prev.keyName;
+    const nextEditingThis = next.editingKey === next.keyName;
+    if (prevEditingThis && nextEditingThis) return true;
+
+    const prevTitle = (prev.group.title ?? prev.group.label ?? prev.keyName);
+    const nextTitle = (next.group.title ?? next.group.label ?? next.keyName);
+    return (
+      prev.keyName === next.keyName &&
+      prev.isCoreStyle === next.isCoreStyle &&
+      prev.expanded === next.expanded &&
+      prevTitle === nextTitle &&
+      prev.thumbnail === next.thumbnail &&
+      prev.editingKey === next.editingKey
+    );
+  });
 
   return (
     <div ref={topRef} style={{ 
@@ -769,6 +876,9 @@ export default function TechniqueEditor({
           expanded={expanded}
           toggleGroupExpanded={toggleGroupExpanded}
           updateGroupLabel={updateGroupLabel}
+          editingKey={editingKey}
+          onBeginEdit={beginEdit}
+          onEndEdit={endEdit}
         />            
             {expanded && (
               <>
