@@ -17,6 +17,77 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
 
+// Google Analytics 4 (GA4) implementation
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void;
+    dataLayer: any[];
+  }
+}
+
+// Your GA4 Measurement ID - replace 'G-XXXXXXXXXX' with your actual measurement ID
+const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Replace with your actual GA4 measurement ID
+
+// Analytics event names
+const AnalyticsEvents = {
+  // Timer events
+  WorkoutStart: 'workout_start',
+  WorkoutComplete: 'workout_complete',
+  WorkoutPause: 'workout_pause',
+  WorkoutResume: 'workout_resume',
+  WorkoutStop: 'workout_stop',
+  
+  // Settings events
+  SettingToggle: 'setting_toggle',
+  EmphasisSelect: 'emphasis_select',
+  EmphasisDeselect: 'emphasis_deselect',
+  EmphasisListToggle: 'emphasis_list_toggle',
+  DifficultyChange: 'difficulty_change',
+  
+  // Navigation events
+  PageChange: 'page_change',
+  TechniqueEditorOpen: 'technique_editor_open',
+  WorkoutLogsOpen: 'workout_logs_open'
+} as const;
+
+// Initialize GA4
+const initializeGA4 = () => {
+  // Only initialize in production (not on localhost)
+  if (typeof window === 'undefined' || window.location.hostname === 'localhost') {
+    return;
+  }
+
+  // Load the Google Analytics script
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+  document.head.appendChild(script);
+
+  // Initialize dataLayer and gtag
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(...args: any[]) {
+    window.dataLayer.push(arguments);
+  };
+  
+  window.gtag('js', new Date());
+  window.gtag('config', GA_MEASUREMENT_ID, {
+    page_title: 'Nak Muay Shot Caller',
+    page_location: window.location.href
+  });
+};
+
+// Track events
+const trackEvent = (eventName: string, parameters?: Record<string, any>) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', eventName, {
+      event_category: 'engagement',
+      event_label: parameters?.label || '',
+      value: parameters?.value || 0,
+      ...parameters
+    });
+  }
+};
+
 // REMOVE: The image imports are not needed for files in /public
 /*
 import iconNewb from '/assets/icon_newb.png';
@@ -108,6 +179,7 @@ const DEFAULT_REST_MINUTES = 1;
 export default function App() {
   useEffect(() => {
     displayInAppBrowserWarning();
+    initializeGA4();
   }, []);
 
   // PWA functionality
@@ -372,6 +444,16 @@ export default function App() {
   const toggleEmphasis = (k: EmphasisKey) => {
     setSelectedEmphases(prev => {
       const isTurningOn = !prev[k];
+      
+      // Track emphasis selection/deselection
+      try {
+        trackEvent(isTurningOn ? AnalyticsEvents.EmphasisSelect : AnalyticsEvents.EmphasisDeselect, {
+          emphasis: k
+        });
+      } catch (e) {
+        console.warn('Analytics tracking failed:', e);
+      }
+      
       if (k === 'timer_only') {
         // If turning timer_only on, turn all others off.
         // If turning timer_only off, just turn it off.
@@ -992,6 +1074,22 @@ export default function App() {
       alert('No techniques found for the selected emphasis(es). Check the technique lists or choose a different emphasis.');
       console.warn('startSession blocked: empty technique pool for selected emphases', selectedEmphases);
       return;
+    }
+
+    // Track workout start
+    try {
+      trackEvent(AnalyticsEvents.WorkoutStart, {
+        selected_emphases: Object.keys(selectedEmphases).filter(k => selectedEmphases[k as EmphasisKey]),
+        difficulty: difficulty,
+        rounds: roundsCount,
+        round_duration_minutes: roundMin,
+        rest_duration_minutes: restMinutes,
+        include_calisthenics: addCalisthenics,
+        read_in_order: readInOrder
+      });
+    } catch (e) {
+      // Analytics should never break functionality
+      console.warn('Analytics tracking failed:', e);
     }
 
     // Unlock audio while we still have a user gesture
@@ -2076,7 +2174,10 @@ export default function App() {
       width: '100%'
     }}>
     <button
-      onClick={() => setPage('editor')}
+      onClick={() => {
+        try { trackEvent(AnalyticsEvents.TechniqueEditorOpen); } catch {}
+        setPage('editor');
+      }}
       style={{
         padding: '.75rem 1rem',
         borderRadius: '1rem',
