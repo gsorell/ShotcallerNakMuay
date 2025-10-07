@@ -181,6 +181,22 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
 
 const DEFAULT_REST_MINUTES = 1;
 
+// Mirror technique for southpaw mode - only swap Left/Right directional words
+const mirrorTechnique = (technique: string): string => {
+  console.log('Mirroring technique:', technique); // Debug log
+  
+  // Simple swap: Left ↔ Right (case insensitive, preserving original case)
+  let mirrored = technique;
+  
+  // Use temporary placeholders to avoid double-swapping
+  mirrored = mirrored.replace(/\bLeft\b/gi, '|||TEMP_LEFT|||');
+  mirrored = mirrored.replace(/\bRight\b/gi, 'Left');
+  mirrored = mirrored.replace(/\|\|\|TEMP_LEFT\|\|\|/gi, 'Right');
+  
+  console.log('Mirrored result:', mirrored); // Debug log
+  return mirrored;
+};
+
 export default function App() {
   useEffect(() => {
     displayInAppBrowserWarning();
@@ -440,6 +456,13 @@ export default function App() {
 
   // ADD: Read in order toggle
   const [readInOrder, setReadInOrder] = useState(false);
+  
+  // ADD: Southpaw mode toggle
+  const [southpawMode, setSouthpawMode] = useState(() => {
+    const stored = localStorage.getItem('southpaw_mode');
+    return stored ? JSON.parse(stored) : false;
+  });
+  
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [roundsCount, setRoundsCount] = useState(5);
   const [roundMin, setRoundMin] = useState(3);
@@ -571,6 +594,15 @@ export default function App() {
   const pausedRef = useRef(paused);
   useEffect(() => { runningRef.current = running; }, [running]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
+
+  // Persist southpaw mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('southpaw_mode', JSON.stringify(southpawMode));
+  }, [southpawMode]);
+
+  // Create ref for southpaw mode to ensure it's accessible in callbacks
+  const southpawModeRef = useRef(southpawMode);
+  useEffect(() => { southpawModeRef.current = southpawMode; }, [southpawMode]);
 
   // Build a phrase pool from selected emphases (strict: only read exact keys from techniques)
   const getTechniquePool = useCallback((): string[] => {
@@ -795,7 +827,9 @@ export default function App() {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         try { window.speechSynthesis.cancel(); } catch { /* noop */ }
 
-        const u = new SpeechSynthesisUtterance(phrase);
+        // Apply southpaw mirroring if enabled
+        const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
+        const u = new SpeechSynthesisUtterance(finalPhrase);
         const v = voiceRef.current;
         if (v) u.voice = v;
         u.rate = voiceSpeedRef.current;
@@ -805,7 +839,7 @@ export default function App() {
             try { window.speechSynthesis.cancel(); } catch { /* noop */ }
             return;
           }
-          setCurrentCallout(phrase);
+          setCurrentCallout(finalPhrase);
         };
 
         u.onend = () => {
@@ -828,7 +862,9 @@ export default function App() {
       }
 
       // Fallback (no TTS): update immediately and use timer cadence
-      setCurrentCallout(phrase);
+      // Apply southpaw mirroring if enabled
+      const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
+      setCurrentCallout(finalPhrase);
       const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
       const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
       scheduleNext(nextDelayMs);
@@ -2364,51 +2400,151 @@ export default function App() {
                     </div>
                   </section>
 
-                  {/* Step 4: Extra Options */}
-                  <section style={{ maxWidth: '48rem', margin: '1.5rem auto 0 auto', display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    {/* Calisthenics toggle */}
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, color: '#f9a8d4', fontSize: '1rem' }}>
-                      <input
-                        type="checkbox"
-                        checked={addCalisthenics}
-                        onChange={e => setAddCalisthenics(e.target.checked)}
-                        style={{ 
-                          accentColor: '#60a5fa', 
-                          width: 20, 
-                          height: 20, 
-                          borderRadius: '6px',
-                          border: '2px solid rgba(96, 165, 250, 0.3)',
-                          cursor: 'pointer'
-                        }}
-                      />
-                      Include Calisthenics
-                    </label>
-                    {/* Read in order toggle */}
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, color: '#f9a8d4', fontSize: '1rem' }}>
-                      <input
-                        type="checkbox"
-                        checked={readInOrder}
-                        onChange={e => setReadInOrder(e.target.checked)}
-                        style={{ 
-                          accentColor: '#60a5fa', 
-                          width: 20, 
-                          height: 20, 
-                          borderRadius: '6px',
-                          border: '2px solid rgba(96, 165, 250, 0.3)',
-                          cursor: 'pointer'
-                        }}
-                      />
-                      Read Techniques in Order
-                    </label>
-                  </section>
+
                   
                   {/* Advanced Settings: Voice Speed and Selection */}
                   <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ ...linkButtonStyle, color: '#f9a8d4', fontSize: '0.875rem' }}>
                     {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
                   </button>
                   {showAdvanced && (
-                    <div className="advanced-settings-panel" style={{ marginTop: '0', maxWidth: '32rem', marginLeft: 'auto', marginRight: 'auto' }}>
-    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1.25rem', marginTop: '0' }}>
+                    <div className="advanced-settings-panel" style={{ 
+                      marginTop: '1rem', 
+                      maxWidth: '32rem', 
+                      marginLeft: 'auto', 
+                      marginRight: 'auto',
+                      background: 'rgba(0, 0, 0, 0.3)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      border: '1px solid rgba(96, 165, 250, 0.2)'
+                    }}>
+    
+    {/* Training Options Section */}
+    <div style={{ marginBottom: '2rem' }}>
+      <h4 style={{ 
+        color: '#60a5fa', 
+        fontSize: '0.875rem', 
+        fontWeight: 600, 
+        margin: '0 0 1rem 0',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
+      }}>
+        Training Options
+      </h4>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Southpaw Mode toggle */}
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 500, color: '#f9a8d4', fontSize: '0.95rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={southpawMode}
+              onChange={e => {
+                const newValue = e.target.checked;
+                setSouthpawMode(newValue);
+                // Track southpaw mode toggle
+                try {
+                  trackEvent(AnalyticsEvents.SettingToggle, {
+                    setting_name: 'southpaw_mode',
+                    setting_value: newValue
+                  });
+                } catch (error) {
+                  console.warn('Analytics tracking failed:', error);
+                }
+              }}
+              style={{ 
+                accentColor: '#60a5fa', 
+                width: 18, 
+                height: 18, 
+                borderRadius: '4px',
+                border: '2px solid rgba(96, 165, 250, 0.3)',
+                cursor: 'pointer'
+              }}
+            />
+            Southpaw Mode
+          </label>
+          <p style={{ 
+            color: '#cbd5e1', 
+            fontSize: '0.8rem', 
+            margin: '0.25rem 0 0 2.5rem', 
+            lineHeight: '1.4',
+            textAlign: 'left'
+          }}>
+            Mirrors "Left" and "Right" in technique callouts for left-handed fighters
+          </p>
+        </div>
+        
+        {/* Calisthenics toggle */}
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 500, color: '#f9a8d4', fontSize: '0.95rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={addCalisthenics}
+              onChange={e => setAddCalisthenics(e.target.checked)}
+              style={{ 
+                accentColor: '#60a5fa', 
+                width: 18, 
+                height: 18, 
+                borderRadius: '4px',
+                border: '2px solid rgba(96, 165, 250, 0.3)',
+                cursor: 'pointer'
+              }}
+            />
+            Include Calisthenics
+          </label>
+          <p style={{ 
+            color: '#cbd5e1', 
+            fontSize: '0.8rem', 
+            margin: '0.25rem 0 0 2.5rem', 
+            lineHeight: '1.4',
+            textAlign: 'left'
+          }}>
+            Adds bodyweight exercises like jumping jacks and high knees to your workout
+          </p>
+        </div>
+        
+        {/* Read in order toggle */}
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 500, color: '#f9a8d4', fontSize: '0.95rem', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={readInOrder}
+              onChange={e => setReadInOrder(e.target.checked)}
+              style={{ 
+                accentColor: '#60a5fa', 
+                width: 18, 
+                height: 18, 
+                borderRadius: '4px',
+                border: '2px solid rgba(96, 165, 250, 0.3)',
+                cursor: 'pointer'
+              }}
+            />
+            Read Techniques in Order
+          </label>
+          <p style={{ 
+            color: '#cbd5e1', 
+            fontSize: '0.8rem', 
+            margin: '0.25rem 0 0 2.5rem', 
+            lineHeight: '1.4',
+            textAlign: 'left'
+          }}>
+            Calls techniques sequentially instead of randomly for structured practice
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* Voice Settings Section */}
+    <div>
+      <h4 style={{ 
+        color: '#60a5fa', 
+        fontSize: '0.875rem', 
+        fontWeight: 600, 
+        margin: '0 0 1rem 0',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px'
+      }}>
+        Voice Settings
+      </h4>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
       {/* Voice Dropdown */}
       <div style={{ flex: 2, minWidth: '180px' }}>
         <label htmlFor="voice-select" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
@@ -2486,13 +2622,14 @@ export default function App() {
         {voiceSpeed.toFixed(2)}x
       </div>
     </div>
-    <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
-      <span>
-        <strong>Tip:</strong> Choose a clear, natural voice and adjust the speed for your training pace.
-      </span>
+      <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
+        <span>
+          <strong>Tip:</strong> Choose a clear, natural voice and adjust the speed for your training pace.
+        </span>
+      </div>
+      </div>
     </div>
-  </div>
-)}
+  )}
 
 
                   {/* Conditionally render Difficulty and Start button together in sticky bottom container */}
