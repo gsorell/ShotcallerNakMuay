@@ -47,7 +47,12 @@ const AnalyticsEvents = {
   // Navigation events
   PageChange: 'page_change',
   TechniqueEditorOpen: 'technique_editor_open',
-  WorkoutLogsOpen: 'workout_logs_open'
+  WorkoutLogsOpen: 'workout_logs_open',
+  
+  // PWA events
+  PWAInstallPrompt: 'pwa_install_prompt',
+  PWAInstallAccept: 'pwa_install_accept',
+  PWAInstallDecline: 'pwa_install_decline'
 } as const;
 
 // Initialize GA4
@@ -2770,14 +2775,23 @@ export default function App() {
     <PWAInstallPrompt
       isVisible={showPWAPrompt && !pwa.isInstalled}
       onInstall={async () => {
+        try { 
+          trackEvent(AnalyticsEvents.PWAInstallPrompt, { action: 'install_attempted' }); 
+        } catch {}
         const success = await pwa.promptInstall();
         setShowPWAPrompt(false);
         return success;
       }}
       onDismiss={() => {
+        try { 
+          trackEvent(AnalyticsEvents.PWAInstallPrompt, { action: 'dismissed' }); 
+        } catch {}
         setShowPWAPrompt(false);
       }}
       onDismissPermanently={() => {
+        try { 
+          trackEvent(AnalyticsEvents.PWAInstallPrompt, { action: 'dismissed_permanently' }); 
+        } catch {}
         localStorage.setItem('pwa_install_dismissed', 'true');
         setShowPWAPrompt(false);
       }}
