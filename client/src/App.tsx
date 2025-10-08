@@ -537,16 +537,47 @@ export default function App() {
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
   const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceCompatibilityWarning, setVoiceCompatibilityWarning] = useState<string>('');
   // Live "subtitle" for the active technique/combination
   const [currentCallout, setCurrentCallout] = useState<string>('');
+  // Voice compatibility checker - non-intrusive
+  const checkVoiceCompatibility = useCallback((availableVoices: SpeechSynthesisVoice[]) => {
+    if (!availableVoices.length) {
+      setVoiceCompatibilityWarning('No text-to-speech voices available. You can still use the app with visual callouts only.');
+      return;
+    }
+
+    // Look for English voices
+    const englishVoices = availableVoices.filter(v => 
+      v.lang.toLowerCase().startsWith('en') || 
+      v.name.toLowerCase().includes('english') ||
+      v.name.toLowerCase().includes('us') ||
+      v.name.toLowerCase().includes('uk')
+    );
+
+    if (englishVoices.length > 0) {
+      setVoiceCompatibilityWarning('');
+    } else {
+      setVoiceCompatibilityWarning('No English voices found. Voice may have pronunciation issues with English techniques.');
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     const synth = window.speechSynthesis;
-    const update = () => setVoices(synth.getVoices());
+    const update = () => {
+      const availableVoices = synth.getVoices();
+      setVoices(availableVoices);
+      
+      // Only run compatibility check if we have voices
+      if (availableVoices.length > 0) {
+        checkVoiceCompatibility(availableVoices);
+      }
+    };
     update();
     (synth as any).onvoiceschanged = update;
     return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
-  }, []);
+  }, [checkVoiceCompatibility]);
 
   // NEW: refs so changing speed/voice doesn’t restart cadence
   const voiceSpeedRef = useRef(voiceSpeed);
@@ -1086,22 +1117,56 @@ export default function App() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  // Voice tester
+  // Voice tester with enhanced error handling
   function testVoice() {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      setVoiceCompatibilityWarning('Text-to-speech not supported in this browser.');
+      return;
+    }
+
+    if (!voice) {
+      setVoiceCompatibilityWarning('No voice selected. Please choose a voice from the dropdown.');
+      return;
+    }
+
     try {
       // Cancel any ongoing speech to prevent overlap
       window.speechSynthesis.cancel();
 
       // Create and configure the utterance for the test
-      const utterance = new SpeechSynthesisUtterance(`Voice test at ${voiceSpeed.toFixed(2)}x`);
-      if (voice) utterance.voice = voice;
+      const testPhrase = `Voice test at ${voiceSpeed.toFixed(2)}x speed. Jab cross hook.`;
+      const utterance = new SpeechSynthesisUtterance(testPhrase);
+      utterance.voice = voice;
       utterance.rate = voiceSpeed;
+
+      // Add error handling for the utterance
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
+        setVoiceCompatibilityWarning(`Voice test failed: ${event.error}. This voice may not work properly with English text.`);
+      };
+
+      utterance.onstart = () => {
+        setVoiceCompatibilityWarning('');
+      };
+
+      utterance.onend = () => {
+        // If we get here, the voice worked
+        console.log("Voice test completed successfully");
+      };
 
       // Speak the test phrase
       window.speechSynthesis.speak(utterance);
+
+      // Set a timeout to detect if speech never starts
+      setTimeout(() => {
+        if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+          setVoiceCompatibilityWarning('Voice test failed to start. This voice may not be compatible with English text.');
+        }
+      }, 1000);
+
     } catch (err) {
       console.error("Voice test failed:", err);
+      setVoiceCompatibilityWarning(`Voice test error: ${err}. Try selecting a different voice.`);
     }
   }
 
@@ -1155,7 +1220,14 @@ export default function App() {
     setCurrentRound(1);
     setIsPreRound(true);
     setPreRoundTimeLeft(5);
-    speakSystem('Get ready', voice, voiceSpeed);
+    
+    // Use visual-friendly messaging if voice has issues
+    if (voiceCompatibilityWarning) {
+      speakSystem('Visual mode ready', voice, voiceSpeed);
+    } else {
+      speakSystem('Get ready', voice, voiceSpeed);
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function pauseSession() {
@@ -1903,18 +1975,19 @@ export default function App() {
                         style={{
                           maxWidth: '46rem',
                           textAlign: 'center',
-                          fontSize: '2rem',
+                          fontSize: voiceCompatibilityWarning ? '2.2rem' : '2rem', // Larger when TTS isn't working
                           fontWeight: 800,
                           letterSpacing: '0.5px',
                           color: 'white',
-                          background: 'rgba(0,0,0,0.35)',
-                          border: '1px solid rgba(255,255,255,0.22)',
+                          background: voiceCompatibilityWarning ? 'rgba(251, 191, 36, 0.15)' : 'rgba(0,0,0,0.35)',
+                          border: voiceCompatibilityWarning ? '2px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255,255,255,0.22)',
                           borderRadius: '0.85rem',
-                          padding: '0.6rem 1rem',
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                          padding: voiceCompatibilityWarning ? '0.8rem 1.2rem' : '0.6rem 1rem',
+                          boxShadow: voiceCompatibilityWarning ? '0 8px 24px rgba(251, 191, 36, 0.15)' : '0 8px 24px rgba(0,0,0,0.25)',
+                          animation: voiceCompatibilityWarning ? 'pulse 2s ease-in-out infinite' : 'none',
                         }}
                       >
-                        {currentCallout}
+                        {voiceCompatibilityWarning && '👁️ '}{currentCallout}
                       </div>
                     )}
 
@@ -2577,11 +2650,17 @@ export default function App() {
           }}
         >
           <option value="" disabled>Select a voice</option>
-          {voices.map(v => (
-            <option key={v.name} value={v.name} style={{ padding: '0.5rem 0.75rem' }}>
-              {v.name}
-            </option>
-          ))}
+          {voices.map(v => {
+            const isEnglish = v.lang.toLowerCase().startsWith('en') || 
+                            v.name.toLowerCase().includes('english') ||
+                            v.name.toLowerCase().includes('us') ||
+                            v.name.toLowerCase().includes('uk');
+            return (
+              <option key={v.name} value={v.name} style={{ padding: '0.5rem 0.75rem' }}>
+                {isEnglish ? '🇺🇸 ' : ''}{v.name} ({v.lang})
+              </option>
+            );
+          })}
         </select>
       </div>
       {/* Test Voice Button */}
@@ -2606,6 +2685,28 @@ export default function App() {
         </button>
       </div>
     </div>
+
+    {/* Voice Compatibility Warning */}
+    {voiceCompatibilityWarning && (
+      <div style={{
+        background: 'rgba(251, 191, 36, 0.1)',
+        border: '1px solid rgba(251, 191, 36, 0.3)',
+        borderRadius: '0.5rem',
+        padding: '0.75rem',
+        marginTop: '1rem',
+        color: '#fbbf24',
+        fontSize: '0.9rem',
+        lineHeight: '1.5'
+      }}>
+        <strong>⚠️ Voice Notice:</strong> {voiceCompatibilityWarning}
+        {voiceCompatibilityWarning.includes('visual') && (
+          <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#fcd34d' }}>
+            The app will show technique names on screen instead of speaking them.
+          </div>
+        )}
+      </div>
+    )}
+
     {/* Voice Speed Slider */}
     <div style={{ marginBottom: '0.5rem' }}>
       <label htmlFor="voice-speed" style={{ color: '#f9a8d4', fontWeight: 600, fontSize: '1rem', display: 'block', marginBottom: 4 }}>
@@ -2627,8 +2728,17 @@ export default function App() {
     </div>
       <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
         <span>
-          <strong>Tip:</strong> Choose a clear, natural voice and adjust the speed for your training pace.
+          <strong>Tip:</strong> {voiceCompatibilityWarning ? 
+            'Voice issues detected. The app works great with visual callouts only!' : 
+            'Choose a clear, natural voice and adjust the speed for your training pace.'
+          }
         </span>
+        {!voices.length && (
+          <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#fcd34d' }}>
+            <strong>No voices available:</strong> Your system may not have text-to-speech support. 
+            The app will work in visual-only mode.
+          </div>
+        )}
       </div>
       </div>
     </div>
