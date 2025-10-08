@@ -2220,18 +2220,18 @@ export default function App() {
         setPage('editor');
       }}
       style={{
-        padding: '.75rem 1rem',
+        padding: '.875rem 1.25rem',
         borderRadius: '1rem',
-        border: 'none',
-        backgroundColor: 'transparent',
+        border: '1px solid rgba(34, 211, 238, 0.2)',
+        backgroundColor: 'rgba(34, 211, 238, 0.05)',
         color: '#f9a8d4',
-        boxShadow: 'none',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         display: 'inline-flex',
         alignItems: 'center',
         gap: '0.5rem',
         fontWeight: 500,
         fontSize: '0.95rem',
-        transition: 'all 0.2s',
+        transition: 'all 0.2s ease',
         cursor: 'pointer',
         minWidth: 0,
         opacity: 1,
@@ -2241,17 +2241,20 @@ export default function App() {
         marginRight: '0',
         marginLeft: '0',
         textDecoration: 'none',
-        outline: 'none'
+        outline: 'none',
+        backdropFilter: 'blur(8px)'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = '1';
-        e.currentTarget.style.backgroundColor = 'rgba(249, 168, 212, 0.1)';
-        e.currentTarget.style.color = '#f9a8d4';
+        e.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.12)';
+        e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.3)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
+        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = '1';
-        e.currentTarget.style.backgroundColor = 'transparent';
-        e.currentTarget.style.color = '#f9a8d4';
+        e.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.05)';
+        e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.2)';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
       }}
       title="Create custom techniques and modify existing ones"
     >
