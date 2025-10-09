@@ -582,7 +582,7 @@ export default function App() {
   // Voice compatibility checker - check selected voice specifically
   const checkVoiceCompatibility = useCallback((selectedVoice: SpeechSynthesisVoice | null, allVoices: SpeechSynthesisVoice[]) => {
     if (!allVoices.length) {
-      setVoiceCompatibilityWarning('No text-to-speech voices available. You can still use the app with visual callouts only.');
+      setVoiceCompatibilityWarning('No text-to-speech voices available.');
       return;
     }
 
@@ -948,7 +948,7 @@ export default function App() {
         // Safety check: ensure we never pass empty strings to speech synthesis
         if (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') {
           console.warn('Empty or invalid finalPhrase, skipping speech synthesis:', finalPhrase);
-          setCurrentCallout(phrase || ''); // Fallback to original phrase for visual
+          setCurrentCallout(phrase || '');
           return;
         }
         
@@ -988,7 +988,7 @@ export default function App() {
       // Apply southpaw mirroring if enabled
       const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
       
-      // Safety check for visual callouts too
+      // Safety check for callouts
       const safePhrase = (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') 
         ? (phrase || '') 
         : finalPhrase;
@@ -1320,12 +1320,7 @@ export default function App() {
     setIsPreRound(true);
     setPreRoundTimeLeft(5);
     
-    // Use visual-friendly messaging if voice has issues
-    if (voiceCompatibilityWarning) {
-      speakSystem('Visual mode ready', voice, voiceSpeed);
-    } else {
-      speakSystem('Get ready', voice, voiceSpeed);
-    }
+    speakSystem('Get ready', voice, voiceSpeed);
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -2074,19 +2069,18 @@ export default function App() {
                         style={{
                           maxWidth: '46rem',
                           textAlign: 'center',
-                          fontSize: voiceCompatibilityWarning ? '2.2rem' : '2rem', // Larger when TTS isn't working
+                          fontSize: '2rem',
                           fontWeight: 800,
                           letterSpacing: '0.5px',
                           color: 'white',
-                          background: voiceCompatibilityWarning ? 'rgba(251, 191, 36, 0.15)' : 'rgba(0,0,0,0.35)',
-                          border: voiceCompatibilityWarning ? '2px solid rgba(251, 191, 36, 0.4)' : '1px solid rgba(255,255,255,0.22)',
+                          background: 'rgba(0,0,0,0.35)',
+                          border: '1px solid rgba(255,255,255,0.22)',
                           borderRadius: '0.85rem',
-                          padding: voiceCompatibilityWarning ? '0.8rem 1.2rem' : '0.6rem 1rem',
-                          boxShadow: voiceCompatibilityWarning ? '0 8px 24px rgba(251, 191, 36, 0.15)' : '0 8px 24px rgba(0,0,0,0.25)',
-                          animation: voiceCompatibilityWarning ? 'pulse 2s ease-in-out infinite' : 'none',
+                          padding: '0.6rem 1rem',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
                         }}
                       >
-                        {voiceCompatibilityWarning && '👁️ '}{currentCallout}
+                        {currentCallout}
                       </div>
                     )}
 
@@ -2800,11 +2794,7 @@ export default function App() {
         lineHeight: '1.5'
       }}>
         <strong>⚠️ Voice Notice:</strong> {voiceCompatibilityWarning}
-        {voiceCompatibilityWarning.includes('visual') && (
-          <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#fcd34d' }}>
-            The app will show technique names on screen instead of speaking them.
-          </div>
-        )}
+
       </div>
     )}
 
@@ -2830,14 +2820,13 @@ export default function App() {
       <div style={{ color: '#f9a8d4', fontSize: '0.92rem', marginTop: '0.5rem', textAlign: 'left' }}>
         <span>
           <strong>Tip:</strong> {voiceCompatibilityWarning ? 
-            'Voice issues detected. The app works great with visual callouts only!' : 
+            'Voice issues detected. Try selecting a different voice or adjust the speed.' : 
             'Choose a clear, natural voice and adjust the speed for your training pace.'
           }
         </span>
         {!voices.length && (
           <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#fcd34d' }}>
-            <strong>No voices available:</strong> Your system may not have text-to-speech support. 
-            The app will work in visual-only mode.
+            <strong>No voices available:</strong> Your system may not have text-to-speech support.
           </div>
         )}
       </div>
