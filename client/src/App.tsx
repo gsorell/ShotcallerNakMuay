@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 // import PageLayout from './PageLayout'; // (unused)
 import { displayInAppBrowserWarning } from './utils/inAppBrowserDetector';
-import INITIAL_TECHNIQUES from './techniques';
+import { INITIAL_TECHNIQUES } from './techniques';
 import TechniqueEditor from './TechniqueEditor';
 import WorkoutLogs from './WorkoutLogs';
 import WorkoutCompleted from './WorkoutCompleted';
@@ -185,13 +185,24 @@ const DEFAULT_REST_MINUTES = 1;
 const mirrorTechnique = (technique: string): string => {
   console.log('Mirroring technique:', technique); // Debug log
   
+  // Safety check: ensure input is a valid string
+  if (!technique || typeof technique !== 'string') {
+    console.warn('Invalid input to mirrorTechnique:', technique);
+    return String(technique || '');
+  }
+  
   // Simple swap: Left ↔ Right (case insensitive, preserving original case)
   let mirrored = technique;
   
-  // Use temporary placeholders to avoid double-swapping
-  mirrored = mirrored.replace(/\bLeft\b/gi, '|||TEMP_LEFT|||');
-  mirrored = mirrored.replace(/\bRight\b/gi, 'Left');
-  mirrored = mirrored.replace(/\|\|\|TEMP_LEFT\|\|\|/gi, 'Right');
+  try {
+    // Use temporary placeholders to avoid double-swapping
+    mirrored = mirrored.replace(/\bLeft\b/gi, '|||TEMP_LEFT|||');
+    mirrored = mirrored.replace(/\bRight\b/gi, 'Left');
+    mirrored = mirrored.replace(/\|\|\|TEMP_LEFT\|\|\|/gi, 'Right');
+  } catch (error) {
+    console.error('Error in mirrorTechnique regex:', error);
+    return technique; // Return original on error
+  }
   
   console.log('Mirrored result:', mirrored); // Debug log
   return mirrored;
@@ -316,6 +327,8 @@ export default function App() {
       return INITIAL_TECHNIQUES;
     }
   });
+  // Debug: track previous techniques to log diffs when techniques change
+  const prevTechRef = React.useRef<TechniquesShape | null>(null);
   const persistTechniques = (next: TechniquesShape) => {
     try {
       setTechniques(next);
@@ -328,6 +341,20 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(techniques));
+      // Compare previous value and log any changed group keys
+      try {
+        const prev = prevTechRef.current;
+        if (prev) {
+          Object.keys(techniques).forEach(k => {
+            const a = JSON.stringify(prev[k]);
+            const b = JSON.stringify(techniques[k]);
+            // previously logged changes here during debugging
+          });
+        }
+      } catch (err) {
+        // swallow
+      }
+      prevTechRef.current = techniques;
     } catch (err) {
       console.error('Failed to save techniques to storage:', err);
     }
@@ -459,8 +486,20 @@ export default function App() {
   
   // ADD: Southpaw mode toggle
   const [southpawMode, setSouthpawMode] = useState(() => {
-    const stored = localStorage.getItem('southpaw_mode');
-    return stored ? JSON.parse(stored) : false;
+    try {
+      const stored = localStorage.getItem('southpaw_mode');
+      if (!stored) return false;
+      const parsed = JSON.parse(stored);
+      // Ensure we always return a proper boolean
+      return Boolean(parsed);
+    } catch (error) {
+      // If localStorage is corrupted, default to false and clear it
+      console.warn('Failed to parse southpaw_mode from localStorage:', error);
+      try {
+        localStorage.removeItem('southpaw_mode');
+      } catch { /* ignore cleanup errors */ }
+      return false;
+    }
   });
   
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
@@ -540,25 +579,37 @@ export default function App() {
   const [voiceCompatibilityWarning, setVoiceCompatibilityWarning] = useState<string>('');
   // Live "subtitle" for the active technique/combination
   const [currentCallout, setCurrentCallout] = useState<string>('');
-  // Voice compatibility checker - non-intrusive
-  const checkVoiceCompatibility = useCallback((availableVoices: SpeechSynthesisVoice[]) => {
-    if (!availableVoices.length) {
+  // Voice compatibility checker - check selected voice specifically
+  const checkVoiceCompatibility = useCallback((selectedVoice: SpeechSynthesisVoice | null, allVoices: SpeechSynthesisVoice[]) => {
+    if (!allVoices.length) {
       setVoiceCompatibilityWarning('No text-to-speech voices available. You can still use the app with visual callouts only.');
       return;
     }
 
-    // Look for English voices
-    const englishVoices = availableVoices.filter(v => 
-      v.lang.toLowerCase().startsWith('en') || 
-      v.name.toLowerCase().includes('english') ||
-      v.name.toLowerCase().includes('us') ||
-      v.name.toLowerCase().includes('uk')
-    );
+    // If no voice is selected yet, don't show warnings
+    if (!selectedVoice) {
+      setVoiceCompatibilityWarning('');
+      return;
+    }
 
-    if (englishVoices.length > 0) {
+    // Check if the selected voice is English-compatible
+    const isEnglishCompatible = 
+      selectedVoice.lang.toLowerCase().startsWith('en') || 
+      selectedVoice.name.toLowerCase().includes('english') ||
+      selectedVoice.name.toLowerCase().includes('us') ||
+      selectedVoice.name.toLowerCase().includes('uk') ||
+      selectedVoice.name.toLowerCase().includes('gb');
+
+    console.log('Voice compatibility check:', {
+      selectedVoice: selectedVoice.name,
+      lang: selectedVoice.lang,
+      isEnglishCompatible
+    });
+
+    if (isEnglishCompatible) {
       setVoiceCompatibilityWarning('');
     } else {
-      setVoiceCompatibilityWarning('No English voices found. Voice may have pronunciation issues with English techniques.');
+      setVoiceCompatibilityWarning('Selected voice may have pronunciation issues with English techniques.');
     }
   }, []);
 
@@ -569,21 +620,53 @@ export default function App() {
       const availableVoices = synth.getVoices();
       setVoices(availableVoices);
       
-      // Only run compatibility check if we have voices
+      // Auto-select default voice if none is selected and voices are available
+      if (availableVoices.length > 0 && !voice) {
+        // Try to find the browser's default voice (usually the first one or one marked as default)
+        const defaultVoice = availableVoices.find(v => v.default) || availableVoices[0];
+        if (defaultVoice) {
+          setVoice(defaultVoice);
+          console.log('Auto-selected default voice:', defaultVoice.name);
+        }
+      }
+      
+      // Run compatibility check with current voice and available voices
       if (availableVoices.length > 0) {
-        checkVoiceCompatibility(availableVoices);
+        checkVoiceCompatibility(voice, availableVoices);
       }
     };
     update();
     (synth as any).onvoiceschanged = update;
     return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
-  }, [checkVoiceCompatibility]);
+  }, [checkVoiceCompatibility, voice]);
 
   // NEW: refs so changing speed/voice doesn’t restart cadence
   const voiceSpeedRef = useRef(voiceSpeed);
   useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(voice);
   useEffect(() => { voiceRef.current = voice; }, [voice]);
+
+  // Debug helper for voice compatibility debugging
+  useEffect(() => {
+    try {
+      (window as any).__voiceDebug = {
+        voiceCompatibilityWarning,
+        voiceName: voice?.name || 'none',
+        voiceLang: voice?.lang || 'none', 
+        voicesCount: voices.length,
+        southpawMode
+      };
+      
+      (window as any).__techniqueDebug = {
+        clearStorage: () => {
+          localStorage.removeItem('shotcaller_techniques');
+          localStorage.removeItem('shotcaller_techniques_version');
+          window.location.reload();
+        },
+        currentTechniques: techniques
+      };
+    } catch { /* noop */ }
+  }, [voiceCompatibilityWarning, voice, voices, southpawMode]);
 
   // NEW: ensure voice speed always defaults to 1x on mount
   // useEffect(() => {
@@ -632,8 +715,10 @@ export default function App() {
   }, [southpawMode]);
 
   // Create ref for southpaw mode to ensure it's accessible in callbacks
-  const southpawModeRef = useRef(southpawMode);
-  useEffect(() => { southpawModeRef.current = southpawMode; }, [southpawMode]);
+  const southpawModeRef = useRef(Boolean(southpawMode));
+  useEffect(() => { 
+    southpawModeRef.current = Boolean(southpawMode); 
+  }, [southpawMode]);
 
   // Build a phrase pool from selected emphases (strict: only read exact keys from techniques)
   const getTechniquePool = useCallback((): string[] => {
@@ -846,9 +931,8 @@ export default function App() {
         phrase = pool[orderedIndexRef.current % pool.length];
         orderedIndexRef.current += 1;
       } else {
-        // Use the shuffled pool in order, looping if needed
-        phrase = pool[orderedIndexRef.current % pool.length];
-        orderedIndexRef.current += 1;
+        // True random selection each time
+        phrase = pool[Math.floor(Math.random() * pool.length)];
       }
 
       // Increment shotsCalledOut counter
@@ -860,6 +944,14 @@ export default function App() {
 
         // Apply southpaw mirroring if enabled
         const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
+        
+        // Safety check: ensure we never pass empty strings to speech synthesis
+        if (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') {
+          console.warn('Empty or invalid finalPhrase, skipping speech synthesis:', finalPhrase);
+          setCurrentCallout(phrase || ''); // Fallback to original phrase for visual
+          return;
+        }
+        
         const u = new SpeechSynthesisUtterance(finalPhrase);
         const v = voiceRef.current;
         if (v) u.voice = v;
@@ -895,7 +987,13 @@ export default function App() {
       // Fallback (no TTS): update immediately and use timer cadence
       // Apply southpaw mirroring if enabled
       const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
-      setCurrentCallout(finalPhrase);
+      
+      // Safety check for visual callouts too
+      const safePhrase = (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') 
+        ? (phrase || '') 
+        : finalPhrase;
+      
+      setCurrentCallout(safePhrase);
       const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
       const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
       scheduleNext(nextDelayMs);
@@ -1150,8 +1248,9 @@ export default function App() {
       };
 
       utterance.onend = () => {
-        // If we get here, the voice worked
+        // If we get here, the voice worked - clear any warnings
         console.log("Voice test completed successfully");
+        setVoiceCompatibilityWarning('');
       };
 
       // Speak the test phrase
@@ -2633,6 +2732,8 @@ export default function App() {
             const selected = voices.find(v => v.name === e.target.value) || null;
             setVoice(selected);
             if (selected) {
+              // Check compatibility of the newly selected voice
+              checkVoiceCompatibility(selected, voices);
               speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
             }
           }}

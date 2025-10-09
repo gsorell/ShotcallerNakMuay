@@ -1,58 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './editor.css';
-import INITIAL_TECHNIQUES from './techniques';
+import { INITIAL_TECHNIQUES } from './techniques';
+import { humanizeKey, normalizeTechniques, normalizeArray, denormalizeArray, TechniqueShape as UtilsTechniqueShape } from './utils/techniqueUtils';
 
 type TechniqueDetail = {
   name: string;
   combo: string;
 };
 
-export interface TechniqueShape {
-  label: string;
-  title?: string;
-  singles?: (string | { text: string; favorite?: boolean })[];
-  combos?: (string | { text: string; favorite?: boolean })[];
+export interface TechniqueShape extends UtilsTechniqueShape {
   techniques?: Record<string, TechniqueDetail>;
-  description?: string; // Added description property
 }
 
 // helper: create a readable title from a short key
-function humanizeKey(k: string) {
-  if (!k) return k;
-  return k
-    .replace(/[_-]/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
-
-// ensure every group has label + title so the UI never falls back to the raw key
-function normalizeTechniques(src: Record<string, Partial<TechniqueShape>>) {
-  const out: Record<string, TechniqueShape> = {};
-  Object.entries(src || {}).forEach(([key, g]) => {
-    const label = (g?.label ?? g?.title ?? key); // always a string
-    const title = (g?.title ?? g?.label ?? humanizeKey(key));
-    out[key] = { ...g, label, title } as TechniqueShape;
-  });
-  return out;
-}
-
-// Helper: normalize singles/combos to array of objects { text, favorite }
-function normalizeArray(arr: any[] | undefined): { text: string, favorite?: boolean }[] {
-  if (!arr) return [];
-  return arr.map(item =>
-    typeof item === 'string'
-      ? { text: item }
-      : { text: item.text ?? '', favorite: !!item.favorite }
-  );
-}
-
-// Helper: denormalize back to original format (for backward compatibility)
-function denormalizeArray(arr: { text: string, favorite?: boolean }[]): (string | { text: string, favorite?: boolean })[] {
-  // If none are favorited, save as string array for compactness
-  if (arr.every(item => !item.favorite)) return arr.map(item => item.text);
-  // Otherwise, save as objects
-  return arr;
-}
+// helpers imported from utils/techniqueUtils
 
 // Define the path to the download icon
 const downloadIcon = '/assets/icon_download.png';
@@ -186,9 +147,28 @@ export default function TechniqueEditor({
 
   useEffect(() => setLocal(normalizeTechniques(techniques)), [techniques]);
 
+  useEffect(() => setLocal(normalizeTechniques(techniques)), [techniques]);
+
   function persist(next: Record<string, TechniqueShape>) {
-    setLocal(next);
-    try { setTechniques(next); } catch (e) { console.error(e); }
+    // Normalize incoming data so every group has label/title fields
+    const normalized = normalizeTechniques(next as Record<string, Partial<TechniqueShape>>);
+    // Defensive: if any group ended up with raw key as label/title (e.g., 'newb_copy'), replace with humanized form
+    Object.entries(normalized).forEach(([k, v]) => {
+      try {
+        if (v.label === k || v.title === k) {
+          const human = humanizeKey(k);
+          if (v.label === k) v.label = human;
+          if (v.title === k) v.title = human;
+        }
+      } catch (e) { /* noop */ }
+    });
+    setLocal(normalized);
+    try {
+      // Ensure the app-level techniques state receives the normalized shape
+      setTechniques(normalized as Record<string, TechniqueShape>);
+    } catch (e) {
+      // swallow to avoid breaking the editor UI
+    }
   }
 
   function updateGroupLabel(groupKey: string, label: string) {
@@ -391,34 +371,37 @@ export default function TechniqueEditor({
   ];
 
   // User-created groups: not in INITIAL_TECHNIQUES and not 'calisthenics' or 'timer_only'
-  const userGroups = Object.entries(local)
-    .filter(([k]) =>
-      !Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, k) &&
-      k !== 'calisthenics' &&
-      k !== 'timer_only'
-    );
+  const userGroups = React.useMemo(() => 
+    Object.entries(local)
+      .filter(([k]) =>
+        !Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, k) &&
+        k !== 'calisthenics' &&
+        k !== 'timer_only'
+      ), [local]);
 
   // Core groups in correct order, EXCLUDING 'timer_only'
-  const coreGroups = CORE_ORDER
-    .filter(k => k !== 'timer_only')
-    .map(k => [k, local[k]] as [string, TechniqueShape])
-    .filter(([k, v]) => !!v);
+  const coreGroups = React.useMemo(() => 
+    CORE_ORDER
+      .filter(k => k !== 'timer_only')
+      .map(k => [k, local[k]] as [string, TechniqueShape])
+      .filter(([k, v]) => !!v), [local]);
 
   // Any other core groups not in CORE_ORDER (fallback), EXCLUDING 'timer_only'
-  const otherCoreGroups = Object.entries(local)
-    .filter(([k]) =>
-      Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, k) &&
-      !CORE_ORDER.includes(k) &&
-      k !== 'calisthenics' &&
-      k !== 'timer_only'
-    );
+  const otherCoreGroups = React.useMemo(() => 
+    Object.entries(local)
+      .filter(([k]) =>
+        Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, k) &&
+        !CORE_ORDER.includes(k) &&
+        k !== 'calisthenics' &&
+        k !== 'timer_only'
+      ), [local]);
 
   // Final sorted group list for the Technique Manager (NO timer_only)
-  const sortedGroups: [string, TechniqueShape][] = [
+  const sortedGroups: [string, TechniqueShape][] = React.useMemo(() => [
     ...userGroups,
     ...coreGroups,
     ...otherCoreGroups
-  ];
+  ], [userGroups, coreGroups, otherCoreGroups]);
 
   // --- NEW: Track expanded/collapsed state for each group ---
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -430,6 +413,13 @@ export default function TechniqueEditor({
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const beginEdit = (key: string) => setEditingKey(key);
   const endEdit = () => setEditingKey(null);
+
+  // Memoized callback factories to prevent re-renders
+  const getDuplicateHandler = React.useCallback((key: string) => () => duplicateGroup(key), [duplicateGroup]);
+  const getToggleHandler = React.useCallback((key: string) => () => toggleGroupExpanded(key), [toggleGroupExpanded]);
+  const getBeginEditHandler = React.useCallback((key: string) => () => beginEdit(key), [beginEdit]);
+  const getUpdateLabelHandler = React.useCallback((key: string) => (newLabel: string) => updateGroupLabel(key, newLabel), [updateGroupLabel]);
+  
 
   // Note: Title editing uses the same controlled pattern as description; no edit suppression needed
 
@@ -454,7 +444,8 @@ export default function TechniqueEditor({
     onDuplicate?: () => void,
     expanded: boolean,
     toggleGroupExpanded: (key: string) => void,
-    updateGroupLabel: (key: string, label: string) => void,
+  // Parent may pass a bound single-arg updater (label: string) => void via getUpdateLabelHandler
+  updateGroupLabel: (...args: any[]) => void,
     editingKey: string | null,
     onBeginEdit: (key: string) => void,
     onEndEdit: () => void,
@@ -462,36 +453,14 @@ export default function TechniqueEditor({
     // Instrumentation: track renders for this row (placed after state declarations)
     // Local buffered state for stable editing (commit on blur/Enter)
     const inputRef = React.useRef<HTMLInputElement>(null);
-  const [editLabel, setEditLabel] = React.useState<string>(group.title ?? group.label ?? keyName);
+  const [tempEditValue, setTempEditValue] = React.useState<string>('');
   const [isEditing, setIsEditing] = React.useState<boolean>(false);
-    // Instrumentation: track renders for this row
-    const renderCountRef = React.useRef(0);
-    renderCountRef.current += 1;
-    if (renderCountRef.current % 10 === 1) {
-      console.log('[GroupHeader render]', keyName, {
-        count: renderCountRef.current,
-        editingRow: editingKey === keyName,
-        isEditing
-      });
-    }
-  const justSavedRef = React.useRef<string | null>(null);
-
-    // Sync from props when not actively editing
-    React.useEffect(() => {
-      if (!isEditing) {
-        const externalValue = group.title ?? group.label ?? keyName;
-        // If we just saved and upstream hasn't reflected the saved value yet, avoid overwriting
-        if (justSavedRef.current !== null) {
-          if (externalValue !== justSavedRef.current) {
-            // Wait until external matches saved value before syncing
-            return;
-          }
-          // Upstream now reflects our saved value; clear flag and sync
-          justSavedRef.current = null;
-        }
-        setEditLabel(externalValue);
-      }
-    }, [group.title, group.label, keyName, isEditing]);
+  
+  // Always use the current group data as the source of truth
+  const currentTitle = group.title ?? group.label ?? keyName;
+  const displayValue = isEditing ? tempEditValue : currentTitle;
+  
+  
 
 
 
@@ -541,44 +510,41 @@ export default function TechniqueEditor({
               <input
                 ref={inputRef}
                 type="text"
-                value={editLabel}
-                onChange={e => setEditLabel(e.target.value)}
+                value={displayValue}
+                onChange={e => setTempEditValue(e.target.value)}
                 onFocus={() => {
+                  setTempEditValue(currentTitle); // Initialize temp value with current title
                   setIsEditing(true);
                   onBeginEdit(keyName);
                 }}
                 onBlur={() => {
-                  const trimmed = editLabel.trim();
-                  const original = group.title ?? group.label ?? keyName;
-                  if (trimmed && trimmed !== original) {
-                    // Mark as just saved to avoid immediate revert before parent updates
-                    justSavedRef.current = trimmed;
-                    updateGroupLabel(keyName, trimmed);
-                  } else if (!trimmed) {
-                    setEditLabel(original);
+                  const trimmed = tempEditValue.trim();
+                  
+                  if (trimmed) {
+                    // Parent provides a bound updater via getUpdateLabelHandler(key)
+                    // So call the provided updateGroupLabel with the single trimmed label argument.
+                    (updateGroupLabel as unknown as (label: string) => void)(trimmed);
                   }
                   setIsEditing(false);
+                  setTempEditValue(''); // Clear temp value
                   onEndEdit();
                 }}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    const trimmed = editLabel.trim();
-                    const original = group.title ?? group.label ?? keyName;
-                    if (trimmed && trimmed !== original) {
-                      justSavedRef.current = trimmed;
-                      updateGroupLabel(keyName, trimmed);
-                    } else if (!trimmed) {
-                      setEditLabel(original);
+                    const trimmed = tempEditValue.trim();
+                    
+                    if (trimmed) {
+                      (updateGroupLabel as unknown as (label: string) => void)(trimmed);
                     }
                     setIsEditing(false);
+                    setTempEditValue('');
                     onEndEdit();
                     (e.currentTarget as HTMLInputElement).blur();
                   }
                   if (e.key === 'Escape') {
-                    const original = group.title ?? group.label ?? keyName;
-                    setEditLabel(original);
                     setIsEditing(false);
+                    setTempEditValue('');
                     onEndEdit();
                     (e.currentTarget as HTMLInputElement).blur();
                   }
@@ -715,21 +681,20 @@ export default function TechniqueEditor({
       </div>
     );
   }, (prev, next) => {
-    // Suppress re-renders while editing the current row (mobile focus stability)
-    const prevEditingThis = prev.editingKey === prev.keyName;
-    const nextEditingThis = next.editingKey === next.keyName;
-    if (prevEditingThis && nextEditingThis) return true;
-
-    const prevTitle = (prev.group.title ?? prev.group.label ?? prev.keyName);
-    const nextTitle = (next.group.title ?? next.group.label ?? next.keyName);
-    return (
-      prev.keyName === next.keyName &&
-      prev.isCoreStyle === next.isCoreStyle &&
-      prev.expanded === next.expanded &&
-      prevTitle === nextTitle &&
-      prev.thumbnail === next.thumbnail &&
-      prev.editingKey === next.editingKey
-    );
+    // Re-render if any of these change
+    if (prev.keyName !== next.keyName) return false;
+    if (prev.expanded !== next.expanded) return false;
+    
+    // Re-render if group title/label changes (for external updates)
+    const prevTitle = prev.group.title ?? prev.group.label ?? prev.keyName;
+    const nextTitle = next.group.title ?? next.group.label ?? next.keyName;
+    if (prevTitle !== nextTitle) return false;
+    
+    // Re-render if editing state changes
+    if (prev.editingKey !== next.editingKey) return false;
+    
+    // Don't re-render if nothing important changed
+    return true;
   });
 
   return (
@@ -817,11 +782,13 @@ export default function TechniqueEditor({
         <h3 style={{ marginTop: 0, color: 'white' }}>Create New Style</h3>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
+            id="new-group-name"
             type="text"
             placeholder="Title (e.g., My Style)"
             value={newGroupName}
             onChange={e => setNewGroupName(e.target.value)}
             style={{ ...inputStyle, flexGrow: 1 }}
+            aria-label="New technique style name"
           />
           <button 
             onClick={() => addGroup(newGroupName)} 
@@ -872,12 +839,12 @@ export default function TechniqueEditor({
           group={group}
           isCoreStyle={isCoreStyle}
           thumbnail={thumbnail}
-          onDuplicate={() => duplicateGroup(key)}
+          onDuplicate={getDuplicateHandler(key)}
           expanded={expanded}
-          toggleGroupExpanded={toggleGroupExpanded}
-          updateGroupLabel={updateGroupLabel}
+          toggleGroupExpanded={getToggleHandler(key)}
+          updateGroupLabel={getUpdateLabelHandler(key)}
           editingKey={editingKey}
-          onBeginEdit={beginEdit}
+          onBeginEdit={getBeginEditHandler(key)}
           onEndEdit={endEdit}
         />            
             {expanded && (
@@ -939,6 +906,7 @@ export default function TechniqueEditor({
                     {singles.map((single, idx) => (
                       <div key={idx} style={techniqueItemStyle}>
                         <input
+                          id={`single-${key}-${idx}`}
                           type="text"
                           value={single.text}
                           onChange={e => !isCoreStyle && updateSingle(key, idx, e.target.value)}
@@ -953,6 +921,7 @@ export default function TechniqueEditor({
                             minHeight: '28px'
                           }}
                           placeholder="e.g., jab"
+                          aria-label={`Single technique ${idx + 1}`}
                           readOnly={isCoreStyle}
                           tabIndex={isCoreStyle ? -1 : 0}
                         />
@@ -1017,6 +986,7 @@ export default function TechniqueEditor({
                     {combos.map((combo, idx) => (
                       <div key={idx} style={techniqueItemStyle}>
                         <input
+                          id={`combo-${key}-${idx}`}
                           type="text"
                           value={combo.text}
                           onChange={e => !isCoreStyle && updateCombo(key, idx, e.target.value)}
@@ -1031,6 +1001,7 @@ export default function TechniqueEditor({
                             minHeight: '28px'
                           }}
                           placeholder="e.g., 1, 2, 3"
+                          aria-label={`Combo technique ${idx + 1}`}
                           readOnly={isCoreStyle}
                           tabIndex={isCoreStyle ? -1 : 0}
                         />
