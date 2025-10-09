@@ -40,15 +40,12 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     ],
     combos: [
       "1, Right Low Kick",
+      "1 2",
+      "1 1 2",
+      "1 2 3",
       "1 2, Right Body Kick",
       "1 2, Left Body Kick",
       "1 2 3, Right Low Kick",
-      "1 2, Left Elbow",
-      "1 2 3,Right Uppercut Elbow",
-      "Left Kick, 2 3, Right Low Kick",
-      "Right Kick, 3 2, Left Body Kick",
-      "Left Teep, 2 3, Right Low Kick", 
-      "1 3 2, Left Body Kick"
     ],
     exclusive: true
   },
@@ -86,8 +83,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "High Block March, Left Knee, Right Knee",
       "1 2, Clinch, Double Knees",
       "1 4, Switch Knee, Elbow",
-      "Left Check, 2 3 2",
-      "Right Check, 3 2 3",
+      "Left Check, 2 3 2, Right Knee",
+      "Right Check, 3 2 3, Left Knee",
       "2, Left Elbow, Right Elbow",
       "Knee, Elbow, Knee",
       "1 2, 3 to the Body, 3 to the Head",
@@ -251,7 +248,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
 
   calisthenics: {
     singles: [
-      "Breakdown",
+      "1 Burpee",
       "High Knees",
       "Alternating Checks",
       "Jumping Jacks",
@@ -260,8 +257,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "3 Jumpsquats",
       "3 Speed Kicks Left",
       "3 Speed Kicks Right",
-      "Left Check",
-      "Right Check",
+      "Left Check Right Check",
+      "Right Check, Left Check",
     ],
     combos: []
   },
@@ -350,7 +347,13 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Slip, 2, Right Kick",
       "1 2, Switch Kick",
       "2, Low Kick",
-      "1 2 3, Right Kick"
+      "1 2 3, Right Kick",
+      "1 2, Left Elbow",
+      "1 2 3,Right Uppercut Elbow",
+      "Left Kick, 2 3, Right Low Kick",
+      "Right Kick, 3 2, Left Body Kick",
+      "Left Teep, 2 3, Right Low Kick", 
+      "1 3 2, Left Body Kick"
     ]
   },
   buakaw: {
