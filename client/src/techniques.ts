@@ -511,6 +511,90 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 4, Spinning Elbow"
     ]
   },
+
+  feints_and_fakeouts: {
+    label: "feints_and_fakeouts",
+    title: "Feints and Fakeouts",
+    description: "Deceptive movements and setups that manipulate timing and rhythm.",
+    singles: [
+      "Jab Feint",
+      "Shoulder Feint",
+      "Body Jab Feint",
+      "Teep Feint",
+      "Low Kick Feint",
+      "Body Kick Feint",
+      "Step Feint",
+      "Retreat Feint",
+      "Switch Step Feint",
+      "Guard Bait",
+      "Lazy Teep",
+      "Limp Feint",
+      "Double Teep Feint",
+      "Hand Trap",
+      "Pattern Break"
+    ],
+    combos: [
+      "Fake the Jab, Cross",
+      "Shoulder Feint, 1 2",
+      "Body Feint, Overhand Right",
+      "Teep Feint, Right Kick",
+      "Low Kick Feint, High Kick",
+      "Fake the Body Kick, 2 3 Low Kick",
+      "Step Feint, Teep",
+      "Retreat Feint, 2 3 2",
+      "Switch Step Feint, Right Kick",
+      "Guard Bait, Slip Cross",
+      "Lazy Teep, Step-in Cross",
+      "Limp Feint, Switch Kick",
+      "Double Teep Feint, Jump Knee",
+      "Body Kick Feint, Spinning Elbow",
+      "Hand Trap, Elbow"
+    ]
+  },
+
+  dutch_kickboxing: {
+    label: "dutch_kickboxing",
+    title: "Dutch Kickboxing",
+    description: "High-pressure combinations emphasizing volume, flow, and low kicks.",
+    singles: [
+      "1",
+      "2",
+      "3",
+      "4",
+      "Low Kick",
+      "Body Kick",
+      "Head Kick",
+      "Inside Low Kick",
+      "Switch Kick",
+      "Teep",
+      "Overhand",
+      "Step-in Knee",
+      "Slip and Counter",
+      "Check and Return",
+      "Angle Off Hook"
+    ],
+    combos: [
+      "1 2, Left Hook, Right Low Kick",
+      "1 2 3, Low Kick",
+      "2 3 2, Left Body Kick",
+      "1 2, Right Check, Right Low Kick",
+      "1 2, 3 to the Body, Right Low Kick",
+      "1 2 3, Switch Kick",
+      "1 1 2 3, Right Kick",
+      "1 2, Step Left, 3, Right Kick",
+      "Slip Right, 2 3, Low Kick",
+      "1 2 5 2 3, Right Kick",
+      "2 3 6 1 2, Left Kick",
+      "2 3 2, Step-in Knee",
+      "1 2 3, Right Body Kick",
+      "1 2 3, 3, Low Kick",
+      "1 2, Slip, 2, Left Kick",
+      "2 3, Overhand, Left Kick",
+      "1 2 3, Switch Low Kick",
+      "1 2, Inside Leg Kick, 6 2 3",
+      "1 2, 3 to the body, Right Body Kick"
+    ]
+  },
 };
 
 export default INITIAL_TECHNIQUES;

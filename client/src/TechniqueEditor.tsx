@@ -36,7 +36,9 @@ const GROUP_THUMBNAILS: Record<string, string> = {
   low_kick_legends: '/assets/icon_lowkicklegends.png',
   elbow_arsenal: '/assets/icon.elbow arsenal.png',
   ko_setups: '/assets/icon.ko.png',
-  tricky_traps: '/assets/icon.trickytraps.png'
+  tricky_traps: '/assets/icon.trickytraps.png',
+  feints_and_fakeouts: '/assets/icon.feintsandfakes.png',
+  dutch_kickboxing: '/assets/icon.dutch.png'
 };
 
 // Define the path to the upload icon

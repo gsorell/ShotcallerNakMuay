@@ -114,7 +114,7 @@ type Page = 'timer' | 'editor' | 'logs' | 'completed';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
-const TECHNIQUES_VERSION = 'v28'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v31'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
@@ -176,6 +176,18 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
     icon: '🌪️',
     desc: 'Advanced spinning techniques and deceptive setups',
     iconPath: '/assets/icon.trickytraps.png'
+  },
+  feints_and_fakeouts: {
+    label: 'Feints and Fakeouts',
+    icon: '🎭',
+    desc: 'Deceptive movements and setups that manipulate timing and rhythm.',
+    iconPath: '/assets/icon.feintsandfakes.png'
+  },
+  dutch_kickboxing: {
+    label: 'Dutch Kickboxing',
+    icon: '🥊',
+    desc: 'High-pressure combinations emphasizing volume, flow, and power.',
+    iconPath: '/assets/icon.dutch.png'
   }
 };
 
@@ -370,7 +382,7 @@ export default function App() {
     // Core group keys in preferred order
     const CORE_ORDER: string[] = [
       'timer_only', 'newb', 'two_piece', 'boxing', 'mat', 'tae', 'khao', 'sok', 'femur', 'southpaw',
-      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', /* REMOVE: 'muay_tech', */ 'ko_setups', 'tricky_traps'
+      'meat_potatoes', 'buakaw', 'low_kick_legends', 'elbow_arsenal', /* REMOVE: 'muay_tech', */ 'ko_setups', 'tricky_traps', 'feints_and_fakeouts', 'dutch_kickboxing'
     ];
 
     // Always include timer_only as the first tile, using INITIAL_TECHNIQUES if missing
