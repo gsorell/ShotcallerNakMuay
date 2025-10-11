@@ -114,6 +114,7 @@ type Page = 'timer' | 'editor' | 'logs' | 'completed';
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
+const VOICE_STORAGE_KEY = 'shotcaller_voice_preference';
 const TECHNIQUES_VERSION = 'v32'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
@@ -583,6 +584,49 @@ export default function App() {
   }, []);
   
 
+  // Voice persistence helpers
+  const saveVoicePreference = useCallback((voice: SpeechSynthesisVoice | null) => {
+    if (!voice) {
+      localStorage.removeItem(VOICE_STORAGE_KEY);
+      return;
+    }
+    // Store voice name and lang for matching later
+    const voiceData = {
+      name: voice.name,
+      lang: voice.lang,
+      localService: voice.localService,
+      default: voice.default
+    };
+    localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(voiceData));
+    console.log('Saved voice preference:', voice.name);
+  }, []);
+
+  const loadVoicePreference = useCallback((availableVoices: SpeechSynthesisVoice[]) => {
+    try {
+      const stored = localStorage.getItem(VOICE_STORAGE_KEY);
+      if (!stored || !availableVoices.length) return null;
+      
+      const voiceData = JSON.parse(stored);
+      // Try to find exact match by name and lang
+      const matchedVoice = availableVoices.find(v => 
+        v.name === voiceData.name && v.lang === voiceData.lang
+      );
+      
+      if (matchedVoice) {
+        console.log('Loaded saved voice preference:', matchedVoice.name);
+        return matchedVoice;
+      } else {
+        console.log('Saved voice not available:', voiceData.name);
+        // Clean up invalid preference
+        localStorage.removeItem(VOICE_STORAGE_KEY);
+        return null;
+      }
+    } catch (error) {
+      console.warn('Failed to load voice preference:', error);
+      localStorage.removeItem(VOICE_STORAGE_KEY);
+      return null;
+    }
+  }, []);
 
   // TTS controls
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
@@ -652,48 +696,56 @@ export default function App() {
         
         console.log('Selecting new voice. Current voice is non-English:', currentVoiceIsNonEnglish);
         
-        // Priority 1: American English voices (en-US or en_US)
-        const americanEnglishVoices = availableVoices.filter(v => 
-          v.lang.toLowerCase() === 'en-us' || 
-          v.lang.toLowerCase() === 'en_us' ||
-          v.lang.toLowerCase().startsWith('en-us') ||
-          v.lang.toLowerCase().startsWith('en_us')
-        );
-        
-        console.log('American English voices found:', americanEnglishVoices.map(v => v.name));
-        
-        if (americanEnglishVoices.length > 0) {
-          // Prefer voices with specific American English indicators (avoid false positives like "Australia")
-          selectedVoice = americanEnglishVoices.find(v => 
-            v.name.toLowerCase().includes('united states') ||
-            v.name.toLowerCase().includes('us english') ||
-            (v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes(' us ')) ||
-            (v.name.toLowerCase().includes('english') && v.name.toLowerCase().endsWith(' us'))
-          ) || americanEnglishVoices[0];
-          console.log('Auto-selected American English voice:', selectedVoice.name);
+        // Priority 0: Try to load saved voice preference (if it's English)
+        const savedVoice = loadVoicePreference(availableVoices);
+        if (savedVoice && savedVoice.lang.toLowerCase().startsWith('en')) {
+          selectedVoice = savedVoice;
+          console.log('Using saved English voice preference:', selectedVoice.name);
         } else {
-          // Priority 2: Any English voice (en-*)
-          const englishVoices = availableVoices.filter(v => 
-            v.lang.toLowerCase().startsWith('en')
+          // Priority 1: American English voices (en-US or en_US)
+          const americanEnglishVoices = availableVoices.filter(v => 
+            v.lang.toLowerCase() === 'en-us' || 
+            v.lang.toLowerCase() === 'en_us' ||
+            v.lang.toLowerCase().startsWith('en-us') ||
+            v.lang.toLowerCase().startsWith('en_us')
           );
           
-          console.log('English voices found:', englishVoices.map(v => `${v.name} (${v.lang})`));
+          console.log('American English voices found:', americanEnglishVoices.map(v => v.name));
           
-          if (englishVoices.length > 0) {
-            selectedVoice = englishVoices.find(v => 
-              v.name.toLowerCase().includes('english')
-            ) || englishVoices[0];
-            console.log('Auto-selected English voice:', selectedVoice.name);
+          if (americanEnglishVoices.length > 0) {
+            // Prefer voices with specific American English indicators (avoid false positives like "Australia")
+            selectedVoice = americanEnglishVoices.find(v => 
+              v.name.toLowerCase().includes('united states') ||
+              v.name.toLowerCase().includes('us english') ||
+              (v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes(' us ')) ||
+              (v.name.toLowerCase().includes('english') && v.name.toLowerCase().endsWith(' us'))
+            ) || americanEnglishVoices[0];
+            console.log('Auto-selected American English voice:', selectedVoice.name);
           } else {
-            // Priority 3: Browser default or first available voice
-            selectedVoice = availableVoices.find(v => v.default) || availableVoices[0];
-            console.log('Auto-selected fallback voice:', selectedVoice.name);
+            // Priority 2: Any English voice (en-*)
+            const englishVoices = availableVoices.filter(v => 
+              v.lang.toLowerCase().startsWith('en')
+            );
+            
+            console.log('English voices found:', englishVoices.map(v => `${v.name} (${v.lang})`));
+            
+            if (englishVoices.length > 0) {
+              selectedVoice = englishVoices.find(v => 
+                v.name.toLowerCase().includes('english')
+              ) || englishVoices[0];
+              console.log('Auto-selected English voice:', selectedVoice.name);
+            } else {
+              // Priority 3: Browser default or first available voice
+              selectedVoice = availableVoices.find(v => v.default) || availableVoices[0];
+              console.log('Auto-selected fallback voice:', selectedVoice.name);
+            }
           }
         }
         
         if (selectedVoice) {
           console.log('Setting voice to:', selectedVoice.name, selectedVoice.lang);
           setVoice(selectedVoice);
+          saveVoicePreference(selectedVoice);
         }
       }
       
@@ -723,7 +775,7 @@ export default function App() {
       clearTimeout(retryTimeout);
       clearTimeout(secondRetryTimeout);
     };
-  }, [checkVoiceCompatibility, voice]);
+  }, [checkVoiceCompatibility, loadVoicePreference, saveVoicePreference]);
 
   // NEW: refs so changing speed/voice doesn’t restart cadence
   const voiceSpeedRef = useRef(voiceSpeed);
@@ -752,9 +804,10 @@ export default function App() {
       if (bestEnglishVoice) {
         console.log('Switching to English voice:', bestEnglishVoice.name);
         setVoice(bestEnglishVoice);
+        saveVoicePreference(bestEnglishVoice);
       }
     }
-  }, [voices, voice]);
+  }, [voices, voice, saveVoicePreference]);
 
   // Debug helper for voice compatibility debugging
   useEffect(() => {
@@ -2835,6 +2888,7 @@ export default function App() {
           onChange={e => {
             const selected = voices.find(v => v.name === e.target.value) || null;
             setVoice(selected);
+            saveVoicePreference(selected);
             if (selected) {
               // Check compatibility of the newly selected voice
               checkVoiceCompatibility(selected, voices);
