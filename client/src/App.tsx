@@ -225,6 +225,22 @@ export default function App() {
   useEffect(() => {
     displayInAppBrowserWarning();
     initializeGA4();
+    
+    // One-time cleanup: Remove any existing non-English voice preferences
+    try {
+      const stored = localStorage.getItem(VOICE_STORAGE_KEY);
+      if (stored) {
+        const voiceData = JSON.parse(stored);
+        const isEnglish = voiceData.lang && voiceData.lang.toLowerCase().startsWith('en');
+        if (!isEnglish) {
+          console.log('Removing non-English voice preference on app load:', voiceData.name, voiceData.lang);
+          localStorage.removeItem(VOICE_STORAGE_KEY);
+        }
+      }
+    } catch (error) {
+      console.warn('Error during voice preference cleanup:', error);
+      localStorage.removeItem(VOICE_STORAGE_KEY);
+    }
   }, []);
 
   // PWA functionality
@@ -590,6 +606,15 @@ export default function App() {
       localStorage.removeItem(VOICE_STORAGE_KEY);
       return;
     }
+    
+    // SECURITY: Only save English voices to prevent non-English voices from persisting
+    const isEnglish = voice.lang.toLowerCase().startsWith('en');
+    if (!isEnglish) {
+      console.warn('Attempted to save non-English voice preference, ignoring:', voice.name, voice.lang);
+      localStorage.removeItem(VOICE_STORAGE_KEY);
+      return;
+    }
+    
     // Store voice name and lang for matching later
     const voiceData = {
       name: voice.name,
@@ -598,7 +623,7 @@ export default function App() {
       default: voice.default
     };
     localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(voiceData));
-    console.log('Saved voice preference:', voice.name);
+    console.log('Saved English voice preference:', voice.name, voice.lang);
   }, []);
 
   const loadVoicePreference = useCallback((availableVoices: SpeechSynthesisVoice[]) => {
@@ -613,8 +638,17 @@ export default function App() {
       );
       
       if (matchedVoice) {
-        console.log('Loaded saved voice preference:', matchedVoice.name);
-        return matchedVoice;
+        // FIXED: Only return saved voice if it's English-compatible
+        const isEnglishCompatible = matchedVoice.lang.toLowerCase().startsWith('en');
+        if (isEnglishCompatible) {
+          console.log('Loaded saved English voice preference:', matchedVoice.name);
+          return matchedVoice;
+        } else {
+          console.log('Saved voice is non-English, clearing preference:', matchedVoice.name, matchedVoice.lang);
+          // Clean up non-English preference and force English selection
+          localStorage.removeItem(VOICE_STORAGE_KEY);
+          return null;
+        }
       } else {
         console.log('Saved voice not available:', voiceData.name);
         // Clean up invalid preference
@@ -696,9 +730,9 @@ export default function App() {
         
         console.log('Selecting new voice. Current voice is non-English:', currentVoiceIsNonEnglish);
         
-        // Priority 0: Try to load saved voice preference (if it's English)
+        // Priority 0: Try to load saved voice preference (loadVoicePreference now ensures it's English)
         const savedVoice = loadVoicePreference(availableVoices);
-        if (savedVoice && savedVoice.lang.toLowerCase().startsWith('en')) {
+        if (savedVoice) {
           selectedVoice = savedVoice;
           console.log('Using saved English voice preference:', selectedVoice.name);
         } else {
@@ -735,9 +769,11 @@ export default function App() {
               ) || englishVoices[0];
               console.log('Auto-selected English voice:', selectedVoice.name);
             } else {
-              // Priority 3: Browser default or first available voice
+              // Priority 3: ONLY as last resort, use browser default but warn user
               selectedVoice = availableVoices.find(v => v.default) || availableVoices[0];
-              console.log('Auto-selected fallback voice:', selectedVoice.name);
+              console.warn('No English voices found! Falling back to:', selectedVoice.name, selectedVoice.lang);
+              // Clear any saved preference since we're falling back to non-English
+              localStorage.removeItem(VOICE_STORAGE_KEY);
             }
           }
         }
@@ -787,24 +823,47 @@ export default function App() {
   useEffect(() => {
     if (!voices.length) return;
     
-    // If we have a non-English voice selected and English voices are available, switch
+    // If we have a non-English voice selected and English voices are available, switch immediately
     const currentIsNonEnglish = voice && !voice.lang.toLowerCase().startsWith('en');
     const englishVoicesAvailable = voices.some(v => v.lang.toLowerCase().startsWith('en'));
     
     if (currentIsNonEnglish && englishVoicesAvailable) {
-      console.log('Forcing switch from non-English voice to English');
+      console.log('Forcing switch from non-English voice to English:', voice.name, voice.lang);
       
-      // Find the best English voice
-      const americanEnglish = voices.find(v => 
-        v.lang.toLowerCase().startsWith('en-us') || v.lang.toLowerCase().startsWith('en_us')
+      // Find the best English voice with same priority as initial selection
+      const americanEnglishVoices = voices.filter(v => 
+        v.lang.toLowerCase() === 'en-us' || 
+        v.lang.toLowerCase() === 'en_us' ||
+        v.lang.toLowerCase().startsWith('en-us') ||
+        v.lang.toLowerCase().startsWith('en_us')
       );
-      const anyEnglish = voices.find(v => v.lang.toLowerCase().startsWith('en'));
       
-      const bestEnglishVoice = americanEnglish || anyEnglish;
+      let bestEnglishVoice = null;
+      
+      if (americanEnglishVoices.length > 0) {
+        // Prefer American English with specific indicators
+        bestEnglishVoice = americanEnglishVoices.find(v => 
+          v.name.toLowerCase().includes('united states') ||
+          v.name.toLowerCase().includes('us english') ||
+          (v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes(' us ')) ||
+          (v.name.toLowerCase().includes('english') && v.name.toLowerCase().endsWith(' us'))
+        ) || americanEnglishVoices[0];
+      } else {
+        // Fall back to any English voice
+        const englishVoices = voices.filter(v => v.lang.toLowerCase().startsWith('en'));
+        bestEnglishVoice = englishVoices.find(v => 
+          v.name.toLowerCase().includes('english')
+        ) || englishVoices[0];
+      }
+      
       if (bestEnglishVoice) {
-        console.log('Switching to English voice:', bestEnglishVoice.name);
+        console.log('Switching to English voice:', bestEnglishVoice.name, bestEnglishVoice.lang);
         setVoice(bestEnglishVoice);
         saveVoicePreference(bestEnglishVoice);
+        // Clear any old non-English preference that might be cached
+        localStorage.removeItem(VOICE_STORAGE_KEY);
+        // Save the new English voice immediately
+        setTimeout(() => saveVoicePreference(bestEnglishVoice), 100);
       }
     }
   }, [voices, voice, saveVoicePreference]);
@@ -2887,9 +2946,21 @@ export default function App() {
           value={voice?.name || ''}
           onChange={e => {
             const selected = voices.find(v => v.name === e.target.value) || null;
-            setVoice(selected);
-            saveVoicePreference(selected);
+            
             if (selected) {
+              const isEnglish = selected.lang.toLowerCase().startsWith('en');
+              
+              if (!isEnglish) {
+                // Prevent selection of non-English voices and show warning
+                console.warn('User attempted to select non-English voice:', selected.name, selected.lang);
+                setVoiceCompatibilityWarning(`Cannot select "${selected.name}" - only English voices are supported for proper pronunciation of Muay Thai techniques. Please choose an English voice.`);
+                return; // Don't set the voice
+              }
+              
+              console.log('User selected English voice:', selected.name, selected.lang);
+              setVoice(selected);
+              saveVoicePreference(selected);
+              
               // Check compatibility of the newly selected voice
               checkVoiceCompatibility(selected, voices);
               speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
