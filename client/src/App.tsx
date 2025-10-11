@@ -605,6 +605,10 @@ export default function App() {
     }
 
     // Check if the selected voice is English-compatible
+    const isAmericanEnglish = 
+      selectedVoice.lang.toLowerCase() === 'en-us' || 
+      selectedVoice.lang.toLowerCase().startsWith('en-us');
+    
     const isEnglishCompatible = 
       selectedVoice.lang.toLowerCase().startsWith('en') || 
       selectedVoice.name.toLowerCase().includes('english') ||
@@ -615,11 +619,14 @@ export default function App() {
     console.log('Voice compatibility check:', {
       selectedVoice: selectedVoice.name,
       lang: selectedVoice.lang,
+      isAmericanEnglish,
       isEnglishCompatible
     });
 
-    if (isEnglishCompatible) {
+    if (isAmericanEnglish) {
       setVoiceCompatibilityWarning('');
+    } else if (isEnglishCompatible) {
+      setVoiceCompatibilityWarning('Voice is English-compatible but American English is recommended for best pronunciation.');
     } else {
       setVoiceCompatibilityWarning('Selected voice may have pronunciation issues with English techniques.');
     }
@@ -632,13 +639,43 @@ export default function App() {
       const availableVoices = synth.getVoices();
       setVoices(availableVoices);
       
-      // Auto-select default voice if none is selected and voices are available
+      // Auto-select voice if none is selected and voices are available
       if (availableVoices.length > 0 && !voice) {
-        // Try to find the browser's default voice (usually the first one or one marked as default)
-        const defaultVoice = availableVoices.find(v => v.default) || availableVoices[0];
-        if (defaultVoice) {
-          setVoice(defaultVoice);
-          console.log('Auto-selected default voice:', defaultVoice.name);
+        let selectedVoice: SpeechSynthesisVoice | null = null;
+        
+        // Priority 1: American English voices (en-US)
+        const americanEnglishVoices = availableVoices.filter(v => 
+          v.lang.toLowerCase() === 'en-us' || 
+          v.lang.toLowerCase().startsWith('en-us')
+        );
+        
+        if (americanEnglishVoices.length > 0) {
+          // Prefer voices with "english" or "us" in the name
+          selectedVoice = americanEnglishVoices.find(v => 
+            v.name.toLowerCase().includes('english') || 
+            v.name.toLowerCase().includes('us')
+          ) || americanEnglishVoices[0];
+          console.log('Auto-selected American English voice:', selectedVoice.name);
+        } else {
+          // Priority 2: Any English voice (en-*)
+          const englishVoices = availableVoices.filter(v => 
+            v.lang.toLowerCase().startsWith('en')
+          );
+          
+          if (englishVoices.length > 0) {
+            selectedVoice = englishVoices.find(v => 
+              v.name.toLowerCase().includes('english')
+            ) || englishVoices[0];
+            console.log('Auto-selected English voice:', selectedVoice.name);
+          } else {
+            // Priority 3: Browser default or first available voice
+            selectedVoice = availableVoices.find(v => v.default) || availableVoices[0];
+            console.log('Auto-selected fallback voice:', selectedVoice.name);
+          }
+        }
+        
+        if (selectedVoice) {
+          setVoice(selectedVoice);
         }
       }
       
@@ -2758,13 +2795,23 @@ export default function App() {
         >
           <option value="" disabled>Select a voice</option>
           {voices.map(v => {
-            const isEnglish = v.lang.toLowerCase().startsWith('en') || 
-                            v.name.toLowerCase().includes('english') ||
-                            v.name.toLowerCase().includes('us') ||
-                            v.name.toLowerCase().includes('uk');
+            const isAmericanEnglish = v.lang.toLowerCase() === 'en-us' || 
+                                    v.lang.toLowerCase().startsWith('en-us');
+            const isOtherEnglish = v.lang.toLowerCase().startsWith('en') && !isAmericanEnglish;
+            const hasEnglishName = v.name.toLowerCase().includes('english') ||
+                                 v.name.toLowerCase().includes('us') ||
+                                 v.name.toLowerCase().includes('uk');
+            
+            let flag = '';
+            if (isAmericanEnglish || (hasEnglishName && v.name.toLowerCase().includes('us'))) {
+              flag = '🇺🇸 ';
+            } else if (isOtherEnglish || hasEnglishName) {
+              flag = '🌐 ';
+            }
+            
             return (
               <option key={v.name} value={v.name} style={{ padding: '0.5rem 0.75rem' }}>
-                {isEnglish ? '🇺🇸 ' : ''}{v.name} ({v.lang})
+                {flag}{v.name} ({v.lang})
               </option>
             );
           })}
@@ -2833,7 +2880,7 @@ export default function App() {
         <span>
           <strong>Tip:</strong> {voiceCompatibilityWarning ? 
             'Voice issues detected. Try selecting a different voice or adjust the speed.' : 
-            'Choose a clear, natural voice and adjust the speed for your training pace.'
+            'American English voices (🇺🇸) provide the best pronunciation for Muay Thai techniques. Choose a clear, natural voice and adjust the speed for your training pace.'
           }
         </span>
         {!voices.length && (
