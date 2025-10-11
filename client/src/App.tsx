@@ -638,9 +638,19 @@ export default function App() {
       const availableVoices = synth.getVoices();
       setVoices(availableVoices);
       
+      console.log('Voice update triggered. Available voices:', availableVoices.length);
+      console.log('Current voice:', voice?.name || 'none');
+      console.log('Available voice languages:', availableVoices.map(v => `${v.name} (${v.lang})`));
+      
       // Auto-select voice if none is selected and voices are available
-      if (availableVoices.length > 0 && !voice) {
+      // OR if current voice is non-English and English voices are available
+      const currentVoiceIsNonEnglish = voice && !voice.lang.toLowerCase().startsWith('en');
+      const shouldSelectNewVoice = (availableVoices.length > 0 && !voice) || currentVoiceIsNonEnglish;
+      
+      if (shouldSelectNewVoice) {
         let selectedVoice: SpeechSynthesisVoice | null = null;
+        
+        console.log('Selecting new voice. Current voice is non-English:', currentVoiceIsNonEnglish);
         
         // Priority 1: American English voices (en-US or en_US)
         const americanEnglishVoices = availableVoices.filter(v => 
@@ -649,6 +659,8 @@ export default function App() {
           v.lang.toLowerCase().startsWith('en-us') ||
           v.lang.toLowerCase().startsWith('en_us')
         );
+        
+        console.log('American English voices found:', americanEnglishVoices.map(v => v.name));
         
         if (americanEnglishVoices.length > 0) {
           // Prefer voices with specific American English indicators (avoid false positives like "Australia")
@@ -665,6 +677,8 @@ export default function App() {
             v.lang.toLowerCase().startsWith('en')
           );
           
+          console.log('English voices found:', englishVoices.map(v => `${v.name} (${v.lang})`));
+          
           if (englishVoices.length > 0) {
             selectedVoice = englishVoices.find(v => 
               v.name.toLowerCase().includes('english')
@@ -678,6 +692,7 @@ export default function App() {
         }
         
         if (selectedVoice) {
+          console.log('Setting voice to:', selectedVoice.name, selectedVoice.lang);
           setVoice(selectedVoice);
         }
       }
@@ -689,7 +704,25 @@ export default function App() {
     };
     update();
     (synth as any).onvoiceschanged = update;
-    return () => { try { (synth as any).onvoiceschanged = null; } catch { /* noop */ } };
+    
+    // iOS Safari workaround: voices might not be loaded immediately
+    // Retry after a short delay to catch late-loading voices
+    const retryTimeout = setTimeout(() => {
+      console.log('iOS Safari voice retry triggered');
+      update();
+    }, 100);
+    
+    // Additional retry for stubborn iOS cases
+    const secondRetryTimeout = setTimeout(() => {
+      console.log('iOS Safari second voice retry triggered');
+      update();
+    }, 500);
+    
+    return () => { 
+      try { (synth as any).onvoiceschanged = null; } catch { /* noop */ }
+      clearTimeout(retryTimeout);
+      clearTimeout(secondRetryTimeout);
+    };
   }, [checkVoiceCompatibility, voice]);
 
   // NEW: refs so changing speed/voice doesn’t restart cadence
@@ -697,6 +730,31 @@ export default function App() {
   useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(voice);
   useEffect(() => { voiceRef.current = voice; }, [voice]);
+
+  // Additional effect to force English voice selection when voices array changes
+  useEffect(() => {
+    if (!voices.length) return;
+    
+    // If we have a non-English voice selected and English voices are available, switch
+    const currentIsNonEnglish = voice && !voice.lang.toLowerCase().startsWith('en');
+    const englishVoicesAvailable = voices.some(v => v.lang.toLowerCase().startsWith('en'));
+    
+    if (currentIsNonEnglish && englishVoicesAvailable) {
+      console.log('Forcing switch from non-English voice to English');
+      
+      // Find the best English voice
+      const americanEnglish = voices.find(v => 
+        v.lang.toLowerCase().startsWith('en-us') || v.lang.toLowerCase().startsWith('en_us')
+      );
+      const anyEnglish = voices.find(v => v.lang.toLowerCase().startsWith('en'));
+      
+      const bestEnglishVoice = americanEnglish || anyEnglish;
+      if (bestEnglishVoice) {
+        console.log('Switching to English voice:', bestEnglishVoice.name);
+        setVoice(bestEnglishVoice);
+      }
+    }
+  }, [voices, voice]);
 
   // Debug helper for voice compatibility debugging
   useEffect(() => {
