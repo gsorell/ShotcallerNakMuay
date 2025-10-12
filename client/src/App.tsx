@@ -26,7 +26,7 @@ declare global {
 }
 
 // Your GA4 Measurement ID - replace 'G-XXXXXXXXXX' with your actual measurement ID
-const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Replace with your actual GA4 measurement ID
+const GA_MEASUREMENT_ID = 'G-5GY5JTX5KZ';
 
 // Analytics event names
 const AnalyticsEvents = {
@@ -115,7 +115,7 @@ const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 const VOICE_STORAGE_KEY = 'shotcaller_voice_preference';
-const TECHNIQUES_VERSION = 'v32'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v33'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
