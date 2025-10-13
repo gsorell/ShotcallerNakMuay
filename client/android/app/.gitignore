@@ -1,2 +1,4 @@
-/build/*
-!/build/.npmkeep
+/build
+/src/main/assets/capacitor.config.json
+*.jks
+keystore.properties
