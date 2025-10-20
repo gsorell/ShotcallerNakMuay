@@ -2823,25 +2823,44 @@ export default function App() {
           id="voice-select"
           value={voice?.name || ''}
           onChange={e => {
-            const selected = voices.find(v => v.name === e.target.value) || null;
+            const selectedName = e.target.value;
+            const selected = voices.find(v => v.name === selectedName) || null;
             
             if (selected) {
-              const isEnglish = selected.lang.toLowerCase().startsWith('en');
+              // Since we only show English voices, we know this is selectable
+              console.log('User selected English voice:', selected.name, selected.lang);
               
-              if (!isEnglish) {
-                // Prevent selection of non-English voices and show warning
-                console.warn('User attempted to select non-English voice:', selected.name, selected.lang);
-                setVoiceCompatibilityWarning(`Cannot select "${selected.name}" - only English voices are supported for proper pronunciation of Muay Thai techniques. Please choose an English voice.`);
-                return; // Don't set the voice
+              // Find the corresponding unified voice - try multiple matching strategies
+              let unifiedVoice = unifiedVoices.find(v => 
+                v.name === selected.name && v.language === selected.lang
+              );
+              
+              // If exact match fails, try name-only match
+              if (!unifiedVoice) {
+                unifiedVoice = unifiedVoices.find(v => v.name === selected.name);
               }
               
-              console.log('User selected English voice:', selected.name, selected.lang);
-              setVoice(selected);
-              saveVoicePreference(selected);
+              // If that fails, try the first English voice as fallback
+              if (!unifiedVoice) {
+                unifiedVoice = unifiedVoices.find(v => 
+                  v.language.toLowerCase().startsWith('en')
+                );
+              }
               
-              // Check compatibility of the newly selected voice
-              checkVoiceCompatibility(selected, voices);
-              speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
+              if (unifiedVoice) {
+                console.log('Found unified voice match:', unifiedVoice.name, unifiedVoice.language);
+                setCurrentVoice(unifiedVoice);
+                saveVoicePreference(selected); // Use the synthetic voice for legacy preference saving
+                
+                // Check compatibility of the newly selected voice
+                checkVoiceCompatibility(selected, voices);
+                
+                // Use the newly selected voice for the test announcement
+                speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
+              } else {
+                console.error('Could not find unified voice for selection:', selected.name, selected.lang);
+                console.log('Available unified voices:', unifiedVoices.map(v => `${v.name} (${v.language})`));
+              }
             }
           }}
           style={{
@@ -2858,7 +2877,9 @@ export default function App() {
           }}
         >
           <option value="" disabled>Select a voice</option>
-          {voices.map(v => {
+          {voices
+            .filter(v => v.lang.toLowerCase().startsWith('en')) // Only show English voices
+            .map(v => {
             const isAmericanEnglish = v.lang.toLowerCase() === 'en-us' || 
                                     v.lang.toLowerCase() === 'en_us' ||
                                     v.lang.toLowerCase().startsWith('en-us') ||

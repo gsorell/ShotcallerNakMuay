@@ -70,9 +70,29 @@ export const useTTS = (): UseTTSReturn => {
           setCurrentVoiceState(savedVoice);
           ttsService.setVoice(savedVoice);
         } else {
-          // Auto-select first English voice if no preference
-          const defaultVoice = englishOnly.find(v => v.isDefault) || englishOnly[0];
+          // Auto-select American English voice if available, otherwise first English voice
+          let defaultVoice = englishOnly.find(v => v.isDefault) || null;
+          
+          // Prioritize American English voices
+          const americanVoice = englishOnly.find(v => 
+            v.language.toLowerCase() === 'en-us' ||
+            v.language.toLowerCase() === 'en_us' ||
+            v.language.toLowerCase().startsWith('en-us') ||
+            v.language.toLowerCase().startsWith('en_us') ||
+            v.name.toLowerCase().includes('united states') ||
+            v.name.toLowerCase().includes('us english') ||
+            (v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes(' us '))
+          );
+          
+          if (americanVoice) {
+            defaultVoice = americanVoice;
+          } else {
+            // Fallback to any English voice
+            defaultVoice = defaultVoice || englishOnly[0];
+          }
+          
           if (defaultVoice) {
+            console.log('Auto-selected default voice:', defaultVoice.name, defaultVoice.language);
             setCurrentVoiceState(defaultVoice);
             ttsService.setVoice(defaultVoice);
           }
