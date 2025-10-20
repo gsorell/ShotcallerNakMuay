@@ -122,6 +122,8 @@ const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 const VOICE_STORAGE_KEY = 'shotcaller_voice_preference';
+// User settings persistence
+const USER_SETTINGS_STORAGE_KEY = 'shotcaller_user_settings';
 const TECHNIQUES_VERSION = 'v33'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
@@ -234,6 +236,51 @@ const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
   console.log('Mirrored result:', mirrored); // Debug log
   return mirrored;
 };
+
+// User settings persistence utilities
+interface UserSettings {
+  roundMin: number;
+  restMinutes: number;
+  voiceSpeed: number;
+  roundsCount: number;
+}
+
+const DEFAULT_USER_SETTINGS: UserSettings = {
+  roundMin: 3,
+  restMinutes: DEFAULT_REST_MINUTES,
+  voiceSpeed: 1,
+  roundsCount: 5
+};
+
+function loadUserSettings(): UserSettings {
+  try {
+    const stored = localStorage.getItem(USER_SETTINGS_STORAGE_KEY);
+    if (!stored) return DEFAULT_USER_SETTINGS;
+    
+    const parsed = JSON.parse(stored);
+    
+    // Validate and sanitize settings
+    return {
+      roundMin: Math.min(30, Math.max(0.25, parsed.roundMin || DEFAULT_USER_SETTINGS.roundMin)),
+      restMinutes: Math.min(10, Math.max(0.25, parsed.restMinutes || DEFAULT_USER_SETTINGS.restMinutes)),
+      voiceSpeed: Math.min(2, Math.max(0.5, parsed.voiceSpeed || DEFAULT_USER_SETTINGS.voiceSpeed)),
+      roundsCount: Math.min(20, Math.max(1, parsed.roundsCount || DEFAULT_USER_SETTINGS.roundsCount))
+    };
+  } catch (error) {
+    console.warn('Failed to load user settings from localStorage:', error);
+    return DEFAULT_USER_SETTINGS;
+  }
+}
+
+function saveUserSettings(settings: Partial<UserSettings>): void {
+  try {
+    const current = loadUserSettings();
+    const updated = { ...current, ...settings };
+    localStorage.setItem(USER_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (error) {
+    console.warn('Failed to save user settings to localStorage:', error);
+  }
+}
 
 export default function App() {
   useEffect(() => {
@@ -545,10 +592,13 @@ export default function App() {
     }
   });
   
+  // Load persisted user settings
+  const persistedSettings = loadUserSettings();
+  
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
-  const [roundsCount, setRoundsCount] = useState(5);
-  const [roundMin, setRoundMin] = useState(3);
-  const [restMinutes, setRestMinutes] = useState(DEFAULT_REST_MINUTES);
+  const [roundsCount, setRoundsCount] = useState(persistedSettings.roundsCount);
+  const [roundMin, setRoundMin] = useState(persistedSettings.roundMin);
+  const [restMinutes, setRestMinutes] = useState(persistedSettings.restMinutes);
   
   // Toggle an emphasis on/off
   const toggleEmphasis = (k: EmphasisKey) => {
@@ -677,7 +727,7 @@ export default function App() {
   }, []);
 
   // TTS controls (now using unified TTS hook)
-  const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
+  const [voiceSpeed, setVoiceSpeed] = useState<number>(persistedSettings.voiceSpeed);
   const {
     voices: unifiedVoices,
     currentVoice,
@@ -757,6 +807,23 @@ export default function App() {
       compatibilityWarning: voiceCompatibilityWarning
     });
   }, [ttsPlatform, ttsAvailable, unifiedVoices.length, currentVoice?.name, voiceCompatibilityWarning]);
+
+  // Persist user settings when they change
+  useEffect(() => {
+    saveUserSettings({ roundMin });
+  }, [roundMin]);
+
+  useEffect(() => {
+    saveUserSettings({ restMinutes });
+  }, [restMinutes]);
+
+  useEffect(() => {
+    saveUserSettings({ voiceSpeed });
+  }, [voiceSpeed]);
+
+  useEffect(() => {
+    saveUserSettings({ roundsCount });
+  }, [roundsCount]);
 
   // NEW: refs so changing speed/voice doesn’t restart cadence
   const voiceSpeedRef = useRef(voiceSpeed);
