@@ -111,6 +111,12 @@ type EmphasisKey = 'timer_only' | 'khao' | 'mat' | 'tae' | 'femur' | 'sok' | 'bo
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Page = 'timer' | 'editor' | 'logs' | 'completed';
 
+// Type for techniques with source style information
+type TechniqueWithStyle = {
+  text: string;
+  style: string;
+};
+
 const TECHNIQUES_STORAGE_KEY = 'shotcaller_techniques';
 const TECHNIQUES_VERSION_KEY = 'shotcaller_techniques_version';
 const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
@@ -195,13 +201,20 @@ const BASE_EMPHASIS_CONFIG: { [key: string]: { label: string; icon: string; desc
 const DEFAULT_REST_MINUTES = 1;
 
 // Mirror technique for southpaw mode - only swap Left/Right directional words
-const mirrorTechnique = (technique: string): string => {
-  console.log('Mirroring technique:', technique); // Debug log
+// Exempts techniques from the 'southpaw' style to avoid double negatives
+const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
+  console.log('Mirroring technique:', technique, 'from style:', sourceStyle); // Debug log
   
   // Safety check: ensure input is a valid string
   if (!technique || typeof technique !== 'string') {
     console.warn('Invalid input to mirrorTechnique:', technique);
     return String(technique || '');
+  }
+  
+  // EXEMPTION: Don't mirror techniques from southpaw style to avoid double negative
+  if (sourceStyle === 'southpaw') {
+    console.log('Exempting southpaw technique from mirroring:', technique);
+    return technique;
   }
   
   // Simple swap: Left ↔ Right (case insensitive, preserving original case)
@@ -924,7 +937,7 @@ export default function App() {
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
   const shotsCalledOutRef = useRef<number>(0); // Initialize shotsCalledOutRef
   const orderedIndexRef = useRef<number>(0); // Initialize orderedIndexRef
-  const currentPoolRef = useRef<string[]>([]); // Initialize currentPoolRef
+  const currentPoolRef = useRef<TechniqueWithStyle[]>([]); // Initialize currentPoolRef
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
@@ -943,7 +956,7 @@ export default function App() {
   }, [southpawMode]);
 
   // Build a phrase pool from selected emphases (strict: only read exact keys from techniques)
-  const getTechniquePool = useCallback((): string[] => {
+  const getTechniquePool = useCallback((): TechniqueWithStyle[] => {
     if (selectedEmphases.timer_only) return [];
 
     const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
@@ -951,7 +964,7 @@ export default function App() {
 
     const keysToUse = enabled.length > 0 ? enabled : ['newb'];
     const currentTechniques = techniquesRef.current || {};
-    const pool: string[] = [];
+    const pool: TechniqueWithStyle[] = [];
 
     // Debugging: surface what keys we're trying to use and what keys exist.
     // eslint-disable-next-line no-console
@@ -977,14 +990,14 @@ export default function App() {
     };
 
     // Recursively extract any string values or arrays of strings from an object
-    const extractStrings = (node: any, out: string[]) => {
+    const extractStrings = (node: any, out: TechniqueWithStyle[], styleKey: string) => {
       if (!node) return;
       if (typeof node === 'string') {
-        out.push(node);
+        out.push({ text: node, style: styleKey });
         return;
       }
       if (Array.isArray(node)) {
-        for (const v of node) extractStrings(v, out);
+        for (const v of node) extractStrings(v, out, styleKey);
         return;
       }
       if (typeof node === 'object') {
@@ -992,12 +1005,12 @@ export default function App() {
         if (node.singles) {
           for (const single of node.singles) {
             if (typeof single === 'string') {
-              out.push(single);
+              out.push({ text: single, style: styleKey });
             } else if (single && typeof single.text === 'string') {
-              out.push(single.text);
+              out.push({ text: single.text, style: styleKey });
               // If favorited, add again for ~35% higher chance
               if (single.favorite) {
-                if (Math.random() < 0.35) out.push(single.text);
+                if (Math.random() < 0.35) out.push({ text: single.text, style: styleKey });
               }
             }
           }
@@ -1005,16 +1018,16 @@ export default function App() {
         if (node.combos) {
           for (const combo of node.combos) {
             if (typeof combo === 'string') {
-              out.push(combo);
+              out.push({ text: combo, style: styleKey });
             } else if (combo && typeof combo.text === 'string') {
-              out.push(combo.text);
+              out.push({ text: combo.text, style: styleKey });
               if (combo.favorite) {
-                if (Math.random() < 0.35) out.push(combo.text);
+                if (Math.random() < 0.35) out.push({ text: combo.text, style: styleKey });
               }
             }
           }
         }
-        if (node.breakdown) extractStrings(node.breakdown, out); // for calisthenics
+        if (node.breakdown) extractStrings(node.breakdown, out, styleKey); // for calisthenics
       }
     };
 
@@ -1025,21 +1038,31 @@ export default function App() {
         console.warn('getTechniquePool: no style found for key (exact lookup only)', k);
         continue;
       }
-      extractStrings(style, pool);
+      extractStrings(style, pool, k);
     }
 
     if (addCalisthenics) {
       // Only include calisthenics if it's explicitly present in the persisted techniques object.
       const cal = (currentTechniques as any).calisthenics;
-      if (cal) extractStrings(cal, pool);
+      if (cal) extractStrings(cal, pool, 'calisthenics');
     }
 
-    // Normalize, trim and dedupe
-    const cleaned = Array.from(new Set(
-      pool
-        .map(s => (typeof s === 'string' ? s.trim() : String(s).trim()))
-        .filter(Boolean)
-    ));
+    // Normalize, trim and dedupe by creating a Map to avoid duplicates
+    const cleanedMap = new Map<string, TechniqueWithStyle>();
+    
+    for (const item of pool) {
+      if (item && item.text && typeof item.text === 'string') {
+        const cleanText = item.text.trim();
+        if (cleanText) {
+          // Use text as key to dedupe, but keep the first style encountered
+          if (!cleanedMap.has(cleanText)) {
+            cleanedMap.set(cleanText, { text: cleanText, style: item.style });
+          }
+        }
+      }
+    }
+    
+    const cleaned = Array.from(cleanedMap.values());
 
     // Debug: warn if still empty so you can inspect window.__techniques in DevTools
     if (!cleaned.length) {
@@ -1148,13 +1171,13 @@ export default function App() {
         return;
       }
 
-      let phrase: string;
+      let selectedTechnique: TechniqueWithStyle;
       if (readInOrder) {
-        phrase = pool[orderedIndexRef.current % pool.length];
+        selectedTechnique = pool[orderedIndexRef.current % pool.length];
         orderedIndexRef.current += 1;
       } else {
         // True random selection each time
-        phrase = pool[Math.floor(Math.random() * pool.length)];
+        selectedTechnique = pool[Math.floor(Math.random() * pool.length)];
       }
 
       // Increment shotsCalledOut counter
@@ -1164,13 +1187,13 @@ export default function App() {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         try { window.speechSynthesis.cancel(); } catch { /* noop */ }
 
-        // Apply southpaw mirroring if enabled
-        const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
+        // Apply southpaw mirroring if enabled, passing the source style for exemption logic
+        const finalPhrase = southpawModeRef.current ? mirrorTechnique(selectedTechnique.text, selectedTechnique.style) : selectedTechnique.text;
         
         // Safety check: ensure we never pass empty strings to speech synthesis
         if (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') {
           console.warn('Empty or invalid finalPhrase, skipping speech synthesis:', finalPhrase);
-          setCurrentCallout(phrase || '');
+          setCurrentCallout(selectedTechnique.text || '');
           return;
         }
         
@@ -1207,12 +1230,12 @@ export default function App() {
       }
 
       // Fallback (no TTS): update immediately and use timer cadence
-      // Apply southpaw mirroring if enabled
-      const finalPhrase = southpawModeRef.current ? mirrorTechnique(phrase) : phrase;
+      // Apply southpaw mirroring if enabled, passing the source style for exemption logic
+      const finalPhrase = southpawModeRef.current ? mirrorTechnique(selectedTechnique.text, selectedTechnique.style) : selectedTechnique.text;
       
       // Safety check for callouts
       const safePhrase = (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') 
-        ? (phrase || '') 
+        ? (selectedTechnique.text || '') 
         : finalPhrase;
       
       setCurrentCallout(safePhrase);
