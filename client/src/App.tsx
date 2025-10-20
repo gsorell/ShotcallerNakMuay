@@ -13,6 +13,7 @@ import Header from './components/Header';
 import StatusTimer from './components/StatusTimer'; // <-- Make sure this import exists
 import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import { useTTS } from './hooks/useTTS';
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
@@ -675,156 +676,87 @@ export default function App() {
     }
   }, []);
 
-  // TTS controls
+  // TTS controls (now using unified TTS hook)
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
-  const [voice, setVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [voiceCompatibilityWarning, setVoiceCompatibilityWarning] = useState<string>('');
+  const {
+    voices: unifiedVoices,
+    currentVoice,
+    setCurrentVoice,
+    englishVoices: unifiedEnglishVoices,
+    speak: ttsSpeak,
+    speakSystem: ttsSpeakSystem,
+    speakTechnique: ttsSpeakTechnique,
+    stop: stopTTS,
+    isAvailable: ttsAvailable,
+    platform: ttsPlatform,
+    voiceCompatibilityWarning,
+    testVoice: ttsTestVoice
+  } = useTTS();
+
+  // Backward compatibility - map new voice system to old variable names for gradual migration
+  // For native voices, create synthetic SpeechSynthesisVoice-like objects for UI compatibility
+  const voices = unifiedVoices.map(v => {
+    if (v.browserVoice) {
+      return v.browserVoice;
+    } else {
+      // Create synthetic voice object for native voices
+      return {
+        name: v.name,
+        lang: v.language,
+        default: v.isDefault || false,
+        localService: true,
+        voiceURI: v.id
+      } as SpeechSynthesisVoice;
+    }
+  });
+  
+  const voice = currentVoice ? (currentVoice.browserVoice || {
+    name: currentVoice.name,
+    lang: currentVoice.language,
+    default: currentVoice.isDefault || false,
+    localService: true,
+    voiceURI: currentVoice.id
+  } as SpeechSynthesisVoice) : null;
+  
+  const setVoice = (newVoice: SpeechSynthesisVoice | null) => {
+    if (newVoice) {
+      // Find the unified voice by name and language
+      const unifiedVoice = unifiedVoices.find(v => 
+        v.name === newVoice.name && v.language === newVoice.lang
+      );
+      setCurrentVoice(unifiedVoice || null);
+    } else {
+      setCurrentVoice(null);
+    }
+  };
+  
+  // Keep existing state setters for compatibility during transition
+  const [, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [, setVoiceCompatibilityWarning] = useState<string>('');
   // Live "subtitle" for the active technique/combination
   const [currentCallout, setCurrentCallout] = useState<string>('');
-  // Voice compatibility checker - check selected voice specifically
+  // Voice compatibility checker - simplified since TTS hook handles this now
   const checkVoiceCompatibility = useCallback((selectedVoice: SpeechSynthesisVoice | null, allVoices: SpeechSynthesisVoice[]) => {
-    if (!allVoices.length) {
-      setVoiceCompatibilityWarning('No text-to-speech voices available.');
-      return;
-    }
-
-    // If no voice is selected yet, don't show warnings
-    if (!selectedVoice) {
-      setVoiceCompatibilityWarning('');
-      return;
-    }
-
-    // Check if the selected voice is English-compatible
-    const isEnglishCompatible = 
-      selectedVoice.lang.toLowerCase().startsWith('en') || 
-      selectedVoice.name.toLowerCase().includes('english') ||
-      selectedVoice.name.toLowerCase().includes('us') ||
-      selectedVoice.name.toLowerCase().includes('uk') ||
-      selectedVoice.name.toLowerCase().includes('gb') ||
-      selectedVoice.name.toLowerCase().includes('australia') ||
-      selectedVoice.name.toLowerCase().includes('canada') ||
-      selectedVoice.name.toLowerCase().includes('india') ||
-      selectedVoice.name.toLowerCase().includes('south africa');
-
-    console.log('Voice compatibility check:', {
-      selectedVoice: selectedVoice.name,
-      lang: selectedVoice.lang,
-      isEnglishCompatible
+    // The new TTS hook handles compatibility warnings automatically
+    // This function is kept for backward compatibility during transition
+    console.log('Voice compatibility check (legacy):', {
+      selectedVoice: selectedVoice?.name,
+      lang: selectedVoice?.lang,
+      availableVoices: allVoices.length
     });
-
-    if (isEnglishCompatible) {
-      // All English variants are fine - no warning needed
-      setVoiceCompatibilityWarning('');
-    } else {
-      // Only show warning for non-English voices
-      setVoiceCompatibilityWarning('Selected voice may have pronunciation issues with English techniques.');
-    }
   }, []);
 
+  // Voice initialization is now handled by the TTS hook
+  // This effect is kept for logging and legacy compatibility
   useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    const synth = window.speechSynthesis;
-    const update = () => {
-      const availableVoices = synth.getVoices();
-      setVoices(availableVoices);
-      
-      console.log('Voice update triggered. Available voices:', availableVoices.length);
-      console.log('Current voice:', voice?.name || 'none');
-      console.log('Available voice languages:', availableVoices.map(v => `${v.name} (${v.lang})`));
-      
-      // Auto-select voice if none is selected and voices are available
-      // OR if current voice is non-English and English voices are available
-      const currentVoiceIsNonEnglish = voice && !voice.lang.toLowerCase().startsWith('en');
-      const shouldSelectNewVoice = (availableVoices.length > 0 && !voice) || currentVoiceIsNonEnglish;
-      
-      if (shouldSelectNewVoice) {
-        let selectedVoice: SpeechSynthesisVoice | null = null;
-        
-        console.log('Selecting new voice. Current voice is non-English:', currentVoiceIsNonEnglish);
-        
-        // Priority 0: Try to load saved voice preference (loadVoicePreference now ensures it's English)
-        const savedVoice = loadVoicePreference(availableVoices);
-        if (savedVoice) {
-          selectedVoice = savedVoice;
-          console.log('Using saved English voice preference:', selectedVoice.name);
-        } else {
-          // Priority 1: American English voices (en-US or en_US)
-          const americanEnglishVoices = availableVoices.filter(v => 
-            v.lang.toLowerCase() === 'en-us' || 
-            v.lang.toLowerCase() === 'en_us' ||
-            v.lang.toLowerCase().startsWith('en-us') ||
-            v.lang.toLowerCase().startsWith('en_us')
-          );
-          
-          console.log('American English voices found:', americanEnglishVoices.map(v => v.name));
-          
-          if (americanEnglishVoices.length > 0) {
-            // Prefer voices with specific American English indicators (avoid false positives like "Australia")
-            selectedVoice = americanEnglishVoices.find(v => 
-              v.name.toLowerCase().includes('united states') ||
-              v.name.toLowerCase().includes('us english') ||
-              (v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes(' us ')) ||
-              (v.name.toLowerCase().includes('english') && v.name.toLowerCase().endsWith(' us'))
-            ) || americanEnglishVoices[0];
-            console.log('Auto-selected American English voice:', selectedVoice.name);
-          } else {
-            // Priority 2: Any English voice (en-*)
-            const englishVoices = availableVoices.filter(v => 
-              v.lang.toLowerCase().startsWith('en')
-            );
-            
-            console.log('English voices found:', englishVoices.map(v => `${v.name} (${v.lang})`));
-            
-            if (englishVoices.length > 0) {
-              selectedVoice = englishVoices.find(v => 
-                v.name.toLowerCase().includes('english')
-              ) || englishVoices[0];
-              console.log('Auto-selected English voice:', selectedVoice.name);
-            } else {
-              // Priority 3: ONLY as last resort, use browser default but warn user
-              selectedVoice = availableVoices.find(v => v.default) || availableVoices[0];
-              console.warn('No English voices found! Falling back to:', selectedVoice.name, selectedVoice.lang);
-              // Clear any saved preference since we're falling back to non-English
-              localStorage.removeItem(VOICE_STORAGE_KEY);
-            }
-          }
-        }
-        
-        if (selectedVoice) {
-          console.log('Setting voice to:', selectedVoice.name, selectedVoice.lang);
-          setVoice(selectedVoice);
-          saveVoicePreference(selectedVoice);
-        }
-      }
-      
-      // Run compatibility check with current voice and available voices
-      if (availableVoices.length > 0) {
-        checkVoiceCompatibility(voice, availableVoices);
-      }
-    };
-    update();
-    (synth as any).onvoiceschanged = update;
-    
-    // iOS Safari workaround: voices might not be loaded immediately
-    // Retry after a short delay to catch late-loading voices
-    const retryTimeout = setTimeout(() => {
-      console.log('iOS Safari voice retry triggered');
-      update();
-    }, 100);
-    
-    // Additional retry for stubborn iOS cases
-    const secondRetryTimeout = setTimeout(() => {
-      console.log('iOS Safari second voice retry triggered');
-      update();
-    }, 500);
-    
-    return () => { 
-      try { (synth as any).onvoiceschanged = null; } catch { /* noop */ }
-      clearTimeout(retryTimeout);
-      clearTimeout(secondRetryTimeout);
-    };
-  }, [checkVoiceCompatibility, loadVoicePreference, saveVoicePreference]);
+    console.log('TTS system initialized:', {
+      platform: ttsPlatform,
+      available: ttsAvailable,
+      voicesCount: unifiedVoices.length,
+      currentVoice: currentVoice?.name || 'none',
+      compatibilityWarning: voiceCompatibilityWarning
+    });
+  }, [ttsPlatform, ttsAvailable, unifiedVoices.length, currentVoice?.name, voiceCompatibilityWarning]);
 
   // NEW: refs so changing speed/voice doesn’t restart cadence
   const voiceSpeedRef = useRef(voiceSpeed);
@@ -832,54 +764,17 @@ export default function App() {
   const voiceRef = useRef<SpeechSynthesisVoice | null>(voice);
   useEffect(() => { voiceRef.current = voice; }, [voice]);
 
-  // Additional effect to force English voice selection when voices array changes
+  // Voice selection is now handled automatically by the TTS hook
+  // This effect is kept for logging and debugging
   useEffect(() => {
-    if (!voices.length) return;
-    
-    // If we have a non-English voice selected and English voices are available, switch immediately
-    const currentIsNonEnglish = voice && !voice.lang.toLowerCase().startsWith('en');
-    const englishVoicesAvailable = voices.some(v => v.lang.toLowerCase().startsWith('en'));
-    
-    if (currentIsNonEnglish && englishVoicesAvailable) {
-      console.log('Forcing switch from non-English voice to English:', voice.name, voice.lang);
-      
-      // Find the best English voice with same priority as initial selection
-      const americanEnglishVoices = voices.filter(v => 
-        v.lang.toLowerCase() === 'en-us' || 
-        v.lang.toLowerCase() === 'en_us' ||
-        v.lang.toLowerCase().startsWith('en-us') ||
-        v.lang.toLowerCase().startsWith('en_us')
-      );
-      
-      let bestEnglishVoice = null;
-      
-      if (americanEnglishVoices.length > 0) {
-        // Prefer American English with specific indicators
-        bestEnglishVoice = americanEnglishVoices.find(v => 
-          v.name.toLowerCase().includes('united states') ||
-          v.name.toLowerCase().includes('us english') ||
-          (v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes(' us ')) ||
-          (v.name.toLowerCase().includes('english') && v.name.toLowerCase().endsWith(' us'))
-        ) || americanEnglishVoices[0];
-      } else {
-        // Fall back to any English voice
-        const englishVoices = voices.filter(v => v.lang.toLowerCase().startsWith('en'));
-        bestEnglishVoice = englishVoices.find(v => 
-          v.name.toLowerCase().includes('english')
-        ) || englishVoices[0];
-      }
-      
-      if (bestEnglishVoice) {
-        console.log('Switching to English voice:', bestEnglishVoice.name, bestEnglishVoice.lang);
-        setVoice(bestEnglishVoice);
-        saveVoicePreference(bestEnglishVoice);
-        // Clear any old non-English preference that might be cached
-        localStorage.removeItem(VOICE_STORAGE_KEY);
-        // Save the new English voice immediately
-        setTimeout(() => saveVoicePreference(bestEnglishVoice), 100);
-      }
+    if (currentVoice) {
+      console.log('Current TTS voice:', {
+        name: currentVoice.name,
+        language: currentVoice.language,
+        platform: ttsPlatform
+      });
     }
-  }, [voices, voice, saveVoicePreference]);
+  }, [currentVoice, ttsPlatform]);
 
   // Debug helper for voice compatibility debugging
   useEffect(() => {
@@ -930,6 +825,20 @@ export default function App() {
 
   // Keep screen awake while running (not paused)
   useWakeLock({ enabled: (running && !paused) || isPreRound, log: false });
+
+  // Wire the running/guard state into the TTS hook so speakTechnique sees the correct guards.
+  // The hook exposes an `updateGuards` method on the returned speak function for compatibility.
+  useEffect(() => {
+    try {
+      // @ts-ignore -- speak is augmented with updateGuards in the hook
+      if (typeof (ttsSpeak as any).updateGuards === 'function') {
+        // ttsGuardRef mirrors the legacy guard logic used elsewhere in this file
+        (ttsSpeak as any).updateGuards(ttsGuardRef.current || false, runningRef.current || false);
+      }
+    } catch (e) {
+      // noop
+    }
+  }, [ttsSpeak, running, paused, isResting]); // Update when the guard-affecting states change
 
   // Refs
   const calloutRef = useRef<number | null>(null);
@@ -1100,30 +1009,20 @@ export default function App() {
     return text.replace(/\bLeft\b/gi, 'leed');
   }
 
-  // New, unguarded speak function for system announcements
-  const speakSystem = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    try { window.speechSynthesis.cancel(); } catch {}
-    const utterance = new SpeechSynthesisUtterance(fixPronunciation(text));
-    if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.rate = speed;
-    window.speechSynthesis.speak(utterance);
-  }, []);
+  // Updated speak functions using new TTS system
+  const speakSystemLegacy = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
+    // Use new TTS system with backward compatibility  
+    ttsSpeakSystem(text, speed);
+  }, [ttsSpeakSystem]);
 
-  const speak = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    if (ttsGuardRef.current || !runningRef.current) return;
-    try { window.speechSynthesis.cancel(); } catch {}
-    const utterance = new SpeechSynthesisUtterance(fixPronunciation(text));
-    if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.rate = speed;
-    utterance.onstart = () => {
-      if (ttsGuardRef.current || !runningRef.current) {
-        try { window.speechSynthesis.cancel(); } catch { /* noop */ }
-      }
-    };
-    window.speechSynthesis.speak(utterance);
-  }, []);
+  const speakLegacy = useCallback((text: string, selectedVoice: SpeechSynthesisVoice | null, speed: number) => {
+    // Use new TTS system - let the hook handle all guard logic
+    ttsSpeakTechnique(text, speed, true);
+  }, [ttsSpeakTechnique]);
+  
+  // Keep original function names for existing code compatibility
+  const speakSystem = speakSystemLegacy;
+  const speak = speakLegacy;
   const speakRef = useRef(speak);
   useEffect(() => { speakRef.current = speak; }, [speak]);
 
@@ -1146,12 +1045,12 @@ export default function App() {
   }, []);
 
   const startTechniqueCallouts = useCallback((initialDelay = 1200) => {
-    // Fixed cadence per difficulty (calls/min)
+    // Adjusted cadence per difficulty (calls/min) - reduced to prevent interruptions
     const cadencePerMin =
-      difficulty === 'easy' ? 26 :
-      difficulty === 'hard' ? 60 : 31;
+      difficulty === 'easy' ? 20 :  // Was 26
+      difficulty === 'hard' ? 35 : 26; // Was 60, 31
     const baseDelayMs = Math.round(60000 / cadencePerMin);
-    const minDelayMs = Math.round(baseDelayMs * 0.5);
+    const minDelayMs = Math.round(baseDelayMs * 0.7); // Increased minimum delay
 
     const scheduleNext = (delay: number) => {
       if (calloutRef.current) {
@@ -1162,8 +1061,6 @@ export default function App() {
     };
 
     const doCallout = () => {
-      if (ttsGuardRef.current || !runningRef.current) return;
-
       const pool = currentPoolRef.current;
       if (!pool.length) {
         console.warn('No techniques available for callouts — stopping callouts');
@@ -1183,10 +1080,8 @@ export default function App() {
       // Increment shotsCalledOut counter
       shotsCalledOutRef.current += 1;
 
-      // If Web Speech is available, sync UI to the actual utterance lifecycle
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        try { window.speechSynthesis.cancel(); } catch { /* noop */ }
-
+      // Use new TTS service for technique callouts (same as "Get Ready" uses speakSystem)
+      try {
         // Apply southpaw mirroring if enabled, passing the source style for exemption logic
         const finalPhrase = southpawModeRef.current ? mirrorTechnique(selectedTechnique.text, selectedTechnique.style) : selectedTechnique.text;
         
@@ -1196,37 +1091,33 @@ export default function App() {
           setCurrentCallout(selectedTechnique.text || '');
           return;
         }
+
+        // Use the same TTS method as "Get Ready" (which works!)
+        speakSystem(finalPhrase, voiceRef.current, voiceSpeedRef.current);
         
-        const u = new SpeechSynthesisUtterance(finalPhrase);
-        const v = voiceRef.current;
-        if (v) u.voice = v;
-        u.rate = voiceSpeedRef.current;
-
-        u.onstart = () => {
-          if (ttsGuardRef.current || !runningRef.current) {
-            try { window.speechSynthesis.cancel(); } catch { /* noop */ }
-            return;
-          }
-          setCurrentCallout(finalPhrase);
-        };
-
-        u.onend = () => {
-          utteranceRef.current = null;
-          if (ttsGuardRef.current || !runningRef.current) return;
-          const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
-          const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
-          scheduleNext(nextDelayMs);
-        };
-
-        u.onerror = () => {
-          utteranceRef.current = null;
-          if (ttsGuardRef.current || !runningRef.current) return;
-          scheduleNext(250);
-        };
-
-        utteranceRef.current = u;
-        window.speechSynthesis.speak(u);
+        // Set the callout immediately for visual feedback
+        setCurrentCallout(finalPhrase);
+        
+        // Calculate delay based on phrase length to prevent interruptions
+        // Estimate speaking time: ~150 words per minute, ~5 chars per word
+        const estimatedSpeakingTimeMs = Math.max(
+          (finalPhrase.length / 5) * (60000 / 150) / (voiceSpeedRef.current || 1),
+          1000 // Minimum 1 second
+        );
+        
+        // Add buffer time and jitter
+        const bufferTime = 800; // 800ms buffer after speech ends
+        const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
+        const nextDelayMs = Math.max(
+          minDelayMs, 
+          estimatedSpeakingTimeMs + bufferTime + jitter,
+          baseDelayMs
+        );
+        scheduleNext(nextDelayMs);
         return;
+      } catch (error) {
+        console.error('TTS error in technique callout:', error);
+        // Fall through to fallback
       }
 
       // Fallback (no TTS): update immediately and use timer cadence
@@ -1244,7 +1135,6 @@ export default function App() {
       scheduleNext(nextDelayMs);
     };
 
-    if (ttsGuardRef.current || !runningRef.current) return;
     scheduleNext(initialDelay);
   }, [difficulty, stopTechniqueCallouts]);
 
@@ -1462,55 +1352,20 @@ export default function App() {
 
   // Voice tester with enhanced error handling
   function testVoice() {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setVoiceCompatibilityWarning('Text-to-speech not supported in this browser.');
-      return;
-    }
-
-    if (!voice) {
-      setVoiceCompatibilityWarning('No voice selected. Please choose a voice from the dropdown.');
-      return;
-    }
-
+    // Use the same TTS approach as "Get Ready" (which works!)
     try {
-      // Cancel any ongoing speech to prevent overlap
-      window.speechSynthesis.cancel();
-
-      // Create and configure the utterance for the test
       const testPhrase = `Voice test at ${voiceSpeed.toFixed(2)}x speed. Jab cross hook.`;
-      const utterance = new SpeechSynthesisUtterance(testPhrase);
-      utterance.voice = voice;
-      utterance.rate = voiceSpeed;
-
-      // Add error handling for the utterance
-      utterance.onerror = (event) => {
-        console.error("Speech synthesis error:", event);
-        setVoiceCompatibilityWarning(`Voice test failed: ${event.error}. This voice may not work properly with English text.`);
-      };
-
-      utterance.onstart = () => {
-        setVoiceCompatibilityWarning('');
-      };
-
-      utterance.onend = () => {
-        // If we get here, the voice worked - clear any warnings
-        console.log("Voice test completed successfully");
-        setVoiceCompatibilityWarning('');
-      };
-
-      // Speak the test phrase
-      window.speechSynthesis.speak(utterance);
-
-      // Set a timeout to detect if speech never starts
-      setTimeout(() => {
-        if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
-          setVoiceCompatibilityWarning('Voice test failed to start. This voice may not be compatible with English text.');
-        }
-      }, 1000);
-
-    } catch (err) {
-      console.error("Voice test failed:", err);
-      setVoiceCompatibilityWarning(`Voice test error: ${err}. Try selecting a different voice.`);
+      
+      // Use the working TTS system (same as "Get Ready")
+      speakSystem(testPhrase, voice, voiceSpeed);
+      
+      // Clear any warnings since we're attempting the test
+      setVoiceCompatibilityWarning('');
+      
+      console.log("Voice test initiated with new TTS system");
+    } catch (error) {
+      console.error("Voice test error:", error);
+      setVoiceCompatibilityWarning('Voice test failed. Please try a different voice or adjust the speed.');
     }
   }
 
