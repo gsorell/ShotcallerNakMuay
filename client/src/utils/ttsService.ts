@@ -37,14 +37,9 @@ class TTSService {
 
   private async initializeVoices() {
     try {
-      console.log('Initializing TTS voices. IsNativeApp:', this.isNativeApp);
-      console.log('Capacitor available:', !!(window as any).Capacitor);
-      
       if (this.isNativeApp) {
         // Use Capacitor TTS for native apps
         try {
-          console.log('Attempting to load Capacitor TTS voices...');
-          
           // First check if TextToSpeech is available
           if (!TextToSpeech) {
             throw new Error('TextToSpeech plugin not available');
@@ -52,8 +47,6 @@ class TTSService {
           
           // Try to get supported voices
           const result = await TextToSpeech.getSupportedVoices();
-          console.log('Capacitor TTS getSupportedVoices result:', result);
-          console.log('Result structure:', typeof result, Object.keys(result || {}));
           
           if (!result) {
             throw new Error('No result from Capacitor TTS getSupportedVoices');
@@ -62,8 +55,18 @@ class TTSService {
           // Handle different possible response structures
           let voicesArray = result.voices || result || [];
           if (!Array.isArray(voicesArray)) {
-            console.log('Voices not in expected array format, trying to extract...');
-            voicesArray = [];
+            // Sometimes voices come back as an object with numeric keys
+            if (typeof voicesArray === 'object' && voicesArray !== null) {
+              const keys = Object.keys(voicesArray);
+              if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+                // Convert object with numeric keys to array
+                voicesArray = keys.map(k => (voicesArray as any)[k]);
+              } else {
+                voicesArray = [];
+              }
+            } else {
+              voicesArray = [];
+            }
           }
           
           // Deduplicate voices by name, keeping the best quality one
@@ -110,68 +113,83 @@ class TTSService {
             isDefault: voice.default || false,
             quality: 'native'
           }));
-          console.log('Capacitor TTS voices loaded:', this.availableVoices.length, this.availableVoices);
+          
           // If the plugin reports no voices, add a safe fallback so the UI can show a selection
           if (this.availableVoices.length === 0) {
-            console.warn('Capacitor TTS returned no voices, adding a System Default fallback');
-            this.availableVoices = [{
-              id: 'system_default',
-              name: 'System default',
-              language: 'en-US',
-              isDefault: true,
-              quality: 'native'
-            }];
+            this.addFallbackVoice();
           }
         } catch (error) {
-          console.error('Capacitor TTS error:', error);
-          console.error('Error details:', JSON.stringify(error));
           // Fallback to browser TTS if available
-          console.log('Falling back to browser TTS...');
           this.initializeBrowserTTS();
+          
+          // If browser TTS also fails, ensure we have a fallback
+          setTimeout(() => {
+            if (this.availableVoices.length === 0) {
+              this.addFallbackVoice();
+            }
+          }, 1000);
         }
       } else {
         // Use browser TTS for web
-        console.log('Using browser TTS for web environment');
         this.initializeBrowserTTS();
       }
     } catch (error) {
-      console.error('Failed to initialize TTS voices:', error);
+      // Ensure we always have at least a fallback voice
+      this.addFallbackVoice();
     }
   }
 
   private initializeBrowserTTS() {
-    console.log('Initializing browser TTS...');
-    console.log('speechSynthesis available:', 'speechSynthesis' in window);
-    
     if ('speechSynthesis' in window) {
-      const browserVoices = window.speechSynthesis.getVoices();
-      console.log('Browser voices found:', browserVoices.length, browserVoices);
-      
-      this.availableVoices = browserVoices.map(voice => ({
-        id: `${voice.name}_${voice.lang}`,
-        name: voice.name,
-        language: voice.lang,
-        isDefault: voice.default,
-        browserVoice: voice
-      }));
-
-      // If voices aren't loaded yet, wait for them
-      if (this.availableVoices.length === 0) {
-        console.log('No voices loaded yet, setting up listener...');
-        window.speechSynthesis.onvoiceschanged = () => {
-          const voices = window.speechSynthesis.getVoices();
-          console.log('Voices changed event:', voices.length, voices);
-          this.availableVoices = voices.map(voice => ({
+      const loadBrowserVoices = () => {
+        const browserVoices = window.speechSynthesis.getVoices();
+        
+        if (browserVoices.length > 0) {
+          this.availableVoices = browserVoices.map(voice => ({
             id: `${voice.name}_${voice.lang}`,
             name: voice.name,
             language: voice.lang,
             isDefault: voice.default,
             browserVoice: voice
           }));
-        };
+          
+          // Remove the event listener once we have voices
+          window.speechSynthesis.onvoiceschanged = null;
+        } else {
+          // Add a fallback voice so the UI doesn't show "No voices available"
+          this.addFallbackVoice();
+        }
+      };
+
+      // Try to get voices immediately
+      loadBrowserVoices();
+
+      // If no voices yet, set up listener for when they become available
+      if (this.availableVoices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
+        
+        // Also add a timeout fallback in case the event never fires
+        setTimeout(() => {
+          if (this.availableVoices.length === 0) {
+            this.addFallbackVoice();
+          }
+        }, 3000);
       }
     } else {
-      console.error('speechSynthesis not available in window');
+      this.addFallbackVoice();
+    }
+  }
+
+  private addFallbackVoice() {
+    // Add a fallback voice entry so the UI can function
+    if (this.availableVoices.length === 0) {
+      this.availableVoices = [{
+        id: 'system_fallback',
+        name: 'System Voice',
+        language: 'en-US',
+        isDefault: true,
+        quality: this.isNativeApp ? 'native' : 'web'
+      }];
     }
   }
 
@@ -239,8 +257,16 @@ class TTSService {
 
           const utterance = new SpeechSynthesisUtterance(text);
           
+          // Ensure we always have a voice set to prevent "interrupted" errors
           if (voiceToUse?.browserVoice) {
             utterance.voice = voiceToUse.browserVoice;
+          } else {
+            // Fallback to system default voice if no specific voice is set
+            const voices = window.speechSynthesis.getVoices();
+            const defaultVoice = voices.find(v => v.default) || voices[0];
+            if (defaultVoice) {
+              utterance.voice = defaultVoice;
+            }
           }
           
           utterance.rate = rate;

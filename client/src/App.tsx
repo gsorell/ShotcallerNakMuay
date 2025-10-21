@@ -206,8 +206,6 @@ const DEFAULT_REST_MINUTES = 1;
 // Mirror technique for southpaw mode - only swap Left/Right directional words
 // Exempts techniques from the 'southpaw' style to avoid double negatives
 const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
-  console.log('Mirroring technique:', technique, 'from style:', sourceStyle); // Debug log
-  
   // Safety check: ensure input is a valid string
   if (!technique || typeof technique !== 'string') {
     console.warn('Invalid input to mirrorTechnique:', technique);
@@ -216,7 +214,6 @@ const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
   
   // EXEMPTION: Don't mirror techniques from southpaw style to avoid double negative
   if (sourceStyle === 'southpaw') {
-    console.log('Exempting southpaw technique from mirroring:', technique);
     return technique;
   }
   
@@ -233,7 +230,6 @@ const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
     return technique; // Return original on error
   }
   
-  console.log('Mirrored result:', mirrored); // Debug log
   return mirrored;
 };
 
@@ -552,18 +548,6 @@ export default function App() {
   const techniqueIndexRef = useRef<Record<string, string>>(techniqueIndex);
   useEffect(() => { techniqueIndexRef.current = techniqueIndex; }, [techniqueIndex]);
 
-  // Expose techniques to window for quick debugging in DevTools.
-  useEffect(() => {
-    try { 
-      (window as any).__techniques = techniquesRef.current;
-      // Debug helper for testing PWA prompt
-      (window as any).__testPWAPrompt = () => {
-        localStorage.removeItem('pwa_install_dismissed');
-        setShowPWAPrompt(true);
-      };
-    } catch { /* noop */ }
-  }, [techniques]);
-
   // Selection and session settings
   const [selectedEmphases, setSelectedEmphases] = useState<Record<EmphasisKey, boolean>>({
     timer_only: false,
@@ -789,24 +773,9 @@ export default function App() {
   const checkVoiceCompatibility = useCallback((selectedVoice: SpeechSynthesisVoice | null, allVoices: SpeechSynthesisVoice[]) => {
     // The new TTS hook handles compatibility warnings automatically
     // This function is kept for backward compatibility during transition
-    console.log('Voice compatibility check (legacy):', {
-      selectedVoice: selectedVoice?.name,
-      lang: selectedVoice?.lang,
-      availableVoices: allVoices.length
-    });
   }, []);
 
   // Voice initialization is now handled by the TTS hook
-  // This effect is kept for logging and legacy compatibility
-  useEffect(() => {
-    console.log('TTS system initialized:', {
-      platform: ttsPlatform,
-      available: ttsAvailable,
-      voicesCount: unifiedVoices.length,
-      currentVoice: currentVoice?.name || 'none',
-      compatibilityWarning: voiceCompatibilityWarning
-    });
-  }, [ttsPlatform, ttsAvailable, unifiedVoices.length, currentVoice?.name, voiceCompatibilityWarning]);
 
   // Persist user settings when they change
   useEffect(() => {
@@ -830,40 +799,6 @@ export default function App() {
   useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(voice);
   useEffect(() => { voiceRef.current = voice; }, [voice]);
-
-  // Voice selection is now handled automatically by the TTS hook
-  // This effect is kept for logging and debugging
-  useEffect(() => {
-    if (currentVoice) {
-      console.log('Current TTS voice:', {
-        name: currentVoice.name,
-        language: currentVoice.language,
-        platform: ttsPlatform
-      });
-    }
-  }, [currentVoice, ttsPlatform]);
-
-  // Debug helper for voice compatibility debugging
-  useEffect(() => {
-    try {
-      (window as any).__voiceDebug = {
-        voiceCompatibilityWarning,
-        voiceName: voice?.name || 'none',
-        voiceLang: voice?.lang || 'none', 
-        voicesCount: voices.length,
-        southpawMode
-      };
-      
-      (window as any).__techniqueDebug = {
-        clearStorage: () => {
-          localStorage.removeItem('shotcaller_techniques');
-          localStorage.removeItem('shotcaller_techniques_version');
-          window.location.reload();
-        },
-        currentTechniques: techniques
-      };
-    } catch { /* noop */ }
-  }, [voiceCompatibilityWarning, voice, voices, southpawMode]);
 
   // NEW: ensure voice speed always defaults to 1x on mount
   // useEffect(() => {
@@ -942,10 +877,6 @@ export default function App() {
     const currentTechniques = techniquesRef.current || {};
     const pool: TechniqueWithStyle[] = [];
 
-    // Debugging: surface what keys we're trying to use and what keys exist.
-    // eslint-disable-next-line no-console
-    console.debug('getTechniquePool: keysToUse=', keysToUse, 'availableKeys=', Object.keys(currentTechniques || {}));
-
     // Strict resolver: ONLY accept an exact property on the persisted techniques object.
     const resolveStyle = (k: string) => {
       if (!currentTechniques) return undefined;
@@ -1010,8 +941,6 @@ export default function App() {
     for (const k of keysToUse) {
       const style = resolveStyle(k);
       if (!style) {
-        // eslint-disable-next-line no-console
-        console.warn('getTechniquePool: no style found for key (exact lookup only)', k);
         continue;
       }
       extractStrings(style, pool, k);
@@ -1039,12 +968,6 @@ export default function App() {
     }
     
     const cleaned = Array.from(cleanedMap.values());
-
-    // Debug: warn if still empty so you can inspect window.__techniques in DevTools
-    if (!cleaned.length) {
-      // eslint-disable-next-line no-console
-      console.warn('getTechniquePool: cleaned pool empty for keys', keysToUse);
-    }
 
     return cleaned;
   }, [selectedEmphases, addCalisthenics]);
@@ -1429,7 +1352,7 @@ export default function App() {
       // Clear any warnings since we're attempting the test
       setVoiceCompatibilityWarning('');
       
-      console.log("Voice test initiated with new TTS system");
+      console.log("Voice test initiated");
     } catch (error) {
       console.error("Voice test error:", error);
       setVoiceCompatibilityWarning('Voice test failed. Please try a different voice or adjust the speed.');
@@ -2894,9 +2817,6 @@ export default function App() {
             const selected = voices.find(v => v.name === selectedName) || null;
             
             if (selected) {
-              // Since we only show English voices, we know this is selectable
-              console.log('User selected English voice:', selected.name, selected.lang);
-              
               // Find the corresponding unified voice - try multiple matching strategies
               let unifiedVoice = unifiedVoices.find(v => 
                 v.name === selected.name && v.language === selected.lang
@@ -2915,7 +2835,6 @@ export default function App() {
               }
               
               if (unifiedVoice) {
-                console.log('Found unified voice match:', unifiedVoice.name, unifiedVoice.language);
                 setCurrentVoice(unifiedVoice);
                 saveVoicePreference(selected); // Use the synthetic voice for legacy preference saving
                 
@@ -2924,9 +2843,6 @@ export default function App() {
                 
                 // Use the newly selected voice for the test announcement
                 speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
-              } else {
-                console.error('Could not find unified voice for selection:', selected.name, selected.lang);
-                console.log('Available unified voices:', unifiedVoices.map(v => `${v.name} (${v.language})`));
               }
             }
           }}
@@ -2943,7 +2859,9 @@ export default function App() {
             minWidth: '160px',
           }}
         >
-          <option value="" disabled>Select a voice</option>
+          <option value="" disabled>
+            {voices.length === 0 && ttsAvailable ? 'Using system default voice' : 'Select a voice'}
+          </option>
           {voices
             .filter(v => v.lang.toLowerCase().startsWith('en')) // Only show English voices
             .map(v => {
@@ -3040,9 +2958,14 @@ export default function App() {
             'All English voices work great for Muay Thai techniques. American English (🇺🇸) is preferred, but any English variant will provide clear pronunciation.'
           }
         </span>
-        {!voices.length && (
+        {!voices.length && !ttsAvailable && (
           <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#fcd34d' }}>
-            <strong>No voices available:</strong> Your system may not have text-to-speech support.
+            <strong>No text-to-speech available:</strong> Your device may not support text-to-speech.
+          </div>
+        )}
+        {!voices.length && ttsAvailable && (
+          <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#60a5fa' }}>
+            <strong>Voice loading:</strong> System voice will be used automatically.
           </div>
         )}
       </div>

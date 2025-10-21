@@ -92,7 +92,6 @@ export const useTTS = (): UseTTSReturn => {
           }
           
           if (defaultVoice) {
-            console.log('Auto-selected default voice:', defaultVoice.name, defaultVoice.language);
             setCurrentVoiceState(defaultVoice);
             ttsService.setVoice(defaultVoice);
           }
@@ -116,7 +115,6 @@ export const useTTS = (): UseTTSReturn => {
     // SECURITY: Only save English voices to prevent non-English voices from persisting
     const isEnglish = voice.language.toLowerCase().startsWith('en');
     if (!isEnglish) {
-      console.warn('Attempted to save non-English voice preference, ignoring:', voice.name, voice.language);
       localStorage.removeItem(VOICE_STORAGE_KEY);
       return;
     }
@@ -129,7 +127,6 @@ export const useTTS = (): UseTTSReturn => {
       isDefault: voice.isDefault
     };
     localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(voiceData));
-    console.log('Saved English voice preference:', voice.name, voice.language);
   }, []);
 
   const loadVoicePreference = useCallback((availableVoices: UnifiedVoice[]) => {
@@ -147,19 +144,15 @@ export const useTTS = (): UseTTSReturn => {
         // Only return saved voice if it's English-compatible
         const isEnglishCompatible = matchedVoice.language.toLowerCase().startsWith('en');
         if (isEnglishCompatible) {
-          console.log('Loaded saved English voice preference:', matchedVoice.name);
           return matchedVoice;
         } else {
-          console.log('Saved voice is non-English, clearing preference:', matchedVoice.name, matchedVoice.language);
           localStorage.removeItem(VOICE_STORAGE_KEY);
           return null;
         }
       } else {
-        console.log('Saved voice not found in available voices, will use default');
         return null;
       }
     } catch (error) {
-      console.error('Error loading voice preference:', error);
       return null;
     }
   }, []);
