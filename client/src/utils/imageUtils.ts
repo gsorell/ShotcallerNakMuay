@@ -1,4 +1,6 @@
 import html2canvas from 'html2canvas';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 export interface WorkoutStats {
   timestamp: string;
@@ -36,10 +38,32 @@ export const captureAndDownloadElement = async (
     // Capture the element as canvas
     const canvas = await html2canvas(element, defaultOptions);
     
-    // Convert canvas to blob
+    // Check if we're running in a native app
+    const isNative = Capacitor.isNativePlatform();
+    
+    if (isNative) {
+      // Native mobile: Use Capacitor Filesystem API
+      await downloadImageNative(canvas, filename);
+    } else {
+      // Web: Use traditional download approach
+      await downloadImageWeb(canvas, filename);
+    }
+    
+  } catch (error) {
+    console.error('Error capturing element:', error);
+    throw new Error('Failed to capture and download image');
+  }
+};
+
+/**
+ * Downloads image in web environment using blob URL and anchor element
+ */
+const downloadImageWeb = async (canvas: HTMLCanvasElement, filename: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        throw new Error('Failed to create image blob');
+        reject(new Error('Failed to create image blob'));
+        return;
       }
       
       // Create download link
@@ -55,11 +79,61 @@ export const captureAndDownloadElement = async (
       // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      resolve();
     }, 'image/png', 0.95);
+  });
+};
+
+/**
+ * Downloads image in native environment using Capacitor Filesystem
+ */
+const downloadImageNative = async (canvas: HTMLCanvasElement, filename: string): Promise<void> => {
+  try {
+    // Convert canvas to base64
+    const base64Data = canvas.toDataURL('image/png', 0.95);
+    
+    // Remove the data URL prefix to get just the base64 string
+    const base64String = base64Data.replace(/^data:image\/png;base64,/, '');
+    
+    // Save to device using Capacitor Filesystem in Documents directory
+    // Create a ShotcallerNakMuay subdirectory for better organization
+    const result = await Filesystem.writeFile({
+      path: `ShotcallerNakMuay/${filename}.png`,
+      data: base64String,
+      directory: Directory.Documents
+      // Note: For base64 data, we don't need to specify encoding
+    });
+    
+    console.log('File saved successfully:', result.uri);
+    
+    // Show a success message (you might want to use a toast library)
+    if (typeof window !== 'undefined' && 'alert' in window) {
+      alert(`Workout image saved to Documents/ShotcallerNakMuay folder as ${filename}.png`);
+    }
     
   } catch (error) {
-    console.error('Error capturing element:', error);
-    throw new Error('Failed to capture and download image');
+    console.error('Error saving file:', error);
+    
+    // Try one more time with just the root Documents directory
+    try {
+      const base64Data = canvas.toDataURL('image/png', 0.95);
+      const base64String = base64Data.replace(/^data:image\/png;base64,/, '');
+      
+      const result = await Filesystem.writeFile({
+        path: `${filename}.png`,
+        data: base64String,
+        directory: Directory.Documents
+      });
+      
+      console.log('File saved to Documents root:', result.uri);
+      
+      if (typeof window !== 'undefined' && 'alert' in window) {
+        alert(`Workout image saved to Documents folder as ${filename}.png`);
+      }
+    } catch (fallbackError) {
+      console.error('Fallback save also failed:', fallbackError);
+      throw new Error('Failed to save image to device');
+    }
   }
 };
 
@@ -120,6 +194,14 @@ export const generateWorkoutFilename = (stats: WorkoutStats): string => {
  */
 export const isWebShareSupported = (): boolean => {
   return 'share' in navigator;
+};
+
+/**
+ * Checks if we're running in a native app environment
+ * @returns boolean
+ */
+export const isNativeApp = (): boolean => {
+  return Capacitor.isNativePlatform();
 };
 
 /**
