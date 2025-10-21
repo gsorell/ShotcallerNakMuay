@@ -4,6 +4,7 @@ import {
   captureAndDownloadElement, 
   shareWorkoutImage, 
   isWebShareSupported,
+  generateWorkoutFilename,
   WorkoutStats 
 } from './utils/imageUtils';
 
@@ -22,8 +23,11 @@ export default function WorkoutCompleted({ stats, onRestart, onReset, onViewLog 
     if (!workoutSummaryRef.current) return;
     setIsCapturing(true);
     try {
-      const filename = `workout-${new Date(stats.timestamp).toISOString().split('T')[0]}`;
+      const filename = generateWorkoutFilename(stats);
       await captureAndDownloadElement(workoutSummaryRef.current, filename);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download workout image. Please try again.');
     } finally {
       setIsCapturing(false);
     }
