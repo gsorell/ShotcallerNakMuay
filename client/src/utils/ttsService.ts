@@ -231,6 +231,8 @@ class TTSService {
         // Use Capacitor TTS for native apps
         if (options.onStart) options.onStart();
         
+        const startTime = Date.now();
+        
         // Choose a voice param that works with the Capacitor plugin.
         // Some platforms return numeric ids, others return string identifiers.
         let voiceParam: any = undefined;
@@ -248,7 +250,17 @@ class TTSService {
           voice: voiceParam
         });
         
-        if (options.onDone) options.onDone();
+        const endTime = Date.now();
+        const actualDuration = endTime - startTime;
+        
+        if (options.onDone) {
+          // Pass actual duration to onDone callback if it accepts it
+          if (options.onDone.length > 0) {
+            (options.onDone as any)(actualDuration);
+          } else {
+            options.onDone();
+          }
+        }
       } else {
         // Use browser TTS for web
         if ('speechSynthesis' in window) {
@@ -256,6 +268,7 @@ class TTSService {
           window.speechSynthesis.cancel();
 
           const utterance = new SpeechSynthesisUtterance(text);
+          const startTime = Date.now();
           
           // Ensure we always have a voice set to prevent "interrupted" errors
           if (voiceToUse?.browserVoice) {
@@ -278,7 +291,17 @@ class TTSService {
           }
           
           if (options.onDone) {
-            utterance.onend = options.onDone;
+            utterance.onend = () => {
+              const endTime = Date.now();
+              const actualDuration = endTime - startTime;
+              
+              // Pass actual duration to onDone callback if it accepts it
+              if (options.onDone!.length > 0) {
+                (options.onDone as any)(actualDuration);
+              } else {
+                options.onDone!();
+              }
+            };
           }
           
           if (options.onError) {

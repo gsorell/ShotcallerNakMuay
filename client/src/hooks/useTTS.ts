@@ -14,6 +14,7 @@ export interface UseTTSReturn {
   // Speech controls
   speak: (text: string, options?: TTSOptions) => Promise<void>;
   speakSystem: (text: string, rate?: number) => Promise<void>;
+  speakSystemWithDuration: (text: string, rate?: number, onDurationMeasured?: (durationMs: number) => void) => Promise<void>;
   speakTechnique: (text: string, rate?: number, isGuarded?: boolean) => Promise<void>;
   stop: () => Promise<void>;
   pause: () => Promise<void>;
@@ -195,6 +196,26 @@ export const useTTS = (): UseTTSReturn => {
     });
   }, [currentVoice]);
 
+  // Enhanced speakSystem with duration callback for responsive callout timing
+  const speakSystemWithDuration = useCallback(async (
+    text: string, 
+    rate: number = 1.0, 
+    onDurationMeasured?: (durationMs: number) => void
+  ) => {
+    await ttsService.speakSystem(text, {
+      voice: currentVoice,
+      rate,
+      onStart: () => setIsSpeaking(true),
+      onDone: (durationMs?: number) => {
+        setIsSpeaking(false);
+        if (onDurationMeasured && durationMs) {
+          onDurationMeasured(durationMs);
+        }
+      },
+      onError: () => setIsSpeaking(false)
+    });
+  }, [currentVoice]);
+
   const speakTechnique = useCallback(async (text: string, rate: number = 1.0, isGuarded: boolean = true) => {
     // Apply your existing guard logic
     if (isGuarded && (ttsGuardRef.current || !runningRef.current)) {
@@ -264,6 +285,7 @@ export const useTTS = (): UseTTSReturn => {
     // Speech controls
     speak,
     speakSystem,
+    speakSystemWithDuration,
     speakTechnique,
     stop,
     pause,
