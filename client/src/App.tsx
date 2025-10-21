@@ -719,6 +719,7 @@ export default function App() {
     englishVoices: unifiedEnglishVoices,
     speak: ttsSpeak,
     speakSystem: ttsSpeakSystem,
+    speakSystemWithDuration: ttsSpeakSystemWithDuration,
     speakTechnique: ttsSpeakTechnique,
     stop: stopTTS,
     isAvailable: ttsAvailable,
@@ -1034,13 +1035,15 @@ export default function App() {
     setCurrentCallout('');
   }, []);
 
-  const startTechniqueCallouts = useCallback((initialDelay = 1200) => {
+  const startTechniqueCallouts = useCallback((initialDelay = 800) => { // Reduced from 1200ms to 800ms
     // Adjusted cadence per difficulty (calls/min) - reduced to prevent interruptions
     const cadencePerMin =
       difficulty === 'easy' ? 20 :  // Was 26
-      difficulty === 'hard' ? 35 : 26; // Was 60, 31
+      difficulty === 'hard' ? 37 : 26; // Was 60, 31 → increased from 35 to 37 (~5% faster)
     const baseDelayMs = Math.round(60000 / cadencePerMin);
-    const minDelayMs = Math.round(baseDelayMs * 0.7); // Increased minimum delay
+    // Pro difficulty gets even more aggressive minimum delays
+    const minDelayMultiplier = difficulty === 'hard' ? 0.4 : 0.5; // Pro: 40% vs 50% for others
+    const minDelayMs = Math.round(baseDelayMs * minDelayMultiplier);
 
     const scheduleNext = (delay: number) => {
       if (calloutRef.current) {
@@ -1070,7 +1073,7 @@ export default function App() {
       // Increment shotsCalledOut counter
       shotsCalledOutRef.current += 1;
 
-      // Use new TTS service for technique callouts (same as "Get Ready" uses speakSystem)
+      // Use new TTS service for technique callouts with responsive timing
       try {
         // Apply southpaw mirroring if enabled, passing the source style for exemption logic
         const finalPhrase = southpawModeRef.current ? mirrorTechnique(selectedTechnique.text, selectedTechnique.style) : selectedTechnique.text;
@@ -1082,28 +1085,38 @@ export default function App() {
           return;
         }
 
-        // Use the same TTS method as "Get Ready" (which works!)
-        speakSystem(finalPhrase, voiceRef.current, voiceSpeedRef.current);
-        
         // Set the callout immediately for visual feedback
         setCurrentCallout(finalPhrase);
         
-        // Calculate delay based on phrase length to prevent interruptions
-        // Estimate speaking time: ~150 words per minute, ~5 chars per word
-        const estimatedSpeakingTimeMs = Math.max(
-          (finalPhrase.length / 5) * (60000 / 150) / (voiceSpeedRef.current || 1),
-          1000 // Minimum 1 second
-        );
+        // Use enhanced TTS with actual duration measurement for responsive timing
+        ttsSpeakSystemWithDuration(finalPhrase, voiceSpeedRef.current, (actualDurationMs: number) => {
+          // Pro difficulty gets much more aggressive timing
+          const isProDifficulty = difficulty === 'hard';
+          
+          // Calculate next delay based on actual speech duration, with Pro-specific adjustments
+          const bufferMultiplier = isProDifficulty ? 0.15 : 0.2; // Pro: 15% buffer vs 20% for others
+          const bufferTime = Math.max(
+            isProDifficulty ? 150 : 200, 
+            Math.min(isProDifficulty ? 600 : 800, baseDelayMs * bufferMultiplier)
+          );
+          
+          const jitterMultiplier = isProDifficulty ? 0.06 : 0.08; // Pro: ±6% vs ±8% for others
+          const jitter = Math.floor(baseDelayMs * jitterMultiplier * (Math.random() - 0.5));
+          
+          // Responsive delay: use actual duration + buffer, but be more aggressive about shorter delays
+          const responsiveDelayMs = actualDurationMs + bufferTime + jitter;
+          
+          // Pro gets more aggressive timing caps
+          const timingCap = isProDifficulty ? baseDelayMs * 0.9 : baseDelayMs * 1.1; // Pro: 90% cap vs 110%
+          
+          const nextDelayMs = Math.max(
+            minDelayMs,                  // Never go below minimum
+            Math.min(responsiveDelayMs, timingCap) // Pro has much tighter cap
+          );
+          
+          scheduleNext(nextDelayMs);
+        });
         
-        // Add buffer time and jitter
-        const bufferTime = 800; // 800ms buffer after speech ends
-        const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
-        const nextDelayMs = Math.max(
-          minDelayMs, 
-          estimatedSpeakingTimeMs + bufferTime + jitter,
-          baseDelayMs
-        );
-        scheduleNext(nextDelayMs);
         return;
       } catch (error) {
         console.error('TTS error in technique callout:', error);
@@ -1120,13 +1133,18 @@ export default function App() {
         : finalPhrase;
       
       setCurrentCallout(safePhrase);
-      const jitter = Math.floor(baseDelayMs * 0.10 * (Math.random() - 0.5));
-      const nextDelayMs = Math.max(minDelayMs, baseDelayMs + jitter);
+      // Pro difficulty gets even more aggressive fallback timing
+      const isProDifficulty = difficulty === 'hard';
+      const jitterMultiplier = isProDifficulty ? 0.06 : 0.08;
+      const fallbackMultiplier = isProDifficulty ? 0.7 : 0.8; // Pro: 70% vs 80% for others
+      
+      const jitter = Math.floor(baseDelayMs * jitterMultiplier * (Math.random() - 0.5));
+      const nextDelayMs = Math.max(minDelayMs, baseDelayMs * fallbackMultiplier + jitter);
       scheduleNext(nextDelayMs);
     };
 
     scheduleNext(initialDelay);
-  }, [difficulty, stopTechniqueCallouts]);
+  }, [difficulty, stopTechniqueCallouts, ttsSpeakSystemWithDuration]);
 
   // Guard TTS on state changes
   useEffect(() => {
@@ -1248,7 +1266,7 @@ export default function App() {
   // Start/stop callouts during active rounds
   useEffect(() => {
     if (!running || paused || isResting) return;
-    startTechniqueCallouts(1200);
+    startTechniqueCallouts(800); // Reduced initial delay for faster first callout
     return () => {
       stopTechniqueCallouts();
       stopAllNarration();
