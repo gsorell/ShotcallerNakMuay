@@ -14,21 +14,21 @@ describe('Image Utils', () => {
   };
 
   describe('generateWorkoutFilename', () => {
-    it('should generate a proper filename from workout stats', () => {
+    it('should generate a proper filename from workout stats with unique timestamp', () => {
       const filename = generateWorkoutFilename(mockStats);
-      expect(filename).toBe('shotcaller-workout-2025-10-21-two-piece-combos-kicks-medium');
+      expect(filename).toBe('shotcaller-workout-2025-10-21-16-01-56-two-piece-combos-kicks-medium');
     });
 
     it('should handle single emphasis', () => {
       const stats = { ...mockStats, emphases: ['Jabs'] };
       const filename = generateWorkoutFilename(stats);
-      expect(filename).toBe('shotcaller-workout-2025-10-21-jabs-medium');
+      expect(filename).toBe('shotcaller-workout-2025-10-21-16-01-56-jabs-medium');
     });
 
     it('should handle spaces in emphasis names', () => {
       const stats = { ...mockStats, emphases: ['Heavy Bag Work'] };
       const filename = generateWorkoutFilename(stats);
-      expect(filename).toBe('shotcaller-workout-2025-10-21-heavy-bag-work-medium');
+      expect(filename).toBe('shotcaller-workout-2025-10-21-16-01-56-heavy-bag-work-medium');
     });
   });
 

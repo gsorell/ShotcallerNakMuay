@@ -853,8 +853,10 @@ export default function App() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const runningRef = useRef(running);
   const pausedRef = useRef(paused);
+  const isRestingRef = useRef(isResting);
   useEffect(() => { runningRef.current = running; }, [running]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
+  useEffect(() => { isRestingRef.current = isResting; }, [isResting]);
 
   // Persist southpaw mode to localStorage
   useEffect(() => {
@@ -1054,6 +1056,13 @@ export default function App() {
     };
 
     const doCallout = () => {
+      // Critical safety guard: Check if we should still be calling out techniques
+      if (ttsGuardRef.current || !runningRef.current || pausedRef.current || isRestingRef.current) {
+        console.log('Callout prevented: workout not active (running:', runningRef.current, 'paused:', pausedRef.current, 'resting:', isRestingRef.current, 'guard:', ttsGuardRef.current, ')');
+        stopTechniqueCallouts();
+        return;
+      }
+
       const pool = currentPoolRef.current;
       if (!pool.length) {
         console.warn('No techniques available for callouts — stopping callouts');

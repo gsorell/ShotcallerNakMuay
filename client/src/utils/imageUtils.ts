@@ -176,16 +176,18 @@ export const captureElementAsBlob = async (
 };
 
 /**
- * Generates a filename for workout summary based on stats
+ * Generates a unique filename for workout summary based on stats
+ * Includes date and time to prevent file overwrites on multiple downloads
  * @param stats - Workout statistics
- * @returns string - Generated filename
+ * @returns string - Generated filename with unique timestamp (YYYY-MM-DD-HH-MM-SS format)
  */
 export const generateWorkoutFilename = (stats: WorkoutStats): string => {
   const date = new Date(stats.timestamp);
   const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+  const timeStr = date.toISOString().split('T')[1].replace(/:/g, '-').split('.')[0]; // HH-MM-SS
   const emphases = stats.emphases.join('-').replace(/\s+/g, '-').toLowerCase();
   
-  return `shotcaller-workout-${dateStr}-${emphases}-${stats.difficulty}`;
+  return `shotcaller-workout-${dateStr}-${timeStr}-${emphases}-${stats.difficulty}`;
 };
 
 /**
