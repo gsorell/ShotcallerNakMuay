@@ -8,20 +8,54 @@
   "theme_color": "#831843",
   "orientation": "portrait",
   "scope": "/",
-  "categories": ["health", "fitness", "sports"],
+  "categories": [
+    "health",
+    "fitness",
+    "sports"
+  ],
   "lang": "en-US",
   "icons": [
     {
-      "src": "/assets/logo_icon.png",
-      "sizes": "192x192",
+      "src": "assets/icons/icon-48.webp",
       "type": "image/png",
-      "purpose": "maskable any"
+      "sizes": "48x48",
+      "purpose": "any maskable"
     },
     {
-      "src": "/assets/logo_icon.png", 
-      "sizes": "512x512",
+      "src": "assets/icons/icon-72.webp",
       "type": "image/png",
-      "purpose": "maskable any"
+      "sizes": "72x72",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-96.webp",
+      "type": "image/png",
+      "sizes": "96x96",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-128.webp",
+      "type": "image/png",
+      "sizes": "128x128",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-192.webp",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-256.webp",
+      "type": "image/png",
+      "sizes": "256x256",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.webp",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
@@ -32,7 +66,7 @@
       "form_factor": "narrow"
     },
     {
-      "src": "/assets/hero_tablet.png", 
+      "src": "/assets/hero_tablet.png",
       "sizes": "1024x768",
       "type": "image/png",
       "form_factor": "wide"
