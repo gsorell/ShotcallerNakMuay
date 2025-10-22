@@ -1956,6 +1956,30 @@ export default function App() {
               </table>
             </div>
           </div>
+
+          {/* Privacy Policy Link */}
+          <div style={{ 
+            marginTop: '1.5rem', 
+            paddingTop: '1rem', 
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            textAlign: 'center'
+          }}>
+            <a
+              href="https://github.com/gsorell/ShotcallerNakMuay/blob/main/PRIVACY_POLICY.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: 'rgba(249, 168, 212, 0.7)',
+                fontSize: '0.875rem',
+                textDecoration: 'none',
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#f9a8d4'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(249, 168, 212, 0.7)'}
+            >
+              Privacy Policy
+            </a>
+          </div>
         </div>
       </div>
     );
