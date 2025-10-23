@@ -6,16 +6,80 @@
   align-items: center;
   padding: 0.1rem 2rem;
   background-color: #0a0019;
+  /* Prevent any focus styles on the header itself */
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 1rem;
+  /* Prevent mobile focus/active states */
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  touch-action: manipulation !important;
+  /* Completely remove any possible box shadows or borders */
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* More aggressive focus prevention */
+.logo:focus,
+.logo:active,
+.logo:hover,
+.logo:focus-visible,
+.logo:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  background: transparent !important;
 }
 
 .logo img {
   height: 5.5rem;
   width: auto;
   display: block;
+  /* Prevent mobile focus/active states on image */
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  pointer-events: none !important; /* Prevent image from being the target */
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.logo img:focus,
+.logo img:active,
+.logo img:hover,
+.logo img:focus-visible,
+.logo img:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Global override for any child elements */
+.app-header *,
+.app-header *:focus,
+.app-header *:active,
+.app-header *:hover,
+.app-header *:focus-visible,
+.app-header *:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
 }

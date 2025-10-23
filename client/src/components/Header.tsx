@@ -8,6 +8,7 @@ export interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const logoRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.body.style.overscrollBehaviorY = 'contain';
@@ -26,6 +27,13 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     minHeight: 0,
     minWidth: 0,
     overflow: 'hidden',
+    // Prevent mobile focus/active states
+    outline: 'none',
+    userSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    touchAction: 'manipulation',
   };
 
   const modalOverlayStyle: React.CSSProperties = {
@@ -41,16 +49,34 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
   };
 
   const handleLogoClick = (e: React.MouseEvent) => {
-    if (onLogoClick) {
-      e.preventDefault();
-      onLogoClick();
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Immediately remove focus and blur
+    if (logoRef.current) {
+      logoRef.current.blur();
+      logoRef.current.style.outline = 'none';
+      logoRef.current.style.boxShadow = 'none';
     }
+    
+    // Small delay to ensure blur takes effect before callback
+    setTimeout(() => {
+      if (onLogoClick) {
+        onLogoClick();
+      }
+    }, 50);
   };
 
   return (
     <>
       <header className="app-header" style={{ width: '100%', padding: 0, margin: 0 }}>
-        <div className="logo" onClick={handleLogoClick} style={logoContainerStyle}>
+        <div 
+          ref={logoRef}
+          className="logo" 
+          onClick={handleLogoClick}
+          style={logoContainerStyle}
+          tabIndex={-1} // Prevent keyboard focus
+        >
           <img
             src="/assets/Logo_Header_Banner_Smooth.png"
             alt="Shotcaller Nak Muay"
@@ -61,6 +87,13 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
               maxHeight: '120px',
               objectFit: 'contain',
               display: 'block',
+              // Prevent mobile focus/active states on image
+              outline: 'none',
+              userSelect: 'none',
+              WebkitTapHighlightColor: 'transparent',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              pointerEvents: 'none', // Prevent image from being the target
             }}
           />
         </div>
