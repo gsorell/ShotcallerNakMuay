@@ -14,6 +14,7 @@ import StatusTimer from './components/StatusTimer'; // <-- Make sure this import
 import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
+import { useNavigationGestures } from './hooks/useNavigationGestures';
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
@@ -646,6 +647,34 @@ export default function App() {
   const closeOnboardingModal = useCallback(() => {
     setShowOnboardingMsg(false);
   }, []);
+
+  // Navigation gesture handling
+  const handleBackNavigation = useCallback(() => {
+    // Priority order for back navigation:
+    // 1. Close onboarding modal if open
+    // 2. Go back from technique editor to timer
+    // 3. Go back from workout logs to timer
+    // 4. Go back from completed screen to timer
+    if (showOnboardingMsg) {
+      setShowOnboardingMsg(false);
+    } else if (page === 'editor') {
+      setPage('timer');
+    } else if (page === 'logs') {
+      setPage('timer');
+    } else if (page === 'completed') {
+      setPage('timer');
+    }
+    // If on timer page and no modals open, do nothing (stay on app)
+  }, [showOnboardingMsg, page]);
+
+  // Enable navigation gestures when on non-timer pages or when modal is open
+  const navigationGesturesEnabled = page !== 'timer' || showOnboardingMsg;
+  
+  useNavigationGestures({
+    onBack: handleBackNavigation,
+    enabled: navigationGesturesEnabled,
+    debugLog: false // Set to true for development debugging
+  });
   
 
   // Voice persistence helpers
