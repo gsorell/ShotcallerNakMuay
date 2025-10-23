@@ -12,8 +12,25 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
 
   useEffect(() => {
     document.body.style.overscrollBehaviorY = 'contain';
+    
+    // Mobile-specific: Continuously enforce no tap highlighting (but less frequently)
+    const enforceNoHighlight = () => {
+      if (logoRef.current) {
+        logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+        logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,0,0,0)');
+        logoRef.current.style.setProperty('-webkit-focus-ring-color', 'transparent');
+        logoRef.current.style.background = 'transparent';
+        logoRef.current.style.backgroundColor = 'transparent';
+      }
+    };
+    
+    // Run immediately and set up less frequent interval
+    enforceNoHighlight();
+    const interval = setInterval(enforceNoHighlight, 1000); // Reduced from 100ms to 1000ms
+    
     return () => {
       document.body.style.overscrollBehaviorY = 'auto';
+      clearInterval(interval);
     };
   }, []);
 
@@ -34,6 +51,17 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     WebkitTouchCallout: 'none',
     WebkitUserSelect: 'none',
     touchAction: 'manipulation',
+    // Force transparent background
+    background: 'transparent',
+    backgroundColor: 'transparent',
+    // Additional properties to prevent any highlights
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    border: 'none',
+    boxShadow: 'none',
+    // Force hardware acceleration
+    transform: 'translateZ(0)',
+    willChange: 'auto'
   };
 
   const modalOverlayStyle: React.CSSProperties = {
@@ -52,12 +80,73 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Immediately remove focus and blur
+    // Get the target element and ensure it loses focus
+    const target = e.currentTarget as HTMLElement;
+    
+    // Force CSS variables to transparent
+    document.documentElement.style.setProperty('--logo-bg', 'transparent');
+    document.documentElement.style.setProperty('--logo-highlight', 'transparent');
+    
+    // Multiple immediate cleanup attempts
+    const cleanupElement = (element: HTMLElement) => {
+      element.blur();
+      element.style.outline = 'none';
+      element.style.boxShadow = 'none';
+      element.style.background = 'transparent';
+      element.style.backgroundColor = 'transparent';
+      element.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+      element.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,0,0,0)');
+      element.style.setProperty('background', 'transparent');
+      element.style.setProperty('background-color', 'transparent');
+      // Force repaint
+      element.style.transform = 'translateZ(0)';
+      element.classList.add('force-reset');
+    };
+    
+    // Apply to both target and ref
     if (logoRef.current) {
-      logoRef.current.blur();
-      logoRef.current.style.outline = 'none';
-      logoRef.current.style.boxShadow = 'none';
+      cleanupElement(logoRef.current);
     }
+    if (target) {
+      cleanupElement(target);
+    }
+    
+    // Force removal of any active/focus classes and states
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      (document.activeElement as HTMLElement).blur();
+    }
+    
+    // Delayed cleanup - multiple attempts
+    const delayedCleanup = () => {
+      if (logoRef.current) {
+        cleanupElement(logoRef.current);
+      }
+      if (target) {
+        cleanupElement(target);
+      }
+    };
+    
+    // Multiple delayed cleanup attempts at different intervals
+    setTimeout(delayedCleanup, 10);
+    setTimeout(delayedCleanup, 50);
+    setTimeout(delayedCleanup, 100);
+    
+    // Use requestAnimationFrame to ensure cleanup happens after browser paint
+    requestAnimationFrame(() => {
+      delayedCleanup();
+      requestAnimationFrame(() => {
+        delayedCleanup();
+      });
+    });
+    
+    setTimeout(() => {
+      if (logoRef.current) {
+        logoRef.current.classList.remove('force-reset');
+      }
+      if (target) {
+        target.classList.remove('force-reset');
+      }
+    }, 400); // Increased from 200ms to 400ms
     
     // Small delay to ensure blur takes effect before callback
     setTimeout(() => {
@@ -67,6 +156,66 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     }, 50);
   };
 
+  const handleMouseUp = (e: React.MouseEvent) => {
+    // Additional cleanup on mouse up to ensure no persistent highlights
+    const target = e.currentTarget as HTMLElement;
+    if (target && target.blur) {
+      target.blur();
+      target.style.outline = 'none';
+      target.style.boxShadow = 'none';
+      target.style.background = 'transparent';
+      target.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+    }
+    if (logoRef.current) {
+      logoRef.current.blur();
+      logoRef.current.style.outline = 'none';
+      logoRef.current.style.boxShadow = 'none';
+      logoRef.current.style.background = 'transparent';
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Additional cleanup on touch end for mobile devices
+    // DON'T prevent default here - it blocks navigation
+    // e.preventDefault(); // REMOVED - this was blocking navigation
+    e.stopPropagation();
+    
+    const target = e.currentTarget as HTMLElement;
+    if (target && target.blur) {
+      target.blur();
+      target.style.outline = 'none';
+      target.style.boxShadow = 'none';
+      target.style.background = 'transparent';
+      target.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+      target.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,0,0,0)');
+      target.style.setProperty('background', 'transparent');
+      target.style.setProperty('background-color', 'transparent');
+    }
+    if (logoRef.current) {
+      logoRef.current.blur();
+      logoRef.current.style.outline = 'none';
+      logoRef.current.style.boxShadow = 'none';
+      logoRef.current.style.background = 'transparent';
+      logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+      logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,0,0,0)');
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Prevent mobile highlighting from the start but DON'T prevent default
+    // e.preventDefault(); // REMOVED - this was blocking navigation
+    const target = e.currentTarget as HTMLElement;
+    if (target) {
+      target.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+      target.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,0,0,0)');
+      target.style.background = 'transparent';
+    }
+    if (logoRef.current) {
+      logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'transparent');
+      logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'rgba(0,0,0,0)');
+    }
+  };
+
   return (
     <>
       <header className="app-header" style={{ width: '100%', padding: 0, margin: 0 }}>
@@ -74,6 +223,9 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
           ref={logoRef}
           className="logo" 
           onClick={handleLogoClick}
+          onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           style={logoContainerStyle}
           tabIndex={-1} // Prevent keyboard focus
         >

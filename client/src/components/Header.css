@@ -9,6 +9,13 @@
   /* Prevent any focus styles on the header itself */
   outline: none !important;
   -webkit-tap-highlight-color: transparent !important;
+  /* CSS variables for forcing transparent backgrounds */
+  --logo-bg: transparent;
+  --logo-highlight: transparent;
+  /* Mobile-specific overrides */
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-focus-ring-color: transparent !important;
+  -webkit-touch-callout: none !important;
 }
 
 .logo {
@@ -17,16 +24,59 @@
   gap: 1rem;
   /* Prevent mobile focus/active states */
   outline: none !important;
-  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: var(--logo-highlight, transparent) !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(255,255,255,0) !important;
+  -webkit-focus-ring-color: transparent !important;
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
   -moz-user-select: none !important;
   -ms-user-select: none !important;
   user-select: none !important;
   touch-action: manipulation !important;
+  /* Mobile-specific CSS properties */
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
   /* Completely remove any possible box shadows or borders */
   box-shadow: none !important;
   border: none !important;
+  /* Force transparent background in all states using CSS variables */
+  background: var(--logo-bg, transparent) !important;
+  background-color: var(--logo-bg, transparent) !important;
+  /* Additional webkit/blink specific properties */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  /* Force layer creation to prevent paint issues */
+  will-change: auto;
+  transform: translateZ(0);
+  /* Mobile-specific override attempts */
+  -webkit-text-size-adjust: 100% !important;
+  -webkit-font-smoothing: antialiased !important;
+  /* Position relative for pseudo-element overlay */
+  position: relative;
+  isolation: isolate;
+}
+
+/* Add an invisible overlay to prevent highlighting */
+.logo::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent !important;
+  pointer-events: none;
+  z-index: 1;
+  /* Ensure this overlay can't be highlighted */
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
 }
 
 /* More aggressive focus prevention */
@@ -39,6 +89,39 @@
   box-shadow: none !important;
   border: none !important;
   -webkit-tap-highlight-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  /* Force immediate style reset */
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Extremely aggressive active state removal */
+.logo:active,
+.logo.active,
+.logo[data-active],
+.logo[aria-pressed="true"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  /* Force hardware acceleration to break any persistent rendering */
+  transform: translateZ(0) !important;
+  will-change: auto !important;
+  /* Immediate animation override */
+  animation: reset-highlight 0.01s ease-in-out !important;
+}
+
+/* Nuclear option: Override ANY possible active/focus state on mobile */
+.logo:active::before,
+.logo:active::after,
+.logo.active::before,
+.logo.active::after {
+  display: none !important;
+  content: none !important;
   background: transparent !important;
 }
 
@@ -82,4 +165,128 @@
   box-shadow: none !important;
   border: none !important;
   -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Extra aggressive focus removal for any possible pseudo-states */
+.logo:visited,
+.logo:target,
+.logo::before,
+.logo::after,
+.logo *:visited,
+.logo *:target,
+.logo *::before,
+.logo *::after {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Prevent any possible selection or highlighting */
+.app-header,
+.logo,
+.logo * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-highlight: none !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Remove any potential browser-specific active states */
+.logo::-moz-focus-inner,
+.logo *::-moz-focus-inner {
+  border: 0 !important;
+  outline: none !important;
+}
+
+/* Add a CSS animation to force style reset */
+@keyframes reset-highlight {
+  0% {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  }
+  50% {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    /* Force a visual change to trigger repaint */
+    opacity: 0.9999;
+  }
+  100% {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    opacity: 1;
+  }
+}
+
+/* Apply the reset animation on any interaction */
+.logo.force-reset {
+  animation: reset-highlight 0.3s ease-in-out !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  /* Force immediate hardware acceleration */
+  transform: translateZ(0) !important;
+  will-change: transform, opacity !important;
+}
+
+/* Mobile-specific nuclear option */
+@media (max-width: 768px) {
+  .logo,
+  .logo:active,
+  .logo:focus,
+  .logo:hover,
+  .logo:visited,
+  .logo:target {
+    background: transparent !important;
+    background-color: transparent !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    -webkit-focus-ring-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: none !important;
+    /* Force immediate style override on mobile */
+    animation: reset-highlight 0.01s ease-in-out !important;
+  }
+}
+
+/* Global reset for any possible child highlighting */
+.logo *, 
+.logo *:before, 
+.logo *:after,
+.logo *:focus,
+.logo *:active,
+.logo *:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
 }
