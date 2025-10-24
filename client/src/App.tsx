@@ -3100,44 +3100,143 @@ export default function App() {
                           gap: '0.875rem'
                         }}
                       >
-                        {/* Elegant difficulty selector */}
-                        <div style={{ 
-                          display: 'flex', 
-                          flexDirection: 'column',
-                          gap: '0.625rem', 
-                          width: '280px',
-                          maxWidth: 'calc(100vw - 32px)',
-                          margin: '0 auto',
-                          padding: '0.75rem 0.625rem',
-                          borderRadius: '1rem',
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-                          position: 'relative'
-                        }}>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                        {/* Elegant difficulty selector - only show if timer_only is not selected */}
+                        {!selectedEmphases.timer_only && (
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            gap: '0.625rem', 
+                            width: '280px',
+                            maxWidth: 'calc(100vw - 32px)',
+                            margin: '0 auto',
+                            padding: '0.75rem 0.625rem',
+                            borderRadius: '1rem',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
                             position: 'relative'
                           }}>
-                            <label style={{ 
-                              fontSize: '0.8rem', 
-                              fontWeight: 500, 
-                              color: 'rgba(255,255,255,0.9)', 
-                              margin: 0,
-                              letterSpacing: '0.025em',
-                              textTransform: 'uppercase' 
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              position: 'relative'
                             }}>
-                              Difficulty
-                            </label>
+                              <label style={{ 
+                                fontSize: '0.8rem', 
+                                fontWeight: 500, 
+                                color: 'rgba(255,255,255,0.9)', 
+                                margin: 0,
+                                letterSpacing: '0.025em',
+                                textTransform: 'uppercase' 
+                              }}>
+                                Difficulty
+                              </label>
+                              <button
+                                onClick={clearAllEmphases}
+                                title="Clear all selections"
+                                aria-label="Clear all emphasis selections"
+                                style={{
+                                  position: 'absolute',
+                                  right: 0,
+                                  width: '20px',
+                                  height: '20px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: 'rgba(255,255,255,0.1)',
+                                  border: '1px solid rgba(255,255,255,0.2)',
+                                  borderRadius: '50%',
+                                  color: 'rgba(255,255,255,0.7)',
+                                  fontSize: '12px',
+                                  fontWeight: 400,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  padding: 0,
+                                  lineHeight: 1
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                                  e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                                  e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <div style={{ 
+                              display: 'flex', 
+                              gap: '0.5rem'
+                            }}>
+                            <button 
+                              className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} 
+                              onClick={() => setDifficulty('easy')} 
+                              aria-pressed={difficulty === 'easy'}
+                              style={{ 
+                                flex: 1,
+                                fontSize: '0.7rem', 
+                                padding: '0.375rem 0.5rem',
+                                borderRadius: '1rem',
+                                opacity: difficulty === 'easy' ? 1 : 0.7,
+                                fontWeight: difficulty === 'easy' ? 600 : 500
+                              }}
+                            >
+                              Novice
+                            </button>
+                            <button 
+                              className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} 
+                              onClick={() => setDifficulty('medium')} 
+                              aria-pressed={difficulty === 'medium'}
+                              style={{ 
+                                flex: 1,
+                                fontSize: '0.7rem', 
+                                padding: '0.375rem 0.5rem',
+                                borderRadius: '1rem',
+                                opacity: difficulty === 'medium' ? 1 : 0.7,
+                                fontWeight: difficulty === 'medium' ? 600 : 500
+                              }}
+                            >
+                              Amateur
+                            </button>
+                              <button 
+                                className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} 
+                                onClick={() => setDifficulty('hard')} 
+                                aria-pressed={difficulty === 'hard'}
+                                style={{ 
+                                  flex: 1,
+                                  fontSize: '0.7rem', 
+                                  padding: '0.375rem 0.5rem',
+                                  borderRadius: '1rem',
+                                  opacity: difficulty === 'hard' ? 1 : 0.7,
+                                  fontWeight: difficulty === 'hard' ? 600 : 500
+                                }}
+                              >
+                                Pro
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Clear button for timer_only mode */}
+                        {selectedEmphases.timer_only && (
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            width: '280px',
+                            maxWidth: 'calc(100vw - 32px)',
+                            margin: '0 auto',
+                            paddingRight: '0.625rem'
+                          }}>
                             <button
                               onClick={clearAllEmphases}
-                              title="Clear all selections"
+                              title="Clear selection"
                               aria-label="Clear all emphasis selections"
                               style={{
-                                position: 'absolute',
-                                right: 0,
                                 width: '20px',
                                 height: '20px',
                                 display: 'flex',
@@ -3168,57 +3267,7 @@ export default function App() {
                               ×
                             </button>
                           </div>
-                          <div style={{ 
-                            display: 'flex', 
-                            gap: '0.5rem'
-                          }}>
-                          <button 
-                            className={`difficulty-btn ${difficulty === 'easy' ? 'active' : ''}`} 
-                            onClick={() => setDifficulty('easy')} 
-                            aria-pressed={difficulty === 'easy'}
-                            style={{ 
-                              flex: 1,
-                              fontSize: '0.7rem', 
-                              padding: '0.375rem 0.5rem',
-                              borderRadius: '1rem',
-                              opacity: difficulty === 'easy' ? 1 : 0.7,
-                              fontWeight: difficulty === 'easy' ? 600 : 500
-                            }}
-                          >
-                            Novice
-                          </button>
-                          <button 
-                            className={`difficulty-btn ${difficulty === 'medium' ? 'active' : ''}`} 
-                            onClick={() => setDifficulty('medium')} 
-                            aria-pressed={difficulty === 'medium'}
-                            style={{ 
-                              flex: 1,
-                              fontSize: '0.7rem', 
-                              padding: '0.375rem 0.5rem',
-                              borderRadius: '1rem',
-                              opacity: difficulty === 'medium' ? 1 : 0.7,
-                              fontWeight: difficulty === 'medium' ? 600 : 500
-                            }}
-                          >
-                            Amateur
-                          </button>
-                            <button 
-                              className={`difficulty-btn ${difficulty === 'hard' ? 'active' : ''}`} 
-                              onClick={() => setDifficulty('hard')} 
-                              aria-pressed={difficulty === 'hard'}
-                              style={{ 
-                                flex: 1,
-                                fontSize: '0.7rem', 
-                                padding: '0.375rem 0.5rem',
-                                borderRadius: '1rem',
-                                opacity: difficulty === 'hard' ? 1 : 0.7,
-                                fontWeight: difficulty === 'hard' ? 600 : 500
-                              }}
-                            >
-                              Pro
-                            </button>
-                          </div>
-                        </div>
+                        )}
 
                         {/* Start button */}
                         <button 
