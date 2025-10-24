@@ -2456,7 +2456,7 @@ export default function App() {
           position: 'relative', padding: '1.5rem', borderRadius: '1rem',
           border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
           minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
-          backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.05)', color: 'white',
+          backgroundColor: isSelected ? '#2563eb' : 'rgba(37,99,235,0.08)', color: 'white',
           boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
           transform: isSelected ? 'scale(1.02)' : 'scale(1)'
         }} onMouseUp={e => e.currentTarget.blur()}>
