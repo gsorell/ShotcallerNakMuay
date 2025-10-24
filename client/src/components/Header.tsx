@@ -8,12 +8,12 @@ export interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const logoRef = React.useRef<HTMLDivElement>(null);
+  const logoRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     document.body.style.overscrollBehaviorY = 'contain';
     
-    // Mobile-specific: Continuously enforce no tap highlighting (but less frequently)
+    // Mobile-specific: Continuously enforce no tap highlighting for button element
     const enforceNoHighlight = () => {
       if (logoRef.current) {
         logoRef.current.style.setProperty('-webkit-tap-highlight-color', 'transparent');
@@ -21,12 +21,18 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
         logoRef.current.style.setProperty('-webkit-focus-ring-color', 'transparent');
         logoRef.current.style.background = 'transparent';
         logoRef.current.style.backgroundColor = 'transparent';
+        logoRef.current.style.outline = 'none';
+        logoRef.current.style.boxShadow = 'none';
+        // Button-specific mobile properties
+        logoRef.current.style.border = 'none';
+        logoRef.current.style.setProperty('-webkit-appearance', 'none');
+        logoRef.current.style.setProperty('-moz-appearance', 'none');
       }
     };
     
     // Run immediately and set up less frequent interval
     enforceNoHighlight();
-    const interval = setInterval(enforceNoHighlight, 1000); // Reduced from 100ms to 1000ms
+    const interval = setInterval(enforceNoHighlight, 1000);
     
     return () => {
       document.body.style.overscrollBehaviorY = 'auto';
@@ -219,15 +225,42 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
   return (
     <>
       <header className="app-header" style={{ width: '100%', padding: 0, margin: 0 }}>
-        <div 
+        <button 
           ref={logoRef}
+          type="button"
           className="logo" 
           onClick={handleLogoClick}
           onMouseUp={handleMouseUp}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          style={logoContainerStyle}
+          style={{
+            ...logoContainerStyle,
+            // Button-specific mobile-focused styling
+            border: 'none',
+            padding: 0,
+            margin: 0,
+            background: 'transparent',
+            backgroundColor: 'transparent',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none',
+            appearance: 'none',
+            // Enhanced mobile focus management
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation',
+            // Force blur after interaction
+            transition: 'none',
+          }}
           tabIndex={-1} // Prevent keyboard focus
+          aria-label="Go to home page"
+          onBlur={() => {
+            // Additional cleanup when button loses focus
+            if (logoRef.current) {
+              logoRef.current.style.background = 'transparent';
+              logoRef.current.style.backgroundColor = 'transparent';
+              logoRef.current.style.outline = 'none';
+              logoRef.current.style.boxShadow = 'none';
+            }
+          }}
         >
           <img
             src="/assets/Logo_Header_Banner_Smooth.png"
@@ -248,7 +281,7 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
               pointerEvents: 'none', // Prevent image from being the target
             }}
           />
-        </div>
+        </button>
       </header>
       {isHelpOpen && (
         <div style={modalOverlayStyle} onClick={() => setIsHelpOpen(false)}>

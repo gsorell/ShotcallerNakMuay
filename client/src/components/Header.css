@@ -22,6 +22,15 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  /* Button-specific resets for mobile */
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   /* Prevent mobile focus/active states */
   outline: none !important;
   -webkit-tap-highlight-color: var(--logo-highlight, transparent) !important;
@@ -77,6 +86,63 @@
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
   user-select: none !important;
+}
+
+/* Button-specific mobile focus management */
+button.logo {
+  /* Override all possible button default styles */
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  
+  /* Force transparent backgrounds in all states */
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  
+  /* Remove all possible borders and outlines */
+  border: none !important;
+  border-radius: inherit !important;
+  outline: none !important;
+  box-shadow: none !important;
+  
+  /* Mobile-specific button overrides */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  
+  /* Aggressive tap highlight prevention */
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-focus-ring-color: transparent !important;
+  
+  /* Prevent any focus retention */
+  touch-action: manipulation !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Button state overrides - prevent any visual state changes */
+button.logo:focus,
+button.logo:active,
+button.logo:hover,
+button.logo:focus-visible,
+button.logo:focus-within,
+button.logo:target {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
 }
 
 /* More aggressive focus prevention */
