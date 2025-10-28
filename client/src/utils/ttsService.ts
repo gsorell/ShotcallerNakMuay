@@ -486,6 +486,24 @@ class TTSService {
     }
   }
 
+  // Stop current speech and speak immediately (for voice testing and system announcements)
+  async speakImmediate(text: string, options: TTSOptions = {}): Promise<void> {
+    try {
+      // First stop any current speech and clear queue
+      await this.stop();
+      
+      // Small delay to ensure cleanup completes
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Now speak immediately without queueing
+      await this.speakInternal(text, options);
+    } catch (error) {
+      if (options.onError) {
+        options.onError(error as Error);
+      }
+    }
+  }
+
   // Check if currently speaking or has pending operations
   async isSpeaking(): Promise<boolean> {
     try {
