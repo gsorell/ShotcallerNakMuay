@@ -104,7 +104,7 @@ const downloadImageNative = async (canvas: HTMLCanvasElement, filename: string):
       // Note: For base64 data, we don't need to specify encoding
     });
     
-    console.log('File saved successfully:', result.uri);
+    // File saved successfully
     
     // Show a success message (you might want to use a toast library)
     if (typeof window !== 'undefined' && 'alert' in window) {
@@ -125,7 +125,7 @@ const downloadImageNative = async (canvas: HTMLCanvasElement, filename: string):
         directory: Directory.Documents
       });
       
-      console.log('File saved to Documents root:', result.uri);
+      // File saved to Documents root
       
       if (typeof window !== 'undefined' && 'alert' in window) {
         alert(`Workout image saved to Documents folder as ${filename}.png`);

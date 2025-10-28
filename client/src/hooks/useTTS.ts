@@ -1,6 +1,25 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ttsService, UnifiedVoice, TTSOptions } from '../utils/ttsService';
 
+// Emergency WebMediaPlayer cleanup on module load
+(() => {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    try {
+      // Cancel any existing speech synthesis
+      window.speechSynthesis.cancel();
+      
+      // Force garbage collection if available
+      if ('gc' in window) {
+        (window as any).gc();
+      }
+      
+      // Emergency TTS cleanup applied on module load
+    } catch (error) {
+      // Emergency TTS cleanup failed
+    }
+  }
+})();
+
 // Storage key for voice preferences (from your existing code)
 const VOICE_STORAGE_KEY = 'selectedVoice';
 
@@ -98,7 +117,6 @@ export const useTTS = (): UseTTSReturn => {
           }
         }
       } catch (error) {
-        console.error('Failed to initialize TTS voices:', error);
         setVoiceCompatibilityWarning('Failed to load text-to-speech voices.');
       }
     };
@@ -182,7 +200,6 @@ export const useTTS = (): UseTTSReturn => {
       });
     } catch (error) {
       setIsSpeaking(false);
-      console.error('Speech error:', error);
     }
   }, []);
 
@@ -262,7 +279,7 @@ export const useTTS = (): UseTTSReturn => {
 
       await speakSystem('Testing voice with current settings.');
     } catch (error) {
-      console.error('Error testing voice:', error);
+      // Error testing voice
     }
   }, [speakSystem, platform]);
 

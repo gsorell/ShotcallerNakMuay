@@ -36,7 +36,7 @@ export default function WorkoutCompleted({ stats, onRestart, onReset, onViewLog 
       const filename = generateWorkoutFilename(stats);
       await captureAndDownloadElement(workoutSummaryRef.current, filename);
     } catch (error) {
-      console.error('Download failed:', error);
+      // Download failed
       alert('Failed to download workout image. Please try again.');
     } finally {
       setIsCapturing(false);
