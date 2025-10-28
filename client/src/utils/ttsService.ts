@@ -352,7 +352,7 @@ class TTSService {
         }
 
         await TextToSpeech.speak({
-          text: text + '.',  // Add period to prevent abrupt cutoff
+          text: text,  // Use text as-is - TTS engines handle sentence endings properly
           lang: voiceToUse?.language || 'en-US',
           rate: rate,
           pitch: pitch,
