@@ -2516,7 +2516,7 @@ export default function App() {
           position: 'relative', padding: '1.5rem', borderRadius: '1rem',
           border: isSelected ? '2px solid #60a5fa' : '2px solid rgba(255,255,255,0.2)',
           minHeight: '140px', textAlign: 'left', cursor: 'pointer', transition: 'all 0.2s',
-          backgroundColor: isSelected ? '#2563eb' : 'rgba(37,99,235,0.08)', color: 'white',
+          backgroundColor: isSelected ? '#2563eb' : 'rgba(255,255,255,0.1)', color: 'white',
           boxShadow: isSelected ? '0 10px 25px rgba(37,99,235,0.25)' : 'none',
           transform: isSelected ? 'scale(1.02)' : 'scale(1)'
         }} onMouseUp={e => e.currentTarget.blur()}>
@@ -2618,8 +2618,8 @@ export default function App() {
       style={{
         padding: '.875rem 1.25rem',
         borderRadius: '1rem',
-        border: '1px solid rgba(34, 211, 238, 0.2)',
-        backgroundColor: 'rgba(34, 211, 238, 0.05)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
         color: '#f9a8d4',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         display: 'inline-flex',
@@ -2641,14 +2641,14 @@ export default function App() {
         backdropFilter: 'blur(8px)'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.12)';
-        e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.3)';
+        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
         e.currentTarget.style.transform = 'translateY(-1px)';
         e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.05)';
-        e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.2)';
+        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
       }}
