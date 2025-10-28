@@ -277,11 +277,19 @@ export const useTTS = (): UseTTSReturn => {
         await audioContext.resume();
       }
 
-      await speakSystem('Testing voice with current settings.');
+      // Use speakImmediate to avoid queueing and ensure immediate playback with current voice
+      await ttsService.speakImmediate('Testing voice with current settings.', {
+        voice: currentVoice,
+        rate: 1.0,
+        onStart: () => setIsSpeaking(true),
+        onDone: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false)
+      });
     } catch (error) {
+      setIsSpeaking(false);
       // Error testing voice
     }
-  }, [speakSystem, platform]);
+  }, [currentVoice, platform]);
 
   // Update TTS guard refs (these would be controlled by your main app logic)
   const updateGuards = useCallback((ttsGuard: boolean, running: boolean) => {

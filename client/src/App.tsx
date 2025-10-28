@@ -15,6 +15,7 @@ import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
+import { ttsService } from './utils/ttsService';
 
 
 
@@ -1454,12 +1455,14 @@ export default function App() {
 
   // Voice tester with enhanced error handling
   function testVoice() {
-    // Use the same TTS approach as "Get Ready" (which works!)
     try {
-      const testPhrase = `Voice test at ${voiceSpeed.toFixed(2)}x speed. Jab cross hook.`;
+      // Stop any current TTS to prevent queueing multiple test messages
+      stopTTS();
       
-      // Use the working TTS system (same as "Get Ready")
-      speakSystem(testPhrase, voice, voiceSpeed);
+      // Small delay to ensure stop completes, then test with current voice
+      setTimeout(() => {
+        ttsTestVoice(); // Use the TTS hook's testVoice function which properly uses current voice
+      }, 50);
       
       // Clear any warnings since we're attempting the test
       setVoiceCompatibilityWarning('');
@@ -2978,8 +2981,17 @@ export default function App() {
                 // Check compatibility of the newly selected voice
                 checkVoiceCompatibility(selected, voices);
                 
-                // Use the newly selected voice for the test announcement
-                speakSystem(`Voice switched to ${selected.name}`, selected, voiceSpeed);
+                // Use immediate speak to announce voice change with the new voice
+                setTimeout(async () => {
+                  try {
+                    await ttsService.speakImmediate(`Voice switched to ${selected.name}`, {
+                      voice: unifiedVoice,
+                      rate: voiceSpeed
+                    });
+                  } catch (error) {
+                    // Voice switch announcement failed - this is non-critical
+                  }
+                }, 50);
               }
             }
           }}
