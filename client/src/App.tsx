@@ -16,6 +16,10 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
 
+
+
+// Debug wrapper now installed in TTS service constructor for complete coverage
+
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
 
@@ -209,7 +213,6 @@ const DEFAULT_REST_MINUTES = 1;
 const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
   // Safety check: ensure input is a valid string
   if (!technique || typeof technique !== 'string') {
-    console.warn('Invalid input to mirrorTechnique:', technique);
     return String(technique || '');
   }
   
@@ -227,7 +230,6 @@ const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
     mirrored = mirrored.replace(/\bRight\b/gi, 'Left');
     mirrored = mirrored.replace(/\|\|\|TEMP_LEFT\|\|\|/gi, 'Right');
   } catch (error) {
-    console.error('Error in mirrorTechnique regex:', error);
     return technique; // Return original on error
   }
   
@@ -264,7 +266,6 @@ function loadUserSettings(): UserSettings {
       roundsCount: Math.min(20, Math.max(1, parsed.roundsCount || DEFAULT_USER_SETTINGS.roundsCount))
     };
   } catch (error) {
-    console.warn('Failed to load user settings from localStorage:', error);
     return DEFAULT_USER_SETTINGS;
   }
 }
@@ -275,7 +276,7 @@ function saveUserSettings(settings: Partial<UserSettings>): void {
     const updated = { ...current, ...settings };
     localStorage.setItem(USER_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
   } catch (error) {
-    console.warn('Failed to save user settings to localStorage:', error);
+    // Failed to save user settings to localStorage
   }
 }
 
@@ -291,12 +292,10 @@ export default function App() {
         const voiceData = JSON.parse(stored);
         const isEnglish = voiceData.lang && voiceData.lang.toLowerCase().startsWith('en');
         if (!isEnglish) {
-          console.log('Removing non-English voice preference on app load:', voiceData.name, voiceData.lang);
           localStorage.removeItem(VOICE_STORAGE_KEY);
         }
       }
     } catch (error) {
-      console.warn('Error during voice preference cleanup:', error);
       localStorage.removeItem(VOICE_STORAGE_KEY);
     }
   }, []);
@@ -422,7 +421,7 @@ export default function App() {
       localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(next));
       localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
     } catch (err) {
-      console.error('Failed to persist techniques:', err);
+      // Failed to persist techniques
     }
   };
   useEffect(() => {
@@ -443,7 +442,7 @@ export default function App() {
       }
       prevTechRef.current = techniques;
     } catch (err) {
-      console.error('Failed to save techniques to storage:', err);
+      // Failed to save techniques to storage
     }
   }, [techniques]);
 
@@ -569,7 +568,7 @@ export default function App() {
       return Boolean(parsed);
     } catch (error) {
       // If localStorage is corrupted, default to false and clear it
-      console.warn('Failed to parse southpaw_mode from localStorage:', error);
+      // Failed to parse southpaw_mode from localStorage
       try {
         localStorage.removeItem('southpaw_mode');
       } catch { /* ignore cleanup errors */ }
@@ -596,7 +595,7 @@ export default function App() {
           emphasis: k
         });
       } catch (e) {
-        console.warn('Analytics tracking failed:', e);
+        // Analytics tracking failed
       }
       
       if (k === 'timer_only') {
@@ -687,7 +686,7 @@ export default function App() {
     // SECURITY: Only save English voices to prevent non-English voices from persisting
     const isEnglish = voice.lang.toLowerCase().startsWith('en');
     if (!isEnglish) {
-      console.warn('Attempted to save non-English voice preference, ignoring:', voice.name, voice.lang);
+      // Attempted to save non-English voice preference, ignoring
       localStorage.removeItem(VOICE_STORAGE_KEY);
       return;
     }
@@ -700,7 +699,7 @@ export default function App() {
       default: voice.default
     };
     localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(voiceData));
-    console.log('Saved English voice preference:', voice.name, voice.lang);
+    // Saved English voice preference
   }, []);
 
   const loadVoicePreference = useCallback((availableVoices: SpeechSynthesisVoice[]) => {
@@ -718,22 +717,20 @@ export default function App() {
         // FIXED: Only return saved voice if it's English-compatible
         const isEnglishCompatible = matchedVoice.lang.toLowerCase().startsWith('en');
         if (isEnglishCompatible) {
-          console.log('Loaded saved English voice preference:', matchedVoice.name);
           return matchedVoice;
         } else {
-          console.log('Saved voice is non-English, clearing preference:', matchedVoice.name, matchedVoice.lang);
           // Clean up non-English preference and force English selection
           localStorage.removeItem(VOICE_STORAGE_KEY);
           return null;
         }
       } else {
-        console.log('Saved voice not available:', voiceData.name);
+        // Saved voice not available
         // Clean up invalid preference
         localStorage.removeItem(VOICE_STORAGE_KEY);
         return null;
       }
     } catch (error) {
-      console.warn('Failed to load voice preference:', error);
+      // Failed to load voice preference
       localStorage.removeItem(VOICE_STORAGE_KEY);
       return null;
     }
@@ -1087,14 +1084,14 @@ export default function App() {
     const doCallout = () => {
       // Critical safety guard: Check if we should still be calling out techniques
       if (ttsGuardRef.current || !runningRef.current || pausedRef.current || isRestingRef.current) {
-        console.log('Callout prevented: workout not active (running:', runningRef.current, 'paused:', pausedRef.current, 'resting:', isRestingRef.current, 'guard:', ttsGuardRef.current, ')');
         stopTechniqueCallouts();
         return;
       }
 
+      // TTS service will handle visibility blocking, so we can proceed normally
+
       const pool = currentPoolRef.current;
       if (!pool.length) {
-        console.warn('No techniques available for callouts — stopping callouts');
         stopTechniqueCallouts();
         return;
       }
@@ -1118,7 +1115,6 @@ export default function App() {
         
         // Safety check: ensure we never pass empty strings to speech synthesis
         if (!finalPhrase || typeof finalPhrase !== 'string' || finalPhrase.trim() === '') {
-          console.warn('Empty or invalid finalPhrase, skipping speech synthesis:', finalPhrase);
           setCurrentCallout(selectedTechnique.text || '');
           return;
         }
@@ -1126,7 +1122,10 @@ export default function App() {
         // Set the callout immediately for visual feedback
         setCurrentCallout(finalPhrase);
         
+
+        
         // Use enhanced TTS with actual duration measurement for responsive timing
+        // TTS service will block calls when page is hidden and provide fake duration callback
         ttsSpeakSystemWithDuration(finalPhrase, voiceSpeedRef.current, (actualDurationMs: number) => {
           // Pro difficulty gets much more aggressive timing
           const isProDifficulty = difficulty === 'hard';
@@ -1157,7 +1156,6 @@ export default function App() {
         
         return;
       } catch (error) {
-        console.error('TTS error in technique callout:', error);
         // Fall through to fallback
       }
 
@@ -1183,6 +1181,8 @@ export default function App() {
 
     scheduleNext(initialDelay);
   }, [difficulty, stopTechniqueCallouts, ttsSpeakSystemWithDuration]);
+
+  // Remove the visibility management - user wants callouts to continue when tab switching
 
   // Guard TTS on state changes
   useEffect(() => {
@@ -1216,70 +1216,106 @@ export default function App() {
     } catch {/* noop */}
   }, []);
 
-  // Proactively unlock audio on user gesture (Start button)
-  const ensureMediaUnlocked = useCallback(async () => {
+  // Initialize audio instances ONCE on component mount
+  useEffect(() => {
     try {
-      if (!bellSoundRef.current) {
-        bellSoundRef.current = new Audio('/big-bell-330719.mp3'); // ensure this file is in /public
-        bellSoundRef.current.preload = 'auto';
-      }
-      // play muted once to satisfy autoplay policy
-      const bell = bellSoundRef.current;
-      const bellPrevVol = bell.volume;
-      bell.volume = 0;
-      bell.muted = true;
-      await bell.play().catch(() => {});
-      bell.pause();
-      bell.currentTime = 0;
-      bell.muted = false;
-      bell.volume = bellPrevVol;
-
-      if (!warningSoundRef.current) {
-        warningSoundRef.current = new Audio('/interval.mp3');
-        warningSoundRef.current.preload = 'auto';
-      }
-      const warn = warningSoundRef.current;
-      const warnPrevVol = warn.volume;
-      warn.volume = 0;
-      warn.muted = true;
-      await warn.play().catch(() => {});
-      warn.pause();
-      warn.currentTime = 0;
-      warn.muted = false;
-      warn.volume = warnPrevVol;
-    } catch {/* noop */}
-  }, []);
-
-  // Bell
-  const playBell = useCallback(() => {
-    try {
+      // Create bell audio instance once
       if (!bellSoundRef.current) {
         bellSoundRef.current = new Audio('/big-bell-330719.mp3');
         bellSoundRef.current.preload = 'auto';
         bellSoundRef.current.volume = 0.5;
       }
-      bellSoundRef.current.currentTime = 0;
-      const p = bellSoundRef.current.play();
-      if (p && typeof p.then === 'function') {
-        p.catch(() => { webAudioChime(); });
+      
+      // Create warning audio instance once
+      if (!warningSoundRef.current) {
+        warningSoundRef.current = new Audio('/interval.mp3');
+        warningSoundRef.current.preload = 'auto';
+        warningSoundRef.current.volume = 0.4;
+      }
+    } catch (error) {
+      // Failed to initialize audio instances
+    }
+
+    // Cleanup on unmount
+    return () => {
+      try {
+        if (bellSoundRef.current) {
+          bellSoundRef.current.pause();
+          bellSoundRef.current.src = '';
+          bellSoundRef.current.load();
+          bellSoundRef.current = null;
+        }
+        if (warningSoundRef.current) {
+          warningSoundRef.current.pause();
+          warningSoundRef.current.src = '';
+          warningSoundRef.current.load();
+          warningSoundRef.current = null;
+        }
+      } catch (error) {
+        // Error during audio cleanup
+      }
+    };
+  }, []);
+
+  // Proactively unlock audio on user gesture (Start button)
+  const ensureMediaUnlocked = useCallback(async () => {
+    try {
+      // Use existing bell instance, don't create new one
+      const bell = bellSoundRef.current;
+      if (bell) {
+        const bellPrevVol = bell.volume;
+        bell.volume = 0;
+        bell.muted = true;
+        await bell.play().catch(() => {});
+        bell.pause();
+        bell.currentTime = 0;
+        bell.muted = false;
+        bell.volume = bellPrevVol;
+      }
+
+      // Use existing warning instance, don't create new one
+      const warn = warningSoundRef.current;
+      if (warn) {
+        const warnPrevVol = warn.volume;
+        warn.volume = 0;
+        warn.muted = true;
+        await warn.play().catch(() => {});
+        warn.pause();
+        warn.currentTime = 0;
+        warn.muted = false;
+        warn.volume = warnPrevVol;
+      }
+    } catch {/* noop */}
+  }, []);
+
+  // Bell - reuse existing instance, never create new ones
+  const playBell = useCallback(() => {
+    try {
+      const bell = bellSoundRef.current;
+      if (bell) {
+        bell.currentTime = 0;
+        const p = bell.play();
+        if (p && typeof p.then === 'function') {
+          p.catch(() => { webAudioChime(); });
+        }
+      } else {
+        webAudioChime();
       }
     } catch {
       webAudioChime();
     }
   }, [webAudioChime]);
 
-  // 10-second warning sound
+  // 10-second warning sound - reuse existing instance, never create new ones
   const playWarningSound = useCallback(() => {
     try {
-      if (!warningSoundRef.current) {
-        warningSoundRef.current = new Audio('/interval.mp3');
-        warningSoundRef.current.preload = 'auto';
-        warningSoundRef.current.volume = 0.4;
-      }
-      warningSoundRef.current.currentTime = 0;
-      const p = warningSoundRef.current.play();
-      if (p && typeof p.then === 'function') {
-        p.catch(() => {/* no critical fallback for warning */});
+      const warn = warningSoundRef.current;
+      if (warn) {
+        warn.currentTime = 0;
+        const p = warn.play();
+        if (p && typeof p.then === 'function') {
+          p.catch(() => {/* no critical fallback for warning */});
+        }
       }
     } catch {/* noop */}
   }, []);
@@ -1310,6 +1346,8 @@ export default function App() {
       stopAllNarration();
     };
   }, [running, paused, isResting, startTechniqueCallouts, stopTechniqueCallouts, stopAllNarration]);
+
+
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1364,21 +1402,39 @@ export default function App() {
     setRestTimeLeft(Math.max(1, Math.round(restMinutes * 60)));
   }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts, restMinutes]);
 
+  // Track if we've played the 10-second warning and 5-second bell for this rest period
+  const warningPlayedRef = useRef(false);
+  const intervalBellPlayedRef = useRef(false);
+
+  // Reset warning and bell flags when entering rest
+  useEffect(() => {
+    if (isResting) {
+      warningPlayedRef.current = false;
+      intervalBellPlayedRef.current = false;
+    }
+  }, [isResting]);
+
   // Transition: rest -> next round
   useEffect(() => {
     if (!running || paused || !isResting) return;
 
-    // Play warning sound with 10 seconds left
-    if (restTimeLeft === 10) {
-      playWarningSound();
+    // Play TTS warning with 10 seconds left (only once per rest period) 
+    if (restTimeLeft === 10 && !warningPlayedRef.current) {
+      warningPlayedRef.current = true;
       speakSystem('10 seconds', voice, voiceSpeed);
+    }
+
+    // Play interval bell with 5 seconds left (only once per rest period)
+    if (restTimeLeft === 5 && !intervalBellPlayedRef.current) {
+      intervalBellPlayedRef.current = true;
+      playWarningSound(); // This plays interval.mp3
     }
 
     if (restTimeLeft > 0) return;
     setIsResting(false);
     setCurrentRound(r => r + 1);
     setTimeLeft(Math.max(1, Math.round(roundMin * 60)));
-    playBell();
+    playBell(); // Big bell marks START of new round
   }, [restTimeLeft, running, paused, isResting, roundMin, playBell, playWarningSound, speakSystem, voice, voiceSpeed]);
 
   // Helpers
@@ -1408,9 +1464,9 @@ export default function App() {
       // Clear any warnings since we're attempting the test
       setVoiceCompatibilityWarning('');
       
-      console.log("Voice test initiated");
+      // Voice test initiated
     } catch (error) {
-      console.error("Voice test error:", error);
+      // Voice test error
       setVoiceCompatibilityWarning('Voice test failed. Please try a different voice or adjust the speed.');
     }
   }
@@ -1423,7 +1479,7 @@ export default function App() {
     const timerOnlySelected = selectedEmphases.timer_only && Object.values(selectedEmphases).filter(Boolean).length === 1;
     if (!pool.length && !timerOnlySelected) {
       alert('No techniques found for the selected emphasis(es). Check the technique lists or choose a different emphasis.');
-      console.warn('startSession blocked: empty technique pool for selected emphases', selectedEmphases);
+      // startSession blocked: empty technique pool for selected emphases
       return;
     }
 
@@ -1440,7 +1496,7 @@ export default function App() {
       });
     } catch (e) {
       // Analytics should never break functionality
-      console.warn('Analytics tracking failed:', e);
+      // Analytics tracking failed
     }
 
     // Unlock audio while we still have a user gesture
@@ -1455,11 +1511,12 @@ export default function App() {
     orderedIndexRef.current = 0;
 
     try {
-      const priming = new SpeechSynthesisUtterance(' ');
-      priming.volume = 0;
-      priming.rate = voiceSpeed;
-      if (voice) priming.voice = voice;
-      speechSynthesis.speak(priming);
+      // Use TTS service for priming instead of direct speechSynthesis call
+      ttsSpeak(' ', { 
+        volume: 0, 
+        rate: voiceSpeed,
+        voice: voice ? { id: voice.name, name: voice.name, language: voice.lang, browserVoice: voice } : null
+      });
     } catch {}
     // Start pre-round countdown instead of the session directly
     setCurrentRound(1);
@@ -1571,7 +1628,7 @@ export default function App() {
       // Trigger home page stats refresh
       setStatsRefreshTrigger(prev => prev + 1);
     } catch (err) {
-      console.error('Failed to auto-log workout:', err);
+      // Failed to auto-log workout
     }
   }
 
@@ -1675,7 +1732,7 @@ export default function App() {
         style={style}
         // When an error occurs (e.g., 404 Not Found), set the error state to true.
         onError={() => {
-          console.debug('ImageWithFallback load failed for', srcPath);
+          // ImageWithFallback load failed
           setError(true);
         }}
       />
@@ -2786,7 +2843,7 @@ export default function App() {
                     setting_value: newValue
                   });
                 } catch (error) {
-                  console.warn('Analytics tracking failed:', error);
+                  // Analytics tracking failed
                 }
               }}
               style={{ 

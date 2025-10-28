@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { useVisibilityManager } from './hooks/useVisibilityManager';
 
 
 type Method = 'wakeLock' | 'nosleep' | 'none';
@@ -17,78 +18,124 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
   const sentinelRef = useRef<WakeLockSentinel | null>(null);
   const noSleepRef = useRef<any>(null); // NoSleep instance
   const enabledRef = useRef(enabled);
+  const requestTimeoutRef = useRef<number | null>(null);
+  const isRequestingRef = useRef(false);
   enabledRef.current = enabled;
 
   const debug = (...args: any[]) => {
-    if (log) console.log('[WakeLock]', ...args);
+    // Debug logging removed for production
   };
 
   const releaseAll = useCallback(async () => {
+    // Cancel any pending requests
+    if (requestTimeoutRef.current) {
+      clearTimeout(requestTimeoutRef.current);
+      requestTimeoutRef.current = null;
+    }
+    isRequestingRef.current = false;
+
     try {
       if (sentinelRef.current) {
         try {
           await sentinelRef.current.release();
+          debug('Wake Lock released');
         } catch {}
         sentinelRef.current = null;
       }
+      
+      // Only disable NoSleep on component unmount, not on every visibility change
+      // This prevents WebMediaPlayer accumulation from repeated enable/disable cycles
       if (noSleepRef.current) {
         try {
           noSleepRef.current.disable();
+          debug('NoSleep disabled (keeping instance for reuse)');
+          // Don't set noSleepRef.current = null here - keep the instance for reuse
         } catch {}
-        noSleepRef.current = null;
       }
     } finally {
       setActive(false);
       setMethod('none');
     }
-  }, []);
+  }, [debug]);
 
   const requestWakeLock = useCallback(async () => {
-    if (!enabledRef.current) return;
-
-    // Try Screen Wake Lock API first
-    if ('wakeLock' in navigator && (navigator as any).wakeLock?.request) {
-      try {
-        const sentinel: WakeLockSentinel = await (navigator as any).wakeLock.request('screen');
-        sentinelRef.current = sentinel;
-        setActive(true);
-        setMethod('wakeLock');
-        setError(null);
-        debug('Screen Wake Lock is active.');
-        sentinel.addEventListener('release', () => {
-          debug('Screen Wake Lock was released by the system.');
-          setActive(false);
-          if (enabledRef.current && document.visibilityState === 'visible') {
-            // Re-acquire if still enabled
-            requestWakeLock().catch(() => {});
-          }
-        });
-        return;
-      } catch (e: any) {
-        debug('Wake Lock API failed:', e?.message || e);
-        setError(String(e?.message || e));
-        // fall through to NoSleep
-      }
+    if (!enabledRef.current || isRequestingRef.current) {
+      debug('Wake lock request skipped - disabled or already requesting');
+      return;
     }
 
-    // Fallback: NoSleep.js (iOS/old Android)
+    isRequestingRef.current = true;
+
     try {
-      if (!noSleepRef.current) {
-        const mod = await import('nosleep.js');
-        noSleepRef.current = new mod.default();
+      // Try Screen Wake Lock API first (preferred method)
+      if ('wakeLock' in navigator && (navigator as any).wakeLock?.request) {
+        try {
+          // Only clean up existing wake lock, don't touch NoSleep
+          if (sentinelRef.current) {
+            try {
+              await sentinelRef.current.release();
+            } catch {}
+            sentinelRef.current = null;
+          }
+
+          const sentinel: WakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+          sentinelRef.current = sentinel;
+          setActive(true);
+          setMethod('wakeLock');
+          setError(null);
+          debug('Screen Wake Lock is active.');
+          
+          sentinel.addEventListener('release', () => {
+            debug('Screen Wake Lock was released by the system.');
+            setActive(false);
+            
+            // Debounced re-acquisition to prevent rapid recreation during tab switching
+            if (enabledRef.current && document.visibilityState === 'visible') {
+              if (requestTimeoutRef.current) {
+                clearTimeout(requestTimeoutRef.current);
+              }
+              requestTimeoutRef.current = window.setTimeout(() => {
+                requestWakeLock().catch(() => {});
+              }, 2000); // Increased to 2 seconds for better debouncing
+            }
+          });
+          return;
+        } catch (e: any) {
+          debug('Wake Lock API failed:', e?.message || e);
+          setError(String(e?.message || e));
+          // fall through to NoSleep
+        }
       }
-      await noSleepRef.current.enable(); // must be called after a user gesture
-      setActive(true);
-      setMethod('nosleep');
-      setError(null);
-      debug('NoSleep fallback is active.');
-    } catch (e: any) {
-      debug('NoSleep fallback failed:', e?.message || e);
-      setError(String(e?.message || e));
-      setActive(false);
-      setMethod('none');
+
+      // Fallback: NoSleep.js (iOS/old Android) - REUSE existing instance
+      try {
+        // Create NoSleep instance only ONCE per component lifecycle
+        if (!noSleepRef.current) {
+          debug('Creating single NoSleep instance for component lifecycle');
+          const mod = await import('nosleep.js');
+          noSleepRef.current = new mod.default();
+        }
+        
+        // Check if NoSleep is already enabled before enabling
+        if (!active || method !== 'nosleep') {
+          await noSleepRef.current.enable();
+          setActive(true);
+          setMethod('nosleep');
+          setError(null);
+          debug('NoSleep fallback is active (reused existing instance).');
+        } else {
+          debug('NoSleep already active, skipping re-enable');
+        }
+      } catch (e: any) {
+        debug('NoSleep fallback failed:', e?.message || e);
+        setError(String(e?.message || e));
+        setActive(false);
+        setMethod('none');
+      }
+    } finally {
+      isRequestingRef.current = false;
     }
-  }, [debug]);
+  }, [debug, active, method]);
 
   // Manage lifecycle
   useEffect(() => {
@@ -102,27 +149,66 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
     };
     ensure();
 
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible' && enabledRef.current) {
-        requestWakeLock().catch(() => {});
-      }
-    };
-
     const onOrientation = () => {
       if (enabledRef.current) requestWakeLock().catch(() => {});
     };
 
-    document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('orientationchange', onOrientation);
 
     return () => {
       if (disposed) return;
       disposed = true;
-      document.removeEventListener('visibilitychange', onVisibility);
+      
+      // Clean up all timeouts
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+        requestTimeoutRef.current = null;
+      }
+      
       window.removeEventListener('orientationchange', onOrientation);
-      releaseAll();
+      
+      // Proper cleanup on component unmount - destroy NoSleep instance
+      const cleanup = async () => {
+        try {
+          if (sentinelRef.current) {
+            await sentinelRef.current.release();
+            sentinelRef.current = null;
+          }
+          if (noSleepRef.current) {
+            noSleepRef.current.disable();
+            noSleepRef.current = null; // Actually destroy the instance on unmount
+            debug('NoSleep instance destroyed on component unmount');
+          }
+        } catch (error) {
+          debug('Error during component cleanup:', error);
+        }
+      };
+      cleanup();
     };
   }, [requestWakeLock, releaseAll]);
+
+  // Use centralized visibility manager for wake lock management with debouncing
+  const onVisibleCallback = useCallback(() => {
+    if (enabledRef.current && !isRequestingRef.current) {
+      // Increased debouncing to prevent rapid NoSleep recreation during tab switching
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+      }
+      requestTimeoutRef.current = window.setTimeout(() => {
+        requestWakeLock().catch(() => {});
+      }, 2000); // Wait 2 seconds for rapid tab switching to fully settle
+    }
+  }, [requestWakeLock]);
+
+  const onHiddenCallback = useCallback(() => {
+    // Cancel pending requests when tab becomes hidden
+    if (requestTimeoutRef.current) {
+      clearTimeout(requestTimeoutRef.current);
+      requestTimeoutRef.current = null;
+    }
+  }, []);
+
+  useVisibilityManager('wake-lock', onVisibleCallback, onHiddenCallback);
 
   return { active, method, error };
 }
@@ -136,25 +222,3 @@ interface WakeLockSentinel extends EventTarget {
   release(): Promise<void>;
 }
 
-// In the component file containing your "Test Voice" button
-
-const handleTestVoice = async () => {
-  // 1. Add this line to unlock the audio context on user interaction.
-  await new (window.AudioContext || (window as any).webkitAudioContext)().resume();
-
-  // 2. It's also good practice to cancel any prior speech.
-  window.speechSynthesis.cancel();
-
-  console.log('Testing voice with current settings...');
-  const utter = new SpeechSynthesisUtterance('Testing voice with current settings.');
-
-  // ... your existing logic to set the voice, rate, and pitch ...
-  // Example:
-  // const selectedVoice = voices.find(v => v.name === selectedVoiceName);
-  // if (selectedVoice) utter.voice = selectedVoice;
-  // utter.rate = voiceSpeed;
-
-  window.speechSynthesis.speak(utter);
-};
-
-// ... rest of your component

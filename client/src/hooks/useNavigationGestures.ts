@@ -31,16 +31,16 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
           // Add hardware back button listener
           backButtonListener = await App.addListener('backButton', () => {
             if (debugLog) {
-              console.log('Hardware back button pressed');
+              // Hardware back button pressed
             }
             onBack();
           });
 
           if (debugLog) {
-            console.log('Hardware back button listener registered');
+            // Hardware back button listener registered
           }
         } catch (error) {
-          console.warn('Failed to register hardware back button listener:', error);
+          // Failed to register hardware back button listener
         }
       }
     };
@@ -64,7 +64,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
       if (touch.clientX <= leftEdgeThreshold) {
         isSwipeInProgress.current = true;
         if (debugLog) {
-          console.log('Touch started near left edge:', touch.clientX);
+          // Touch started near left edge
         }
       }
     };
@@ -82,7 +82,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
       if (Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
         isSwipeInProgress.current = false;
         if (debugLog) {
-          console.log('Swipe cancelled: too much vertical movement');
+          // Swipe cancelled: too much vertical movement
         }
         return;
       }
@@ -124,11 +124,11 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
 
       if (isValidSwipe) {
         if (debugLog) {
-          console.log('Valid left-to-right swipe detected:', { deltaX, deltaY, deltaTime });
+          // Valid left-to-right swipe detected
         }
         onBack();
       } else if (debugLog) {
-        console.log('Invalid swipe:', { deltaX, deltaY, deltaTime, minSwipeDistance, maxSwipeTime, maxVerticalDeviation });
+        // Invalid swipe
       }
     };
 
@@ -158,7 +158,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (debugLog) {
-          console.log('Escape key pressed');
+          // Escape key pressed
         }
         onBack();
       }

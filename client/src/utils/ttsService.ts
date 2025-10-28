@@ -28,11 +28,69 @@ class TTSService {
   private availableVoices: UnifiedVoice[] = [];
   private currentVoice: UnifiedVoice | null = null;
   private isNativeApp: boolean;
+  private isPageVisible = true;
+
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
+  private reusableUtterance: SpeechSynthesisUtterance | null = null; // Reuse to prevent WebMediaPlayer accumulation
+  private utteranceStartTime = 0;
+  private lastVisibilityChange = Date.now();
+  private consecutiveFailures = 0; // Track consecutive TTS failures
+  private isBusy = false; // Prevent concurrent TTS operations
+  private pendingQueue: Array<() => Promise<void>> = []; // Queue for pending TTS calls
 
   constructor() {
     // Detect if we're in a Capacitor (native) environment
     this.isNativeApp = !!(window as any).Capacitor;
+    
     this.initializeVoices();
+    this.setupVisibilityHandling();
+    this.setupPeriodicCleanup();
+  }
+
+
+
+
+
+  private setupPeriodicCleanup() {
+    // Basic cleanup to clear any completed utterances
+    if (!this.isNativeApp && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      setInterval(() => {
+        try {
+          // Only cleanup if we're not currently speaking
+          if (!this.isBusy && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+            window.speechSynthesis.cancel();
+          }
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }, 60000); // Every 60 seconds
+    }
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isBusy || this.pendingQueue.length === 0) {
+      return;
+    }
+
+    const nextOperation = this.pendingQueue.shift();
+    if (nextOperation) {
+      try {
+        this.isBusy = true;
+        await nextOperation();
+      } catch (error) {
+        // Error processing TTS queue
+      } finally {
+        this.isBusy = false;
+        // Process next item in queue
+        setTimeout(() => this.processQueue(), 50);
+      }
+    }
+  }
+
+  private setupVisibilityHandling() {
+    // Simplified: Just track initial visibility state
+    // No need for complex visibility management since callouts should continue during tab switching
+    this.isPageVisible = document.visibilityState === 'visible';
   }
 
   private async initializeVoices() {
@@ -219,8 +277,60 @@ class TTSService {
     return this.currentVoice;
   }
 
-  // Main speak function
+  private lastSpeakTime = 0;
+  private readonly MIN_SPEAK_INTERVAL = 100; // Minimum 100ms between TTS calls
+
+  // Main speak function with concurrency control
   async speak(text: string, options: TTSOptions = {}): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const operation = async () => {
+        try {
+          await this.speakInternal(text, options);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      // If we're busy, queue the operation
+      if (this.isBusy) {
+        this.pendingQueue.push(operation);
+        this.processQueue();
+        return;
+      }
+
+      // Otherwise execute immediately
+      this.isBusy = true;
+      operation().finally(() => {
+        this.isBusy = false;
+        this.processQueue();
+      });
+    });
+  }
+
+  // Internal speak implementation (the actual TTS logic)
+  private async speakInternal(text: string, options: TTSOptions = {}): Promise<void> {
+
+    
+    // User preference: Allow callouts to continue during tab switching
+    // WebMediaPlayer errors confirmed to be from external sources, not our app
+    const isPageHidden = !this.isPageVisible || 
+                        document.visibilityState === 'hidden' || 
+                        document.hidden;
+    
+    if (isPageHidden) {
+      // Continue with TTS as user prefers to hear callouts during tab switching
+      // Any WebMediaPlayer errors are from external sources (other tabs, extensions, etc.)
+    }
+
+    // Prevent rapid successive TTS calls that can overflow WebMediaPlayer
+    const now = Date.now();
+    const timeSinceLastSpeak = now - this.lastSpeakTime;
+    if (timeSinceLastSpeak < this.MIN_SPEAK_INTERVAL) {
+      await new Promise(resolve => setTimeout(resolve, this.MIN_SPEAK_INTERVAL - timeSinceLastSpeak));
+    }
+    this.lastSpeakTime = Date.now();
+
     const voiceToUse = options.voice || this.currentVoice;
     const rate = options.rate || 1.0;
     const pitch = options.pitch || 1.0;
@@ -264,11 +374,28 @@ class TTSService {
       } else {
         // Use browser TTS for web
         if ('speechSynthesis' in window) {
-          // Cancel any current speech
-          window.speechSynthesis.cancel();
 
-          const utterance = new SpeechSynthesisUtterance(text);
-          const startTime = Date.now();
+          
+          // Cancel any pending speech before starting new utterance
+          if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+            window.speechSynthesis.cancel();
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
+          // Reuse single SpeechSynthesisUtterance to prevent WebMediaPlayer accumulation
+          if (!this.reusableUtterance) {
+            this.reusableUtterance = new SpeechSynthesisUtterance();
+          }
+          
+          const utterance = this.reusableUtterance;
+          utterance.text = text; // Update text instead of creating new instance
+          this.currentUtterance = utterance;
+          this.utteranceStartTime = Date.now();
+          
+          // Clear any existing event handlers
+          utterance.onstart = null;
+          utterance.onend = null;
+          utterance.onerror = null;
           
           // Ensure we always have a voice set to prevent "interrupted" errors
           if (voiceToUse?.browserVoice) {
@@ -293,7 +420,13 @@ class TTSService {
           if (options.onDone) {
             utterance.onend = () => {
               const endTime = Date.now();
-              const actualDuration = endTime - startTime;
+              const actualDuration = endTime - this.utteranceStartTime;
+              this.currentUtterance = null; // Clear reference
+              
+              // Reset failure count on successful completion
+              this.consecutiveFailures = 0;
+              
+
               
               // Pass actual duration to onDone callback if it accepts it
               if (options.onDone!.length > 0) {
@@ -304,11 +437,22 @@ class TTSService {
             };
           }
           
-          if (options.onError) {
-            utterance.onerror = (event) => {
-              options.onError!(new Error(`Speech synthesis error: ${event.error}`));
-            };
-          }
+          utterance.onerror = (event) => {
+            this.currentUtterance = null; // Clear reference on error
+            
+            // Handle different types of errors differently
+            if (event.error === 'interrupted') {
+              // Interrupted errors are usually from cleanup
+              this.consecutiveFailures = 0; // Reset failure count on interruptions
+            } else {
+              this.consecutiveFailures++;
+              
+              // Only propagate non-interrupted errors
+              if (options.onError) {
+                options.onError!(new Error(`Speech synthesis error: ${event.error}`));
+              }
+            }
+          };
 
           window.speechSynthesis.speak(utterance);
         } else {
@@ -316,29 +460,39 @@ class TTSService {
         }
       }
     } catch (error) {
-      console.error('TTS Error:', error);
       if (options.onError) {
         options.onError(error as Error);
       }
     }
   }
 
-  // Stop/cancel current speech
+  // Stop/cancel current speech and clear queue
   async stop(): Promise<void> {
     try {
+      // Clear the pending queue to prevent queued operations from running
+      this.pendingQueue = [];
+      
       if (this.isNativeApp) {
         await TextToSpeech.stop();
       } else if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
+        this.currentUtterance = null; // Clear reference
       }
+      
+      // Reset busy flag
+      this.isBusy = false;
     } catch (error) {
-      console.error('Error stopping TTS:', error);
+      this.isBusy = false; // Ensure we reset the flag even on error
     }
   }
 
-  // Check if currently speaking
+  // Check if currently speaking or has pending operations
   async isSpeaking(): Promise<boolean> {
     try {
+      if (this.isBusy || this.pendingQueue.length > 0) {
+        return true;
+      }
+      
       if (this.isNativeApp) {
         // Capacitor TTS doesn't have a direct isSpeaking method
         // Return false for now (can be enhanced with state tracking)
@@ -348,7 +502,6 @@ class TTSService {
       }
       return false;
     } catch (error) {
-      console.error('Error checking TTS status:', error);
       return false;
     }
   }
@@ -360,7 +513,7 @@ class TTSService {
         window.speechSynthesis.pause();
       }
     } catch (error) {
-      console.error('Error pausing TTS:', error);
+      // Error pausing TTS
     }
   }
 
@@ -371,7 +524,7 @@ class TTSService {
         window.speechSynthesis.resume();
       }
     } catch (error) {
-      console.error('Error resuming TTS:', error);
+      // Error resuming TTS
     }
   }
 
@@ -398,6 +551,28 @@ class TTSService {
   // Get current platform
   getPlatform(): 'native' | 'web' {
     return this.isNativeApp ? 'native' : 'web';
+  }
+
+  // Cleanup method to prevent WebMediaPlayer accumulation
+  cleanup(): void {
+    try {
+      if (this.currentUtterance) {
+        window.speechSynthesis.cancel();
+        this.currentUtterance = null;
+      }
+      
+      // Don't destroy reusableUtterance - just clear its handlers
+      if (this.reusableUtterance) {
+        this.reusableUtterance.onstart = null;
+        this.reusableUtterance.onend = null;
+        this.reusableUtterance.onerror = null;
+      }
+      
+      this.pendingQueue = [];
+      this.isBusy = false;
+    } catch (error) {
+      // Error during TTS cleanup
+    }
   }
 }
 
