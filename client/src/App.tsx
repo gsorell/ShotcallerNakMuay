@@ -836,7 +836,7 @@ export default function App() {
 
   useEffect(() => {
     if (difficulty === 'hard') {
-      setVoiceSpeed(1.3);
+      setVoiceSpeed(1.4); // Increased from 1.3 to 1.4 for more challenge
     } else {
       // default easy/medium to 1x
       setVoiceSpeed(1);
@@ -1068,10 +1068,10 @@ export default function App() {
     // Adjusted cadence per difficulty (calls/min) - reduced to prevent interruptions
     const cadencePerMin =
       difficulty === 'easy' ? 20 :  // Was 26
-      difficulty === 'hard' ? 37 : 26; // Was 60, 31 → increased from 35 to 37 (~5% faster)
+      difficulty === 'hard' ? 42 : 26; // Was 37 → increased from 37 to 42 (~14% faster for Pro)
     const baseDelayMs = Math.round(60000 / cadencePerMin);
     // Pro difficulty gets even more aggressive minimum delays
-    const minDelayMultiplier = difficulty === 'hard' ? 0.4 : 0.5; // Pro: 40% vs 50% for others
+    const minDelayMultiplier = difficulty === 'hard' ? 0.35 : 0.5; // Pro: 35% vs 50% for others (reduced from 40%)
     const minDelayMs = Math.round(baseDelayMs * minDelayMultiplier);
 
     const scheduleNext = (delay: number) => {
@@ -1132,20 +1132,20 @@ export default function App() {
           const isProDifficulty = difficulty === 'hard';
           
           // Calculate next delay based on actual speech duration, with Pro-specific adjustments
-          const bufferMultiplier = isProDifficulty ? 0.15 : 0.2; // Pro: 15% buffer vs 20% for others
+          const bufferMultiplier = isProDifficulty ? 0.12 : 0.2; // Pro: 12% buffer vs 20% for others (reduced from 15%)
           const bufferTime = Math.max(
-            isProDifficulty ? 150 : 200, 
-            Math.min(isProDifficulty ? 600 : 800, baseDelayMs * bufferMultiplier)
+            isProDifficulty ? 120 : 200, 
+            Math.min(isProDifficulty ? 500 : 800, baseDelayMs * bufferMultiplier)
           );
           
-          const jitterMultiplier = isProDifficulty ? 0.06 : 0.08; // Pro: ±6% vs ±8% for others
+          const jitterMultiplier = isProDifficulty ? 0.05 : 0.08; // Pro: ±5% vs ±8% for others (reduced from 6%)
           const jitter = Math.floor(baseDelayMs * jitterMultiplier * (Math.random() - 0.5));
           
           // Responsive delay: use actual duration + buffer, but be more aggressive about shorter delays
           const responsiveDelayMs = actualDurationMs + bufferTime + jitter;
           
           // Pro gets more aggressive timing caps
-          const timingCap = isProDifficulty ? baseDelayMs * 0.9 : baseDelayMs * 1.1; // Pro: 90% cap vs 110%
+          const timingCap = isProDifficulty ? baseDelayMs * 0.85 : baseDelayMs * 1.1; // Pro: 85% cap vs 110% (reduced from 90%)
           
           const nextDelayMs = Math.max(
             minDelayMs,                  // Never go below minimum
@@ -1172,8 +1172,8 @@ export default function App() {
       setCurrentCallout(safePhrase);
       // Pro difficulty gets even more aggressive fallback timing
       const isProDifficulty = difficulty === 'hard';
-      const jitterMultiplier = isProDifficulty ? 0.06 : 0.08;
-      const fallbackMultiplier = isProDifficulty ? 0.7 : 0.8; // Pro: 70% vs 80% for others
+      const jitterMultiplier = isProDifficulty ? 0.05 : 0.08;
+      const fallbackMultiplier = isProDifficulty ? 0.65 : 0.8; // Pro: 65% vs 80% for others (reduced from 70%)
       
       const jitter = Math.floor(baseDelayMs * jitterMultiplier * (Math.random() - 0.5));
       const nextDelayMs = Math.max(minDelayMs, baseDelayMs * fallbackMultiplier + jitter);
@@ -1512,6 +1512,9 @@ export default function App() {
       currentPoolRef.current = pool.sort(() => Math.random() - 0.5);
     }
     orderedIndexRef.current = 0;
+    
+    // Reset shots called counter for the new session
+    shotsCalledOutRef.current = 0;
 
     try {
       // Use TTS service for priming instead of direct speechSynthesis call
