@@ -38,6 +38,11 @@ class TTSService {
   private isBusy = false; // Prevent concurrent TTS operations
   private pendingQueue: Array<() => Promise<void>> = []; // Queue for pending TTS calls
 
+  // Phone call and audio interruption handling
+  private isCallInterrupted = false;
+  private interruptionCallbacks: Array<() => void> = [];
+  private resumeCallbacks: Array<() => void> = [];
+
   constructor() {
     // Detect if we're in a Capacitor (native) environment
     this.isNativeApp = !!(window as any).Capacitor;
@@ -345,7 +350,13 @@ class TTSService {
 
   // Internal speak implementation (the actual TTS logic)
   private async speakInternal(text: string, options: TTSOptions = {}): Promise<void> {
-
+    // Priority check: If phone call is active, don't speak
+    if (this.isCallInterrupted) {
+      if (options.onError) {
+        options.onError(new Error('TTS blocked due to phone call interruption'));
+      }
+      return;
+    }
     
     // User preference: Allow callouts to continue during tab switching
     // WebMediaPlayer errors confirmed to be from external sources, not our app
@@ -559,6 +570,75 @@ class TTSService {
     }
   }
 
+  // Phone call and audio interruption handling
+  setCallInterrupted(interrupted: boolean, reason?: string): void {
+    const wasInterrupted = this.isCallInterrupted;
+    this.isCallInterrupted = interrupted;
+    
+    if (interrupted && !wasInterrupted) {
+      // Call started - pause all TTS operations
+      this.handleCallStart(reason);
+    } else if (!interrupted && wasInterrupted) {
+      // Call ended - resume TTS operations
+      this.handleCallEnd(reason);
+    }
+  }
+
+  private handleCallStart(reason?: string): void {
+    // Immediately stop any current speech
+    this.stop();
+    
+    // Fire interruption callbacks
+    this.interruptionCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        // Callback error during phone call interruption
+      }
+    });
+  }
+
+  private handleCallEnd(reason?: string): void {
+    // Fire resume callbacks
+    this.resumeCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        // Callback error during phone call resume
+      }
+    });
+  }
+
+  // Register callbacks for phone call events
+  onCallInterruption(callback: () => void): () => void {
+    this.interruptionCallbacks.push(callback);
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.interruptionCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.interruptionCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  onCallResume(callback: () => void): () => void {
+    this.resumeCallbacks.push(callback);
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.resumeCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.resumeCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  // Check if currently interrupted by phone call
+  isPhoneCallActive(): boolean {
+    return this.isCallInterrupted;
+  }
+
   // Pause speech
   async pause(): Promise<void> {
     try {
@@ -623,6 +703,11 @@ class TTSService {
       
       this.pendingQueue = [];
       this.isBusy = false;
+      
+      // Clear phone call interruption state and callbacks
+      this.isCallInterrupted = false;
+      this.interruptionCallbacks = [];
+      this.resumeCallbacks = [];
     } catch (error) {
       // Error during TTS cleanup
     }

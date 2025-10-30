@@ -16,6 +16,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
 import { useIOSAudioSession } from './hooks/useIOSAudioSession';
+import { usePhoneCallDetection } from './hooks/usePhoneCallDetection';
 import { ttsService } from './utils/ttsService';
 
 
@@ -859,6 +860,64 @@ export default function App() {
 
   // Keep screen awake while running (not paused)
   useWakeLock({ enabled: (running && !paused) || isPreRound, log: false });
+
+  // Phone call detection and automatic workout pausing
+  const phoneCallDetection = usePhoneCallDetection({
+    onCallStart: useCallback(() => {
+      // Pause the workout if it's currently running
+      if (running && !paused) {
+        setPaused(true);
+        // Notify TTS service about the interruption
+        ttsService.setCallInterrupted(true, 'phone-call');
+        
+        // Track the interruption event
+        try {
+          trackEvent('workout_paused_by_call', {
+            currentRound,
+            timeLeft,
+            isResting
+          });
+        } catch (e) {
+          // Analytics tracking failed, but functionality continues
+        }
+      }
+    }, [running, paused, currentRound, timeLeft, isResting]),
+    
+    onCallEnd: useCallback(() => {
+      // Don't automatically resume - let user decide
+      // Just notify TTS service that the call ended
+      ttsService.setCallInterrupted(false, 'call-ended');
+      
+      // Track the resume event
+      try {
+        trackEvent('workout_call_ended', {
+          currentRound,
+          timeLeft,
+          isResting
+        });
+      } catch (e) {
+        // Analytics tracking failed, but functionality continues
+      }
+    }, [currentRound, timeLeft, isResting]),
+    
+    enabled: true,
+    debug: false // Set to true for development debugging
+  });
+
+  // Development helper: Expose phone call detection to console for testing
+  useEffect(() => {
+    if (typeof window !== 'undefined' && import.meta.env.DEV) {
+      (window as any).phoneCallDetection = phoneCallDetection;
+      (window as any).testPhoneCall = () => {
+        console.log('🧪 Testing phone call detection...');
+        phoneCallDetection.forceInterruption('console-test');
+        setTimeout(() => {
+          phoneCallDetection.forceResume('console-test');
+          console.log('✅ Phone call test completed');
+        }, 3000);
+      };
+    }
+  }, [phoneCallDetection]);
 
   // Wire the running/guard state into the TTS hook so speakTechnique sees the correct guards.
   // The hook exposes an `updateGuards` method on the returned speak function for compatibility.
@@ -2405,6 +2464,8 @@ export default function App() {
                       preRoundTimeLeft={preRoundTimeLeft}
                       fmtTime={fmtTime}
                     />
+
+
 
                     {/* Live technique subtitle (during active rounds only) */}
                     {running && !paused && !isResting && currentCallout && (
