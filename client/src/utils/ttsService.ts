@@ -37,6 +37,7 @@ class TTSService {
   private consecutiveFailures = 0; // Track consecutive TTS failures
   private isBusy = false; // Prevent concurrent TTS operations
   private pendingQueue: Array<() => Promise<void>> = []; // Queue for pending TTS calls
+  // No need for hidden TTS queue - TTS works fine when page is hidden
 
   // Phone call and audio interruption handling
   private isCallInterrupted = false;
@@ -51,6 +52,7 @@ class TTSService {
     this.setupVisibilityHandling();
     this.setupPeriodicCleanup();
     this.setupAudioSessionForBackground();
+    this.setupSpeechSynthesisMonitoring();
   }
 
 
@@ -128,10 +130,25 @@ class TTSService {
   }
 
   private setupVisibilityHandling() {
-    // Simplified: Just track initial visibility state
-    // No need for complex visibility management since callouts should continue during tab switching
+    // Track visibility state and handle browser TTS pausing behavior
     this.isPageVisible = document.visibilityState === 'visible';
+    
+    // Add visibility change listener to handle browser TTS behavior
+    document.addEventListener('visibilitychange', () => {
+      this.isPageVisible = document.visibilityState === 'visible';
+      
+      if (this.isPageVisible) {
+        // TTS continues working fine during visibility changes - no special handling needed
+      }
+    });
   }
+
+  private setupSpeechSynthesisMonitoring() {
+    // TTS works fine during visibility changes - no monitoring needed
+    return;
+  }
+
+  // No queue processing needed - TTS works fine when page is hidden
 
   private async initializeVoices() {
     try {
@@ -350,7 +367,7 @@ class TTSService {
 
   // Internal speak implementation (the actual TTS logic)
   private async speakInternal(text: string, options: TTSOptions = {}): Promise<void> {
-    // Priority check: If phone call is active, don't speak
+    // Check for phone call interruption (conservative 30s threshold)
     if (this.isCallInterrupted) {
       if (options.onError) {
         options.onError(new Error('TTS blocked due to phone call interruption'));
@@ -358,16 +375,7 @@ class TTSService {
       return;
     }
     
-    // User preference: Allow callouts to continue during tab switching
-    // WebMediaPlayer errors confirmed to be from external sources, not our app
-    const isPageHidden = !this.isPageVisible || 
-                        document.visibilityState === 'hidden' || 
-                        document.hidden;
-    
-    if (isPageHidden) {
-      // Continue with TTS as user prefers to hear callouts during tab switching
-      // Any WebMediaPlayer errors are from external sources (other tabs, extensions, etc.)
-    }
+    // TTS works fine when page is hidden - no need to queue or block
 
     // Prevent rapid successive TTS calls that can overflow WebMediaPlayer
     const now = Date.now();
@@ -463,6 +471,10 @@ class TTSService {
             utterance.onstart = options.onStart;
           }
           
+          if (options.onStart) {
+            utterance.onstart = options.onStart;
+          }
+          
           if (options.onDone) {
             utterance.onend = () => {
               const endTime = Date.now();
@@ -471,8 +483,6 @@ class TTSService {
               
               // Reset failure count on successful completion
               this.consecutiveFailures = 0;
-              
-
               
               // Pass actual duration to onDone callback if it accepts it
               if (options.onDone!.length > 0) {
