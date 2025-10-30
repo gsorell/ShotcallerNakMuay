@@ -13,8 +13,8 @@ iOS users could not run the Shotcaller Nak Muay app while listening to Spotify o
 ### 2. Custom iOS Audio Session Manager
 **Files: `ios/App/App/AudioSessionManager.swift`, `ios/App/App/AudioSessionManagerPlugin.m`**
 - Created native iOS plugin to explicitly configure audio session
-- Uses `AVAudioSession.Category.ambient` with `.mixWithOthers` option
-- Allows TTS to play while background music continues at reduced volume
+- Uses `AVAudioSession.Category.playback` with `.mixWithOthers` option
+- Allows TTS to play while background music continues at FULL volume (no ducking)
 
 ### 3. Enhanced TTS Service
 **File: `src/utils/ttsService.ts`**
@@ -39,7 +39,7 @@ iOS users could not run the Shotcaller Nak Muay app while listening to Spotify o
 
 ### Audio Session Categories
 - **Before**: Used default TTS audio session (exclusive)
-- **After**: Uses `ambient` category with `mixWithOthers` option
+- **After**: Uses `playback` category with `mixWithOthers` option (no ducking)
 
 ### Platform-Specific Behavior
 - **Android**: No changes needed (already cooperative)
@@ -53,7 +53,7 @@ iOS users could not run the Shotcaller Nak Muay app while listening to Spotify o
 1. Start playing music in Spotify/Apple Music
 2. Open Shotcaller Nak Muay app
 3. Start a workout with TTS enabled
-4. Verify: Background music continues playing (possibly at reduced volume during TTS)
+- Verify: Background music continues playing at FULL volume (no volume reduction during TTS)
 
 ### For iOS Safari:
 1. Start playing music in a background tab or native app
@@ -87,8 +87,8 @@ If issues arise, the changes can be rolled back by:
 ### Successful Case:
 - iOS user opens Spotify and starts playing music
 - User opens Shotcaller Nak Muay and starts workout
-- TTS announcements play while background music continues (ducked)
-- Both audio sources coexist
+- TTS announcements play while background music continues at full volume
+- Both audio sources coexist without volume modulation
 
 ### Fallback Case:
 - If audio session configuration fails, app behaves as before

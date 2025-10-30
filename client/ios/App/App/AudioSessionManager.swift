@@ -20,15 +20,15 @@ public class AudioSessionManager: CAPPlugin {
         do {
             let audioSession = AVAudioSession.sharedInstance()
             
-            // Configure audio session to mix with other audio
-            try audioSession.setCategory(.ambient, 
+            // Configure audio session to mix WITHOUT ducking background music
+            try audioSession.setCategory(.playback, 
                                        mode: .default, 
-                                       options: [.mixWithOthers, .duckOthers])
+                                       options: [.mixWithOthers])  // Removed .duckOthers
             
-            // Set audio session active
+            // Set audio session active without affecting other apps
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
             
-            print("AudioSessionManager: Configured iOS audio session for background compatibility")
+            print("AudioSessionManager: Configured iOS audio session for non-ducking background compatibility")
             
         } catch {
             print("AudioSessionManager: Failed to configure audio session: \(error)")
@@ -39,10 +39,10 @@ public class AudioSessionManager: CAPPlugin {
         do {
             let audioSession = AVAudioSession.sharedInstance()
             
-            // Allow mixing with background audio (like Spotify)
-            try audioSession.setCategory(.ambient, 
+            // Allow true mixing with background audio WITHOUT ducking
+            try audioSession.setCategory(.playback, 
                                        mode: .default, 
-                                       options: [.mixWithOthers])
+                                       options: [.mixWithOthers])  // No ducking
             
             try audioSession.setActive(true)
             
