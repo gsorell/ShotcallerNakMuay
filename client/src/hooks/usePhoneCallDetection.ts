@@ -30,8 +30,8 @@ export interface UsePhoneCallDetectionOptions {
   enabled?: boolean;
   
   /**
-   * Minimum duration in ms before considering a visibility change as an interruption (default: 5000)
-   * This prevents false positives from quick tab switches
+   * Minimum duration in ms before considering a visibility change as an interruption (default: 30000)
+   * This prevents false positives from app navigation, tab switches, and normal multitasking
    */
   interruptionThreshold?: number;
   
@@ -59,7 +59,7 @@ export const usePhoneCallDetection = (options: UsePhoneCallDetectionOptions = {}
     onCallEnd,
     onInterruptionChange,
     enabled = true,
-    interruptionThreshold = 5000,
+    interruptionThreshold = 30000,
     debug = false
   } = options;
 
@@ -149,9 +149,9 @@ export const usePhoneCallDetection = (options: UsePhoneCallDetectionOptions = {}
     }, 200);
   }, [enabled, log, updateCallState]);
 
-  // Visibility change detection (conservative - only for very long interruptions)
+  // Visibility change detection (very conservative - only for extremely long interruptions)
   const handleVisibilityChange = useCallback(() => {
-    if (!enabled || isNativeAppRef.current) return; // Skip on native apps - use app state instead
+    if (!enabled) return;
     
     const now = Date.now();
     const isHidden = document.hidden || document.visibilityState === 'hidden';
@@ -160,80 +160,45 @@ export const usePhoneCallDetection = (options: UsePhoneCallDetectionOptions = {}
     
     if (isHidden) {
       visibilityTimeRef.current = now;
-      // Only trigger for very long periods (likely phone calls, not tab switches)
+      // Only trigger after a very long period (30+ seconds) - likely a genuine phone call or device locked
       setTimeout(() => {
         if (document.hidden && (Date.now() - visibilityTimeRef.current) >= interruptionThreshold) {
-          // Additional check: only if page has been hidden for the full duration
-          handleInterruption('visibility-change');
+          // Double-check: only interrupt if still hidden after the full threshold period
+          log(`Long interruption detected: ${Math.round((Date.now() - visibilityTimeRef.current) / 1000)}s`);
+          handleInterruption('phone-call');
         }
       }, interruptionThreshold);
     } else {
       const hiddenDuration = now - visibilityTimeRef.current;
-      if (hiddenDuration >= interruptionThreshold && callStateRef.current.isCallInterrupted) {
-        handleInterruptionEnd('visibility-restored');
-      }
-    }
-  }, [enabled, interruptionThreshold, log, handleInterruption, handleInterruptionEnd]);
-
-  // Window focus/blur detection (disabled for web to prevent false positives)
-  const handleFocusChange = useCallback((event: FocusEvent) => {
-    // Disable focus/blur detection as it's too aggressive for normal usage
-    // Only use this on native apps where it's more reliable
-    if (!enabled || !isNativeAppRef.current) return;
-    
-    const now = Date.now();
-    const isFocused = event.type === 'focus';
-    
-    log(`Focus change: ${isFocused ? 'focused' : 'blurred'}`);
-    
-    if (!isFocused) {
-      lastFocusTimeRef.current = now;
-      setTimeout(() => {
-        const blurDuration = Date.now() - lastFocusTimeRef.current;
-        if (blurDuration >= interruptionThreshold) {
-          handleInterruption('focus-loss');
-        }
-      }, interruptionThreshold);
-    } else {
-      const blurDuration = now - lastFocusTimeRef.current;
-      if (blurDuration >= interruptionThreshold && callStateRef.current.isCallInterrupted) {
-        handleInterruptionEnd('focus-restored');
-      }
-    }
-  }, [enabled, interruptionThreshold, log, handleInterruption, handleInterruptionEnd]);
-
-  // Audio context state change detection
-  const handleAudioContextStateChange = useCallback(() => {
-    if (!audioContextRef.current) return;
-    
-    const audioContext = audioContextRef.current;
-    const state = audioContext.state;
-    
-    log(`AudioContext state change: ${state}`);
-    
-    if (state === 'interrupted' || state === 'suspended') {
-      handleInterruption('audio-interruption');
-    } else if (state === 'running' && callStateRef.current.isCallInterrupted) {
-      handleInterruptionEnd('audio-restored');
-    }
-  }, [log, handleInterruption, handleInterruptionEnd]);
-
-  // Initialize audio context for monitoring
-  const setupAudioContextMonitoring = useCallback(() => {
-    if (typeof window === 'undefined' || !window.AudioContext) {
-      return;
-    }
-
-    try {
-      // Create a minimal audio context just for monitoring
-      audioContextRef.current = new AudioContext();
-      audioContextRef.current.addEventListener('statechange', handleAudioContextStateChange);
+      log(`App became visible after ${Math.round(hiddenDuration / 1000)}s`);
       
-      log('AudioContext monitoring initialized');
-    } catch (error) {
-      log('Failed to initialize AudioContext monitoring:', error);
+      // Only resume if it was a long interruption that we actually paused for
+      if (hiddenDuration >= interruptionThreshold && callStateRef.current.isCallInterrupted) {
+        handleInterruptionEnd('call-ended');
+      }
     }
-  }, [handleAudioContextStateChange, log]);
+  }, [enabled, interruptionThreshold, log, handleInterruption, handleInterruptionEnd]);
+
+  // Window focus/blur detection (disabled to prevent false positives)
+  const handleFocusChange = useCallback((event: FocusEvent) => {
+    // Completely disabled - focus/blur events are too aggressive for normal app usage
+    // Users commonly switch between apps, tabs, and windows during workouts
+    return;
+  }, []);
+
+  // Audio context state change detection (disabled to prevent false positives)
+  const handleAudioContextStateChange = useCallback(() => {
+    // Disabled - AudioContext state changes can be triggered by other apps, browser behavior,
+    // or user interactions that aren't phone calls
+    return;
+  }, []);
+
+  // Initialize audio context for monitoring (disabled)
+  const setupAudioContextMonitoring = useCallback(() => {
+    // Disabled to prevent false positives from normal browser/app behavior
+    log('AudioContext monitoring disabled (too aggressive for normal usage)');
+    return;
+  }, [log]);
 
   // Native app interruption handling
   const setupNativeInterruptions = useCallback(async () => {
@@ -268,16 +233,17 @@ export const usePhoneCallDetection = (options: UsePhoneCallDetectionOptions = {}
       App.addListener('appStateChange', ({ isActive }) => {
         log(`App state change: ${isActive ? 'active' : 'inactive'}`);
         
-        // Only trigger interruption if app goes inactive for a reasonable duration
+        // Very conservative approach: only trigger after extended inactivity
         if (!isActive) {
           setTimeout(() => {
-            // Check if app is still inactive after delay - this filters out brief switches
+            // Check if app is still inactive after a long delay - likely a phone call or device locked
             if (!document.hasFocus()) {
+              log(`Extended app inactivity detected: ${interruptionThreshold / 1000}s`);
               handleInterruption('phone-call');
             }
-          }, 2000); // 2 second delay to avoid false positives
+          }, interruptionThreshold); // Use the same 30s threshold
         } else if (callStateRef.current.isCallInterrupted) {
-          handleInterruptionEnd('app-restored');
+          handleInterruptionEnd('call-ended');
         }
       });
 

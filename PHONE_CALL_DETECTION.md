@@ -8,16 +8,19 @@ The app now automatically detects incoming phone calls and pauses the workout se
 
 ## How It Works
 
+### Very Conservative Detection Approach
+The system is designed to be extremely conservative and only interrupt workouts for genuine phone calls or when the device is completely locked/closed, not for normal app usage.
+
 ### Web/PWA Environment
-- **Visibility Change Detection**: Monitors when the browser tab/app becomes hidden
-- **Focus/Blur Events**: Detects when the app loses focus
-- **Audio Context Monitoring**: Tracks audio session interruptions
-- **Threshold-based Detection**: Uses a configurable delay to prevent false positives from quick tab switches
+- **Long Visibility Change Detection**: Only triggers after 30+ seconds of being hidden (genuine phone calls)
+- **Focus/Blur Events**: Completely disabled to prevent false positives from normal app switching
+- **Audio Context Monitoring**: Disabled to prevent interference from other apps or browser behavior
+- **Very High Threshold**: 30-second minimum before considering any interruption
 
 ### Native Mobile Environment (iOS/Android)
-- **App State Monitoring**: Uses Capacitor's App plugin to detect when the app goes to background
-- **Audio Session Interruptions**: Monitors iOS audio session interruption events
-- **Custom Native Plugin**: Provides more granular phone call detection (when available)
+- **Extended App State Monitoring**: Only triggers after 30+ seconds of app inactivity (likely phone calls)
+- **Audio Session Interruptions**: Disabled by default to prevent false positives
+- **Custom Native Plugin**: Provides direct phone call detection when available (future enhancement)
 
 ## Features
 
@@ -82,7 +85,7 @@ interface UsePhoneCallDetectionOptions {
   onCallEnd?: () => void;             // Callback when call ends
   onInterruptionChange?: (interrupted: boolean, reason: string) => void;
   enabled?: boolean;                  // Enable/disable detection (default: true)
-  interruptionThreshold?: number;     // Min duration before considering interruption (default: 500ms)
+  interruptionThreshold?: number;     // Min duration before considering interruption (default: 30000ms)
   debug?: boolean;                    // Enable debug logging (default: false)
 }
 ```
@@ -90,11 +93,11 @@ interface UsePhoneCallDetectionOptions {
 ## User Experience
 
 ### During a Phone Call
-1. User receives or makes a phone call
-2. App detects the interruption within 500ms-1000ms
+1. User receives or makes a phone call (or device is locked for extended period)
+2. App detects the interruption after 30+ seconds of inactivity
 3. Workout is automatically paused
-4. Visual indicator appears: "📞 Phone call detected - Workout paused automatically"
-5. TTS stops immediately to avoid interference
+4. TTS stops immediately to avoid interference
+5. No visual indicators (clean, unobtrusive experience)
 
 ### After the Phone Call
 1. User ends the phone call
@@ -123,11 +126,13 @@ interface UsePhoneCallDetectionOptions {
 ## Troubleshooting
 
 ### False Positives
-- Adjust `interruptionThreshold` to reduce sensitivity
-- Some quick tab switches might trigger detection on sensitive settings
+- Very rare with 30-second threshold - only genuine long interruptions trigger detection
+- Normal app switching, tab changes, and multitasking will not interrupt workouts
+- If false positives occur, they indicate extremely long periods of inactivity (30+ seconds)
 
 ### Missed Detections
-- Some VoIP calls or app-to-app calls might not be detected
+- Very brief phone calls (under 30 seconds) may not be detected automatically
+- VoIP calls or app-to-app calls that don't trigger visibility changes may not be detected
 - Users can always manually pause if automatic detection fails
 
 ### Platform Limitations

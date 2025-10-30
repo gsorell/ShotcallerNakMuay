@@ -50,7 +50,7 @@ export class PhoneCallDetectionWeb extends WebPlugin implements PhoneCallDetecti
           if (document.hidden) {
             this.handleCallStateChange(true, 'visibility-change');
           }
-        }, 5000); // 5 seconds - much more conservative
+        }, 30000); // 30 seconds - very conservative, only genuine phone calls
       } else if (!isHidden && this.isCallCurrentlyActive) {
         this.handleCallStateChange(false, 'visibility-restored');
       }
@@ -91,7 +91,7 @@ export class PhoneCallDetectionWeb extends WebPlugin implements PhoneCallDetecti
         if (!this.audioContext) return;
         
         const state = this.audioContext.state;
-        if (state === 'interrupted' || state === 'suspended') {
+        if (state === 'suspended') {
           if (!this.isCallCurrentlyActive) {
             this.handleCallStateChange(true, 'audio-interrupted');
           }

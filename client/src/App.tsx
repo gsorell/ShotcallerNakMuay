@@ -861,7 +861,7 @@ export default function App() {
   // Keep screen awake while running (not paused)
   useWakeLock({ enabled: (running && !paused) || isPreRound, log: false });
 
-  // Phone call detection and automatic workout pausing
+  // Phone call detection and automatic workout pausing (very conservative)
   const phoneCallDetection = usePhoneCallDetection({
     onCallStart: useCallback(() => {
       // Pause the workout if it's currently running
@@ -884,8 +884,8 @@ export default function App() {
     }, [running, paused, currentRound, timeLeft, isResting]),
     
     onCallEnd: useCallback(() => {
-      // Don't automatically resume - let user decide
-      // Just notify TTS service that the call ended
+      // Don't automatically resume - let user decide when to continue
+      // Just clear TTS interruption
       ttsService.setCallInterrupted(false, 'call-ended');
       
       // Track the resume event
