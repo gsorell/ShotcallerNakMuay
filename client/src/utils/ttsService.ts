@@ -45,6 +45,7 @@ class TTSService {
     this.initializeVoices();
     this.setupVisibilityHandling();
     this.setupPeriodicCleanup();
+    this.setupAudioSessionForBackground();
   }
 
 
@@ -64,6 +65,40 @@ class TTSService {
           // Ignore cleanup errors
         }
       }, 60000); // Every 60 seconds
+    }
+  }
+
+  private setupAudioSessionForBackground() {
+    // Configure Web Audio to be less intrusive on iOS Safari
+    if (!this.isNativeApp && typeof window !== 'undefined') {
+      // For web builds running on iOS, ensure AudioContext doesn't interfere with background audio
+      const isIOSWeb = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      if (isIOSWeb) {
+        // Defer AudioContext creation and use a more cooperative approach
+        this.setupIOSWebAudioCompatibility();
+      }
+    }
+  }
+
+  private setupIOSWebAudioCompatibility() {
+    // Override AudioContext creation to be more cooperative on iOS
+    if ('AudioContext' in window) {
+      const originalAudioContext = window.AudioContext;
+      let sharedContext: AudioContext | null = null;
+      
+      // Create a shared, cooperative AudioContext
+      const getSharedContext = () => {
+        if (!sharedContext) {
+          sharedContext = new originalAudioContext({
+            // Use lower latency hint to be less intrusive
+            latencyHint: 'playback'
+          });
+        }
+        return sharedContext;
+      };
+      
+      // Store reference for cleanup
+      (window as any)._shotcallerSharedAudioContext = getSharedContext;
     }
   }
 

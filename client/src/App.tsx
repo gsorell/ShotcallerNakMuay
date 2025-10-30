@@ -15,6 +15,7 @@ import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
+import { useIOSAudioSession } from './hooks/useIOSAudioSession';
 import { ttsService } from './utils/ttsService';
 
 
@@ -675,6 +676,9 @@ export default function App() {
     enabled: navigationGesturesEnabled,
     debugLog: false // Set to true for development debugging
   });
+
+  // Configure iOS audio session for background music compatibility
+  useIOSAudioSession();
   
 
   // Voice persistence helpers
@@ -1202,36 +1206,99 @@ export default function App() {
       const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      
+      // Resume context if suspended (required on some browsers)
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
       gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
 
       osc.connect(gain).connect(ctx.destination);
       osc.start();
-      osc.stop(ctx.currentTime + 0.45);
+      osc.stop(ctx.currentTime + 0.55);
     } catch {/* noop */}
   }, []);
 
-  // Initialize audio instances ONCE on component mount
+  // Initialize audio instances ONCE on component mount with iOS-friendly settings
   useEffect(() => {
     try {
       // Create bell audio instance once
       if (!bellSoundRef.current) {
-        bellSoundRef.current = new Audio('/big-bell-330719.mp3');
-        bellSoundRef.current.preload = 'auto';
-        bellSoundRef.current.volume = 0.5;
+        try {
+          bellSoundRef.current = new Audio();
+          
+          // Set appropriate volume based on platform
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+          bellSoundRef.current.volume = isIOS ? 0.6 : 0.7;
+          
+          // Configure for iOS compatibility if needed (inline to avoid dependency issues)
+          if (isIOS) {
+            bellSoundRef.current.setAttribute('webkit-playsinline', 'true');
+            bellSoundRef.current.setAttribute('playsinline', 'true');
+          }
+          
+          // Set up error handling - silent fallback without console warnings
+          bellSoundRef.current.addEventListener('error', (e) => {
+            // Silently mark as failed - webAudioChime will be used as fallback
+            (bellSoundRef.current as any)._loadFailed = true;
+          });
+          
+          // Mark as loaded when ready
+          bellSoundRef.current.addEventListener('canplaythrough', () => {
+            (bellSoundRef.current as any)._loadFailed = false;
+          });
+          
+          // Set source with lazy loading - don't force immediate load
+          bellSoundRef.current.src = '/big-bell-330719.mp3';
+          bellSoundRef.current.preload = 'none';
+          
+        } catch (error) {
+          console.warn('Failed to create bell audio element:', error);
+          bellSoundRef.current = null; // Ensure it's null so playBell uses webAudioChime
+        }
       }
       
       // Create warning audio instance once
       if (!warningSoundRef.current) {
-        warningSoundRef.current = new Audio('/interval.mp3');
-        warningSoundRef.current.preload = 'auto';
-        warningSoundRef.current.volume = 0.4;
+        try {
+          warningSoundRef.current = new Audio();
+          
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+          warningSoundRef.current.volume = isIOS ? 0.4 : 0.5;
+          
+          // Configure for iOS compatibility if needed (inline to avoid dependency issues)
+          if (isIOS) {
+            warningSoundRef.current.setAttribute('webkit-playsinline', 'true');
+            warningSoundRef.current.setAttribute('playsinline', 'true');
+          }
+          
+          // Set up error handling - silent fallback without console warnings
+          warningSoundRef.current.addEventListener('error', (e) => {
+            // Silently mark as failed - no audio fallback needed for warning sound
+            (warningSoundRef.current as any)._loadFailed = true;
+          });
+          
+          // Mark as loaded when ready
+          warningSoundRef.current.addEventListener('canplaythrough', () => {
+            (warningSoundRef.current as any)._loadFailed = false;
+          });
+          
+          // Set source with lazy loading - don't force immediate load
+          warningSoundRef.current.src = '/interval.mp3';
+          warningSoundRef.current.preload = 'none';
+          
+        } catch (error) {
+          console.warn('Failed to create warning audio element:', error);
+          warningSoundRef.current = null;
+        }
       }
     } catch (error) {
       // Failed to initialize audio instances
@@ -1256,9 +1323,9 @@ export default function App() {
         // Error during audio cleanup
       }
     };
-  }, []);
+  }, []); // No dependencies - run only once on mount
 
-  // Proactively unlock audio on user gesture (Start button)
+  // Proactively unlock audio on user gesture (Start button) - iOS-friendly approach
   const ensureMediaUnlocked = useCallback(async () => {
     try {
       // Use existing bell instance, don't create new one
@@ -1267,8 +1334,22 @@ export default function App() {
         const bellPrevVol = bell.volume;
         bell.volume = 0;
         bell.muted = true;
-        await bell.play().catch(() => {});
-        bell.pause();
+        
+        // iOS: Try to unlock audio without disrupting background music
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+        if (isIOS) {
+          // Use a shorter, less intrusive unlock sequence
+          const playPromise = bell.play();
+          if (playPromise) {
+            await playPromise.catch(() => {});
+            // Immediately pause to minimize background music interruption
+            setTimeout(() => bell.pause(), 10); // Minimal delay
+          }
+        } else {
+          await bell.play().catch(() => {});
+          bell.pause();
+        }
+        
         bell.currentTime = 0;
         bell.muted = false;
         bell.volume = bellPrevVol;
@@ -1280,8 +1361,20 @@ export default function App() {
         const warnPrevVol = warn.volume;
         warn.volume = 0;
         warn.muted = true;
-        await warn.play().catch(() => {});
-        warn.pause();
+        
+        // iOS: Minimal unlock sequence
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+        if (isIOS) {
+          const playPromise = warn.play();
+          if (playPromise) {
+            await playPromise.catch(() => {});
+            setTimeout(() => warn.pause(), 10); // Minimal delay
+          }
+        } else {
+          await warn.play().catch(() => {});
+          warn.pause();
+        }
+        
         warn.currentTime = 0;
         warn.muted = false;
         warn.volume = warnPrevVol;
@@ -1293,13 +1386,26 @@ export default function App() {
   const playBell = useCallback(() => {
     try {
       const bell = bellSoundRef.current;
-      if (bell) {
+      if (bell && !(bell as any)._loadFailed) {
+        // Load audio on-demand if not already loaded
+        if (bell.readyState === 0) {
+          bell.load();
+        }
+        
         bell.currentTime = 0;
+        
+        // Ensure volume is audible
+        if (bell.volume < 0.1) {
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+          bell.volume = isIOS ? 0.6 : 0.7;
+        }
+        
         const p = bell.play();
         if (p && typeof p.then === 'function') {
           p.catch(() => { webAudioChime(); });
         }
       } else {
+        // Bell element doesn't exist or failed to load, use webAudioChime
         webAudioChime();
       }
     } catch {
@@ -1311,7 +1417,12 @@ export default function App() {
   const playWarningSound = useCallback(() => {
     try {
       const warn = warningSoundRef.current;
-      if (warn) {
+      if (warn && !(warn as any)._loadFailed) {
+        // Load audio on-demand if not already loaded
+        if (warn.readyState === 0) {
+          warn.load();
+        }
+        
         warn.currentTime = 0;
         const p = warn.play();
         if (p && typeof p.then === 'function') {
