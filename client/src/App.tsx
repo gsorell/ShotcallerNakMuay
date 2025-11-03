@@ -1187,7 +1187,28 @@ export default function App() {
     scheduleNext(initialDelay);
   }, [difficulty, stopTechniqueCallouts, ttsSpeakSystemWithDuration]);
 
-  // Remove the visibility management - user wants callouts to continue when tab switching
+  // Visibility management: Auto-pause when page becomes hidden to prevent callouts from stopping silently
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isHidden = document.hidden || document.visibilityState === 'hidden';
+      
+      // If page becomes hidden during an active workout, auto-pause to prevent silent callout failure
+      if (isHidden && running && !paused && !isResting && !isPreRound) {
+        setPaused(true);
+        // Try to pause any current TTS
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          try {
+            window.speechSynthesis.pause();
+          } catch { /* noop */ }
+        }
+      }
+      // Note: We don't auto-resume when page becomes visible to avoid accidental resumption
+      // User must manually resume, which is the expected behavior
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [running, paused, isResting, isPreRound]);
 
   // Guard TTS on state changes
   useEffect(() => {
