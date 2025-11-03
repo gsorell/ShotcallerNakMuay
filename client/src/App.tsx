@@ -15,6 +15,7 @@ import { usePWA } from './hooks/usePWA';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
+import { useIOSAudioSession } from './hooks/useIOSAudioSession';
 import { ttsService } from './utils/ttsService';
 
 
@@ -303,6 +304,9 @@ export default function App() {
 
   // PWA functionality
   const pwa = usePWA();
+  
+  // iOS audio session configuration for background music compatibility
+  const iosAudioSession = useIOSAudioSession();
   
   // User engagement tracking for PWA prompting
   const [userEngagement, setUserEngagement] = useState(() => {
@@ -1257,6 +1261,19 @@ export default function App() {
       }
     };
   }, []);
+
+  // Configure iOS-specific audio settings after audio elements are created
+  useEffect(() => {
+    if (bellSoundRef.current && iosAudioSession.shouldMixWithOthers()) {
+      bellSoundRef.current.volume = 0.3; // Reduce volume on iOS for better mixing
+      iosAudioSession.configureAudioElement(bellSoundRef.current);
+    }
+    
+    if (warningSoundRef.current && iosAudioSession.shouldMixWithOthers()) {
+      warningSoundRef.current.volume = 0.2; // Reduce volume on iOS for better mixing
+      iosAudioSession.configureAudioElement(warningSoundRef.current);
+    }
+  }, [iosAudioSession]);
 
   // Proactively unlock audio on user gesture (Start button)
   const ensureMediaUnlocked = useCallback(async () => {
