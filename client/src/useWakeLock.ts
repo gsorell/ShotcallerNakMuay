@@ -23,7 +23,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
   enabledRef.current = enabled;
 
   const debug = (...args: any[]) => {
-    // Debug logging removed for production
+    if (log) console.log('[WakeLock]', ...args);
   };
 
   const releaseAll = useCallback(async () => {
@@ -96,7 +96,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
               }
               requestTimeoutRef.current = window.setTimeout(() => {
                 requestWakeLock().catch(() => {});
-              }, 2000); // Increased to 2 seconds for better debouncing
+              }, 500); // Reduced timeout to prevent device sleep during transitions
             }
           });
           return;
@@ -116,16 +116,12 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
           noSleepRef.current = new mod.default();
         }
         
-        // Check if NoSleep is already enabled before enabling
-        if (!active || method !== 'nosleep') {
-          await noSleepRef.current.enable();
-          setActive(true);
-          setMethod('nosleep');
-          setError(null);
-          debug('NoSleep fallback is active (reused existing instance).');
-        } else {
-          debug('NoSleep already active, skipping re-enable');
-        }
+        // Always enable NoSleep to ensure it's working - don't skip
+        await noSleepRef.current.enable();
+        setActive(true);
+        setMethod('nosleep');
+        setError(null);
+        debug('NoSleep fallback is active (reused existing instance).');
       } catch (e: any) {
         debug('NoSleep fallback failed:', e?.message || e);
         setError(String(e?.message || e));
@@ -196,7 +192,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
       }
       requestTimeoutRef.current = window.setTimeout(() => {
         requestWakeLock().catch(() => {});
-      }, 2000); // Wait 2 seconds for rapid tab switching to fully settle
+      }, 500); // Reduced timeout to prevent device sleep during transitions
     }
   }, [requestWakeLock]);
 
