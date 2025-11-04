@@ -858,9 +858,9 @@ export default function App() {
   const [preRoundTimeLeft, setPreRoundTimeLeft] = useState(0); // ADD: pre-round time
 
   // Keep screen awake while running (not paused) or during pre-round countdown
-  // Also keep active during any workout-related activity to prevent sleep
-  const shouldKeepAwake = (running && !paused) || isPreRound || (currentRound > 0 && running);
-  useWakeLock({ enabled: shouldKeepAwake, log: true });
+  // Simplified logic to reduce rapid state changes
+  const shouldKeepAwake = (running && !paused) || isPreRound;
+  useWakeLock({ enabled: shouldKeepAwake, log: false });
 
   // Wire the running/guard state into the TTS hook so speakTechnique sees the correct guards.
   // The hook exposes an `updateGuards` method on the returned speak function for compatibility.
