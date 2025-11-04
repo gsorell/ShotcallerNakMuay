@@ -67,6 +67,8 @@ class TTSService {
     }
   }
 
+
+
   private async processQueue(): Promise<void> {
     if (this.isBusy || this.pendingQueue.length === 0) {
       return;

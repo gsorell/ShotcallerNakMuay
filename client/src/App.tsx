@@ -857,8 +857,10 @@ export default function App() {
   const [isPreRound, setIsPreRound] = useState(false); // ADD: pre-round countdown state
   const [preRoundTimeLeft, setPreRoundTimeLeft] = useState(0); // ADD: pre-round time
 
-  // Keep screen awake while running (not paused)
-  useWakeLock({ enabled: (running && !paused) || isPreRound, log: false });
+  // Keep screen awake while running (not paused) or during pre-round countdown
+  // Also keep active during any workout-related activity to prevent sleep
+  const shouldKeepAwake = (running && !paused) || isPreRound || (currentRound > 0 && running);
+  useWakeLock({ enabled: shouldKeepAwake, log: true });
 
   // Wire the running/guard state into the TTS hook so speakTechnique sees the correct guards.
   // The hook exposes an `updateGuards` method on the returned speak function for compatibility.
@@ -1250,6 +1252,8 @@ export default function App() {
         bellSoundRef.current = new Audio('/big-bell-330719.mp3');
         bellSoundRef.current.preload = 'auto';
         bellSoundRef.current.volume = 0.5;
+        // Configure for iOS compatibility to prevent audio ducking
+        iosAudioSession.configureAudioElement(bellSoundRef.current);
       }
       
       // Create warning audio instance once
@@ -1257,6 +1261,8 @@ export default function App() {
         warningSoundRef.current = new Audio('/interval.mp3');
         warningSoundRef.current.preload = 'auto';
         warningSoundRef.current.volume = 0.4;
+        // Configure for iOS compatibility to prevent audio ducking
+        iosAudioSession.configureAudioElement(warningSoundRef.current);
       }
     } catch (error) {
       // Failed to initialize audio instances
