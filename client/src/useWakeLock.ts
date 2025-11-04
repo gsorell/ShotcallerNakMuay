@@ -56,7 +56,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
       setActive(false);
       setMethod('none');
     }
-  }, [debug]);
+  }, []); // Remove debug dependency to prevent recreation
 
   const requestWakeLock = useCallback(async () => {
     if (!enabledRef.current || isRequestingRef.current) {
@@ -131,7 +131,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
     } finally {
       isRequestingRef.current = false;
     }
-  }, [debug, active, method]);
+  }, []); // Remove unstable dependencies to prevent recreation
 
   // Manage lifecycle
   useEffect(() => {
@@ -181,7 +181,16 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
       };
       cleanup();
     };
-  }, [requestWakeLock, releaseAll]);
+  }, []); // Run once and use refs for state
+
+  // Handle enabled state changes
+  useEffect(() => {
+    if (enabled) {
+      requestWakeLock().catch(() => {});
+    } else {
+      releaseAll().catch(() => {});
+    }
+  }, [enabled, requestWakeLock, releaseAll]);
 
   // Use centralized visibility manager for wake lock management with debouncing
   const onVisibleCallback = useCallback(() => {

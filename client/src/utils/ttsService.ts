@@ -353,14 +353,23 @@ class TTSService {
           voiceParam = Number.isFinite(asNum) ? asNum : voiceToUse.id;
         }
 
-        await TextToSpeech.speak({
+        // Build TTS options
+        const ttsOptions: any = {
           text: text,  // Use text as-is - TTS engines handle sentence endings properly
           lang: voiceToUse?.language || 'en-US',
           rate: rate,
           pitch: pitch,
           volume: volume,
           voice: voiceParam
-        });
+        };
+
+        // Add iOS-specific category to prevent music interruption
+        // Only affects iOS native apps, not Chrome/web
+        if ((window as any).Capacitor?.getPlatform?.() === 'ios') {
+          ttsOptions.category = 'ambient';
+        }
+
+        await TextToSpeech.speak(ttsOptions);
         
         const endTime = Date.now();
         const actualDuration = endTime - startTime;

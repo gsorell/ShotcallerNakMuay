@@ -14,12 +14,12 @@ export const useIOSAudioSession = () => {
       }
 
       try {
-        // Don't initialize TTS immediately - this was causing the audio session
-        // to be claimed exclusively before our cooperative settings could take effect
-        // Instead, rely on capacitor.config.ts settings to configure the session
-        // when TTS is first used naturally in the app
+        // Configure iOS audio session for background music compatibility
+        // The capacitor.config.ts settings will ensure cooperative audio mixing
+        console.log('iOS: Configuring audio session for background music compatibility');
         
-        console.log('iOS audio session will use cooperative settings from capacitor.config.ts');
+        // Note: Audio session configuration happens automatically via capacitor.config.ts
+        // when TTS is first used. This ensures Spotify/Apple Music can continue playing.
       } catch (error) {
         console.warn('iOS audio session setup failed:', error);
       }
@@ -38,25 +38,14 @@ export const useIOSAudioSession = () => {
       return Capacitor.getPlatform() === 'ios';
     },
     
-    // Helper to configure audio elements for cross-platform compatibility
+    // Helper to configure audio elements for iOS compatibility only
     configureAudioElement: (audioElement: HTMLAudioElement) => {
-      const platform = Capacitor.getPlatform();
-      
-      if (platform === 'ios') {
+      if (Capacitor.getPlatform() === 'ios') {
         audioElement.setAttribute('webkit-playsinline', 'true');
         audioElement.setAttribute('playsinline', 'true');
+        // Configure for iOS background music compatibility
+        console.log('iOS: Configured audio element for inline playback');
       }
-      
-      // For both iOS and Android, try to prevent audio ducking
-      if (platform === 'ios' || platform === 'android') {
-        // Set audio context to prevent interference with background music
-        if ('mozAudioChannelType' in audioElement) {
-          (audioElement as any).mozAudioChannelType = 'content';
-        }
-        // Ensure audio plays inline and doesn't take audio focus aggressively
-        audioElement.setAttribute('playsinline', 'true');
-      }
-      
       return audioElement;
     }
   };
