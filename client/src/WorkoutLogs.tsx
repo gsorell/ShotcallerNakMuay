@@ -21,9 +21,17 @@ type WorkoutEntry = {
   roundsPlanned: number;
   roundsCompleted: number;
   roundLengthMin: number;
+  restMinutes?: number;
   difficulty?: string;
   shotsCalledOut?: number;
   emphases: string[];
+  status?: 'completed' | 'abandoned';
+  settings?: {
+    selectedEmphases: any;
+    addCalisthenics: boolean;
+    readInOrder: boolean;
+    southpawMode: boolean;
+  };
 };
 
 type EmphasisListItem = {
@@ -105,10 +113,14 @@ function normalizeEmphasis(emphasis: string) {
 
 export default function WorkoutLogs({
   onBack,
-  emphasisList
+  emphasisList,
+  onResume,
+  onViewCompletion
 }: {
   onBack: () => void;
   emphasisList: EmphasisListItem[];
+  onResume?: (log: WorkoutEntry) => void;
+  onViewCompletion?: (log: WorkoutEntry) => void;
 }) {
   const [logs, setLogs] = useState<WorkoutEntry[]>([]);
   const logsContainerRef = useRef<HTMLDivElement>(null);
@@ -130,9 +142,13 @@ export default function WorkoutLogs({
         roundsPlanned: Number.isFinite(Number(p?.roundsPlanned)) ? Number(p.roundsPlanned) : 0,
         roundsCompleted: Number.isFinite(Number(p?.roundsCompleted)) ? Number(p.roundsCompleted) : 0,
         roundLengthMin: Number.isFinite(Number(p?.roundLengthMin)) ? Number(p.roundLengthMin) : 0,
+        restMinutes: Number.isFinite(Number(p?.restMinutes)) ? Number(p.restMinutes) : undefined,
         difficulty: typeof p?.difficulty === 'string' ? p.difficulty : undefined,
         shotsCalledOut: Number.isFinite(Number(p?.shotsCalledOut)) ? Number(p.shotsCalledOut) : undefined,
-        emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : []
+        emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : [],
+        // Infer status for old entries that don't have it
+        status: p?.status || (p?.roundsCompleted >= p?.roundsPlanned ? 'completed' : 'abandoned'),
+        settings: p?.settings
       }));
       setLogs(normalized);
     } catch {
@@ -362,8 +378,9 @@ export default function WorkoutLogs({
                     key={log.id} 
                     style={{ 
                       position: 'relative',
-                      padding: '0.75rem',
-                      paddingRight: '2.5rem', // Extra space for delete button
+                      padding: '1rem',
+                      paddingTop: '0.875rem',
+                      paddingBottom: '0.875rem',
                       background: 'rgba(24, 24, 37, 0.48)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '0.5rem',
@@ -374,119 +391,208 @@ export default function WorkoutLogs({
                       overflow: 'hidden'
                     }}
                   >
-                    {/* Delete button */}
-                    <button
-                      onClick={() => deleteEntry(log.id)}
-                      style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        right: '0.5rem',
-                        background: 'rgba(0,0,0,0.2)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: 'rgba(255,255,255,0.5)',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                        padding: 0,
-                        width: '1.25rem',
-                        height: '1.25rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '0.25rem',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.color = '#ef4444';
-                        e.currentTarget.style.background = 'rgba(239,68,68,0.1)';
-                        e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-                        e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                      }}
-                      aria-label="Delete log"
-                    >
-                      ✕
-                    </button>
-                    
-                    {/* Mobile-Responsive Layout */}
+                    {/* 2-Column Grid Layout: Better balanced */}
                     <div style={{ 
-                      minWidth: 0, // Allow shrinking
+                      minWidth: 0,
                       width: '100%',
-                      maxWidth: '100%',
                       boxSizing: 'border-box',
-                      overflow: 'hidden'
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto',
+                      gridTemplateRows: 'auto auto auto',
+                      gap: '0.5rem',
+                      rowGap: '0.625rem',
+                      alignItems: 'start'
                     }}>
-                      {/* Row 1: Date/Time and Difficulty */}
+                      {/* Row 1, Col 1: Date + Time */}
                       <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        marginBottom: '0.5rem',
-                        minWidth: 0
+                        fontSize: '0.8rem', 
+                        fontWeight: 600, 
+                        color: 'white',
+                        gridColumn: 1,
+                        gridRow: 1
                       }}>
-                        <div style={{ 
-                          fontSize: '0.8rem', 
-                          fontWeight: 600, 
-                          color: 'white',
-                          flex: 1,
-                          minWidth: 0,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          marginRight: '0.5rem'
-                        }}>
-                          {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      
+                      {/* Row 1, Col 2: Delete button */}
+                      <div style={{ 
+                        gridColumn: 2,
+                        gridRow: 1,
+                        justifySelf: 'end'
+                      }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEntry(log.id);
+                          }}
+                          title="Delete workout"
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            borderRadius: '6px',
+                            color: '#ef4444',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            transition: 'all 0.2s ease',
+                            padding: 0
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+                            e.currentTarget.style.borderColor = '#ef4444';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      
+                      {/* Row 2, Col 1: Emphasis/Style */}
+                      <div style={{ 
+                        color: 'rgba(255,255,255,0.7)',
+                        fontSize: '0.75rem',
+                        lineHeight: 1.4,
+                        gridColumn: 1,
+                        gridRow: 2
+                      }}>
+                        {log.emphases.length ? (
+                          log.emphases.length > 3 
+                            ? `${log.emphases.slice(0, 3).join(', ')} +${log.emphases.length - 3} more`
+                            : log.emphases.join(', ')
+                        ) : 'Timer Only'}
+                      </div>
+                      
+                      {/* Row 2, Col 2: Stats (Rounds + Duration stacked) */}
+                      <div style={{ 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem',
+                        color: 'rgba(255,255,255,0.8)',
+                        fontSize: '0.7rem',
+                        textAlign: 'right',
+                        gridColumn: 2,
+                        gridRow: 2,
+                        justifySelf: 'end'
+                      }}>
+                        <div>
+                          <span style={{ fontWeight: 600 }}>
+                            {log.roundsCompleted}/{log.roundsPlanned}
+                          </span>
+                          {' rounds'}
                         </div>
+                        <div>
+                          <span style={{ fontWeight: 600 }}>
+                            {log.roundLengthMin}
+                          </span>
+                          {' min'}
+                        </div>
+                      </div>
+                      
+                      {/* Row 3, Col 1: Difficulty badge */}
+                      <div style={{
+                        gridColumn: 1,
+                        gridRow: 3
+                      }}>
                         <span style={{
+                          display: 'inline-block',
                           padding: '0.125rem 0.375rem',
                           background: `${difficultyColor}15`,
                           color: difficultyColor,
                           borderRadius: '0.25rem',
                           fontSize: '0.65rem',
                           fontWeight: 600,
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0
+                          whiteSpace: 'nowrap'
                         }}>
                           {difficultyLabel(log.difficulty)}
                         </span>
                       </div>
                       
-                      {/* Row 2: Style and Stats */}
+                      {/* Row 3, Col 2: Resume/Trophy buttons */}
                       <div style={{ 
                         display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        fontSize: '0.75rem',
-                        minWidth: 0
+                        gap: '0.375rem',
+                        gridColumn: 2,
+                        gridRow: 3,
+                        justifySelf: 'end'
                       }}>
-                        <div style={{ 
-                          color: 'rgba(255,255,255,0.7)',
-                          flex: 1,
-                          minWidth: 0,
-                          maxWidth: '100%',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          marginRight: '0.5rem'
-                        }}>
-                          {log.emphases.length ? (
-                            log.emphases.length > 3 
-                              ? `${log.emphases.slice(0, 3).join(', ')} +${log.emphases.length - 3} more`
-                              : log.emphases.join(', ')
-                          ) : 'Timer Only'}
-                        </div>
-                        <div style={{ 
-                          color: 'rgba(255,255,255,0.8)',
-                          fontSize: '0.7rem',
-                          flexShrink: 0,
-                          textAlign: 'right',
-                          lineHeight: 1.2
-                        }}>
-                          <div>{log.roundsCompleted}/{log.roundsPlanned} rounds</div>
-                          <div>{log.roundLengthMin} min</div>
-                        </div>
+                        {/* Resume icon - only for incomplete workouts */}
+                        {log.status === 'abandoned' && log.roundsCompleted < log.roundsPlanned && onResume && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onResume(log);
+                            }}
+                            title={`Resume from round ${log.roundsCompleted + 1}`}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'rgba(34, 211, 238, 0.15)',
+                              border: '1px solid rgba(34, 211, 238, 0.3)',
+                              borderRadius: '6px',
+                              color: '#22d3ee',
+                              cursor: 'pointer',
+                              fontSize: '10px',
+                              transition: 'all 0.2s ease',
+                              padding: 0
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(34, 211, 238, 0.25)';
+                              e.currentTarget.style.borderColor = '#22d3ee';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(34, 211, 238, 0.15)';
+                              e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.3)';
+                            }}
+                          >
+                            ▶
+                          </button>
+                        )}
+                        
+                        {/* View stats icon - only for completed workouts */}
+                        {log.status === 'completed' && onViewCompletion && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewCompletion(log);
+                            }}
+                            title="View completion screen"
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'rgba(249, 168, 212, 0.15)',
+                              border: '1px solid rgba(249, 168, 212, 0.3)',
+                              borderRadius: '6px',
+                              color: '#f9a8d4',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              transition: 'all 0.2s ease',
+                              padding: 0
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(249, 168, 212, 0.25)';
+                              e.currentTarget.style.borderColor = '#f9a8d4';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(249, 168, 212, 0.15)';
+                              e.currentTarget.style.borderColor = 'rgba(249, 168, 212, 0.3)';
+                            }}
+                          >
+                            🏆
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
