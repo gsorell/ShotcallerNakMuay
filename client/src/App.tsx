@@ -1649,6 +1649,7 @@ export default function App() {
       roundsPlanned: roundsCount,
       roundsCompleted,
       roundLengthMin: roundMin,
+      restMinutes: restMinutes,
       difficulty, // already present
       shotsCalledOut: shotsCalledOutRef.current, // <-- add this
       emphases: Object.entries(selectedEmphases)
@@ -1656,7 +1657,16 @@ export default function App() {
         .map(([k]) => {
           const found = emphasisList.find(e => e.key === (k as EmphasisKey));
           return found ? found.label : k;
-        })
+        }),
+      // NEW: Track completion status
+      status: roundsCompleted >= roundsCount ? 'completed' : 'abandoned',
+      // NEW: Store settings to enable resume capability
+      settings: {
+        selectedEmphases,
+        addCalisthenics,
+        readInOrder,
+        southpawMode
+      }
     };
     try {
       const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
@@ -1681,6 +1691,104 @@ export default function App() {
       // Failed to auto-log workout
     }
   }
+
+  // Resume incomplete workout from logs
+  const resumeWorkout = useCallback((logEntry: any) => {
+    // Restore all settings from the logged workout
+    if (logEntry.settings) {
+      setSelectedEmphases(logEntry.settings.selectedEmphases);
+      setAddCalisthenics(logEntry.settings.addCalisthenics);
+      setReadInOrder(logEntry.settings.readInOrder);
+      setSouthpawMode(logEntry.settings.southpawMode);
+    }
+    
+    setRoundsCount(logEntry.roundsPlanned);
+    setRoundMin(logEntry.roundLengthMin);
+    setRestMinutes(logEntry.restMinutes || DEFAULT_REST_MINUTES);
+    setDifficulty(logEntry.difficulty || 'medium');
+    
+    // Restore the shot count from the original session
+    shotsCalledOutRef.current = logEntry.shotsCalledOut || 0;
+    
+    // Navigate to timer page first
+    setPage('timer');
+    
+    // Use setTimeout to ensure state updates have been applied
+    setTimeout(() => {
+      // Now start the session - this will initialize everything properly
+      const pool = getTechniquePool();
+      const timerOnlySelected = logEntry.settings?.selectedEmphases?.timer_only && 
+        Object.values(logEntry.settings.selectedEmphases).filter(Boolean).length === 1;
+      
+      if (!pool.length && !timerOnlySelected) {
+        alert('Cannot resume: No techniques found for the selected emphasis(es).');
+        return;
+      }
+
+      // Track resume event
+      try {
+        trackEvent('workout_resumed', {
+          original_timestamp: logEntry.timestamp,
+          rounds_remaining: logEntry.roundsPlanned - logEntry.roundsCompleted,
+          rounds_completed: logEntry.roundsCompleted
+        });
+      } catch {}
+
+      // Unlock audio
+      void ensureMediaUnlocked();
+
+      // Set up the technique pool
+      if (logEntry.settings?.readInOrder) {
+        currentPoolRef.current = pool;
+      } else {
+        currentPoolRef.current = pool.sort(() => Math.random() - 0.5);
+      }
+      orderedIndexRef.current = 0;
+
+      // Prime TTS
+      try {
+        ttsSpeak(' ', { 
+          volume: 0, 
+          rate: voiceSpeed,
+          voice: voice ? { id: voice.name, name: voice.name, language: voice.lang, browserVoice: voice } : null
+        });
+      } catch {}
+
+      // Start from the next incomplete round with pre-round countdown
+      setCurrentRound(logEntry.roundsCompleted + 1);
+      setIsPreRound(true);
+      setPreRoundTimeLeft(5);
+      
+      speakSystem('Resuming workout. Get ready', voice, voiceSpeed);
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 150);
+  }, [getTechniquePool, ensureMediaUnlocked, voiceSpeed, voice, speakSystem]);
+
+  // Regenerate completion screen from logged data
+  const viewCompletionScreen = useCallback((logEntry: any) => {
+    // Recreate the completion screen from logged data
+    setLastWorkout({
+      timestamp: logEntry.timestamp,
+      emphases: logEntry.emphases,
+      difficulty: logEntry.difficulty,
+      shotsCalledOut: logEntry.shotsCalledOut,
+      roundsCompleted: logEntry.roundsCompleted,
+      roundsPlanned: logEntry.roundsPlanned,
+      roundLengthMin: logEntry.roundLengthMin,
+      // Don't suggest install on replayed screens
+      suggestInstall: false
+    });
+    setPage('completed');
+    
+    // Track view event
+    try {
+      trackEvent('completion_screen_viewed', {
+        workout_id: logEntry.id,
+        is_replay: true
+      });
+    } catch {}
+  }, []);
 
   // REMOVE this block (it's a plain <div> showing round/time/status):
   /*
@@ -2277,7 +2385,12 @@ export default function App() {
           }}
         >
           {page === 'logs' ? (
-            <WorkoutLogs onBack={() => setPage('timer')} emphasisList={emphasisList} />
+            <WorkoutLogs 
+              onBack={() => setPage('timer')} 
+              emphasisList={emphasisList}
+              onResume={resumeWorkout}
+              onViewCompletion={viewCompletionScreen}
+            />
           ) : page === 'editor' ? (
             <TechniqueEditorAny
               techniques={techniques as any}
@@ -2360,7 +2473,6 @@ export default function App() {
                         {currentCallout}
                       </div>
                     )}
-
                     <section
                       style={{
                         maxWidth: '32rem',
