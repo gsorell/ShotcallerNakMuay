@@ -379,7 +379,6 @@ export default function WorkoutLogs({
                     style={{ 
                       position: 'relative',
                       padding: '0.75rem',
-                      paddingRight: '2.5rem', // Space for delete button
                       background: 'rgba(24, 24, 37, 0.48)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '0.5rem',
@@ -390,6 +389,87 @@ export default function WorkoutLogs({
                       overflow: 'hidden'
                     }}
                   >
+                    {/* Play/Trophy button - top right, before delete */}
+                    {log.status === 'abandoned' && log.roundsCompleted < log.roundsPlanned && onResume && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onResume(log);
+                        }}
+                        title={`Resume from round ${log.roundsCompleted + 1}`}
+                        style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '2.25rem',
+                          width: '1.5rem',
+                          height: '1.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(34, 211, 238, 0.2)',
+                          border: '1px solid rgba(34, 211, 238, 0.4)',
+                          borderRadius: '0.375rem',
+                          color: '#22d3ee',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          transition: 'all 0.2s ease',
+                          padding: 0
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(34, 211, 238, 0.3)';
+                          e.currentTarget.style.borderColor = '#22d3ee';
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(34, 211, 238, 0.2)';
+                          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.4)';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        ▶
+                      </button>
+                    )}
+                    
+                    {log.status === 'completed' && onViewCompletion && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewCompletion(log);
+                        }}
+                        title="View completion screen"
+                        style={{
+                          position: 'absolute',
+                          top: '0.5rem',
+                          right: '2.25rem',
+                          width: '1.5rem',
+                          height: '1.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(249, 168, 212, 0.2)',
+                          border: '1px solid rgba(249, 168, 212, 0.4)',
+                          borderRadius: '0.375rem',
+                          color: '#f9a8d4',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          transition: 'all 0.2s ease',
+                          padding: 0
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(249, 168, 212, 0.3)';
+                          e.currentTarget.style.borderColor = '#f9a8d4';
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(249, 168, 212, 0.2)';
+                          e.currentTarget.style.borderColor = 'rgba(249, 168, 212, 0.4)';
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        🏆
+                      </button>
+                    )}
+                    
                     {/* Delete button - top right corner */}
                     <button
                       onClick={() => deleteEntry(log.id)}
@@ -397,29 +477,30 @@ export default function WorkoutLogs({
                         position: 'absolute',
                         top: '0.5rem',
                         right: '0.5rem',
-                        background: 'rgba(0,0,0,0.2)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: 'rgba(255,255,255,0.5)',
-                        fontSize: '0.75rem',
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        color: '#ef4444',
+                        fontSize: '0.875rem',
                         cursor: 'pointer',
                         padding: 0,
-                        width: '1.25rem',
-                        height: '1.25rem',
+                        width: '1.5rem',
+                        height: '1.5rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        borderRadius: '0.25rem',
-                        transition: 'all 0.2s ease'
+                        borderRadius: '0.375rem',
+                        transition: 'all 0.2s ease',
+                        lineHeight: 1
                       }}
                       onMouseEnter={e => {
-                        e.currentTarget.style.color = '#ef4444';
-                        e.currentTarget.style.background = 'rgba(239,68,68,0.1)';
-                        e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)';
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+                        e.currentTarget.style.borderColor = '#ef4444';
+                        e.currentTarget.style.transform = 'scale(1.05)';
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-                        e.currentTarget.style.background = 'rgba(0,0,0,0.2)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                        e.currentTarget.style.transform = 'scale(1)';
                       }}
                       aria-label="Delete log"
                     >
@@ -432,21 +513,20 @@ export default function WorkoutLogs({
                       width: '100%',
                       maxWidth: '100%',
                       boxSizing: 'border-box',
-                      overflow: 'hidden',
-                      textAlign: 'left'
+                      overflow: 'visible'
                     }}>
-                      {/* Row 1: Date/Time only */}
+                      {/* Row 1: Date/Time - LEFT JUSTIFIED */}
                       <div style={{ 
                         fontSize: '0.8rem', 
                         fontWeight: 600, 
                         color: 'white',
                         marginBottom: '0.5rem',
-                        textAlign: 'center'
+                        textAlign: 'left'
                       }}>
                         {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                       
-                      {/* Row 2: Style (full width) */}
+                      {/* Row 2: Emphasis/Style */}
                       <div style={{ 
                         color: 'rgba(255,255,255,0.7)',
                         fontSize: '0.75rem',
@@ -454,7 +534,7 @@ export default function WorkoutLogs({
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        textAlign: 'center'
+                        textAlign: 'left'
                       }}>
                         {log.emphases.length ? (
                           log.emphases.length > 3 
@@ -463,11 +543,11 @@ export default function WorkoutLogs({
                         ) : 'Timer Only'}
                       </div>
                       
-                      {/* Row 3: Difficulty, Rounds, Min */}
+                      {/* Row 3: Stats */}
                       <div style={{ 
                         display: 'flex', 
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        justifyContent: 'flex-start',
                         gap: '0.75rem',
                         fontSize: '0.7rem',
                         minHeight: '24px'
@@ -504,83 +584,6 @@ export default function WorkoutLogs({
                           {log.roundLengthMin} min
                         </div>
                       </div>
-                      
-                      {/* Resume/Trophy button - positioned relative to card */}
-                      {log.status === 'abandoned' && log.roundsCompleted < log.roundsPlanned && onResume && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onResume(log);
-                          }}
-                          title={`Resume from round ${log.roundsCompleted + 1}`}
-                          style={{
-                            position: 'absolute',
-                            bottom: '0.75rem',
-                            right: '0.5rem',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(34, 211, 238, 0.15)',
-                            border: '1px solid rgba(34, 211, 238, 0.3)',
-                            borderRadius: '6px',
-                            color: '#22d3ee',
-                            cursor: 'pointer',
-                            fontSize: '10px',
-                            transition: 'all 0.2s ease',
-                            padding: 0
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(34, 211, 238, 0.25)';
-                            e.currentTarget.style.borderColor = '#22d3ee';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(34, 211, 238, 0.15)';
-                            e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.3)';
-                          }}
-                        >
-                          ▶
-                        </button>
-                      )}
-                      
-                      {log.status === 'completed' && onViewCompletion && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewCompletion(log);
-                          }}
-                          title="View completion screen"
-                          style={{
-                            position: 'absolute',
-                            bottom: '0.75rem',
-                            right: '0.5rem',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(249, 168, 212, 0.15)',
-                            border: '1px solid rgba(249, 168, 212, 0.3)',
-                            borderRadius: '6px',
-                            color: '#f9a8d4',
-                            cursor: 'pointer',
-                            fontSize: '11px',
-                            transition: 'all 0.2s ease',
-                            padding: 0
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(249, 168, 212, 0.25)';
-                            e.currentTarget.style.borderColor = '#f9a8d4';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(249, 168, 212, 0.15)';
-                            e.currentTarget.style.borderColor = 'rgba(249, 168, 212, 0.3)';
-                          }}
-                        >
-                          🏆
-                        </button>
-                      )}
                     </div>
                   </div>
                 );

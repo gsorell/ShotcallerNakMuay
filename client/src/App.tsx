@@ -2401,8 +2401,42 @@ export default function App() {
             <WorkoutCompleted
               stats={lastWorkout}
               onRestart={() => {
+                // Reset all session state
+                if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                  try { window.speechSynthesis.cancel(); } catch { /* noop */ }
+                }
+                setPaused(false);
+                setRunning(false);
+                setCurrentRound(0);
+                setTimeLeft(0);
+                setIsResting(false);
+                setIsPreRound(false);
+                setPreRoundTimeLeft(0);
+                setCurrentCallout('');
+                stopTechniqueCallouts();
+                stopAllNarration();
+                
+                // Restore the workout settings from lastWorkout
+                // Convert emphasis labels back to keys
+                const emphasisKeys = lastWorkout.emphases.map((label: string) => {
+                  const found = emphasisList.find(e => e.label === label);
+                  return found ? found.key : null;
+                }).filter(Boolean);
+                
+                // Restore selected emphases
+                const restoredEmphases: any = {};
+                emphasisKeys.forEach((key: string) => {
+                  restoredEmphases[key] = true;
+                });
+                setSelectedEmphases(restoredEmphases);
+                
+                // Navigate back to timer page
                 setPage('timer');
-                setTimeout(() => startSession(), 0);
+                
+                // Start a new session after state updates
+                setTimeout(() => {
+                  startSession();
+                }, 150);
               }}
               onReset={() => setPage('timer')}
               onViewLog={() => setPage('logs')}
