@@ -16,6 +16,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
 import { useIOSAudioSession } from './hooks/useIOSAudioSession';
+import { useAudioSession } from './hooks/useAudioSession';
 import { ttsService } from './utils/ttsService';
 
 
@@ -307,6 +308,9 @@ export default function App() {
   
   // iOS audio session configuration for background music compatibility
   const iosAudioSession = useIOSAudioSession();
+  
+  // Audio session management for background music ducking (Android)
+  const audioSession = useAudioSession();
   
   // User engagement tracking for PWA prompting
   const [userEngagement, setUserEngagement] = useState(() => {
@@ -1440,6 +1444,12 @@ export default function App() {
       setRunning(false);
       setPaused(false);
       setIsResting(false);
+      
+      // Release audio focus to restore background music volume
+      audioSession.endSession().catch((err: unknown) => {
+        console.warn('Audio session end failed:', err);
+      });
+      
       setPage('completed'); // <-- show completed page
       return;
     }
@@ -1568,6 +1578,13 @@ export default function App() {
         voice: voice ? { id: voice.name, name: voice.name, language: voice.lang, browserVoice: voice } : null
       });
     } catch {}
+    
+    // Request audio focus to duck background music (Android)
+    audioSession.startSession().catch(err => {
+      // Non-critical - app continues if audio session fails
+      console.warn('Audio session start failed:', err);
+    });
+    
     // Start pre-round countdown instead of the session directly
     setCurrentRound(1);
     setIsPreRound(true);
@@ -1615,6 +1632,11 @@ export default function App() {
     stopTechniqueCallouts();
     stopAllNarration();
     setCurrentCallout(''); // clear subtitle on stop
+    
+    // Release audio focus to restore background music volume
+    audioSession.endSession().catch(err => {
+      console.warn('Audio session end failed:', err);
+    });
   }
 
   // Scroll to top when opening Technique Editor (especially for mobile)
