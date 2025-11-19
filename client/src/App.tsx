@@ -1419,6 +1419,10 @@ export default function App() {
   useEffect(() => {
     if (!running || paused || isResting) return;
     if (timeLeft > 0) return;
+    
+    // Immediately stop all TTS when round ends
+    stopTTS();
+    
     playBell();
     stopTechniqueCallouts();
     stopAllNarration();
@@ -1455,7 +1459,7 @@ export default function App() {
     }
     setIsResting(true);
     setRestTimeLeft(Math.max(1, Math.round(restMinutes * 60)));
-  }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts, restMinutes]);
+  }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts, stopTTS, restMinutes, audioSession]);
 
   // Track if we've played the 10-second warning and 5-second bell for this rest period
   const warningPlayedRef = useRef(false);
@@ -1605,6 +1609,9 @@ export default function App() {
     }
   }
   function stopSession() {
+    // Immediately stop all TTS
+    stopTTS();
+    
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch { /* noop */ }
     }
