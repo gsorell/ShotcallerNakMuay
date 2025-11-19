@@ -241,100 +241,141 @@ export default function WorkoutCompleted({ stats, onRestart, onReset, onViewLog 
 
       {/* Action Buttons - Outside capture area */}
       <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gap: 12, 
-        marginBottom: 16 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 16,
+        flexWrap: 'nowrap'
       }}>
-        <button 
-          onClick={onRestart} 
+        <img 
+          src="/assets/icon_restart.png" 
+          alt="Restart"
+          title="Restart"
+          onClick={onRestart}
           style={{ 
-            background: '#2563eb', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: 12, 
-            padding: '14px 20px', 
-            fontWeight: 600, 
+            width: 48,
+            height: 48,
             cursor: 'pointer',
-            fontSize: '0.9rem'
+            transition: 'all 0.2s',
+            borderRadius: 12,
+            padding: 4,
+            boxSizing: 'border-box'
           }}
-        >
-          Restart
-        </button>
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'brightness(1.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'brightness(1)';
+          }}
+        />
         
-        <button 
-          onClick={onReset} 
+        <img 
+          src="/assets/icon_home.png" 
+          alt="Home"
+          title="Home"
+          onClick={onReset}
           style={{ 
-            background: '#ef4444', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: 12, 
-            padding: '14px 20px', 
-            fontWeight: 600, 
+            width: 48,
+            height: 48,
             cursor: 'pointer',
-            fontSize: '0.9rem'
+            transition: 'all 0.2s',
+            borderRadius: 12,
+            padding: 4,
+            boxSizing: 'border-box'
           }}
-        >
-          Home
-        </button>
-      </div>
-      
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: isWebShareSupported() ? '1fr 1fr 1fr' : '1fr 1fr',
-        gap: 12
-      }}>
-        <button 
-          onClick={onViewLog} 
-          style={{ 
-            background: '#f9a8d4', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: 12, 
-            padding: '14px 16px', 
-            fontWeight: 600, 
-            cursor: 'pointer',
-            fontSize: '0.9rem'
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'brightness(1.2)';
           }}
-        >
-          View Log
-        </button>
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'brightness(1)';
+          }}
+        />
         
-        <button 
-          onClick={handleDownload}
-          disabled={isCapturing}
+        <img 
+          src="/assets/icon_view_log.png" 
+          alt="View Log"
+          title="View Log"
+          onClick={onViewLog}
           style={{ 
-            background: isCapturing ? '#6b7280' : '#10b981', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: 12, 
-            padding: '14px 16px', 
-            fontWeight: 600, 
+            width: 48,
+            height: 48,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            borderRadius: 12,
+            padding: 4,
+            boxSizing: 'border-box'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.filter = 'brightness(1.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.filter = 'brightness(1)';
+          }}
+        />
+        
+        <img 
+          src="/assets/icon_download_updated.png" 
+          alt="Download"
+          title="Download"
+          onClick={isCapturing ? undefined : handleDownload}
+          style={{ 
+            width: 48,
+            height: 48,
             cursor: isCapturing ? 'not-allowed' : 'pointer',
-            fontSize: '0.9rem'
+            transition: 'all 0.2s',
+            borderRadius: 12,
+            opacity: isCapturing ? 0.5 : 1,
+            padding: 4,
+            boxSizing: 'border-box'
           }}
-        >
-          {isCapturing ? 'Downloading...' : 'Download'}
-        </button>
+          onMouseEnter={(e) => {
+            if (!isCapturing) {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'brightness(1.2)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isCapturing) {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'brightness(1)';
+            }
+          }}
+        />
         
-        {isWebShareSupported() && (
-          <button 
-            onClick={handleShare}
-            disabled={isCapturing}
-            style={{ 
-              background: isCapturing ? '#6b7280' : '#8b5cf6', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: 12, 
-              padding: '14px 16px', 
-              fontWeight: 600, 
-              cursor: isCapturing ? 'not-allowed' : 'pointer',
-              fontSize: '0.9rem'
-            }}
-          >
-            {isCapturing ? 'Sharing...' : 'Share'}
-          </button>
-        )}
+        <img 
+          src="/assets/icon_share.png" 
+          alt="Share"
+          title="Share"
+          onClick={isCapturing ? undefined : handleShare}
+          style={{ 
+            width: 48,
+            height: 48,
+            cursor: isCapturing ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            borderRadius: 12,
+            opacity: isCapturing ? 0.5 : 1,
+            padding: 4,
+            boxSizing: 'border-box'
+          }}
+          onMouseEnter={(e) => {
+            if (!isCapturing) {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.filter = 'brightness(1.2)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isCapturing) {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.filter = 'brightness(1)';
+            }
+          }}
+        />
       </div>
     </div>
   );

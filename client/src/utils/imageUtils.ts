@@ -1,6 +1,7 @@
 import html2canvas from 'html2canvas';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 
 export interface WorkoutStats {
   timestamp: string;
@@ -191,10 +192,15 @@ export const generateWorkoutFilename = (stats: WorkoutStats): string => {
 };
 
 /**
- * Checks if the Web Share API is available
+ * Checks if the Web Share API is available (Web or Native)
  * @returns boolean
  */
 export const isWebShareSupported = (): boolean => {
+  // Check if we're in a native app (Capacitor Share is always available)
+  if (Capacitor.isNativePlatform()) {
+    return true;
+  }
+  // Otherwise check for Web Share API
   return 'share' in navigator;
 };
 
@@ -207,29 +213,96 @@ export const isNativeApp = (): boolean => {
 };
 
 /**
- * Shares workout image using Web Share API
+ * Shares workout image using Capacitor Share (native) or Web Share API (web)
  * @param blob - Image blob to share
  * @param stats - Workout stats for generating share text
  */
 export const shareWorkoutImage = async (blob: Blob, stats: WorkoutStats): Promise<void> => {
-  if (!isWebShareSupported()) {
-    throw new Error('Web Share API not supported');
-  }
+  const shareText = `Just completed a ${stats.difficulty} workout with ${stats.shotsCalledOut} shots called out! 🥊 ${stats.roundsCompleted}/${stats.roundsPlanned} rounds of ${stats.emphases.join(', ')} training. #NakMuay #ShotcallerNakMuay #MuayThai`;
 
   try {
-    const file = new File([blob], `${generateWorkoutFilename(stats)}.png`, {
-      type: 'image/png',
-    });
+    // Check if running in native app
+    if (Capacitor.isNativePlatform()) {
+      // Use Capacitor Share for native apps
+      // First save the image to filesystem, then share it
+      const canvas = document.createElement('canvas');
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve();
+          } else {
+            reject(new Error('Failed to get canvas context'));
+          }
+        };
+        img.onerror = reject;
+        img.src = blobUrl;
+      });
+      
+      URL.revokeObjectURL(blobUrl);
+      
+      const base64Data = canvas.toDataURL('image/png', 0.95);
+      const base64String = base64Data.replace(/^data:image\/png;base64,/, '');
+      const filename = `${generateWorkoutFilename(stats)}.png`;
+      
+      // Save to cache directory temporarily
+      const result = await Filesystem.writeFile({
+        path: filename,
+        data: base64String,
+        directory: Directory.Cache
+      });
+      
+      // Share the file
+      await Share.share({
+        title: 'Shotcaller Nak Muay Workout Complete!',
+        text: shareText,
+        url: result.uri,
+        dialogTitle: 'Share your workout'
+      });
+      
+      // Optionally clean up the temp file after sharing
+      // Note: We keep it for now as the share might be async
+    } else if ('share' in navigator) {
+      // Use Web Share API for web browsers if available
+      const file = new File([blob], `${generateWorkoutFilename(stats)}.png`, {
+        type: 'image/png',
+      });
 
-    const shareText = `Just completed a ${stats.difficulty} workout with ${stats.shotsCalledOut} shots called out! 🥊 ${stats.roundsCompleted}/${stats.roundsPlanned} rounds of ${stats.emphases.join(', ')} training. #NakMuay #ShotcallerNakMuay #MuayThai`;
-
-    await navigator.share({
-      title: 'Shotcaller Nak Muay Workout Complete!',
-      text: shareText,
-      files: [file],
-    });
+      // Check if we can share files
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'Shotcaller Nak Muay Workout Complete!',
+          text: shareText,
+          files: [file],
+        });
+      } else {
+        // Fallback: try sharing without files (text only)
+        await navigator.share({
+          title: 'Shotcaller Nak Muay Workout Complete!',
+          text: shareText,
+        });
+      }
+    } else {
+      // Fallback: Copy text to clipboard
+      if (typeof navigator !== 'undefined' && 'clipboard' in navigator) {
+        await (navigator as any).clipboard.writeText(shareText);
+        alert('Workout details copied to clipboard!\n\nNote: Your browser doesn\'t support sharing. The image has been downloaded separately.');
+      } else {
+        alert('Sharing is not supported in this browser. Please use the Download button instead.');
+      }
+    }
   } catch (error) {
     console.error('Error sharing workout:', error);
-    throw new Error('Failed to share workout image');
+    // Don't throw if user cancelled
+    if (error instanceof Error && error.name !== 'AbortError') {
+      // Show user-friendly message instead of throwing
+      alert('Unable to share. Try using the Download button instead.');
+    }
   }
 };
