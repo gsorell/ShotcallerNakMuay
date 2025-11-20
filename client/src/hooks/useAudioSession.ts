@@ -26,9 +26,6 @@ interface AudioSessionPlugin {
 // Register the native plugin once (outside the hook to prevent re-registration)
 const AudioSession = registerPlugin<AudioSessionPlugin>('AudioSession');
 
-// Check if we're on Android native (only platform that supports this)
-const isAndroidNative = Capacitor.getPlatform() === 'android' && Capacitor.isNativePlatform();
-
 /**
  * Hook to manage audio session for workout timer
  * Automatically handles audio ducking on Android for background music apps
@@ -40,9 +37,12 @@ export const useAudioSession = () => {
     // Cleanup on unmount - ensure audio focus is released
     return () => {
       if (sessionActiveRef.current) {
-        AudioSession.endSession().catch(err => {
-          console.warn('Failed to end audio session on unmount:', err);
-        });
+        // Check platform at runtime for cleanup
+        if (Capacitor.getPlatform() === 'android' && Capacitor.isNativePlatform()) {
+          AudioSession.endSession().catch(err => {
+            console.warn('Failed to end audio session on unmount:', err);
+          });
+        }
       }
     };
   }, []);
@@ -51,8 +51,8 @@ export const useAudioSession = () => {
    * Start an audio session - ducks background music
    */
   const startSession = async (): Promise<boolean> => {
-    // Only attempt on Android native - silently skip on web/iOS
-    if (!isAndroidNative) {
+    // Check platform at runtime, not at module load time
+    if (Capacitor.getPlatform() !== 'android' || !Capacitor.isNativePlatform()) {
       return false;
     }
     
@@ -72,8 +72,8 @@ export const useAudioSession = () => {
    * End an audio session - restores background music volume
    */
   const endSession = async (): Promise<boolean> => {
-    // Only attempt on Android native - silently skip on web/iOS
-    if (!isAndroidNative) {
+    // Check platform at runtime, not at module load time
+    if (Capacitor.getPlatform() !== 'android' || !Capacitor.isNativePlatform()) {
       return false;
     }
     
@@ -92,8 +92,8 @@ export const useAudioSession = () => {
    * Check if audio session is currently active
    */
   const isSessionActive = async (): Promise<boolean> => {
-    // Only check on Android native
-    if (!isAndroidNative) {
+    // Check platform at runtime, not at module load time
+    if (Capacitor.getPlatform() !== 'android' || !Capacitor.isNativePlatform()) {
       return false;
     }
     
