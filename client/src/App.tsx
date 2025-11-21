@@ -1563,6 +1563,13 @@ export default function App() {
     // Unlock audio while we still have a user gesture
     void ensureMediaUnlocked();
 
+    // Request audio focus to duck background music IMMEDIATELY (Android)
+    // This must happen early so music is ducked before "Get ready" announcement
+    audioSession.startSession().catch(err => {
+      // Non-critical - app continues if audio session fails
+      console.warn('Audio session start failed:', err);
+    });
+
     // Reset pool and index for the session
     if (readInOrder) {
       currentPoolRef.current = pool;
@@ -1582,12 +1589,6 @@ export default function App() {
         voice: voice ? { id: voice.name, name: voice.name, language: voice.lang, browserVoice: voice } : null
       });
     } catch {}
-    
-    // Request audio focus to duck background music (Android)
-    audioSession.startSession().catch(err => {
-      // Non-critical - app continues if audio session fails
-      console.warn('Audio session start failed:', err);
-    });
     
     // Start pre-round countdown instead of the session directly
     setCurrentRound(1);

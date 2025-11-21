@@ -44,29 +44,18 @@ public class AudioSessionPlugin extends Plugin {
                     case AudioManager.AUDIOFOCUS_LOSS:
                         Log.w(TAG, "Audio focus lost permanently");
                         hasAudioFocus = false;
-                        // If we have an active session and lost focus, try to re-request it
-                        if (sessionActive) {
-                            Log.d(TAG, "Session active - attempting to re-request audio focus");
-                            requestAudioFocusInternal();
-                        }
+                        // Don't re-request - let it stay lost (e.g., phone call)
                         break;
                         
                     case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                         Log.d(TAG, "Audio focus lost transiently (temporary interruption)");
-                        hasAudioFocus = false;
-                        // For transient loss, we'll wait for it to return naturally
-                        // but mark that we should still be holding focus
+                        // With AUDIOFOCUS_GAIN, we maintain persistent focus
+                        // TTS will speak without taking our focus away
                         break;
                         
                     case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
                         Log.d(TAG, "Audio focus loss (can duck) - another app wants to duck us");
-                        // Another app wants us to duck - we can continue but at lower volume
-                        // For our use case, we want to maintain our ducking of background music
-                        // so we'll try to re-assert our focus request
-                        if (sessionActive) {
-                            Log.d(TAG, "Re-asserting audio focus to maintain ducking");
-                            requestAudioFocusInternal();
-                        }
+                        // With AUDIOFOCUS_GAIN, we maintain control and this shouldn't happen often
                         break;
                         
                     case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT:
@@ -93,12 +82,14 @@ public class AudioSessionPlugin extends Plugin {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 // Modern Android API (8.0+)
+                // Use AUDIOFOCUS_GAIN for persistent focus throughout workout
+                // This prevents TTS from taking over and restoring background music volume
                 AudioAttributes playbackAttributes = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build();
 
-                audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                     .setAudioAttributes(playbackAttributes)
                     .setAcceptsDelayedFocusGain(false)
                     .setWillPauseWhenDucked(false)
@@ -108,10 +99,11 @@ public class AudioSessionPlugin extends Plugin {
                 result = audioManager.requestAudioFocus(audioFocusRequest);
             } else {
                 // Legacy API (older Android versions)
+                // Use AUDIOFOCUS_GAIN for persistent focus
                 result = audioManager.requestAudioFocus(
                     audioFocusChangeListener,
                     AudioManager.STREAM_MUSIC,
-                    AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+                    AudioManager.AUDIOFOCUS_GAIN
                 );
             }
 
