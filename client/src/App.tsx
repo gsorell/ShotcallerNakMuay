@@ -16,7 +16,6 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
 import { useIOSAudioSession } from './hooks/useIOSAudioSession';
-import { useAudioSession } from './hooks/useAudioSession';
 import { ttsService } from './utils/ttsService';
 
 
@@ -308,9 +307,6 @@ export default function App() {
   
   // iOS audio session configuration for background music compatibility
   const iosAudioSession = useIOSAudioSession();
-  
-  // Audio session management for background music ducking (Android)
-  const audioSession = useAudioSession();
   
   // User engagement tracking for PWA prompting
   const [userEngagement, setUserEngagement] = useState(() => {
@@ -1449,17 +1445,12 @@ export default function App() {
       setPaused(false);
       setIsResting(false);
       
-      // Release audio focus to restore background music volume
-      audioSession.endSession().catch((err: unknown) => {
-        console.warn('Audio session end failed:', err);
-      });
-      
       setPage('completed'); // <-- show completed page
       return;
     }
     setIsResting(true);
     setRestTimeLeft(Math.max(1, Math.round(restMinutes * 60)));
-  }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts, stopTTS, restMinutes, audioSession]);
+  }, [timeLeft, running, paused, isResting, currentRound, roundsCount, playBell, stopAllNarration, stopTechniqueCallouts, stopTTS, restMinutes]);
 
   // Track if we've played the 10-second warning and 5-second bell for this rest period
   const warningPlayedRef = useRef(false);
@@ -1563,13 +1554,6 @@ export default function App() {
     // Unlock audio while we still have a user gesture
     void ensureMediaUnlocked();
 
-    // Request audio focus to duck background music IMMEDIATELY (Android)
-    // This must happen early so music is ducked before "Get ready" announcement
-    audioSession.startSession().catch(err => {
-      // Non-critical - app continues if audio session fails
-      console.warn('Audio session start failed:', err);
-    });
-
     // Reset pool and index for the session
     if (readInOrder) {
       currentPoolRef.current = pool;
@@ -1640,11 +1624,6 @@ export default function App() {
     stopTechniqueCallouts();
     stopAllNarration();
     setCurrentCallout(''); // clear subtitle on stop
-    
-    // Release audio focus to restore background music volume
-    audioSession.endSession().catch(err => {
-      console.warn('Audio session end failed:', err);
-    });
   }
 
   // Scroll to top when opening Technique Editor (especially for mobile)

@@ -402,12 +402,15 @@ class TTSService {
           // Ensure we always have a voice set to prevent "interrupted" errors
           if (voiceToUse?.browserVoice) {
             utterance.voice = voiceToUse.browserVoice;
+            // CRITICAL: Set lang to match voice language for proper pronunciation on iOS
+            utterance.lang = voiceToUse.browserVoice.lang;
           } else {
             // Fallback to system default voice if no specific voice is set
             const voices = window.speechSynthesis.getVoices();
             const defaultVoice = voices.find(v => v.default) || voices[0];
             if (defaultVoice) {
               utterance.voice = defaultVoice;
+              utterance.lang = defaultVoice.lang;
             }
           }
           
