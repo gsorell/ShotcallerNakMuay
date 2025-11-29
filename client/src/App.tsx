@@ -131,7 +131,7 @@ const WORKOUTS_STORAGE_KEY = 'shotcaller_workouts';
 const VOICE_STORAGE_KEY = 'shotcaller_voice_preference';
 // User settings persistence
 const USER_SETTINGS_STORAGE_KEY = 'shotcaller_user_settings';
-const TECHNIQUES_VERSION = 'v34'; // Increment this version to force a reset on deployment
+const TECHNIQUES_VERSION = 'v35'; // Increment this version to force a reset on deployment
 
 // Base UI config for known styles
 // FIX: Use absolute string paths for icons in the /public/assets directory
