@@ -270,6 +270,10 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
     singles: [],
     combos: [
       "1 2",
+      "1,1",
+      "1, Left teep",
+      "1, switch kick",
+      "1,3",
       "2 3",
       "3 4",
       "5 6",
