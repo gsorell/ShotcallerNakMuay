@@ -16,6 +16,7 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
 import { useIOSAudioSession } from './hooks/useIOSAudioSession';
+import { useAndroidAudioDucking } from './hooks/useAndroidAudioDucking';
 import { ttsService } from './utils/ttsService';
 
 
@@ -308,8 +309,10 @@ export default function App() {
   // iOS audio session configuration for background music compatibility
   const iosAudioSession = useIOSAudioSession();
 
+  // Android audio ducking for background music control
+  const androidAudioDucking = useAndroidAudioDucking();
 
-  // User engagement tracking for PWA prompting
+
   const [userEngagement, setUserEngagement] = useState(() => {
     const stored = localStorage.getItem('user_engagement_stats');
     if (stored) {
@@ -1427,6 +1430,12 @@ export default function App() {
     if (currentRound >= roundsCount) {
       // Session finished naturally, log it and stop.
       try { autoLogWorkout(roundsCount); } catch {}
+      
+      // Release audio focus on Android when session completes
+      if (androidAudioDucking.isAndroidNative) {
+        void androidAudioDucking.releaseAudioFocus();
+      }
+      
       // NEW: Save stats and show completed page
       setLastWorkout({
         timestamp: new Date().toISOString(),
@@ -1555,6 +1564,11 @@ export default function App() {
     // Unlock audio while we still have a user gesture
     void ensureMediaUnlocked();
 
+    // Request audio focus with ducking on Android to lower background music
+    if (androidAudioDucking.isAndroidNative) {
+      void androidAudioDucking.requestAudioFocus();
+    }
+
     // Reset pool and index for the session
     if (readInOrder) {
       currentPoolRef.current = pool;
@@ -1597,6 +1611,11 @@ export default function App() {
   function stopSession() {
     // Immediately stop all TTS
     stopTTS();
+    
+    // Release audio focus on Android so background music resumes at full volume
+    if (androidAudioDucking.isAndroidNative) {
+      void androidAudioDucking.releaseAudioFocus();
+    }
     
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try { 
