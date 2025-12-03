@@ -9,6 +9,17 @@ import { useCallback } from 'react';
  * iOS doesn't support ducking this way - uses cooperative mixing instead (handled in useIOSAudioSession)
  * Web/PWA can't access OS-level audio controls, so ducking only works on native Android
  */
+
+// Access the AudioSession plugin via Capacitor's plugin registry
+const getAudioSessionPlugin = () => {
+  try {
+    return (Capacitor as any).Plugins.AudioSession;
+  } catch (error) {
+    console.warn('AudioSession plugin not accessible:', error);
+    return null;
+  }
+};
+
 export const useAndroidAudioDucking = () => {
   const isAndroidNative = Capacitor.getPlatform() === 'android';
   
@@ -22,12 +33,8 @@ export const useAndroidAudioDucking = () => {
     }
 
     try {
-      // Get the AudioSession plugin we registered in Capacitor
-      const { AudioSession } = await import('@capacitor/core').then(cap => {
-        // Access the registered plugin
-        return (cap as any).Plugins;
-      });
-
+      const AudioSession = getAudioSessionPlugin();
+      
       if (!AudioSession) {
         console.warn('AudioSession plugin not available');
         return { success: false, message: 'AudioSession plugin not available' };
@@ -54,9 +61,7 @@ export const useAndroidAudioDucking = () => {
     }
 
     try {
-      const { AudioSession } = await import('@capacitor/core').then(cap => {
-        return (cap as any).Plugins;
-      });
+      const AudioSession = getAudioSessionPlugin();
 
       if (!AudioSession) {
         console.warn('AudioSession plugin not available');
