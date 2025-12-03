@@ -17,6 +17,7 @@ import { useTTS } from './hooks/useTTS';
 import { useNavigationGestures } from './hooks/useNavigationGestures';
 import { useIOSAudioSession } from './hooks/useIOSAudioSession';
 import { ttsService } from './utils/ttsService';
+import { UltrasonicAudioGenerator } from './utils/ultrasonicAudioGenerator';
 
 
 
@@ -307,6 +308,38 @@ export default function App() {
   
   // iOS audio session configuration for background music compatibility
   const iosAudioSession = useIOSAudioSession();
+  
+  // Initialize ultrasonic audio generator for continuous audio focus
+  const initUltrasonicGenerator = useCallback(() => {
+    if (!ultrasonicGeneratorRef.current) {
+      ultrasonicGeneratorRef.current = new UltrasonicAudioGenerator();
+    }
+  }, []);
+  
+  // Start ultrasonic audio to maintain audio focus and duck background music
+  const startSilentAudio = useCallback(async () => {
+    try {
+      initUltrasonicGenerator();
+      if (ultrasonicGeneratorRef.current) {
+        await ultrasonicGeneratorRef.current.start();
+        console.log('[AudioFocus] Ultrasonic audio started - background music should duck');
+      }
+    } catch (error) {
+      console.warn('[AudioFocus] Failed to start ultrasonic audio:', error);
+    }
+  }, [initUltrasonicGenerator]);
+  
+  // Stop ultrasonic audio to release audio focus
+  const stopSilentAudio = useCallback(async () => {
+    try {
+      if (ultrasonicGeneratorRef.current) {
+        await ultrasonicGeneratorRef.current.stop();
+        console.log('[AudioFocus] Ultrasonic audio stopped - background music should return to normal');
+      }
+    } catch (error) {
+      console.warn('[AudioFocus] Failed to stop ultrasonic audio:', error);
+    }
+  }, []);
   
   // User engagement tracking for PWA prompting
   const [userEngagement, setUserEngagement] = useState(() => {
@@ -880,6 +913,8 @@ export default function App() {
   const calloutRef = useRef<number | null>(null);
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null); // Silent audio to maintain audio focus
+  const ultrasonicGeneratorRef = useRef<UltrasonicAudioGenerator | null>(null); // 20kHz ultrasonic audio for continuous audio focus
   const shotsCalledOutRef = useRef<number>(0); // Initialize shotsCalledOutRef
   const orderedIndexRef = useRef<number>(0); // Initialize orderedIndexRef
   const currentPoolRef = useRef<TechniqueWithStyle[]>([]); // Initialize currentPoolRef
@@ -1264,6 +1299,19 @@ export default function App() {
         // Configure for iOS compatibility to prevent audio ducking
         iosAudioSession.configureAudioElement(warningSoundRef.current);
       }
+      
+      // Create silent audio instance for maintaining audio focus
+      // This is a minimal silent MP3 (1 second of silence, looping)
+      if (!silentAudioRef.current) {
+        // Ultra-minimal silent MP3 data URL (23 bytes, 1ms of silence)
+        const silentMP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAA4T0qOBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//sQZDwP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAEVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+        silentAudioRef.current = new Audio(silentMP3);
+        silentAudioRef.current.loop = true;
+        silentAudioRef.current.volume = 0.01; // Near-silent but not zero
+        silentAudioRef.current.preload = 'auto';
+        // Configure for iOS compatibility
+        iosAudioSession.configureAudioElement(silentAudioRef.current);
+      }
     } catch (error) {
       // Failed to initialize audio instances
     }
@@ -1271,6 +1319,12 @@ export default function App() {
     // Cleanup on unmount
     return () => {
       try {
+        // Stop ultrasonic audio if playing
+        if (ultrasonicGeneratorRef.current) {
+          ultrasonicGeneratorRef.current.cleanup();
+          ultrasonicGeneratorRef.current = null;
+        }
+        
         if (bellSoundRef.current) {
           bellSoundRef.current.pause();
           bellSoundRef.current.src = '';
@@ -1282,6 +1336,12 @@ export default function App() {
           warningSoundRef.current.src = '';
           warningSoundRef.current.load();
           warningSoundRef.current = null;
+        }
+        if (silentAudioRef.current) {
+          silentAudioRef.current.pause();
+          silentAudioRef.current.src = '';
+          silentAudioRef.current.load();
+          silentAudioRef.current = null;
         }
       } catch (error) {
         // Error during audio cleanup
@@ -1553,6 +1613,10 @@ export default function App() {
 
     // Unlock audio while we still have a user gesture
     void ensureMediaUnlocked();
+    
+    // Start silent audio to maintain audio focus (ducks background music)
+    // This keeps background music ducked throughout all TTS callouts
+    void startSilentAudio();
 
     // Reset pool and index for the session
     if (readInOrder) {
@@ -1596,6 +1660,10 @@ export default function App() {
   function stopSession() {
     // Immediately stop all TTS
     stopTTS();
+    
+    // Stop ultrasonic audio to release audio focus
+    // This allows background music to return to normal volume
+    void stopSilentAudio();
     
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch { /* noop */ }
