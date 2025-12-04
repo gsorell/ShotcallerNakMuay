@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect } from "react";
 
 interface VisibilityHandler {
   id: string;
@@ -25,8 +25,8 @@ class VisibilityManager {
 
   private handleVisibilityChange = () => {
     const wasVisible = this.isVisible;
-    this.isVisible = document.visibilityState === 'visible';
-    
+    this.isVisible = document.visibilityState === "visible";
+
     if (wasVisible === this.isVisible) return; // No change
 
     // Page visibility changed
@@ -49,17 +49,23 @@ class VisibilityManager {
 
     // Attach listener only when first handler is registered
     if (!this.listenerAttached) {
-      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      document.addEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange
+      );
       this.listenerAttached = true;
     }
 
     // Return cleanup function
     return () => {
       this.handlers.delete(handler.id);
-      
+
       // Remove listener when no handlers remain
       if (this.handlers.size === 0 && this.listenerAttached) {
-        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+        document.removeEventListener(
+          "visibilitychange",
+          this.handleVisibilityChange
+        );
         this.listenerAttached = false;
       }
     };
@@ -86,7 +92,7 @@ export const useVisibilityManager = (
     const cleanup = manager.register({
       id,
       onVisible,
-      onHidden
+      onHidden,
     });
 
     return cleanup;

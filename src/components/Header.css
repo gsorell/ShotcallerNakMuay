@@ -13,7 +13,7 @@
   --logo-bg: transparent;
   --logo-highlight: transparent;
   /* Mobile-specific overrides */
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   -webkit-focus-ring-color: transparent !important;
   -webkit-touch-callout: none !important;
 }
@@ -34,8 +34,8 @@
   /* Prevent mobile focus/active states */
   outline: none !important;
   -webkit-tap-highlight-color: var(--logo-highlight, transparent) !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
-  -webkit-tap-highlight-color: rgba(255,255,255,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0) !important;
   -webkit-focus-ring-color: transparent !important;
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
@@ -71,7 +71,7 @@
 
 /* Add an invisible overlay to prevent highlighting */
 .logo::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -82,7 +82,7 @@
   z-index: 1;
   /* Ensure this overlay can't be highlighted */
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
   user-select: none !important;
@@ -97,28 +97,28 @@ button.logo {
   color: inherit !important;
   text-decoration: none !important;
   cursor: pointer !important;
-  
+
   /* Force transparent backgrounds in all states */
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
-  
+
   /* Remove all possible borders and outlines */
   border: none !important;
   border-radius: inherit !important;
   outline: none !important;
   box-shadow: none !important;
-  
+
   /* Mobile-specific button overrides */
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
   appearance: none !important;
-  
+
   /* Aggressive tap highlight prevention */
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   -webkit-focus-ring-color: transparent !important;
-  
+
   /* Prevent any focus retention */
   touch-action: manipulation !important;
   user-select: none !important;
@@ -139,7 +139,7 @@ button.logo:target {
   outline: none !important;
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   transform: none !important;
   animation: none !important;
   transition: none !important;
@@ -173,7 +173,7 @@ button.logo:target {
   border: none !important;
   outline: none !important;
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   /* Force hardware acceleration to break any persistent rendering */
   transform: translateZ(0) !important;
   will-change: auto !important;
@@ -260,7 +260,7 @@ button.logo:target {
   -ms-user-select: none !important;
   user-select: none !important;
   -webkit-highlight: none !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   -webkit-tap-highlight-color: transparent !important;
 }
 
@@ -280,7 +280,7 @@ button.logo:target {
     outline: none !important;
     border: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   }
   50% {
     background: transparent !important;
@@ -289,7 +289,7 @@ button.logo:target {
     outline: none !important;
     border: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
     /* Force a visual change to trigger repaint */
     opacity: 0.9999;
   }
@@ -300,7 +300,7 @@ button.logo:target {
     outline: none !important;
     border: none !important;
     -webkit-tap-highlight-color: transparent !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
     opacity: 1;
   }
 }
@@ -314,7 +314,7 @@ button.logo:target {
   outline: none !important;
   border: none !important;
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   /* Force immediate hardware acceleration */
   transform: translateZ(0) !important;
   will-change: transform, opacity !important;
@@ -331,7 +331,7 @@ button.logo:target {
     background: transparent !important;
     background-color: transparent !important;
     -webkit-tap-highlight-color: transparent !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
     -webkit-focus-ring-color: transparent !important;
     box-shadow: none !important;
     outline: none !important;
@@ -342,8 +342,8 @@ button.logo:target {
 }
 
 /* Global reset for any possible child highlighting */
-.logo *, 
-.logo *:before, 
+.logo *,
+.logo *:before,
 .logo *:after,
 .logo *:focus,
 .logo *:active,
@@ -354,5 +354,5 @@ button.logo:target {
   outline: none !important;
   border: none !important;
   -webkit-tap-highlight-color: transparent !important;
-  -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
 }
