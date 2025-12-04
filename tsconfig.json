@@ -1,4 +1,8 @@
 {
+  /* 
+   * TypeScript Project References Configuration
+   * This file coordinates multiple TypeScript configurations for different parts of the project
+   */
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

@@ -1,18 +1,53 @@
 {
-  "tsBuildInfoFile": "./node_modules/.cache/app.tsbuildinfo",
   "compilerOptions": {
-    "composite": true,
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    /* Build Info */
+    "tsBuildInfoFile": "./node_modules/.cache/app.tsbuildinfo",
+
+    /* Language and Environment */
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+
+    /* Modules */
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "jsx": "react-jsx",
+    "useDefineForClassFields": true,
+
+    /* Emit */
     "noEmit": true,
-    "skipLibCheck": true,
+    "incremental": true,
+
+    /* Interop Constraints */
+    "verbatimModuleSyntax": true,
+
+    /* Type Checking */
     "strict": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+
+    /* Completeness */
+    "skipLibCheck": true,
+
+    /* Path Mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+    },
+
+    /* Additional Options */
+    "composite": true,
     "types": ["vite/client"]
   },
   "include": ["src"],
-  "exclude": ["dist", "node_modules", "src/__tests__", "src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.spec.ts", "src/**/*.spec.tsx"]
+  "exclude": [
+    "dist", 
+    "node_modules", 
+    "src/__tests__", 
+    "src/**/*.test.ts", 
+    "src/**/*.test.tsx", 
+    "src/**/*.spec.ts", 
+    "src/**/*.spec.tsx"
+  ]
 }
