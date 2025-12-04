@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.json",
+  "tsBuildInfoFile": "./node_modules/.cache/app.tsbuildinfo",
   "compilerOptions": {
     "composite": true,
     "target": "ES2020",
