@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      external: ["nosleep.js", "expo-speech", "expo-modules-core"],
+      external: ["nosleep.js"],
     },
   },
 });
