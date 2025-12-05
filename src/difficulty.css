@@ -19,7 +19,7 @@
   font-size: 1rem; /* 16px */
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  
+
   /* Default (inactive) state */
   background-color: rgba(255, 255, 255, 0.05);
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -41,17 +41,20 @@
 }
 
 /* Specific colors for each active difficulty level */
-.difficulty-btn.active[aria-pressed="true"]:nth-child(1) { /* Easy */
+.difficulty-btn.active[aria-pressed="true"]:nth-child(1) {
+  /* Easy */
   background-color: #22c55e; /* Green */
   border-color: #4ade80;
   box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
 }
-.difficulty-btn.active[aria-pressed="true"]:nth-child(2) { /* Medium */
+.difficulty-btn.active[aria-pressed="true"]:nth-child(2) {
+  /* Medium */
   background-color: #f59e0b; /* Amber */
   border-color: #fbbf24;
   box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
 }
-.difficulty-btn.active[aria-pressed="true"]:nth-child(3) { /* Hard */
+.difficulty-btn.active[aria-pressed="true"]:nth-child(3) {
+  /* Hard */
   background-color: #ef4444; /* Red */
   border-color: #f87171;
   box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
@@ -62,12 +65,12 @@
   .difficulty-controls {
     gap: 0.5rem;
   }
-  
+
   .difficulty-btn {
     font-size: 0.875rem;
     padding: 0.75rem 1rem;
   }
-  
+
   /* Ensure buttons remain readable in sticky container on mobile */
   .difficulty-btn:not(.active) {
     background-color: rgba(255, 255, 255, 0.08);
@@ -77,38 +80,38 @@
 
 /* Basic difficulty selector styles — replace with your design */
 .difficulty-container {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    margin: 1.5rem 0;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin: 1.5rem 0;
 }
 
 .difficulty-card {
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.06);
-    color: #fff;
-    min-width: 160px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform .12s ease, box-shadow .12s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  min-width: 160px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .difficulty-card.selected {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    background: linear-gradient(135deg, #2fb8ff 0%, #9a3cff 100%);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #2fb8ff 0%, #9a3cff 100%);
 }
 
 .difficulty-label {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
 }
 
 .difficulty-sub {
-    font-size: 0.85rem;
-    opacity: 0.85;
+  font-size: 0.85rem;
+  opacity: 0.85;
 }

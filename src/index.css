@@ -1,15 +1,7 @@
-/* Removed Tailwind directives for troubleshooting */
-
-/* Test class to verify Tailwind is working */
-.test-tailwind {
-  background-color: red !important;
-  color: white !important;
-  padding: 2rem !important;
-}
-
 /* UI animations */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }

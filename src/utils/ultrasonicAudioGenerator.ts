@@ -15,12 +15,13 @@ export class UltrasonicAudioGenerator {
 
   constructor() {
     try {
-      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AudioContextClass) {
         this.audioContext = new AudioContextClass();
       }
     } catch (error) {
-      console.warn('[UltrasonicAudio] AudioContext not available:', error);
+      console.warn("[UltrasonicAudio] AudioContext not available:", error);
     }
   }
 
@@ -29,33 +30,36 @@ export class UltrasonicAudioGenerator {
    */
   async start(): Promise<void> {
     if (this.isPlaying) {
-      console.log('[UltrasonicAudio] Already playing');
+      console.log("[UltrasonicAudio] Already playing");
       return;
     }
 
     if (!this.audioContext) {
-      console.warn('[UltrasonicAudio] AudioContext not initialized');
+      console.warn("[UltrasonicAudio] AudioContext not initialized");
       return;
     }
 
     try {
       // Resume audio context if suspended (required by browser autoplay policies)
-      if (this.audioContext.state === 'suspended') {
+      if (this.audioContext.state === "suspended") {
         await this.audioContext.resume();
-        console.log('[UltrasonicAudio] AudioContext resumed');
+        console.log("[UltrasonicAudio] AudioContext resumed");
       }
 
       // Create oscillator (sine wave generator)
       this.oscillator = this.audioContext.createOscillator();
-      this.oscillator.type = 'sine';
-      this.oscillator.frequency.setValueAtTime(this.FREQUENCY, this.audioContext.currentTime);
+      this.oscillator.type = "sine";
+      this.oscillator.frequency.setValueAtTime(
+        this.FREQUENCY,
+        this.audioContext.currentTime
+      );
 
       // Create gain node for volume control
       this.gainNode = this.audioContext.createGain();
-      
+
       // Start with zero volume
       this.gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-      
+
       // Smooth fade-in (ramp up) to prevent popping
       this.gainNode.gain.linearRampToValueAtTime(
         this.TARGET_VOLUME,
@@ -70,9 +74,11 @@ export class UltrasonicAudioGenerator {
       this.oscillator.start();
       this.isPlaying = true;
 
-      console.log(`[UltrasonicAudio] Started ${this.FREQUENCY}Hz sine wave with ${this.FADE_DURATION}s fade-in`);
+      console.log(
+        `[UltrasonicAudio] Started ${this.FREQUENCY}Hz sine wave with ${this.FADE_DURATION}s fade-in`
+      );
     } catch (error) {
-      console.error('[UltrasonicAudio] Failed to start:', error);
+      console.error("[UltrasonicAudio] Failed to start:", error);
       this.isPlaying = false;
     }
   }
@@ -82,12 +88,12 @@ export class UltrasonicAudioGenerator {
    */
   async stop(): Promise<void> {
     if (!this.isPlaying) {
-      console.log('[UltrasonicAudio] Not currently playing');
+      console.log("[UltrasonicAudio] Not currently playing");
       return;
     }
 
     if (!this.audioContext || !this.oscillator || !this.gainNode) {
-      console.warn('[UltrasonicAudio] Components not initialized');
+      console.warn("[UltrasonicAudio] Components not initialized");
       this.isPlaying = false;
       return;
     }
@@ -111,15 +117,15 @@ export class UltrasonicAudioGenerator {
             this.gainNode.disconnect();
             this.gainNode = null;
           }
-          console.log('[UltrasonicAudio] Stopped with fade-out');
+          console.log("[UltrasonicAudio] Stopped with fade-out");
         } catch (error) {
-          console.error('[UltrasonicAudio] Error during stop cleanup:', error);
+          console.error("[UltrasonicAudio] Error during stop cleanup:", error);
         }
       }, this.FADE_DURATION * 1000);
 
       this.isPlaying = false;
     } catch (error) {
-      console.error('[UltrasonicAudio] Failed to stop:', error);
+      console.error("[UltrasonicAudio] Failed to stop:", error);
       this.isPlaying = false;
     }
   }
@@ -138,7 +144,7 @@ export class UltrasonicAudioGenerator {
     if (this.isPlaying) {
       this.stop();
     }
-    if (this.audioContext && this.audioContext.state !== 'closed') {
+    if (this.audioContext && this.audioContext.state !== "closed") {
       // Don't close the context as it may be reused
       // this.audioContext.close();
     }

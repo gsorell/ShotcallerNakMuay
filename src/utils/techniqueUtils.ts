@@ -10,12 +10,14 @@ export type TechniqueShape = {
 export function humanizeKey(k: string) {
   if (!k) return k;
   return k
-    .replace(/[_-]/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\b\w/g, c => c.toUpperCase());
+    .replace(/[_-]/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function normalizeTechniques(src: Record<string, Partial<TechniqueShape>>) {
+export function normalizeTechniques(
+  src: Record<string, Partial<TechniqueShape>>
+) {
   const out: Record<string, TechniqueShape> = {};
   Object.entries(src || {}).forEach(([key, g]) => {
     const label = (g?.label ?? g?.title ?? key) as string; // always a string
@@ -29,12 +31,20 @@ export function normalizeTechniques(src: Record<string, Partial<TechniqueShape>>
   return out;
 }
 
-export function normalizeArray(arr: any[] | undefined): { text: string; favorite?: boolean }[] {
+export function normalizeArray(
+  arr: any[] | undefined
+): { text: string; favorite?: boolean }[] {
   if (!arr) return [];
-  return arr.map(item => (typeof item === 'string' ? { text: item } : { text: item.text ?? '', favorite: !!item.favorite }));
+  return arr.map((item) =>
+    typeof item === "string"
+      ? { text: item }
+      : { text: item.text ?? "", favorite: !!item.favorite }
+  );
 }
 
-export function denormalizeArray(arr: { text: string; favorite?: boolean }[]): (string | { text: string; favorite?: boolean })[] {
-  if (arr.every(item => !item.favorite)) return arr.map(item => item.text);
+export function denormalizeArray(
+  arr: { text: string; favorite?: boolean }[]
+): (string | { text: string; favorite?: boolean })[] {
+  if (arr.every((item) => !item.favorite)) return arr.map((item) => item.text);
   return arr;
 }

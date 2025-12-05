@@ -1,5 +1,5 @@
 // Import Capacitor TTS plugin for native apps
-import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
 // This service uses browser TTS for web builds and Capacitor TTS for native apps
 
@@ -41,23 +41,27 @@ class TTSService {
   constructor() {
     // Detect if we're in a Capacitor (native) environment
     this.isNativeApp = !!(window as any).Capacitor;
-    
+
     this.initializeVoices();
     this.setupVisibilityHandling();
     this.setupPeriodicCleanup();
   }
 
-
-
-
-
   private setupPeriodicCleanup() {
     // Basic cleanup to clear any completed utterances
-    if (!this.isNativeApp && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (
+      !this.isNativeApp &&
+      typeof window !== "undefined" &&
+      "speechSynthesis" in window
+    ) {
       setInterval(() => {
         try {
           // Only cleanup if we're not currently speaking
-          if (!this.isBusy && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+          if (
+            !this.isBusy &&
+            !window.speechSynthesis.speaking &&
+            !window.speechSynthesis.pending
+          ) {
             window.speechSynthesis.cancel();
           }
         } catch (error) {
@@ -66,8 +70,6 @@ class TTSService {
       }, 60000); // Every 60 seconds
     }
   }
-
-
 
   private async processQueue(): Promise<void> {
     if (this.isBusy || this.pendingQueue.length === 0) {
@@ -92,7 +94,7 @@ class TTSService {
   private setupVisibilityHandling() {
     // Simplified: Just track initial visibility state
     // No need for complex visibility management since callouts should continue during tab switching
-    this.isPageVisible = document.visibilityState === 'visible';
+    this.isPageVisible = document.visibilityState === "visible";
   }
 
   private async initializeVoices() {
@@ -102,25 +104,25 @@ class TTSService {
         try {
           // First check if TextToSpeech is available
           if (!TextToSpeech) {
-            throw new Error('TextToSpeech plugin not available');
+            throw new Error("TextToSpeech plugin not available");
           }
-          
+
           // Try to get supported voices
           const result = await TextToSpeech.getSupportedVoices();
-          
+
           if (!result) {
-            throw new Error('No result from Capacitor TTS getSupportedVoices');
+            throw new Error("No result from Capacitor TTS getSupportedVoices");
           }
-          
+
           // Handle different possible response structures
           let voicesArray = result.voices || result || [];
           if (!Array.isArray(voicesArray)) {
             // Sometimes voices come back as an object with numeric keys
-            if (typeof voicesArray === 'object' && voicesArray !== null) {
+            if (typeof voicesArray === "object" && voicesArray !== null) {
               const keys = Object.keys(voicesArray);
-              if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+              if (keys.length > 0 && keys.every((k) => !isNaN(Number(k)))) {
                 // Convert object with numeric keys to array
-                voicesArray = keys.map(k => (voicesArray as any)[k]);
+                voicesArray = keys.map((k) => (voicesArray as any)[k]);
               } else {
                 voicesArray = [];
               }
@@ -128,52 +130,52 @@ class TTSService {
               voicesArray = [];
             }
           }
-          
+
           // Deduplicate voices by name, keeping the best quality one
           const voiceMap = new Map<string, any>();
-          
-          voicesArray.forEach(voice => {
-            const baseName = voice.name || 'Unknown Voice';
-            const voiceId = voice.voiceURI || voice.name || 'unknown';
-            
+
+          voicesArray.forEach((voice) => {
+            const baseName = voice.name || "Unknown Voice";
+            const voiceId = voice.voiceURI || voice.name || "unknown";
+
             if (!voiceMap.has(baseName)) {
               // First occurrence - add it
               voiceMap.set(baseName, voice);
             } else {
               // Duplicate found - keep the better one based on quality indicators
               const existing = voiceMap.get(baseName);
-              const existingId = existing.voiceURI || existing.name || '';
-              
+              const existingId = existing.voiceURI || existing.name || "";
+
               // Prefer voices that seem to be from better engines
               // Google TTS usually has better quality than eSpeak or Pico
-              const isCurrentBetter = 
-                voiceId.toLowerCase().includes('google') ||
-                voiceId.toLowerCase().includes('enhanced') ||
-                voiceId.toLowerCase().includes('premium') ||
+              const isCurrentBetter =
+                voiceId.toLowerCase().includes("google") ||
+                voiceId.toLowerCase().includes("enhanced") ||
+                voiceId.toLowerCase().includes("premium") ||
                 voice.default;
-                
-              const isExistingBetter = 
-                existingId.toLowerCase().includes('google') ||
-                existingId.toLowerCase().includes('enhanced') ||
-                existingId.toLowerCase().includes('premium') ||
+
+              const isExistingBetter =
+                existingId.toLowerCase().includes("google") ||
+                existingId.toLowerCase().includes("enhanced") ||
+                existingId.toLowerCase().includes("premium") ||
                 existing.default;
-              
+
               if (isCurrentBetter && !isExistingBetter) {
                 voiceMap.set(baseName, voice);
               }
               // Otherwise keep the existing one
             }
           });
-          
+
           // Convert map back to array
-          this.availableVoices = Array.from(voiceMap.values()).map(voice => ({
-            id: voice.voiceURI || voice.name || 'unknown',
-            name: voice.name || 'Unknown Voice',
-            language: voice.lang || (voice as any).language || 'en-US',
+          this.availableVoices = Array.from(voiceMap.values()).map((voice) => ({
+            id: voice.voiceURI || voice.name || "unknown",
+            name: voice.name || "Unknown Voice",
+            language: voice.lang || (voice as any).language || "en-US",
             isDefault: voice.default || false,
-            quality: 'native'
+            quality: "native",
           }));
-          
+
           // If the plugin reports no voices, add a safe fallback so the UI can show a selection
           if (this.availableVoices.length === 0) {
             this.addFallbackVoice();
@@ -181,7 +183,7 @@ class TTSService {
         } catch (error) {
           // Fallback to browser TTS if available
           this.initializeBrowserTTS();
-          
+
           // If browser TTS also fails, ensure we have a fallback
           setTimeout(() => {
             if (this.availableVoices.length === 0) {
@@ -200,19 +202,19 @@ class TTSService {
   }
 
   private initializeBrowserTTS() {
-    if ('speechSynthesis' in window) {
+    if ("speechSynthesis" in window) {
       const loadBrowserVoices = () => {
         const browserVoices = window.speechSynthesis.getVoices();
-        
+
         if (browserVoices.length > 0) {
-          this.availableVoices = browserVoices.map(voice => ({
+          this.availableVoices = browserVoices.map((voice) => ({
             id: `${voice.name}_${voice.lang}`,
             name: voice.name,
             language: voice.lang,
             isDefault: voice.default,
-            browserVoice: voice
+            browserVoice: voice,
           }));
-          
+
           // Remove the event listener once we have voices
           window.speechSynthesis.onvoiceschanged = null;
         } else {
@@ -227,7 +229,7 @@ class TTSService {
       // If no voices yet, set up listener for when they become available
       if (this.availableVoices.length === 0) {
         window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
-        
+
         // Also add a timeout fallback in case the event never fires
         setTimeout(() => {
           if (this.availableVoices.length === 0) {
@@ -243,13 +245,15 @@ class TTSService {
   private addFallbackVoice() {
     // Add a fallback voice entry so the UI can function
     if (this.availableVoices.length === 0) {
-      this.availableVoices = [{
-        id: 'system_fallback',
-        name: 'System Voice',
-        language: 'en-US',
-        isDefault: true,
-        quality: this.isNativeApp ? 'native' : 'web'
-      }];
+      this.availableVoices = [
+        {
+          id: "system_fallback",
+          name: "System Voice",
+          language: "en-US",
+          isDefault: true,
+          quality: this.isNativeApp ? "native" : "web",
+        },
+      ];
     }
   }
 
@@ -264,8 +268,8 @@ class TTSService {
   // Get English voices only (for your app's requirements)
   async getEnglishVoices(): Promise<UnifiedVoice[]> {
     const voices = await this.getVoices();
-    return voices.filter(voice => 
-      voice.language.toLowerCase().startsWith('en')
+    return voices.filter((voice) =>
+      voice.language.toLowerCase().startsWith("en")
     );
   }
 
@@ -311,15 +315,17 @@ class TTSService {
   }
 
   // Internal speak implementation (the actual TTS logic)
-  private async speakInternal(text: string, options: TTSOptions = {}): Promise<void> {
-
-    
+  private async speakInternal(
+    text: string,
+    options: TTSOptions = {}
+  ): Promise<void> {
     // User preference: Allow callouts to continue during tab switching
     // WebMediaPlayer errors confirmed to be from external sources, not our app
-    const isPageHidden = !this.isPageVisible || 
-                        document.visibilityState === 'hidden' || 
-                        document.hidden;
-    
+    const isPageHidden =
+      !this.isPageVisible ||
+      document.visibilityState === "hidden" ||
+      document.hidden;
+
     if (isPageHidden) {
       // Continue with TTS as user prefers to hear callouts during tab switching
       // Any WebMediaPlayer errors are from external sources (other tabs, extensions, etc.)
@@ -329,7 +335,9 @@ class TTSService {
     const now = Date.now();
     const timeSinceLastSpeak = now - this.lastSpeakTime;
     if (timeSinceLastSpeak < this.MIN_SPEAK_INTERVAL) {
-      await new Promise(resolve => setTimeout(resolve, this.MIN_SPEAK_INTERVAL - timeSinceLastSpeak));
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.MIN_SPEAK_INTERVAL - timeSinceLastSpeak)
+      );
     }
     this.lastSpeakTime = Date.now();
 
@@ -342,9 +350,9 @@ class TTSService {
       if (this.isNativeApp) {
         // Use Capacitor TTS for native apps
         if (options.onStart) options.onStart();
-        
+
         const startTime = Date.now();
-        
+
         // Choose a voice param that works with the Capacitor plugin.
         // Some platforms return numeric ids, others return string identifiers.
         let voiceParam: any = undefined;
@@ -354,17 +362,17 @@ class TTSService {
         }
 
         await TextToSpeech.speak({
-          text: text,  // Use text as-is - TTS engines handle sentence endings properly
-          lang: voiceToUse?.language || 'en-US',
+          text: text, // Use text as-is - TTS engines handle sentence endings properly
+          lang: voiceToUse?.language || "en-US",
           rate: rate,
           pitch: pitch,
           volume: volume,
-          voice: voiceParam
+          voice: voiceParam,
         });
-        
+
         const endTime = Date.now();
         const actualDuration = endTime - startTime;
-        
+
         if (options.onDone) {
           // Pass actual duration to onDone callback if it accepts it
           if (options.onDone.length > 0) {
@@ -375,30 +383,31 @@ class TTSService {
         }
       } else {
         // Use browser TTS for web
-        if ('speechSynthesis' in window) {
-
-          
+        if ("speechSynthesis" in window) {
           // Cancel any pending speech before starting new utterance
-          if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+          if (
+            window.speechSynthesis.speaking ||
+            window.speechSynthesis.pending
+          ) {
             window.speechSynthesis.cancel();
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
 
           // Reuse single SpeechSynthesisUtterance to prevent WebMediaPlayer accumulation
           if (!this.reusableUtterance) {
             this.reusableUtterance = new SpeechSynthesisUtterance();
           }
-          
+
           const utterance = this.reusableUtterance;
           utterance.text = text; // Update text instead of creating new instance
           this.currentUtterance = utterance;
           this.utteranceStartTime = Date.now();
-          
+
           // Clear any existing event handlers
           utterance.onstart = null;
           utterance.onend = null;
           utterance.onerror = null;
-          
+
           // Ensure we always have a voice set to prevent "interrupted" errors
           if (voiceToUse?.browserVoice) {
             utterance.voice = voiceToUse.browserVoice;
@@ -407,13 +416,13 @@ class TTSService {
           } else {
             // Fallback to system default voice if no specific voice is set
             const voices = window.speechSynthesis.getVoices();
-            const defaultVoice = voices.find(v => v.default) || voices[0];
+            const defaultVoice = voices.find((v) => v.default) || voices[0];
             if (defaultVoice) {
               utterance.voice = defaultVoice;
               utterance.lang = defaultVoice.lang;
             }
           }
-          
+
           utterance.rate = rate;
           utterance.pitch = pitch;
           utterance.volume = volume;
@@ -421,18 +430,16 @@ class TTSService {
           if (options.onStart) {
             utterance.onstart = options.onStart;
           }
-          
+
           if (options.onDone) {
             utterance.onend = () => {
               const endTime = Date.now();
               const actualDuration = endTime - this.utteranceStartTime;
               this.currentUtterance = null; // Clear reference
-              
+
               // Reset failure count on successful completion
               this.consecutiveFailures = 0;
-              
 
-              
               // Pass actual duration to onDone callback if it accepts it
               if (options.onDone!.length > 0) {
                 (options.onDone as any)(actualDuration);
@@ -441,27 +448,29 @@ class TTSService {
               }
             };
           }
-          
+
           utterance.onerror = (event) => {
             this.currentUtterance = null; // Clear reference on error
-            
+
             // Handle different types of errors differently
-            if (event.error === 'interrupted') {
+            if (event.error === "interrupted") {
               // Interrupted errors are usually from cleanup
               this.consecutiveFailures = 0; // Reset failure count on interruptions
             } else {
               this.consecutiveFailures++;
-              
+
               // Only propagate non-interrupted errors
               if (options.onError) {
-                options.onError!(new Error(`Speech synthesis error: ${event.error}`));
+                options.onError!(
+                  new Error(`Speech synthesis error: ${event.error}`)
+                );
               }
             }
           };
 
           window.speechSynthesis.speak(utterance);
         } else {
-          throw new Error('Speech synthesis not supported');
+          throw new Error("Speech synthesis not supported");
         }
       }
     } catch (error) {
@@ -476,14 +485,14 @@ class TTSService {
     try {
       // Clear the pending queue to prevent queued operations from running
       this.pendingQueue = [];
-      
+
       if (this.isNativeApp) {
         await TextToSpeech.stop();
-      } else if ('speechSynthesis' in window) {
+      } else if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
         this.currentUtterance = null; // Clear reference
       }
-      
+
       // Reset busy flag
       this.isBusy = false;
     } catch (error) {
@@ -496,10 +505,10 @@ class TTSService {
     try {
       // First stop any current speech and clear queue
       await this.stop();
-      
+
       // Small delay to ensure cleanup completes
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Now speak immediately without queueing
       await this.speakInternal(text, options);
     } catch (error) {
@@ -515,12 +524,12 @@ class TTSService {
       if (this.isBusy || this.pendingQueue.length > 0) {
         return true;
       }
-      
+
       if (this.isNativeApp) {
         // Capacitor TTS doesn't have a direct isSpeaking method
         // Return false for now (can be enhanced with state tracking)
         return false;
-      } else if ('speechSynthesis' in window) {
+      } else if ("speechSynthesis" in window) {
         return window.speechSynthesis.speaking;
       }
       return false;
@@ -532,7 +541,7 @@ class TTSService {
   // Pause speech
   async pause(): Promise<void> {
     try {
-      if ('speechSynthesis' in window) {
+      if ("speechSynthesis" in window) {
         window.speechSynthesis.pause();
       }
     } catch (error) {
@@ -543,7 +552,7 @@ class TTSService {
   // Resume speech
   async resume(): Promise<void> {
     try {
-      if ('speechSynthesis' in window) {
+      if ("speechSynthesis" in window) {
         window.speechSynthesis.resume();
       }
     } catch (error) {
@@ -557,7 +566,11 @@ class TTSService {
   }
 
   // Wrapper for technique callouts (with guards)
-  async speakTechnique(text: string, options: TTSOptions = {}, isGuarded: boolean = true): Promise<void> {
+  async speakTechnique(
+    text: string,
+    options: TTSOptions = {},
+    isGuarded: boolean = true
+  ): Promise<void> {
     // Add your existing guard logic here if needed
     return this.speak(text, options);
   }
@@ -567,13 +580,13 @@ class TTSService {
     if (this.isNativeApp) {
       return true; // Capacitor TTS should always be available
     } else {
-      return 'speechSynthesis' in window;
+      return "speechSynthesis" in window;
     }
   }
 
   // Get current platform
-  getPlatform(): 'native' | 'web' {
-    return this.isNativeApp ? 'native' : 'web';
+  getPlatform(): "native" | "web" {
+    return this.isNativeApp ? "native" : "web";
   }
 
   // Cleanup method to prevent WebMediaPlayer accumulation
@@ -583,14 +596,14 @@ class TTSService {
         window.speechSynthesis.cancel();
         this.currentUtterance = null;
       }
-      
+
       // Don't destroy reusableUtterance - just clear its handlers
       if (this.reusableUtterance) {
         this.reusableUtterance.onstart = null;
         this.reusableUtterance.onend = null;
         this.reusableUtterance.onerror = null;
       }
-      
+
       this.pendingQueue = [];
       this.isBusy = false;
     } catch (error) {

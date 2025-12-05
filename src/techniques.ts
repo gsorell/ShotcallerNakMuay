@@ -1,9 +1,19 @@
-export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: string[]; exclusive?: boolean; label?: string; title?: string; description?: string }> = {
+export const INITIAL_TECHNIQUES: Record<
+  string,
+  {
+    singles: string[];
+    combos: string[];
+    exclusive?: boolean;
+    label?: string;
+    title?: string;
+    description?: string;
+  }
+> = {
   // Nak Muay Newb - Start here to learn the Art of 8 Limbs
   newb: {
-    label: 'newb',
-    title: 'Nak Muay Newb',
-    description: 'Start here to learn the basic strikes',
+    label: "newb",
+    title: "Nak Muay Newb",
+    description: "Start here to learn the basic strikes",
     singles: [
       "Jab",
       "Cross",
@@ -36,7 +46,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Roll Right",
       "Roll Left",
       "Long Guard",
-      "High Guard Block"
+      "High Guard Block",
     ],
     combos: [
       "1, Right Low Kick",
@@ -47,13 +57,13 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 2, Left Body Kick",
       "1 2 3, Right Low Kick",
     ],
-    exclusive: true
+    exclusive: true,
   },
 
   khao: {
-    label: 'khao',
-    title: 'Muay Khao',
-    description: 'Close-range clinch work and knee combinations',
+    label: "khao",
+    title: "Muay Khao",
+    description: "Close-range clinch work and knee combinations",
     // Close-range, clinch-focused combos and strikes
     singles: [
       "1",
@@ -62,8 +72,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "4",
       "5",
       "6",
-      "1 to the body", 
-      "2 to the body", 
+      "1 to the body",
+      "2 to the body",
       "3 to the body",
       "Left teep",
       "Right teep",
@@ -75,7 +85,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Right Kick",
       "Left Elbow",
       "Right Elbow",
-      "Spinning Elbow"
+      "Spinning Elbow",
     ],
     combos: [
       "1, Step-in, Right Knee, Pivot Left",
@@ -89,19 +99,31 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Knee, Elbow, Knee",
       "1 2, 3 to the Body, 3 to the Head",
       "Knee, Knee, Knee",
-      "1 4, Switch Knee"
-    ]
+      "1 4, Switch Knee",
+    ],
   },
 
   mat: {
-    label: 'mat',
-    title: 'Muay Mat',
-    description: 'Blending Heavy hands with Kicks and Knees',
+    label: "mat",
+    title: "Muay Mat",
+    description: "Blending Heavy hands with Kicks and Knees",
     singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Left Kick", "Right Kick",
-      "Left Elbow", "Right Elbow",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "Left Teep",
+      "Right Teep",
+      "Left Knee",
+      "Right Knee",
+      "Left Check",
+      "Right Check",
+      "Left Kick",
+      "Right Kick",
+      "Left Elbow",
+      "Right Elbow",
     ],
     combos: [
       "1 2 3",
@@ -116,24 +138,39 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "2 3 2",
       "1 to the Body, 2",
       "Overhand, 4 to the Body, 3 to the Body",
-    ]
+    ],
   },
 
   tae: {
-    label: 'tae',
-    title: 'Muay Tae',
-    description: 'Kicking specialist with long-range attacks',
+    label: "tae",
+    title: "Muay Tae",
+    description: "Kicking specialist with long-range attacks",
     singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left Teep", "Right Teep", "Left Knee", "Right Knee",
-      "Left Check", "Head Kick",
-      "Right Check", "Left Kick", "Right Kick", "Left Check",
-      "Right Check", "Left Check",
-      "Left Elbow", "Right Elbow",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "Left Teep",
+      "Right Teep",
+      "Left Knee",
+      "Right Knee",
+      "Left Check",
+      "Head Kick",
+      "Right Check",
+      "Left Kick",
+      "Right Kick",
+      "Left Check",
+      "Right Check",
+      "Left Check",
+      "Left Elbow",
+      "Right Elbow",
     ],
     combos: [
       "1, Right Kick",
-      "Right Kick, Right Kick", "Left Kick, Left Kick",
+      "Right Kick, Right Kick",
+      "Left Kick, Left Kick",
       "1 2, Switch Kick",
       "Right Kick, Left Kick",
       "Left Teep, Right Kick",
@@ -145,19 +182,38 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 1 2, Low Kick",
       "3 2, Low Kick",
       "1 2, Right Kick, Left Kick",
-    ]
+    ],
   },
 
   femur: {
-    label: 'femur',
-    title: 'Muay Femur',
-    description: 'Technical timing and defensive counters',
+    label: "femur",
+    title: "Muay Femur",
+    description: "Technical timing and defensive counters",
     singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Flying Knee", "Left Kick", "Right Kick", "Head Kick",
-      "Left Elbow", "Right Elbow", "Spinning Elbow", "Question Mark Kick",
-      "Sweep Left", "Sweep Right", "Left Check", "Right Check",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "Left Teep",
+      "Right Teep",
+      "Left Knee",
+      "Right Knee",
+      "Left Check",
+      "Right Check",
+      "Flying Knee",
+      "Left Kick",
+      "Right Kick",
+      "Head Kick",
+      "Left Elbow",
+      "Right Elbow",
+      "Spinning Elbow",
+      "Question Mark Kick",
+      "Sweep Left",
+      "Sweep Right",
+      "Left Check",
+      "Right Check",
     ],
     combos: [
       "Right Check, Right Low Kick",
@@ -188,19 +244,33 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Teep, Step-in Right Elbow",
       "Oley Left, Head Kick",
       "Parry, 2 3, Right Teep",
-      "1, Lean Back, 2, Low Kick"
-    ]
+      "1, Lean Back, 2, Low Kick",
+    ],
   },
 
   sok: {
-    label: 'sok',
-    title: 'Muay Sok',
-    description: 'Vicious elbows and close-range attacks',
+    label: "sok",
+    title: "Muay Sok",
+    description: "Vicious elbows and close-range attacks",
     singles: [
-      "1", "2", "3", "4", "5", "6",
-      "Left Teep", "Right Teep", "Left Knee", "Right Knee", "Left Check",
-      "Right Check", "Left Kick", "Right Kick",
-      "Left Elbow", "Right Elbow", "Axe Elbow", "Spinning Elbow",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "Left Teep",
+      "Right Teep",
+      "Left Knee",
+      "Right Knee",
+      "Left Check",
+      "Right Check",
+      "Left Kick",
+      "Right Kick",
+      "Left Elbow",
+      "Right Elbow",
+      "Axe Elbow",
+      "Spinning Elbow",
     ],
     combos: [
       "1 2, Right Elbow",
@@ -213,19 +283,31 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 1 2, Jumping Elbow",
       "2 3, Right Up Elbow",
       "Switch Knee, Right Elbow",
-      "1 2 3, Spinning Elbow"
-    ]
+      "1 2 3, Spinning Elbow",
+    ],
   },
 
   boxing: {
-    label: 'boxing',
-    title: 'Boxing',
-    description: 'Fundamental boxing combinations',
+    label: "boxing",
+    title: "Boxing",
+    description: "Fundamental boxing combinations",
     singles: [
-      "Jab", "Cross", "3", "4", "5", "6", "Overhand", 
-      "High Guard Block", "Parry Jab", "Catch Cross",
-      "1 to the Body", "2 to the Body", "3 to the Body", 
-      "Pivot Left",  "Pivot Right", "Duck",
+      "Jab",
+      "Cross",
+      "3",
+      "4",
+      "5",
+      "6",
+      "Overhand",
+      "High Guard Block",
+      "Parry Jab",
+      "Catch Cross",
+      "1 to the Body",
+      "2 to the Body",
+      "3 to the Body",
+      "Pivot Left",
+      "Pivot Right",
+      "Duck",
     ],
     combos: [
       "1 1 2",
@@ -242,8 +324,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1, 2 to the Body, 3 to the Head",
       "1 2",
       "1, Slip Left, 5 2, Pivot Left",
-      "2, Slip Right, 6 3, Pivot Right"
-    ]
+      "2, Slip Right, 6 3, Pivot Right",
+    ],
   },
 
   calisthenics: {
@@ -260,13 +342,13 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Left Check Right Check",
       "Right Check, Left Check",
     ],
-    combos: []
+    combos: [],
   },
 
   two_piece: {
-    label: 'two_piece',
-    title: 'Two-Piece Combos',
-    description: 'Short, powerful 2-strike combinations',
+    label: "two_piece",
+    title: "Two-Piece Combos",
+    description: "Short, powerful 2-strike combinations",
     singles: [],
     combos: [
       "1 2",
@@ -293,15 +375,16 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Right Kick, 3",
       "Left Teep, Right Kick",
       "Left Teep, Switch Kick",
-      "Right Kick, 2"
-    ]
+      "Right Kick, 2",
+    ],
     // NOTE: added empty 'singles' to satisfy the required type; emphasis remains combos-focused
   },
 
   southpaw: {
-    label: 'southpaw',
-    title: 'Southpaw',
-    description: 'Left-handed stance with combos tailored for southpaw fighters',
+    label: "southpaw",
+    title: "Southpaw",
+    description:
+      "Left-handed stance with combos tailored for southpaw fighters",
     singles: [],
     combos: [
       "1 2",
@@ -323,8 +406,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Left Teep, 2, Clinch, Right Knee, Left Elbow",
       "Feint Left Kick, 1 2, Left Kick",
       "1 2 3, Left Elbow, Pivot Left",
-      "1 1 2, Left Kick, Clinch, Double Knees"
-    ]
+      "1 1 2, Left Kick, Clinch, Double Knees",
+    ],
   },
 
   meat_potatoes: {
@@ -339,7 +422,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Left Body Kick",
       "Right Low Kick",
       "Left Teep",
-      "Right Teep"
+      "Right Teep",
     ],
     combos: [
       "1 2, Right Kick",
@@ -356,9 +439,9 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "1 2 3,Right Uppercut Elbow",
       "Left Kick, 2 3, Right Low Kick",
       "Right Kick, 3 2, Left Body Kick",
-      "Left Teep, 2 3, Right Low Kick", 
-      "1 3 2, Left Body Kick"
-    ]
+      "Left Teep, 2 3, Right Low Kick",
+      "1 3 2, Left Body Kick",
+    ],
   },
   buakaw: {
     label: "buakaw",
@@ -373,7 +456,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Clinch",
       "Elbow",
       "Teep",
-      "Sweep Right"
+      "Sweep Right",
     ],
     combos: [
       "1, Step-in Clinch, Double Knees",
@@ -386,8 +469,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "2, Clinch , Sweep Right",
       "Clinch Break, Elbow, Left Kick",
       "Switch Kick Switch Kick Switch Kick",
-      "Catch Kick, Clinch, Knee"
-    ]
+      "Catch Kick, Clinch, Knee",
+    ],
   },
   low_kick_legends: {
     label: "low_kick_legends",
@@ -401,7 +484,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Switch Kick",
       "Slip Right",
       "Overhand",
-      "Double Jab"
+      "Double Jab",
     ],
     combos: [
       "1 2, Low Kick",
@@ -412,8 +495,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Inside Low Kick, 2",
       "3, Low Kick, 3",
       "2, Low Kick, Switch Kick",
-      "Low Kick, High Kick"
-    ]
+      "Low Kick, High Kick",
+    ],
   },
   elbow_arsenal: {
     label: "elbow_arsenal",
@@ -428,7 +511,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Spinning Elbow",
       "Step-in Elbow",
       "Up Elbow",
-      "Clinch"
+      "Clinch",
     ],
     combos: [
       "1 2, Step-in Elbow",
@@ -440,8 +523,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "2, Left Elbow, Right Elbow",
       "1 4, Elbow, Knee",
       "Slip, Elbow",
-      "Jumping Elbow, Cross"
-    ]
+      "Jumping Elbow, Cross",
+    ],
   },
   ko_setups: {
     label: "ko_setups",
@@ -456,7 +539,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Left High Kick",
       "Slip",
       "Rear Knee",
-      "Elbow"
+      "Elbow",
     ],
     combos: [
       "1 2, Head Kick",
@@ -468,8 +551,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Slip, 6 3 2",
       "Overhand, 3 to the Body, Low Kick",
       "2, Rear Knee, Elbow",
-      "Teep, Step-in, Head Kick"
-    ]
+      "Teep, Step-in, Head Kick",
+    ],
   },
 
   tricky_traps: {
@@ -492,7 +575,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Spinning Hook Kick",
       "Spinning Heel Kick",
       "Jump Switch Knee",
-      "Flying Knee"
+      "Flying Knee",
     ],
     combos: [
       "1, Step back, Spinning Elbow",
@@ -512,14 +595,15 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Inside Foot Sweep, Switch Knee",
       "Low Kick, Feint Low Kick, Sweep Right",
       "Low Kick, Feint Low Kick, Spinning Hook Kick",
-      "1 4, Spinning Elbow"
-    ]
+      "1 4, Spinning Elbow",
+    ],
   },
 
   feints_and_fakeouts: {
     label: "feints_and_fakeouts",
     title: "Feints and Fakeouts",
-    description: "Deceptive movements and setups that manipulate timing and rhythm.",
+    description:
+      "Deceptive movements and setups that manipulate timing and rhythm.",
     singles: [
       "Jab Feint",
       "Shoulder Feint",
@@ -535,7 +619,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Limp Feint",
       "Double Teep Feint",
       "Hand Trap",
-      "Pattern Break"
+      "Pattern Break",
     ],
     combos: [
       "Jab, Feint Jab, Cross",
@@ -552,14 +636,15 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Limp Feint, Switch Kick",
       "Teep, Teep Feint, Jump Knee",
       "Body kick, Feint Body Kick, Spinning Elbow",
-      "Hand Trap, Elbow"
-    ]
+      "Hand Trap, Elbow",
+    ],
   },
 
   dutch_kickboxing: {
     label: "dutch_kickboxing",
     title: "Dutch Kickboxing",
-    description: "High-pressure combinations emphasizing volume, flow, and low kicks.",
+    description:
+      "High-pressure combinations emphasizing volume, flow, and low kicks.",
     singles: [
       "1",
       "2",
@@ -575,7 +660,7 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "Step-in Knee",
       "Slip and Counter",
       "Check and Return",
-      "Angle Off Hook"
+      "Angle Off Hook",
     ],
     combos: [
       "1 2, Left Hook, Right Low Kick",
@@ -596,8 +681,8 @@ export const INITIAL_TECHNIQUES: Record<string, { singles: string[]; combos: str
       "2 3, Overhand, Left Kick",
       "1 2 3, Switch Low Kick",
       "1 2, Inside Leg Kick, 6 2 3",
-      "1 2, 3 to the body, Right Body Kick"
-    ]
+      "1 2, 3 to the body, Right Body Kick",
+    ],
   },
 };
 

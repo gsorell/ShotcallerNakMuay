@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { App } from '@capacitor/app';
-import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
+import { App } from "@capacitor/app";
+import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { useEffect, useRef } from "react";
 
 export interface NavigationGesturesOptions {
   onBack: () => void;
@@ -8,7 +8,11 @@ export interface NavigationGesturesOptions {
   debugLog?: boolean;
 }
 
-export function useNavigationGestures({ onBack, enabled, debugLog = false }: NavigationGesturesOptions) {
+export function useNavigationGestures({
+  onBack,
+  enabled,
+  debugLog = false,
+}: NavigationGesturesOptions) {
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const touchStartTime = useRef<number | null>(null);
@@ -29,7 +33,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
           }
 
           // Add hardware back button listener
-          backButtonListener = await App.addListener('backButton', () => {
+          backButtonListener = await App.addListener("backButton", () => {
             if (debugLog) {
               // Hardware back button pressed
             }
@@ -73,7 +77,12 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
       if (!enabled || !isSwipeInProgress.current) return;
 
       const touch = e.touches[0];
-      if (!touch || touchStartX.current === null || touchStartY.current === null) return;
+      if (
+        !touch ||
+        touchStartX.current === null ||
+        touchStartY.current === null
+      )
+        return;
 
       const deltaX = touch.clientX - touchStartX.current;
       const deltaY = touch.clientY - touchStartY.current;
@@ -97,7 +106,12 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
       if (!enabled || !isSwipeInProgress.current) return;
 
       const touch = e.changedTouches[0];
-      if (!touch || touchStartX.current === null || touchStartY.current === null || touchStartTime.current === null) {
+      if (
+        !touch ||
+        touchStartX.current === null ||
+        touchStartY.current === null ||
+        touchStartTime.current === null
+      ) {
         isSwipeInProgress.current = false;
         return;
       }
@@ -117,7 +131,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
       const maxSwipeTime = 500; // maximum milliseconds
       const maxVerticalDeviation = 80; // maximum vertical movement
 
-      const isValidSwipe = 
+      const isValidSwipe =
         deltaX > minSwipeDistance && // sufficient horizontal distance
         deltaTime < maxSwipeTime && // fast enough
         Math.abs(deltaY) < maxVerticalDeviation; // not too much vertical movement
@@ -133,16 +147,18 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
     };
 
     // Add touch event listeners
-    document.addEventListener('touchstart', handleTouchStart, { passive: false });
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     // Cleanup function
     return () => {
       // Remove touch listeners
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
 
       // Remove hardware back button listener
       if (backButtonListener) {
@@ -156,7 +172,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
     if (!enabled) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (debugLog) {
           // Escape key pressed
         }
@@ -164,7 +180,7 @@ export function useNavigationGestures({ onBack, enabled, debugLog = false }: Nav
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [enabled, onBack, debugLog]);
 }
