@@ -65,8 +65,8 @@ function calculateStreaks(logs: WorkoutEntry[]) {
     current = 1,
     max = 1;
   for (let i = 1; i < days.length; ++i) {
-    const prev = new Date(days[i - 1]);
-    const curr = new Date(days[i]);
+    const prev = new Date(days[i - 1]!);
+    const curr = new Date(days[i]!);
     const diff = Math.round(
       (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -93,8 +93,8 @@ function calculateStreaks(logs: WorkoutEntry[]) {
   // Count backwards from the most recent workout day
   let currentStreak = 1;
   for (let i = days.length - 1; i > 0; --i) {
-    const prev = new Date(days[i - 1]);
-    const curr = new Date(days[i]);
+    const prev = new Date(days[i - 1]!);
+    const curr = new Date(days[i]!);
     const diff = Math.round(
       (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
     );

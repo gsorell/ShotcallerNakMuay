@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TTSOptions, ttsService, UnifiedVoice } from "../utils/ttsService";
+import {
+  type TTSOptions,
+  ttsService,
+  type UnifiedVoice,
+} from "../utils/ttsService";
 
 // Emergency WebMediaPlayer cleanup on module load
 (() => {
