@@ -6,7 +6,7 @@ import {
   humanizeKey,
   normalizeArray,
   normalizeTechniques,
-  TechniqueShape as UtilsTechniqueShape,
+  type TechniqueShape as UtilsTechniqueShape,
 } from "./utils/techniqueUtils";
 
 type TechniqueDetail = {
@@ -196,71 +196,71 @@ export default function TechniqueEditor({
   function updateGroupDescription(groupKey: string, description: string) {
     const next = { ...local };
     const existing = next[groupKey] || {};
-    next[groupKey] = { ...existing, description };
+    next[groupKey] = { ...existing, description, label: description };
     persist(next);
   }
 
   function updateSingle(groupKey: string, idx: number, value: string) {
     const next = { ...local };
-    const singles = normalizeArray(next[groupKey].singles);
-    singles[idx].text = value;
-    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
+    const singles = normalizeArray(next[groupKey]!.singles);
+    singles[idx]!.text = value;
+    next[groupKey] = { ...next[groupKey]!, singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function toggleSingleFavorite(groupKey: string, idx: number) {
     const next = { ...local };
-    const singles = normalizeArray(next[groupKey].singles);
-    singles[idx].favorite = !singles[idx].favorite;
-    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
+    const singles = normalizeArray(next[groupKey]!.singles);
+    singles[idx]!.favorite = !singles[idx]!.favorite;
+    next[groupKey] = { ...next[groupKey]!, singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function addSingle(groupKey: string) {
     const next = { ...local };
-    const singles = normalizeArray(next[groupKey].singles);
+    const singles = normalizeArray(next[groupKey]!.singles);
     singles.push({ text: "" });
-    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
+    next[groupKey] = { ...next[groupKey]!, singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function removeSingle(groupKey: string, idx: number) {
     const next = { ...local };
-    const singles = normalizeArray(next[groupKey].singles);
+    const singles = normalizeArray(next[groupKey]!.singles);
     singles.splice(idx, 1);
-    next[groupKey] = { ...next[groupKey], singles: denormalizeArray(singles) };
+    next[groupKey] = { ...next[groupKey]!, singles: denormalizeArray(singles) };
     persist(next);
   }
 
   function updateCombo(groupKey: string, idx: number, value: string) {
     const next = { ...local };
-    const combos = normalizeArray(next[groupKey].combos);
-    combos[idx].text = value;
-    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
+    const combos = normalizeArray(next[groupKey]!.combos);
+    combos[idx]!.text = value;
+    next[groupKey] = { ...next[groupKey]!, combos: denormalizeArray(combos) };
     persist(next);
   }
 
   function toggleComboFavorite(groupKey: string, idx: number) {
     const next = { ...local };
-    const combos = normalizeArray(next[groupKey].combos);
-    combos[idx].favorite = !combos[idx].favorite;
-    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
+    const combos = normalizeArray(next[groupKey]!.combos);
+    combos[idx]!.favorite = !combos[idx]!.favorite;
+    next[groupKey] = { ...next[groupKey]!, combos: denormalizeArray(combos) };
     persist(next);
   }
 
   function addCombo(groupKey: string) {
     const next = { ...local };
-    const combos = normalizeArray(next[groupKey].combos);
+    const combos = normalizeArray(next[groupKey]!.combos);
     combos.push({ text: "" });
-    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
+    next[groupKey] = { ...next[groupKey]!, combos: denormalizeArray(combos) };
     persist(next);
   }
 
   function removeCombo(groupKey: string, idx: number) {
     const next = { ...local };
-    const combos = normalizeArray(next[groupKey].combos);
+    const combos = normalizeArray(next[groupKey]!.combos);
     combos.splice(idx, 1);
-    next[groupKey] = { ...next[groupKey], combos: denormalizeArray(combos) };
+    next[groupKey] = { ...next[groupKey]!, combos: denormalizeArray(combos) };
     persist(next);
   }
 
@@ -349,7 +349,7 @@ export default function TechniqueEditor({
           if (!INITIAL_TECHNIQUES[k])
             merged[k] = normalizeTechniques({
               [k]: v as Partial<TechniqueShape>,
-            })[k];
+            })[k]!;
         });
         persist(merged);
         alert("Techniques imported! (Core sets unchanged)");

@@ -4,7 +4,7 @@ import {
   captureAndDownloadElement,
   generateWorkoutFilename,
   shareWorkoutImage,
-  WorkoutStats,
+  type WorkoutStats,
 } from "./utils/imageUtils";
 
 interface WorkoutCompletedProps {

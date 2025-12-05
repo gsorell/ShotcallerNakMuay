@@ -201,7 +201,7 @@ export const generateWorkoutFilename = (stats: WorkoutStats): string => {
   const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
   const timeStr = date
     .toISOString()
-    .split("T")[1]
+    .split("T")[1]!
     .replace(/:/g, "-")
     .split(".")[0]; // HH-MM-SS
   const emphases = stats.emphases.join("-").replace(/\s+/g, "-").toLowerCase();

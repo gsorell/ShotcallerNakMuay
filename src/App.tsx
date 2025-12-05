@@ -101,8 +101,8 @@ const trackEvent = (eventName: string, parameters?: Record<string, any>) => {
   if (typeof window !== "undefined" && window.gtag) {
     window.gtag("event", eventName, {
       event_category: "engagement",
-      event_label: parameters?.label || "",
-      value: parameters?.value || 0,
+      event_label: parameters?.["label"] || "",
+      value: parameters?.["value"] || 0,
       ...parameters,
     });
   }
@@ -454,6 +454,7 @@ export default function App() {
   useEffect(() => {
     // Don't interrupt the Technique Editor with prompts
     if (isEditorRef.current) return;
+
     // Don't show if already installed or previously dismissed permanently
     if (!pwa.isInstalled) {
       const dismissed = localStorage.getItem("pwa_install_dismissed");
@@ -468,6 +469,8 @@ export default function App() {
         return () => clearTimeout(timer);
       }
     }
+
+    return;
   }, [pwa.isInstalled]); // Routing
   const [page, setPage] = useState<Page>("timer");
   // Keep a ref of whether we're on the Technique Editor page for gating timers and prompts
@@ -492,8 +495,8 @@ export default function App() {
         loaded = JSON.parse(raw);
       }
       // Ensure timer_only is always present
-      if (!loaded.timer_only) {
-        loaded.timer_only = INITIAL_TECHNIQUES.timer_only;
+      if (!loaded["timer_only"]) {
+        loaded["timer_only"] = INITIAL_TECHNIQUES["timer_only"]!;
       }
       return loaded;
     } catch {
@@ -562,12 +565,20 @@ export default function App() {
       "dutch_kickboxing",
     ];
 
+    interface EmphasisConfig {
+      label?: string;
+      iconPath?: string;
+      icon?: string;
+      desc?: string;
+    }
+
     // Always include timer_only as the first tile, using INITIAL_TECHNIQUES if missing
     const timerOnlyTile = (() => {
       const key = "timer_only";
-      const config = BASE_EMPHASIS_CONFIG[key] || {};
+      const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
       const technique = techniques[key] || INITIAL_TECHNIQUES[key];
       let label: string;
+
       if (
         technique?.title &&
         typeof technique.title === "string" &&
@@ -582,6 +593,7 @@ export default function App() {
           .replace(/\b\w/g, (l) => l.toUpperCase())
           .replace(/\s*\(Copy\)$/i, "");
       }
+
       return {
         key,
         label,
@@ -595,7 +607,7 @@ export default function App() {
     const coreGroups = CORE_ORDER.filter(
       (key) => key !== "timer_only" && techniqueKeys.includes(key)
     ).map((key) => {
-      const config = BASE_EMPHASIS_CONFIG[key] || {};
+      const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
       const technique = techniques[key];
       let label: string;
       if (
@@ -1223,7 +1235,7 @@ export default function App() {
   }, [selectedEmphases, addCalisthenics]);
 
   function pickRandom<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)]!;
   }
 
   // TTS guard and helpers
@@ -1356,11 +1368,11 @@ export default function App() {
 
         let selectedTechnique: TechniqueWithStyle;
         if (readInOrder) {
-          selectedTechnique = pool[orderedIndexRef.current % pool.length];
+          selectedTechnique = pool[orderedIndexRef.current % pool.length]!;
           orderedIndexRef.current += 1;
         } else {
           // True random selection each time
-          selectedTechnique = pool[Math.floor(Math.random() * pool.length)];
+          selectedTechnique = pool[Math.floor(Math.random() * pool.length)]!;
         }
 
         // Increment shotsCalledOut counter
@@ -2349,8 +2361,8 @@ export default function App() {
       current = 1,
       max = 1;
     for (let i = 1; i < days.length; ++i) {
-      const prev = new Date(days[i - 1]);
-      const curr = new Date(days[i]);
+      const prev = new Date(days[i - 1]!);
+      const curr = new Date(days[i]!);
       const diff = Math.round(
         (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -2377,8 +2389,8 @@ export default function App() {
     // Count backwards from the most recent workout day
     let currentStreak = 1;
     for (let i = days.length - 1; i > 0; --i) {
-      const prev = new Date(days[i - 1]);
-      const curr = new Date(days[i]);
+      const prev = new Date(days[i - 1]!);
+      const curr = new Date(days[i]!);
       const diff = Math.round(
         (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
       );

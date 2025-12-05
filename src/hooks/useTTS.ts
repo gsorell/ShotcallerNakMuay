@@ -127,7 +127,7 @@ export const useTTS = (): UseTTSReturn => {
             defaultVoice = americanVoice;
           } else {
             // Fallback to any English voice
-            defaultVoice = defaultVoice || englishOnly[0];
+            defaultVoice = defaultVoice || englishOnly[0]!;
           }
 
           if (defaultVoice) {
