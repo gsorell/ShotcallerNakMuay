@@ -50,39 +50,13 @@ import { ttsService } from "./utils/ttsService";
 // CSS
 import "./App.css";
 import "./styles/difficulty.css";
+import { mirrorTechnique } from "./utils/textUtils";
+import { fmtTime } from "./utils/timeUtils";
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
 
 const TECHNIQUES_VERSION = "v35";
-
-// Mirror technique for southpaw mode - only swap Left/Right directional words
-// Exempts techniques from the 'southpaw' style to avoid double negatives
-const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
-  // Safety check: ensure input is a valid string
-  if (!technique || typeof technique !== "string") {
-    return String(technique || "");
-  }
-
-  // EXEMPTION: Don't mirror techniques from southpaw style to avoid double negative
-  if (sourceStyle === "southpaw") {
-    return technique;
-  }
-
-  // Simple swap: Left ↔ Right (case insensitive, preserving original case)
-  let mirrored = technique;
-
-  try {
-    // Use temporary placeholders to avoid double-swapping
-    mirrored = mirrored.replace(/\bLeft\b/gi, "|||TEMP_LEFT|||");
-    mirrored = mirrored.replace(/\bRight\b/gi, "Left");
-    mirrored = mirrored.replace(/\|\|\|TEMP_LEFT\|\|\|/gi, "Right");
-  } catch (error) {
-    return technique; // Return original on error
-  }
-
-  return mirrored;
-};
 
 function loadUserSettings(): UserSettings {
   try {
@@ -1037,11 +1011,6 @@ export default function App() {
     }
   }, []);
 
-  // Helper to fix TTS pronunciation for ambiguous words
-  function fixPronunciation(text: string): string {
-    return text.replace(/\bLeft\b/gi, "leed");
-  }
-
   // Updated speak functions using new TTS system
   const speakSystemLegacy = useCallback(
     (
@@ -1637,11 +1606,6 @@ export default function App() {
     if (isResting) return "resting";
     return "running";
   }
-  function fmtTime(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }
 
   // Voice tester with enhanced error handling
   function testVoice() {
@@ -1998,18 +1962,6 @@ export default function App() {
     } catch {}
   }, []);
 
-  // REMOVE this block (it's a plain <div> showing round/time/status):
-  /*
-  <div>
-    <p>Round: {currentRound}/{roundsCount}</p>
-    <p>Status: {getStatus()}</p>
-    <p>Time Left: {fmtTime(timeLeft)}</p>
-    {isResting && <p>Rest Time Left: {fmtTime(restTimeLeft)}</p>}
-    {isPreRound && <p>Pre-Round Time Left: {fmtTime(preRoundTimeLeft)}</p>}
-  </div>
-  */
-
-  // RESTORE the styled timer by replacing the above with:
   {
     (running || isPreRound) && (
       <StatusTimer
