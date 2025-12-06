@@ -45,6 +45,7 @@ import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
 import "./App.css";
 import ActiveSessionUI from "./components/ActiveSessionUI";
 import { Footer } from "./components/Footer";
+import { HeroBackground } from "./components/HeroBackground";
 import { OnboardingModal } from "./components/OnboardingModal";
 import WorkoutSetup from "./components/WorkoutSetup";
 import { useEmphasisList } from "./hooks/useEmphasisList";
@@ -1861,45 +1862,7 @@ export default function App() {
         }}
       />
       <div style={{ position: "relative", zIndex: 0 }}>
-        {/* Fixed Background Image */}
-        <div className="hero-bg">
-          <picture>
-            <source
-              media="(min-width:1200px)"
-              srcSet="/assets/hero_desktop.png"
-            />
-            <source
-              media="(min-width:600px)"
-              srcSet="/assets/hero_tablet.png"
-            />
-            <img
-              src="/assets/hero_mobile.png"
-              alt=""
-              style={{
-                width: "100vw",
-                height: "100vh",
-                minHeight: "100dvh", // Ensures full viewport coverage on iPad/iOS
-                objectFit: "cover",
-              }}
-            />
-          </picture>
-          <img
-            src="/assets/texture_overlay.png"
-            alt=""
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100vw",
-              height: "100vh",
-              minHeight: "100dvh", // Ensures overlay matches background height
-              objectFit: "cover",
-              mixBlendMode: "overlay",
-              opacity: 0.12,
-              pointerEvents: "none",
-            }}
-          />
-        </div>
+        <HeroBackground />
 
         <main
           className="main-container"
