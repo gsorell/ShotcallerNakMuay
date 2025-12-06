@@ -23,7 +23,6 @@ import Header from "./components/Header";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import StatusTimer from "./components/StatusTimer";
 import { INITIAL_TECHNIQUES } from "./constants/techniques";
-import { BASE_EMPHASIS_CONFIG } from "./emphasisConfig";
 
 // Pages
 import TechniqueEditor from "./pages/TechniqueEditor";
@@ -48,6 +47,7 @@ import { Footer } from "./components/Footer";
 import { ImageWithFallback } from "./components/ImageWithFallback";
 import { OnboardingModal } from "./components/OnboardingModal";
 import WorkoutSetup from "./components/WorkoutSetup";
+import { useEmphasisList } from "./hooks/useEmphasisList";
 import { useHomeStats } from "./hooks/useHomeStats";
 import "./styles/difficulty.css";
 import { generateTechniquePool, normalizeKey } from "./utils/techniqueUtils";
@@ -255,132 +255,7 @@ export default function App() {
   }, [techniques]);
 
   // Dynamically generate emphasis list from techniques, merging with base config for icons/descriptions.
-  const emphasisList = React.useMemo(() => {
-    // Exclude calisthenics from the tile list
-    const techniqueKeys = Object.keys(techniques || {}).filter(
-      (k) => k !== "calisthenics"
-    );
-
-    // Core group keys in preferred order
-    const CORE_ORDER: string[] = [
-      "timer_only",
-      "newb",
-      "two_piece",
-      "boxing",
-      "mat",
-      "tae",
-      "khao",
-      "sok",
-      "femur",
-      "southpaw",
-      "meat_potatoes",
-      "buakaw",
-      "low_kick_legends",
-      "elbow_arsenal",
-      /* REMOVE: 'muay_tech', */ "ko_setups",
-      "tricky_traps",
-      "feints_and_fakeouts",
-      "dutch_kickboxing",
-    ];
-
-    interface EmphasisConfig {
-      label?: string;
-      iconPath?: string;
-      icon?: string;
-      desc?: string;
-    }
-
-    // Always include timer_only as the first tile, using INITIAL_TECHNIQUES if missing
-    const timerOnlyTile = (() => {
-      const key = "timer_only";
-      const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
-      const technique = techniques[key] || INITIAL_TECHNIQUES[key];
-      let label: string;
-
-      if (
-        technique?.title &&
-        typeof technique.title === "string" &&
-        technique.title.trim()
-      ) {
-        label = technique.title.trim();
-      } else if (config.label) {
-        label = config.label;
-      } else {
-        label = key
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase())
-          .replace(/\s*\(Copy\)$/i, "");
-      }
-
-      return {
-        key,
-        label,
-        iconPath: config.iconPath || "/assets/icon_user.png",
-        emoji: config.icon || "🎯",
-        desc: config.desc || technique?.description || `Custom style: ${key}`,
-      };
-    })();
-
-    // Core groups: those present in CORE_ORDER and in techniques, EXCLUDING timer_only
-    const coreGroups = CORE_ORDER.filter(
-      (key) => key !== "timer_only" && techniqueKeys.includes(key)
-    ).map((key) => {
-      const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
-      const technique = techniques[key];
-      let label: string;
-      if (
-        technique?.title &&
-        typeof technique.title === "string" &&
-        technique.title.trim()
-      ) {
-        label = technique.title.trim();
-      } else if (config.label) {
-        label = config.label;
-      } else {
-        label = key
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase())
-          .replace(/\s*\(Copy\)$/i, "");
-      }
-      return {
-        key,
-        label,
-        iconPath: config.iconPath || "/assets/icon_user.png",
-        emoji: config.icon || "🎯",
-        desc: config.desc || technique?.description || `Custom style: ${key}`,
-      };
-    });
-
-    // User-created groups: not in CORE_ORDER and not calisthenics
-    const userGroups = techniqueKeys
-      .filter((key) => !CORE_ORDER.includes(key))
-      .map((key) => {
-        const technique = techniques[key];
-        let label: string;
-        if (
-          technique?.title &&
-          typeof technique.title === "string" &&
-          technique.title.trim()
-        ) {
-          label = technique.title.trim();
-        } else {
-          label = key
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase())
-            .replace(/\s*\(Copy\)$/i, "");
-        }
-        return {
-          key,
-          label,
-          iconPath: "/assets/icon_user.png",
-          emoji: "🎯",
-          desc: technique?.description || `Custom style: ${key}`,
-        };
-      });
-
-    // Final list: timer_only first, then core groups, then user-created groups (no calisthenics)
-    return [timerOnlyTile, ...coreGroups, ...userGroups];
-  }, [techniques]);
+  const emphasisList = useEmphasisList(techniques);
 
   // Keep a mutable ref for the techniques object so callbacks can access the latest value without re-rendering.
   const techniquesRef = useRef<TechniquesShape>(techniques);
