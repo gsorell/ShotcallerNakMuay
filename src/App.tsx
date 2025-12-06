@@ -12,11 +12,8 @@ import type {
 // Storage
 import {
   DEFAULT_REST_MINUTES,
-  DEFAULT_USER_SETTINGS,
   TECHNIQUES_STORAGE_KEY,
   TECHNIQUES_VERSION_KEY,
-  USER_SETTINGS_STORAGE_KEY,
-  type UserSettings,
   VOICE_STORAGE_KEY,
   WORKOUTS_STORAGE_KEY,
 } from "./constants/storage";
@@ -52,56 +49,20 @@ import { EmphasisSelector } from "./components/EmphasisSelector";
 import { Footer } from "./components/Footer";
 import { ImageWithFallback } from "./components/ImageWithFallback";
 import { OnboardingModal } from "./components/OnboardingModal";
+import { useHomeStats } from "./hooks/useHomeStats";
 import "./styles/difficulty.css";
 import { mirrorTechnique } from "./utils/textUtils";
 import { fmtTime } from "./utils/timeUtils";
 import ttsService from "./utils/ttsService";
+import {
+  loadUserSettings,
+  saveUserSettings,
+} from "./utils/userSettingsManager";
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
 
 const TECHNIQUES_VERSION = "v35";
-
-function loadUserSettings(): UserSettings {
-  try {
-    const stored = localStorage.getItem(USER_SETTINGS_STORAGE_KEY);
-    if (!stored) return DEFAULT_USER_SETTINGS;
-
-    const parsed = JSON.parse(stored);
-
-    // Validate and sanitize settings
-    return {
-      roundMin: Math.min(
-        30,
-        Math.max(0.25, parsed.roundMin || DEFAULT_USER_SETTINGS.roundMin)
-      ),
-      restMinutes: Math.min(
-        10,
-        Math.max(0.25, parsed.restMinutes || DEFAULT_USER_SETTINGS.restMinutes)
-      ),
-      voiceSpeed: Math.min(
-        2,
-        Math.max(0.5, parsed.voiceSpeed || DEFAULT_USER_SETTINGS.voiceSpeed)
-      ),
-      roundsCount: Math.min(
-        20,
-        Math.max(1, parsed.roundsCount || DEFAULT_USER_SETTINGS.roundsCount)
-      ),
-    };
-  } catch (error) {
-    return DEFAULT_USER_SETTINGS;
-  }
-}
-
-function saveUserSettings(settings: Partial<UserSettings>): void {
-  try {
-    const current = loadUserSettings();
-    const updated = { ...current, ...settings };
-    localStorage.setItem(USER_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
-  } catch (error) {
-    // Failed to save user settings to localStorage
-  }
-}
 
 export default function App() {
   useEffect(() => {
@@ -2032,110 +1993,8 @@ export default function App() {
 
   // Main Timer UI
   // --- Stats calculation functions (similar to WorkoutLogs) ---
-  const [homePageStats, setHomePageStats] = useState<any>(null);
   const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
-
-  // Calculate streaks from workout logs
-  const calculateStreaks = (logs: any[]) => {
-    if (!logs.length) return { current: 0, longest: 0 };
-
-    // Get unique workout days, sorted chronologically
-    const days = Array.from(
-      new Set(
-        logs
-          .map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
-          .sort((a, b) => a.localeCompare(b))
-      )
-    );
-
-    if (days.length === 0) return { current: 0, longest: 0 };
-    if (days.length === 1) return { current: 1, longest: 1 };
-
-    // Calculate longest streak
-    let longest = 1,
-      current = 1,
-      max = 1;
-    for (let i = 1; i < days.length; ++i) {
-      const prev = new Date(days[i - 1]!);
-      const curr = new Date(days[i]!);
-      const diff = Math.round(
-        (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (diff === 1) {
-        current += 1;
-        if (current > max) max = current;
-      } else {
-        current = 1;
-      }
-    }
-
-    // Calculate current streak (must end on today or yesterday to be "current")
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
-    const lastWorkoutDay = days[days.length - 1];
-
-    // Only count as current streak if last workout was today or yesterday
-    if (lastWorkoutDay !== today && lastWorkoutDay !== yesterday) {
-      return { current: 0, longest: max };
-    }
-
-    // Count backwards from the most recent workout day
-    let currentStreak = 1;
-    for (let i = days.length - 1; i > 0; --i) {
-      const prev = new Date(days[i - 1]!);
-      const curr = new Date(days[i]!);
-      const diff = Math.round(
-        (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (diff === 1) {
-        currentStreak += 1;
-      } else {
-        break;
-      }
-    }
-
-    return { current: currentStreak, longest: max };
-  };
-
-  // Load and calculate home page stats
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
-      if (!raw) {
-        setHomePageStats(null);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        setHomePageStats(null);
-        return;
-      }
-
-      // Normalize workout entries
-      const logs = parsed.map((p: any, i: number) => ({
-        id: String(p?.id ?? `log-${i}-${Date.now()}`),
-        timestamp: String(p?.timestamp ?? new Date().toISOString()),
-        emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : [],
-      }));
-
-      // Calculate stats
-      const emphasesCount: Record<string, number> = {};
-      logs.forEach((l: any) =>
-        l.emphases.forEach((e: string) => {
-          emphasesCount[e] = (emphasesCount[e] || 0) + 1;
-        })
-      );
-      const mostCommonEmphasis =
-        Object.entries(emphasesCount).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
-      const streaks = calculateStreaks(logs);
-
-      setHomePageStats({ mostCommonEmphasis, ...streaks });
-    } catch {
-      setHomePageStats(null);
-    }
-  }, [page, statsRefreshTrigger]); // Recalculate when page changes or new workout is saved
+  const homePageStats = useHomeStats(statsRefreshTrigger);
 
   // Find the favorite emphasis config by label (case-insensitive)
   const favoriteConfig = homePageStats?.mostCommonEmphasis
