@@ -50,6 +50,8 @@ import { OnboardingModal } from "./components/OnboardingModal";
 import WorkoutSetup from "./components/WorkoutSetup";
 import { useEmphasisList } from "./hooks/useEmphasisList";
 import { useHomeStats } from "./hooks/useHomeStats";
+import { useSoundEffects } from "./hooks/useSoundEffects";
+import { useUserEngagement } from "./hooks/useUserEngagement";
 import "./styles/difficulty.css";
 import { generateTechniquePool, normalizeKey } from "./utils/techniqueUtils";
 import { mirrorTechnique } from "./utils/textUtils";
@@ -95,38 +97,11 @@ export default function App() {
   // Android audio ducking for background music control
   const androidAudioDucking = useAndroidAudioDucking();
 
-  const [userEngagement, setUserEngagement] = useState(() => {
-    const stored = localStorage.getItem("user_engagement_stats");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        return {
-          visitCount: parsed.visitCount || 0,
-          timeOnSite: 0, // Reset time for new session
-          completedWorkouts: parsed.completedWorkouts || 0,
-          lastVisit: parsed.lastVisit ? new Date(parsed.lastVisit) : new Date(),
-        };
-      } catch {
-        return {
-          visitCount: 0,
-          timeOnSite: 0,
-          completedWorkouts: 0,
-          lastVisit: new Date(),
-        };
-      }
-    }
-    return {
-      visitCount: 0,
-      timeOnSite: 0,
-      completedWorkouts: 0,
-      lastVisit: new Date(),
-    };
-  });
-
-  const [sessionStartTime] = useState(Date.now());
   const [showPWAPrompt, setShowPWAPrompt] = useState(false);
   // Track whether we're on the Technique Editor to gate periodic updates that can steal focus on mobile
   const isEditorRef = useRef(false);
+
+  const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
 
   // Register service worker for PWA
   useEffect(() => {
@@ -136,38 +111,6 @@ export default function App() {
       });
     }
   }, []);
-
-  // Track user engagement and update visit count
-  useEffect(() => {
-    // Increment visit count on first load
-    const newEngagement = {
-      ...userEngagement,
-      visitCount: userEngagement.visitCount + 1,
-      lastVisit: new Date(),
-    };
-    setUserEngagement(newEngagement);
-
-    // Save to localStorage with ISO string
-    localStorage.setItem(
-      "user_engagement_stats",
-      JSON.stringify({
-        ...newEngagement,
-        lastVisit: newEngagement.lastVisit.toISOString(),
-      })
-    );
-  }, []); // Only run once on mount
-
-  // Track time on site and show install prompt after 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Skip updating while editing techniques to avoid focus drops on mobile
-      if (isEditorRef.current) return;
-      const timeOnSite = Math.floor((Date.now() - sessionStartTime) / 1000);
-      setUserEngagement((prev) => ({ ...prev, timeOnSite }));
-    }, 5000); // Check every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [sessionStartTime]);
 
   // Show install prompt automatically after 30 seconds if not installed and not dismissed
   useEffect(() => {
@@ -654,8 +597,6 @@ export default function App() {
 
   // Refs
   const calloutRef = useRef<number | null>(null);
-  const bellSoundRef = useRef<HTMLAudioElement | null>(null);
-  const warningSoundRef = useRef<HTMLAudioElement | null>(null);
   const shotsCalledOutRef = useRef<number>(0); // Initialize shotsCalledOutRef
   const orderedIndexRef = useRef<number>(0); // Initialize orderedIndexRef
   const currentPoolRef = useRef<TechniqueWithStyle[]>([]); // Initialize currentPoolRef
@@ -971,158 +912,8 @@ export default function App() {
     }
   }, [running, paused, isResting, stopAllNarration, stopTechniqueCallouts]);
 
-  // Simple Web Audio fallback chime if mp3 can't play (autoplay blocked or missing file)
-  const webAudioChime = useCallback(() => {
-    try {
-      const AudioCtx =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.45);
-    } catch {
-      /* noop */
-    }
-  }, []);
-
-  // Initialize audio instances ONCE on component mount
-  useEffect(() => {
-    try {
-      // Create bell audio instance once
-      if (!bellSoundRef.current) {
-        bellSoundRef.current = new Audio("/big-bell-330719.mp3");
-        bellSoundRef.current.preload = "auto";
-        bellSoundRef.current.volume = 0.5;
-        // Configure for iOS compatibility to prevent audio ducking
-        iosAudioSession.configureAudioElement(bellSoundRef.current);
-      }
-
-      // Create warning audio instance once
-      if (!warningSoundRef.current) {
-        warningSoundRef.current = new Audio("/interval.mp3");
-        warningSoundRef.current.preload = "auto";
-        warningSoundRef.current.volume = 0.4;
-        // Configure for iOS compatibility to prevent audio ducking
-        iosAudioSession.configureAudioElement(warningSoundRef.current);
-      }
-    } catch (error) {
-      console.warn("[AudioInit] Failed to initialize audio elements:", error);
-    }
-
-    // Cleanup on unmount
-    return () => {
-      try {
-        if (bellSoundRef.current) {
-          bellSoundRef.current.pause();
-          bellSoundRef.current.src = "";
-          bellSoundRef.current.load();
-          bellSoundRef.current = null;
-        }
-        if (warningSoundRef.current) {
-          warningSoundRef.current.pause();
-          warningSoundRef.current.src = "";
-          warningSoundRef.current.load();
-          warningSoundRef.current = null;
-        }
-      } catch (error) {
-        console.warn("[AudioCleanup] Error during cleanup:", error);
-      }
-    };
-  }, []);
-
-  // Configure iOS-specific audio settings after audio elements are created
-  useEffect(() => {
-    if (bellSoundRef.current && iosAudioSession.shouldMixWithOthers()) {
-      bellSoundRef.current.volume = 0.3; // Reduce volume on iOS for better mixing
-      iosAudioSession.configureAudioElement(bellSoundRef.current);
-    }
-
-    if (warningSoundRef.current && iosAudioSession.shouldMixWithOthers()) {
-      warningSoundRef.current.volume = 0.2; // Reduce volume on iOS for better mixing
-      iosAudioSession.configureAudioElement(warningSoundRef.current);
-    }
-  }, [iosAudioSession]);
-
-  // Proactively unlock audio on user gesture (Start button)
-  const ensureMediaUnlocked = useCallback(async () => {
-    try {
-      // Use existing bell instance, don't create new one
-      const bell = bellSoundRef.current;
-      if (bell) {
-        const bellPrevVol = bell.volume;
-        bell.volume = 0;
-        bell.muted = true;
-        await bell.play().catch(() => {});
-        bell.pause();
-        bell.currentTime = 0;
-        bell.muted = false;
-        bell.volume = bellPrevVol;
-      }
-
-      // Use existing warning instance, don't create new one
-      const warn = warningSoundRef.current;
-      if (warn) {
-        const warnPrevVol = warn.volume;
-        warn.volume = 0;
-        warn.muted = true;
-        await warn.play().catch(() => {});
-        warn.pause();
-        warn.currentTime = 0;
-        warn.muted = false;
-        warn.volume = warnPrevVol;
-      }
-    } catch {
-      /* noop */
-    }
-  }, []);
-
-  // Bell - reuse existing instance, never create new ones
-  const playBell = useCallback(() => {
-    try {
-      const bell = bellSoundRef.current;
-      if (bell) {
-        bell.currentTime = 0;
-        const p = bell.play();
-        if (p && typeof p.then === "function") {
-          p.catch(() => {
-            webAudioChime();
-          });
-        }
-      } else {
-        webAudioChime();
-      }
-    } catch {
-      webAudioChime();
-    }
-  }, [webAudioChime]);
-
-  // 10-second warning sound - reuse existing instance, never create new ones
-  const playWarningSound = useCallback(() => {
-    try {
-      const warn = warningSoundRef.current;
-      if (warn) {
-        warn.currentTime = 0;
-        const p = warn.play();
-        if (p && typeof p.then === "function") {
-          p.catch(() => {
-            /* no critical fallback for warning */
-          });
-        }
-      }
-    } catch {
-      /* noop */
-    }
-  }, []);
+  const { playBell, playWarningSound, ensureMediaUnlocked } =
+    useSoundEffects(iosAudioSession);
 
   // ADD: Pre-round countdown timer
   useEffect(() => {
