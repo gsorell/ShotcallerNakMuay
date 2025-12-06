@@ -50,6 +50,7 @@ import { Footer } from "./components/Footer";
 import { ImageWithFallback } from "./components/ImageWithFallback";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { StickyStartControls } from "./components/StickyStartControls";
+import { WorkoutConfiguration } from "./components/WorkoutConfiguration";
 import { useHomeStats } from "./hooks/useHomeStats";
 import "./styles/difficulty.css";
 import { generateTechniquePool, normalizeKey } from "./utils/techniqueUtils";
@@ -514,20 +515,6 @@ export default function App() {
       southpaw: false,
     });
   };
-
-  // NEW: keep a friendly text field state for the round length input
-  const [roundMinInput, setRoundMinInput] = useState<string>(String(roundMin));
-  useEffect(() => {
-    setRoundMinInput(String(roundMin));
-  }, [roundMin]);
-
-  // NEW: keep a friendly text field state for the rest time input
-  const [restMinutesInput, setRestMinutesInput] = useState<string>(
-    String(restMinutes)
-  );
-  useEffect(() => {
-    setRestMinutesInput(String(restMinutes));
-  }, [restMinutes]);
 
   // ADD: advanced panel toggle (was missing)
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -2448,245 +2435,14 @@ export default function App() {
                     />
 
                     {/* Step 3: Rounds/Length/Rest */}
-                    <section
-                      style={{
-                        maxWidth: "48rem",
-                        margin: "0 auto",
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: "2rem",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {/* Number of Rounds */}
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "1rem",
-                        }}
-                      >
-                        <h3
-                          style={{
-                            fontSize: "1.125rem",
-                            fontWeight: "bold",
-                            color: "white",
-                            textAlign: "center",
-                            margin: 0,
-                          }}
-                        >
-                          Number of Rounds
-                        </h3>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "1rem",
-                            backgroundColor: "rgba(255,255,255,0.1)",
-                            padding: "1rem 2rem",
-                            borderRadius: "1rem",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                            minHeight: "70px",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRoundsCount(Math.max(1, roundsCount - 1))
-                            }
-                            style={chipButtonStyle}
-                          >
-                            −
-                          </button>
-                          <div
-                            style={{ minWidth: "4rem", textAlign: "center" }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "2rem",
-                                fontWeight: "bold",
-                                color: "white",
-                              }}
-                            >
-                              {roundsCount}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "#f9a8d4",
-                                marginTop: "0.25rem",
-                              }}
-                            >
-                              rounds
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRoundsCount(Math.min(20, roundsCount + 1))
-                            }
-                            style={chipButtonStyle}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Round Length */}
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "1rem",
-                        }}
-                      >
-                        <h3
-                          style={{
-                            fontSize: "1.125rem",
-                            fontWeight: "bold",
-                            color: "white",
-                            textAlign: "center",
-                            margin: 0,
-                          }}
-                        >
-                          Round Length
-                        </h3>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "1rem",
-                            backgroundColor: "rgba(255,255,255,0.1)",
-                            padding: "1rem 2rem",
-                            borderRadius: "1rem",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                            minHeight: "70px",
-                          }}
-                        >
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*[.,]?[0-9]*"
-                            className="round-length-input"
-                            value={roundMinInput}
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(",", ".");
-                              if (/^\d*\.?\d*$/.test(raw)) {
-                                setRoundMinInput(raw);
-                              }
-                            }}
-                            onBlur={() => {
-                              let v = parseFloat(roundMinInput || "");
-                              if (Number.isNaN(v)) v = roundMin;
-                              v = Math.min(30, Math.max(0.25, v));
-                              const stepped = Math.round(v / 0.25) * 0.25;
-                              setRoundMin(stepped);
-                              setRoundMinInput(String(stepped));
-                            }}
-                            style={{
-                              width: "4rem",
-                              height: "3rem",
-                              textAlign: "center",
-                              fontSize: "2rem",
-                              fontWeight: 700,
-                              borderRadius: "0.5rem",
-                              border: "none",
-                              background: "rgba(255,255,255,0.15)",
-                              color: "white",
-                              boxShadow: "none",
-                            }}
-                          />
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#f9a8d4",
-                              marginTop: "0.25rem",
-                            }}
-                          >
-                            minutes
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Rest Time */}
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "1rem",
-                        }}
-                      >
-                        <h3
-                          style={{
-                            fontSize: "1.125rem",
-                            fontWeight: "bold",
-                            color: "white",
-                            textAlign: "center",
-                            margin: 0,
-                          }}
-                        >
-                          Rest Time
-                        </h3>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "1rem",
-                            backgroundColor: "rgba(255,255,255,0.1)",
-                            padding: "1rem 2rem",
-                            borderRadius: "1rem",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                            minHeight: "70px",
-                          }}
-                        >
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*[.,]?[0-9]*"
-                            className="rest-minutes-input"
-                            value={restMinutesInput}
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(",", ".");
-                              if (/^\d*\.?\d*$/.test(raw)) {
-                                setRestMinutesInput(raw);
-                              }
-                            }}
-                            onBlur={() => {
-                              let v = parseFloat(restMinutesInput || "");
-                              if (Number.isNaN(v)) v = restMinutes;
-                              v = Math.min(10, Math.max(0.25, v));
-                              const stepped = Math.round(v / 0.25) * 0.25;
-                              setRestMinutes(stepped);
-                              setRestMinutesInput(String(stepped));
-                            }}
-                            style={{
-                              width: "4rem",
-                              height: "3rem",
-                              textAlign: "center",
-                              fontSize: "2rem",
-                              fontWeight: 700,
-                              borderRadius: "0.5rem",
-                              border: "none",
-                              background: "rgba(255,255,255,0.15)",
-                              color: "white",
-                              boxShadow: "none",
-                            }}
-                          />
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#f9a8d4",
-                              marginTop: "0.25rem",
-                            }}
-                          >
-                            minutes
-                          </div>
-                        </div>
-                      </div>
-                    </section>
+                    <WorkoutConfiguration
+                      roundsCount={roundsCount}
+                      setRoundsCount={setRoundsCount}
+                      roundMin={roundMin}
+                      setRoundMin={setRoundMin}
+                      restMinutes={restMinutes}
+                      setRestMinutes={setRestMinutes}
+                    />
 
                     {/* Advanced Settings: Voice Speed and Selection */}
                     <button
