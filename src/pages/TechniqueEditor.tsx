@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { INITIAL_TECHNIQUES } from "../data/techniques";
+import { INITIAL_TECHNIQUES } from "../constants/techniques";
 import "../styles/editor.css";
 import {
   denormalizeArray,

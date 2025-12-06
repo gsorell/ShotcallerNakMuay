@@ -1,11 +1,33 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+// Types
+import type {
+  Difficulty,
+  EmphasisKey,
+  Page,
+  TechniquesShape,
+  TechniqueWithStyle,
+} from "./types";
+
+// Storage
+import {
+  DEFAULT_REST_MINUTES,
+  DEFAULT_USER_SETTINGS,
+  TECHNIQUES_STORAGE_KEY,
+  TECHNIQUES_VERSION_KEY,
+  USER_SETTINGS_STORAGE_KEY,
+  type UserSettings,
+  VOICE_STORAGE_KEY,
+  WORKOUTS_STORAGE_KEY,
+} from "./constants/storage";
+
 // Components
 import Header from "./components/Header";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import StatusTimer from "./components/StatusTimer"; // <-- Make sure this import exists
-import { INITIAL_TECHNIQUES } from "./data/techniques";
+import StatusTimer from "./components/StatusTimer";
+import { INITIAL_TECHNIQUES } from "./constants/techniques";
+import { BASE_EMPHASIS_CONFIG } from "./emphasisConfig";
 
 // Pages
 import TechniqueEditor from "./pages/TechniqueEditor";
@@ -21,6 +43,7 @@ import { useTTS } from "./hooks/useTTS";
 import { useWakeLock } from "./hooks/useWakeLock";
 
 // Utilities
+import { AnalyticsEvents, initializeGA4, trackEvent } from "./utils/analytics";
 import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
 import { ttsService } from "./utils/ttsService";
 
@@ -31,238 +54,7 @@ import "./styles/difficulty.css";
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
 
-// Google Analytics 4 (GA4) implementation
-declare global {
-  interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
-  }
-}
-
-// Your GA4 Measurement ID - replace 'G-XXXXXXXXXX' with your actual measurement ID
-const GA_MEASUREMENT_ID = "G-5GY5JTX5KZ";
-
-// Analytics event names
-const AnalyticsEvents = {
-  // Timer events
-  WorkoutStart: "workout_start",
-  WorkoutComplete: "workout_complete",
-  WorkoutPause: "workout_pause",
-  WorkoutResume: "workout_resume",
-  WorkoutStop: "workout_stop",
-
-  // Settings events
-  SettingToggle: "setting_toggle",
-  EmphasisSelect: "emphasis_select",
-  EmphasisDeselect: "emphasis_deselect",
-  EmphasisListToggle: "emphasis_list_toggle",
-  DifficultyChange: "difficulty_change",
-
-  // Navigation events
-  PageChange: "page_change",
-  TechniqueEditorOpen: "technique_editor_open",
-  WorkoutLogsOpen: "workout_logs_open",
-
-  // PWA events
-  PWAInstallPrompt: "pwa_install_prompt",
-  PWAInstallAccept: "pwa_install_accept",
-  PWAInstallDecline: "pwa_install_decline",
-} as const;
-
-// Initialize GA4
-const initializeGA4 = () => {
-  // Only initialize in production (not on localhost)
-  if (
-    typeof window === "undefined" ||
-    window.location.hostname === "localhost"
-  ) {
-    return;
-  }
-
-  // Load the Google Analytics script
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-  document.head.appendChild(script);
-
-  // Initialize dataLayer and gtag
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function (...args: any[]) {
-    window.dataLayer.push(arguments);
-  };
-
-  window.gtag("js", new Date());
-  window.gtag("config", GA_MEASUREMENT_ID, {
-    page_title: "Nak Muay Shot Caller",
-    page_location: window.location.href,
-  });
-};
-
-// Track events
-const trackEvent = (eventName: string, parameters?: Record<string, any>) => {
-  if (typeof window !== "undefined" && window.gtag) {
-    window.gtag("event", eventName, {
-      event_category: "engagement",
-      event_label: parameters?.["label"] || "",
-      value: parameters?.["value"] || 0,
-      ...parameters,
-    });
-  }
-};
-
-// Types and storage keys
-type TechniquesShape = typeof INITIAL_TECHNIQUES;
-type EmphasisKey =
-  | "timer_only"
-  | "khao"
-  | "mat"
-  | "tae"
-  | "femur"
-  | "sok"
-  | "boxing"
-  | "newb"
-  | "two_piece"
-  | "southpaw";
-type Difficulty = "easy" | "medium" | "hard";
-type Page = "timer" | "editor" | "logs" | "completed";
-
-// Type for techniques with source style information
-type TechniqueWithStyle = {
-  text: string;
-  style: string;
-};
-
-const TECHNIQUES_STORAGE_KEY = "shotcaller_techniques";
-const TECHNIQUES_VERSION_KEY = "shotcaller_techniques_version";
-const WORKOUTS_STORAGE_KEY = "shotcaller_workouts";
-const VOICE_STORAGE_KEY = "shotcaller_voice_preference";
-// User settings persistence
-const USER_SETTINGS_STORAGE_KEY = "shotcaller_user_settings";
-const TECHNIQUES_VERSION = "v35"; // Increment this version to force a reset on deployment
-
-// Base UI config for known styles
-// FIX: Use absolute string paths for icons in the /public/assets directory
-const BASE_EMPHASIS_CONFIG: {
-  [key: string]: {
-    label: string;
-    icon: string;
-    desc: string;
-    iconPath: string;
-  };
-} = {
-  timer_only: {
-    label: "Timer Only",
-    icon: "⏱️",
-    desc: "Just a round timer — no shotcalling, no techniques.",
-    iconPath: "/assets/icon.stopwatch.png",
-  },
-  newb: {
-    label: "Nak Muay Newb",
-    icon: "👶",
-    desc: "Start here to learn the basic strikes",
-    iconPath: "/assets/icon_newb.png",
-  },
-  khao: {
-    label: "Muay Khao",
-    icon: "🙏",
-    desc: "Close-range clinch work and knee combinations",
-    iconPath: "/assets/icon_khao.png",
-  },
-  mat: {
-    label: "Muay Mat",
-    icon: "👊",
-    desc: "Blending Heavy hands with Kicks and Knees",
-    iconPath: "/assets/icon_mat.png",
-  },
-  tae: {
-    label: "Muay Tae",
-    icon: "🦵",
-    desc: "Kicking specialist with long-range attacks",
-    iconPath: "/assets/icon_tae.png",
-  },
-  femur: {
-    label: "Muay Femur",
-    icon: "🧠",
-    desc: "Technical timing and defensive counters",
-    iconPath: "/assets/icon_femur.png",
-  },
-  sok: {
-    label: "Muay Sok",
-    icon: "🔪",
-    desc: "Vicious elbows and close-range attacks",
-    iconPath: "/assets/icon_sok.png",
-  },
-  boxing: {
-    label: "Boxing",
-    icon: "🥊",
-    desc: "Fundamental boxing combinations",
-    iconPath: "/assets/icon_boxing.png",
-  },
-  two_piece: {
-    label: "Two-Piece Combos",
-    icon: "⚡️",
-    desc: "Short, powerful 2-strike combinations",
-    iconPath: "/assets/icon_two_piece.png",
-  },
-  southpaw: {
-    label: "Southpaw",
-    icon: "🦶",
-    desc: "Left-handed stance with combos tailored for southpaw fighters",
-    iconPath: "/assets/icon_southpaw.png",
-  },
-  // --- Custom icons for new groups ---
-  meat_potatoes: {
-    label: "Meat & Potatoes",
-    icon: "🥔",
-    desc: "Classic, high-percentage strikes and combos for all levels",
-    iconPath: "/assets/icon_meat_potatoes.png",
-  },
-  buakaw: {
-    label: "Buakaws Corner",
-    icon: "🥋",
-    desc: "Aggressive clinch, knees, and sweeps inspired by Buakaw",
-    iconPath: "/assets/icon.buakaw.png",
-  },
-  low_kick_legends: {
-    label: "Low Kick Legends",
-    icon: "🦵",
-    desc: "Devastating low kicks and classic Dutch-style combinations",
-    iconPath: "/assets/icon_lowkicklegends.png",
-  },
-  elbow_arsenal: {
-    label: "Elbow Arsenal",
-    icon: "💥",
-    desc: "Sharp elbow strikes and creative close-range attacks",
-    iconPath: "/assets/icon.elbow arsenal.png",
-  },
-  // REMOVE muay_tech entry entirely
-  ko_setups: {
-    label: "KO Setups",
-    icon: "💣",
-    desc: "Explosive knockout setups and finishing combinations",
-    iconPath: "/assets/icon.ko.png",
-  },
-  tricky_traps: {
-    label: "Tricky Traps and Spinning Shit",
-    icon: "🌪️",
-    desc: "Advanced spinning techniques and deceptive setups",
-    iconPath: "/assets/icon.trickytraps.png",
-  },
-  feints_and_fakeouts: {
-    label: "Feints and Fakeouts",
-    icon: "🎭",
-    desc: "Deceptive movements and setups that manipulate timing and rhythm.",
-    iconPath: "/assets/icon.feintsandfakes.png",
-  },
-  dutch_kickboxing: {
-    label: "Dutch Kickboxing",
-    icon: "🥊",
-    desc: "High-pressure combinations emphasizing volume, flow, and power.",
-    iconPath: "/assets/icon.dutch.png",
-  },
-};
-
-const DEFAULT_REST_MINUTES = 1;
+const TECHNIQUES_VERSION = "v35";
 
 // Mirror technique for southpaw mode - only swap Left/Right directional words
 // Exempts techniques from the 'southpaw' style to avoid double negatives
@@ -290,21 +82,6 @@ const mirrorTechnique = (technique: string, sourceStyle?: string): string => {
   }
 
   return mirrored;
-};
-
-// User settings persistence utilities
-interface UserSettings {
-  roundMin: number;
-  restMinutes: number;
-  voiceSpeed: number;
-  roundsCount: number;
-}
-
-const DEFAULT_USER_SETTINGS: UserSettings = {
-  roundMin: 3,
-  restMinutes: DEFAULT_REST_MINUTES,
-  voiceSpeed: 1,
-  roundsCount: 5,
 };
 
 function loadUserSettings(): UserSettings {
@@ -4838,14 +4615,3 @@ export default function App() {
     </>
   );
 }
-
-type WorkoutLogsProps = {
-  onBack: () => void;
-  emphasisList: {
-    key: string;
-    label: string;
-    iconPath: string;
-    emoji: string;
-    desc: string;
-  }[];
-};
