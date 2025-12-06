@@ -49,6 +49,7 @@ import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
 import "./App.css";
 import { AdvancedSettingsPanel } from "./components/AdvancedSettingsPanel";
 import { Footer } from "./components/Footer";
+import { ImageWithFallback } from "./components/ImageWithFallback";
 import { OnboardingModal } from "./components/OnboardingModal";
 import "./styles/difficulty.css";
 import { mirrorTechnique } from "./utils/textUtils";
@@ -2028,46 +2029,6 @@ export default function App() {
     fontWeight: 700,
   };
 
-  // Image helper: tries several asset filenames/extensions then falls back to emoji
-  const ImageWithFallback: React.FC<{
-    srcPath?: string;
-    alt: string;
-    emoji: string;
-    style?: React.CSSProperties;
-    className?: string;
-  }> = ({ srcPath, alt, emoji, style, className }) => {
-    // FIX: Simplify state. Only use state to track loading errors.
-    const [error, setError] = useState(false);
-
-    // FIX: Reset error state if the image source path changes.
-    useEffect(() => {
-      setError(false);
-    }, [srcPath]);
-
-    // If there's no path or an error occurred, show the emoji.
-    if (!srcPath || error) {
-      return (
-        <span style={{ display: "inline-block", fontSize: 28, ...style }}>
-          {emoji}
-        </span>
-      );
-    }
-
-    return (
-      <img
-        src={srcPath}
-        alt={alt}
-        className={className}
-        style={style}
-        // When an error occurs (e.g., 404 Not Found), set the error state to true.
-        onError={() => {
-          // ImageWithFallback load failed
-          setError(true);
-        }}
-      />
-    );
-  };
-
   // Main Timer UI
   // --- Stats calculation functions (similar to WorkoutLogs) ---
   const [homePageStats, setHomePageStats] = useState<any>(null);
@@ -2432,25 +2393,6 @@ export default function App() {
                       rowGap: "clamp(16px, 3.2vh, 28px)",
                     }}
                   >
-                    {/* REPLACE THIS BLOCK */}
-                    {/* Old plain timer block: */}
-                    {/*
-<div
-  style={{
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
-  }}
->
-  Round {currentRound}/{roundsCount} - {getStatus()}
-  <br />
-  Time Left: {fmtTime(timeLeft)}
-  {isResting && <div>Rest Time Left: {fmtTime(restTimeLeft)}</div>}
-  {isPreRound && <div>Pre-Round Time Left: {fmtTime(preRoundTimeLeft)}</div>}
-</div>
-                    */}
-
                     {/* NEW: Use styled StatusTimer component */}
                     <StatusTimer
                       time={fmtTime(timeLeft)}
