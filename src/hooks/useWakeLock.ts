@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useVisibilityManager } from "./hooks/useVisibilityManager";
+import { useVisibilityManager } from "./useVisibilityManager";
 
 type Method = "wakeLock" | "nosleep" | "none";
 

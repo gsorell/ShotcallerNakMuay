@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import "./editor.css";
-import { INITIAL_TECHNIQUES } from "./techniques";
+import { INITIAL_TECHNIQUES } from "../data/techniques";
+import "../styles/editor.css";
 import {
   denormalizeArray,
   humanizeKey,
   normalizeArray,
   normalizeTechniques,
   type TechniqueShape as UtilsTechniqueShape,
-} from "./utils/techniqueUtils";
+} from "../utils/techniqueUtils";
 
 type TechniqueDetail = {
   name: string;

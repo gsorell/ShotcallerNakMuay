@@ -5,11 +5,12 @@ import { createPortal } from "react-dom";
 import Header from "./components/Header";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import StatusTimer from "./components/StatusTimer"; // <-- Make sure this import exists
-import TechniqueEditor from "./TechniqueEditor";
-import { INITIAL_TECHNIQUES } from "./techniques";
-import { useWakeLock } from "./useWakeLock";
-import WorkoutCompleted from "./WorkoutCompleted";
-import WorkoutLogs from "./WorkoutLogs";
+import { INITIAL_TECHNIQUES } from "./data/techniques";
+
+// Pages
+import TechniqueEditor from "./pages/TechniqueEditor";
+import WorkoutCompleted from "./pages/WorkoutCompleted";
+import WorkoutLogs from "./pages/WorkoutLogs";
 
 // Hooks
 import { useAndroidAudioDucking } from "./hooks/useAndroidAudioDucking";
@@ -17,6 +18,7 @@ import { useIOSAudioSession } from "./hooks/useIOSAudioSession";
 import { useNavigationGestures } from "./hooks/useNavigationGestures";
 import { usePWA } from "./hooks/usePWA";
 import { useTTS } from "./hooks/useTTS";
+import { useWakeLock } from "./hooks/useWakeLock";
 
 // Utilities
 import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
@@ -24,7 +26,7 @@ import { ttsService } from "./utils/ttsService";
 
 // CSS
 import "./App.css";
-import "./difficulty.css";
+import "./styles/difficulty.css";
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
