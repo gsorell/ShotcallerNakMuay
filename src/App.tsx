@@ -44,13 +44,10 @@ import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
 
 // CSS
 import "./App.css";
-import { AdvancedSettingsPanel } from "./components/AdvancedSettingsPanel";
-import { EmphasisSelector } from "./components/EmphasisSelector";
 import { Footer } from "./components/Footer";
 import { ImageWithFallback } from "./components/ImageWithFallback";
 import { OnboardingModal } from "./components/OnboardingModal";
-import { StickyStartControls } from "./components/StickyStartControls";
-import { WorkoutConfiguration } from "./components/WorkoutConfiguration";
+import WorkoutSetup from "./components/WorkoutSetup";
 import { useHomeStats } from "./hooks/useHomeStats";
 import "./styles/difficulty.css";
 import { generateTechniquePool, normalizeKey } from "./utils/techniqueUtils";
@@ -2299,198 +2296,48 @@ export default function App() {
 
               {/* Settings */}
               {!isActive && (
-                <div>
-                  {/* Compact Favorite Style, Streak Counter, and PWA Status */}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "0.5rem",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginBottom: "1rem",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {/* Stats only show if we have data */}
-                    {homePageStats && (
-                      <React.Fragment>
-                        {/* Favorite Style */}
-                        {favoriteConfig && (
-                          <button
-                            type="button"
-                            onClick={() => setPage("logs")}
-                            style={{
-                              all: "unset",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "0.25rem",
-                              padding: "0.375rem 0.625rem",
-                              borderRadius: "9999px",
-                              background: "rgba(0,0,0,0.2)",
-                              border: "1px solid rgba(255,255,255,0.12)",
-                              color: "white",
-                              cursor: "pointer",
-                              transition: "all 0.2s ease",
-                              fontSize: "0.8rem",
-                              opacity: 0.9,
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.opacity = "1";
-                              e.currentTarget.style.background =
-                                "rgba(0,0,0,0.3)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.opacity = "0.9";
-                              e.currentTarget.style.background =
-                                "rgba(0,0,0,0.2)";
-                            }}
-                            title="Click to view workout logs"
-                            aria-label={`Favorite style: ${favoriteConfig.label} - click to view workout logs`}
-                          >
-                            <ImageWithFallback
-                              srcPath={favoriteConfig.iconPath}
-                              alt={favoriteConfig.label}
-                              emoji={favoriteConfig.emoji || "🎯"}
-                              style={{
-                                width: 14,
-                                height: 14,
-                                borderRadius: 3,
-                                objectFit: "cover",
-                              }}
-                            />
-                            <span style={{ fontWeight: 600 }}>
-                              {favoriteConfig.label}
-                            </span>
-                          </button>
-                        )}
-
-                        {/* Streak Counter */}
-                        <button
-                          type="button"
-                          onClick={() => setPage("logs")}
-                          style={{
-                            all: "unset",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                            padding: "0.375rem 0.625rem",
-                            borderRadius: "9999px",
-                            background: "rgba(0,0,0,0.2)",
-                            border: "1px solid rgba(255,255,255,0.12)",
-                            color: "white",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            fontSize: "0.8rem",
-                            opacity: 0.9,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = "1";
-                            e.currentTarget.style.background =
-                              "rgba(0,0,0,0.3)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = "0.9";
-                            e.currentTarget.style.background =
-                              "rgba(0,0,0,0.2)";
-                          }}
-                          title="Click to view workout logs"
-                          aria-label={`${homePageStats.current} day streak - click to view workout logs`}
-                        >
-                          <span
-                            role="img"
-                            aria-label="flame"
-                            style={{ fontSize: "0.9rem" }}
-                          >
-                            🔥
-                          </span>
-                          <span style={{ fontWeight: 700 }}>
-                            {homePageStats.current}
-                          </span>
-                        </button>
-                      </React.Fragment>
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "3rem",
-                    }}
-                  >
-                    {/* Step 1: Emphasis selection */}
-                    <EmphasisSelector
-                      emphasisList={emphasisList}
-                      selectedEmphases={selectedEmphases}
-                      toggleEmphasis={toggleEmphasis}
-                      techniques={techniques}
-                      showAllEmphases={showAllEmphases}
-                      setShowAllEmphases={setShowAllEmphases}
-                      onManageTechniques={() => {
-                        try {
-                          trackEvent(AnalyticsEvents.TechniqueEditorOpen);
-                        } catch {}
-                        setPage("editor");
-                      }}
-                    />
-
-                    {/* Step 3: Rounds/Length/Rest */}
-                    <WorkoutConfiguration
-                      roundsCount={roundsCount}
-                      setRoundsCount={setRoundsCount}
-                      roundMin={roundMin}
-                      setRoundMin={setRoundMin}
-                      restMinutes={restMinutes}
-                      setRestMinutes={setRestMinutes}
-                    />
-
-                    {/* Advanced Settings: Voice Speed and Selection */}
-                    <button
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                      style={{
-                        ...linkButtonStyle,
-                        color: "#f9a8d4",
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      {showAdvanced ? "Hide" : "Show"} Advanced Settings
-                    </button>
-                    {showAdvanced && (
-                      <AdvancedSettingsPanel
-                        southpawMode={southpawMode}
-                        setSouthpawMode={setSouthpawMode}
-                        addCalisthenics={addCalisthenics}
-                        setAddCalisthenics={setAddCalisthenics}
-                        readInOrder={readInOrder}
-                        setReadInOrder={setReadInOrder}
-                        voice={voice}
-                        voices={voices}
-                        unifiedVoices={unifiedVoices}
-                        setCurrentVoice={setCurrentVoice}
-                        saveVoicePreference={saveVoicePreference}
-                        checkVoiceCompatibility={checkVoiceCompatibility}
-                        ttsService={ttsService}
-                        voiceSpeed={voiceSpeed}
-                        ttsAvailable={ttsAvailable}
-                        testVoice={testVoice}
-                        voiceCompatibilityWarning={voiceCompatibilityWarning}
-                        setVoiceSpeed={setVoiceSpeed}
-                        trackEvent={trackEvent}
-                      />
-                    )}
-
-                    {/* Conditionally render Difficulty and Start button */}
-                    {!running && !isPreRound && hasSelectedEmphasis && (
-                      <StickyStartControls
-                        onStart={startSession}
-                        difficulty={difficulty}
-                        setDifficulty={setDifficulty}
-                        selectedEmphases={selectedEmphases}
-                        onClearEmphases={clearAllEmphases}
-                      />
-                    )}
-                  </div>
-                </div>
+                <WorkoutSetup
+                  stats={homePageStats}
+                  favoriteConfig={favoriteConfig}
+                  emphasisList={emphasisList}
+                  selectedEmphases={selectedEmphases}
+                  toggleEmphasis={toggleEmphasis}
+                  techniques={techniques}
+                  showAllEmphases={showAllEmphases}
+                  setShowAllEmphases={setShowAllEmphases}
+                  setPage={setPage}
+                  roundsCount={roundsCount}
+                  setRoundsCount={setRoundsCount}
+                  roundMin={roundMin}
+                  setRoundMin={setRoundMin}
+                  restMinutes={restMinutes}
+                  setRestMinutes={setRestMinutes}
+                  showAdvanced={showAdvanced}
+                  setShowAdvanced={setShowAdvanced}
+                  southpawMode={southpawMode}
+                  setSouthpawMode={setSouthpawMode}
+                  addCalisthenics={addCalisthenics}
+                  setAddCalisthenics={setAddCalisthenics}
+                  readInOrder={readInOrder}
+                  setReadInOrder={setReadInOrder}
+                  voice={voice}
+                  voices={voices}
+                  unifiedVoices={unifiedVoices}
+                  setCurrentVoice={setCurrentVoice}
+                  saveVoicePreference={saveVoicePreference}
+                  checkVoiceCompatibility={checkVoiceCompatibility}
+                  ttsService={ttsService}
+                  voiceSpeed={voiceSpeed}
+                  setVoiceSpeed={setVoiceSpeed}
+                  ttsAvailable={ttsAvailable}
+                  testVoice={testVoice}
+                  voiceCompatibilityWarning={voiceCompatibilityWarning}
+                  trackEvent={trackEvent}
+                  onStart={startSession}
+                  difficulty={difficulty}
+                  setDifficulty={setDifficulty}
+                  clearAllEmphases={clearAllEmphases}
+                />
               )}
             </>
           )}
