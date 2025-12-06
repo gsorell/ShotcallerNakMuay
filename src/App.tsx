@@ -43,8 +43,8 @@ import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
 
 // CSS
 import "./App.css";
+import ActiveSessionUI from "./components/ActiveSessionUI";
 import { Footer } from "./components/Footer";
-import { ImageWithFallback } from "./components/ImageWithFallback";
 import { OnboardingModal } from "./components/OnboardingModal";
 import WorkoutSetup from "./components/WorkoutSetup";
 import { useEmphasisList } from "./hooks/useEmphasisList";
@@ -1985,188 +1985,31 @@ export default function App() {
                   transition: "min-height 0.3s ease-in-out",
                 }}
               >
-                {(running || isPreRound) && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      rowGap: "clamp(16px, 3.2vh, 28px)",
-                    }}
-                  >
-                    {/* NEW: Use styled StatusTimer component */}
-                    <StatusTimer
-                      time={fmtTime(timeLeft)}
-                      round={currentRound}
-                      totalRounds={roundsCount}
-                      status={getStatus()}
-                      isResting={isResting}
-                      restTimeLeft={restTimeLeft}
-                      isPreRound={isPreRound}
-                      preRoundTimeLeft={preRoundTimeLeft}
-                      fmtTime={fmtTime}
-                    />
-
-                    {/* Live technique subtitle (during active rounds only) */}
-                    {running && !paused && !isResting && currentCallout && (
-                      <div
-                        aria-live="polite"
-                        style={{
-                          maxWidth: "46rem",
-                          textAlign: "center",
-                          fontSize: "2rem",
-                          fontWeight: 800,
-                          letterSpacing: "0.5px",
-                          color: "white",
-                          background: "rgba(0,0,0,0.35)",
-                          border: "1px solid rgba(255,255,255,0.22)",
-                          borderRadius: "0.85rem",
-                          padding: "0.6rem 1rem",
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-                        }}
-                      >
-                        {currentCallout}
-                      </div>
-                    )}
-                    <section
-                      style={{
-                        maxWidth: "32rem",
-                        margin: "0 auto",
-                        minHeight: "4rem",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "center",
-                          gap: "1rem",
-                        }}
-                      >
-                        <button
-                          onClick={pauseSession}
-                          style={controlButtonStyle("#f59e0b", "#f97316")}
-                        >
-                          {paused ? (
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                            </svg>
-                          )}
-                          <span style={{ fontSize: "0.875rem", lineHeight: 1 }}>
-                            {paused ? "Resume" : "Pause"}
-                          </span>
-                        </button>
-                        <button
-                          onClick={stopSession}
-                          style={controlButtonStyle("#ef4444", "#ec4899")}
-                        >
-                          <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M6 6h12v12H6z" />
-                          </svg>
-                          <span style={{ fontSize: "0.875rem", lineHeight: 1 }}>
-                            Stop
-                          </span>
-                        </button>
-                      </div>
-                    </section>
-
-                    {/* NEW: Show selected emphasis icons during the session */}
-                    {emphasisList.some(
-                      (e) => selectedEmphases[e.key as EmphasisKey]
-                    ) && (
-                      <section
-                        aria-label="Selected styles"
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          marginTop: "0.25rem",
-                          padding: "0 0.75rem",
-                          width: "100%",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: "0.875rem",
-                            color: "#f9a8d4",
-                            fontWeight: 700,
-                          }}
-                        >
-                          Selected Styles
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                            gap: "0.5rem",
-                            maxWidth: "56rem",
-                          }}
-                        >
-                          {emphasisList
-                            .filter(
-                              (e) => selectedEmphases[e.key as EmphasisKey]
-                            )
-                            .map((e) => (
-                              <div
-                                key={e.key}
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "0.5rem",
-                                  padding: "0.4rem 0.6rem",
-                                  borderRadius: "9999px",
-                                  background: "rgba(0,0,0,0.25)",
-                                  border: "1px solid rgba(255,255,255,0.18)",
-                                  color: "white",
-                                }}
-                                title={e.desc}
-                              >
-                                <ImageWithFallback
-                                  srcPath={e.iconPath}
-                                  alt={e.label}
-                                  emoji={e.emoji}
-                                  style={{
-                                    width: 20,
-                                    height: 20,
-                                    borderRadius: 6,
-                                    objectFit: "cover",
-                                  }}
-                                />
-                                <span
-                                  style={{
-                                    fontSize: "0.85rem",
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  {e.label}
-                                </span>
-                              </div>
-                            ))}
-                        </div>
-                      </section>
-                    )}
-                  </div>
-                )}
+                <div
+                  style={{
+                    minHeight: running || isPreRound ? "220px" : "0",
+                    transition: "min-height 0.3s ease-in-out",
+                  }}
+                >
+                  <ActiveSessionUI
+                    running={running}
+                    isPreRound={isPreRound}
+                    paused={paused}
+                    isResting={isResting}
+                    timeLeft={timeLeft}
+                    currentRound={currentRound}
+                    roundsCount={roundsCount}
+                    restTimeLeft={restTimeLeft}
+                    preRoundTimeLeft={preRoundTimeLeft}
+                    fmtTime={fmtTime}
+                    getStatus={getStatus}
+                    currentCallout={currentCallout}
+                    onPause={pauseSession}
+                    onStop={stopSession}
+                    selectedEmphases={selectedEmphases}
+                    emphasisList={emphasisList}
+                  />
+                </div>
               </div>
 
               {/* Settings */}
