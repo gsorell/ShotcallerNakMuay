@@ -52,6 +52,7 @@ import { OnboardingModal } from "./components/OnboardingModal";
 import { StickyStartControls } from "./components/StickyStartControls";
 import { useHomeStats } from "./hooks/useHomeStats";
 import "./styles/difficulty.css";
+import { generateTechniquePool, normalizeKey } from "./utils/techniqueUtils";
 import { mirrorTechnique } from "./utils/textUtils";
 import { fmtTime } from "./utils/timeUtils";
 import ttsService from "./utils/ttsService";
@@ -388,13 +389,6 @@ export default function App() {
   useEffect(() => {
     techniquesRef.current = techniques;
   }, [techniques]);
-
-  // Normalize keys for stable lookups: lowercase, convert runs of non-alphanum to underscore, trim underscores.
-  const normalizeKey = (k: string) =>
-    k
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "");
 
   // Build an index mapping normalized keys -> original keys for robust lookups.
   const techniqueIndex = React.useMemo(() => {
@@ -832,125 +826,12 @@ export default function App() {
 
   // Build a phrase pool from selected emphases (strict: only read exact keys from techniques)
   const getTechniquePool = useCallback((): TechniqueWithStyle[] => {
-    if (selectedEmphases.timer_only) return [];
-
-    const enabled = (
-      Object.entries(selectedEmphases) as [EmphasisKey, boolean][]
-    )
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-
-    const keysToUse = enabled.length > 0 ? enabled : ["newb"];
-    const currentTechniques = techniquesRef.current || {};
-    const pool: TechniqueWithStyle[] = [];
-
-    // Strict resolver: ONLY accept an exact property on the persisted techniques object.
-    const resolveStyle = (k: string) => {
-      if (!currentTechniques) return undefined;
-      // 1) exact property
-      if (Object.prototype.hasOwnProperty.call(currentTechniques, k)) {
-        return (currentTechniques as any)[k];
-      }
-      // 2) normalized lookup using the index (most robust)
-      const norm = normalizeKey(k);
-      const mappedKey =
-        techniqueIndexRef.current[norm] ||
-        techniqueIndexRef.current[k] ||
-        techniqueIndexRef.current[k.toLowerCase()];
-      if (
-        mappedKey &&
-        Object.prototype.hasOwnProperty.call(currentTechniques, mappedKey)
-      ) {
-        return (currentTechniques as any)[mappedKey];
-      }
-      // 3) try a last-resort label match against keys (not fuzzy — exact normalized equality)
-      const found = Object.keys(currentTechniques).find(
-        (candidate) => normalizeKey(candidate) === norm
-      );
-      if (found) return (currentTechniques as any)[found];
-      return undefined;
-    };
-
-    // Recursively extract any string values or arrays of strings from an object
-    const extractStrings = (
-      node: any,
-      out: TechniqueWithStyle[],
-      styleKey: string
-    ) => {
-      if (!node) return;
-      if (typeof node === "string") {
-        out.push({ text: node, style: styleKey });
-        return;
-      }
-      if (Array.isArray(node)) {
-        for (const v of node) extractStrings(v, out, styleKey);
-        return;
-      }
-      if (typeof node === "object") {
-        // Handle singles/combos as array of {text, favorite}
-        if (node.singles) {
-          for (const single of node.singles) {
-            if (typeof single === "string") {
-              out.push({ text: single, style: styleKey });
-            } else if (single && typeof single.text === "string") {
-              out.push({ text: single.text, style: styleKey });
-              // If favorited, add again for ~35% higher chance
-              if (single.favorite) {
-                if (Math.random() < 0.35)
-                  out.push({ text: single.text, style: styleKey });
-              }
-            }
-          }
-        }
-        if (node.combos) {
-          for (const combo of node.combos) {
-            if (typeof combo === "string") {
-              out.push({ text: combo, style: styleKey });
-            } else if (combo && typeof combo.text === "string") {
-              out.push({ text: combo.text, style: styleKey });
-              if (combo.favorite) {
-                if (Math.random() < 0.35)
-                  out.push({ text: combo.text, style: styleKey });
-              }
-            }
-          }
-        }
-        if (node.breakdown) extractStrings(node.breakdown, out, styleKey); // for calisthenics
-      }
-    };
-
-    for (const k of keysToUse) {
-      const style = resolveStyle(k);
-      if (!style) {
-        continue;
-      }
-      extractStrings(style, pool, k);
-    }
-
-    if (addCalisthenics) {
-      // Only include calisthenics if it's explicitly present in the persisted techniques object.
-      const cal = (currentTechniques as any).calisthenics;
-      if (cal) extractStrings(cal, pool, "calisthenics");
-    }
-
-    // Normalize, trim and dedupe by creating a Map to avoid duplicates
-    const cleanedMap = new Map<string, TechniqueWithStyle>();
-
-    for (const item of pool) {
-      if (item && item.text && typeof item.text === "string") {
-        const cleanText = item.text.trim();
-        if (cleanText) {
-          // Use text as key to dedupe, but keep the first style encountered
-          if (!cleanedMap.has(cleanText)) {
-            cleanedMap.set(cleanText, { text: cleanText, style: item.style });
-          }
-        }
-      }
-    }
-
-    const cleaned = Array.from(cleanedMap.values());
-
-    return cleaned;
+    return generateTechniquePool(
+      techniquesRef.current,
+      selectedEmphases,
+      addCalisthenics,
+      techniqueIndexRef.current
+    );
   }, [selectedEmphases, addCalisthenics]);
 
   function pickRandom<T>(arr: T[]): T {
