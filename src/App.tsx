@@ -11,7 +11,6 @@ import ActiveSessionUI from "./components/ActiveSessionUI";
 import { AppLayout } from "./components/AppLayout";
 import { OnboardingModal } from "./components/OnboardingModal";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import StatusTimer from "./components/StatusTimer";
 import WorkoutSetup from "./components/WorkoutSetup";
 
 // Pages
@@ -671,20 +670,6 @@ export default function App() {
                 difficulty={settings.difficulty}
                 setDifficulty={settings.setDifficulty}
                 clearAllEmphases={settings.clearAllEmphases}
-              />
-            )}
-
-            {isActive && (
-              <StatusTimer
-                time={fmtTime(timer.timeLeft)}
-                round={timer.currentRound}
-                totalRounds={settings.roundsCount}
-                status={getStatus()}
-                isResting={timer.isResting}
-                restTimeLeft={timer.restTimeLeft}
-                isPreRound={timer.isPreRound}
-                preRoundTimeLeft={timer.preRoundTimeLeft}
-                fmtTime={fmtTime}
               />
             )}
           </>

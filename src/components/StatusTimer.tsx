@@ -6,6 +6,18 @@ type Status =
   | "resting"
   | "pre-round";
 
+type StatusTimerProps = {
+  time: string;
+  round: number;
+  totalRounds: number;
+  status: Status;
+  isResting: boolean;
+  restTimeLeft: number;
+  isPreRound: boolean;
+  preRoundTimeLeft: number;
+  fmtTime: (seconds: number) => string;
+};
+
 export default function StatusTimer({
   time,
   round,
@@ -16,17 +28,7 @@ export default function StatusTimer({
   isPreRound,
   preRoundTimeLeft,
   fmtTime,
-}: {
-  time: string;
-  round: number;
-  totalRounds: number;
-  status: Status;
-  isResting: boolean;
-  restTimeLeft: number;
-  isPreRound: boolean;
-  preRoundTimeLeft: number;
-  fmtTime: (seconds: number) => string;
-}) {
+}: StatusTimerProps) {
   const statusColor = {
     ready: "#4ade80",
     running: "#60a5fa",
@@ -35,6 +37,7 @@ export default function StatusTimer({
     resting: "#a5b4fc",
     "pre-round": "#facc15",
   }[status];
+
   const statusText = {
     ready: "Ready to Start",
     running: "Training Active",
@@ -43,6 +46,7 @@ export default function StatusTimer({
     resting: "Rest Period",
     "pre-round": "Get Ready!",
   }[status];
+
   return (
     <div
       style={{
