@@ -158,13 +158,15 @@ export const useTTS = (): UseTTSReturn => {
     }
 
     // Store voice data for matching later
-    const voiceData = {
-      id: voice.id,
-      name: voice.name,
-      language: voice.language,
-      isDefault: voice.isDefault,
-    };
-    localStorage.setItem(VOICE_STORAGE_KEY, JSON.stringify(voiceData));
+    localStorage.setItem(
+      VOICE_STORAGE_KEY,
+      JSON.stringify({
+        id: voice.id,
+        name: voice.name,
+        language: voice.language,
+        isDefault: voice.isDefault,
+      })
+    );
   }, []);
 
   const loadVoicePreference = useCallback((availableVoices: UnifiedVoice[]) => {
@@ -318,7 +320,7 @@ export const useTTS = (): UseTTSReturn => {
       }
 
       // Use speakImmediate to avoid queueing and ensure immediate playback with current voice
-      await ttsService.speakImmediate("Testing voice with current settings.", {
+      await ttsService.speakImmediate(`Testing voice with current settings.`, {
         voice: currentVoice,
         rate: 1.0,
         onStart: () => setIsSpeaking(true),

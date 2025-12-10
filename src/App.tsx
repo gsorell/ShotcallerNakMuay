@@ -40,7 +40,7 @@ import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
 import { createWorkoutLogEntry } from "./utils/logUtils";
 import { generateTechniquePool } from "./utils/techniqueUtils";
 import { fmtTime } from "./utils/timeUtils";
-import ttsService from "./utils/ttsService";
+import { ttsService } from "./utils/ttsService";
 
 // CSS
 import "./App.css";
