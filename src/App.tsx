@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 // Types
 
@@ -15,6 +15,7 @@ import WorkoutSetup from "./components/WorkoutSetup";
 // Contexts
 import { useTTSContext } from "./contexts/TTSProvider";
 import { useUIContext } from "./contexts/UIProvider";
+import { useWorkoutContext } from "./contexts/WorkoutProvider";
 
 // Pages
 import TechniqueEditor from "./pages/TechniqueEditor";
@@ -34,7 +35,6 @@ import { ttsService } from "./utils/ttsService";
 
 // CSS
 import "./App.css";
-import { useWorkoutContext } from "./contexts/WorkoutProvider";
 import "./styles/difficulty.css";
 
 // Global state to persist modal scroll position across re-renders
@@ -83,7 +83,6 @@ export default function App() {
     page,
     setPage,
     lastWorkout,
-    setLastWorkout,
     showAdvanced,
     setShowAdvanced,
     showAllEmphases,
@@ -92,8 +91,6 @@ export default function App() {
     setShowOnboardingMsg,
     showPWAPrompt,
     setShowPWAPrompt,
-    statsRefreshTrigger,
-    triggerStatsRefresh,
   } = useUIContext();
   const isEditorRef = useRef(false);
 
@@ -107,33 +104,12 @@ export default function App() {
     voices: unifiedVoices,
     currentVoice,
     setCurrentVoice,
-    speak: ttsSpeak,
-    speakSystem: ttsSpeakSystem,
-    speakSystemWithDuration: ttsSpeakSystemWithDuration,
     stop: stopTTS,
     isAvailable: ttsAvailable,
     voiceCompatibilityWarning,
     testVoice: ttsTestVoice,
-    browserVoice,
     saveVoicePreference,
   } = useTTSContext();
-
-  // TMP(or.ricon): temporarily log for debugging voice selection
-  useEffect(() => {
-    console.log("[Voice Debug]", {
-      hasCurrentVoice: !!currentVoice,
-      currentVoiceName: currentVoice?.name,
-      totalUnifiedVoices: unifiedVoices.length,
-      browserVoice: browserVoice,
-    });
-  }, [currentVoice, unifiedVoices, browserVoice]);
-
-  const speakSystem = useCallback(
-    (text: string, v: any, s: number) => {
-      ttsSpeakSystem(text, s);
-    },
-    [ttsSpeakSystem]
-  );
 
   // --- 5. Navigation / PWA ---
 
@@ -199,44 +175,30 @@ export default function App() {
     textAlign: "center",
   };
 
-  // --- 9. Render ---
-  return (
-    <>
-      <OnboardingModal
-        open={showOnboardingMsg}
-        modalScrollPosition={modalScrollPosition}
-        linkButtonStyle={linkButtonStyle}
-        setPage={setPage}
-        onClose={() => setShowOnboardingMsg(false)}
-      />
-
-      <AppLayout
-        isActive={isActive}
-        page={page}
-        onHelp={() => setShowOnboardingMsg(true)}
-        onLogoClick={() => {
-          setPage("timer");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-        hasSelectedEmphasis={hasSelectedEmphasis}
-        linkButtonStyle={linkButtonStyle}
-        setPage={setPage}
-        setShowOnboardingMsg={setShowOnboardingMsg}
-      >
-        {page === "logs" ? (
+  const renderPageContent = () => {
+    switch (page) {
+      case "logs":
+        return (
           <WorkoutLogs
             onBack={() => setPage("timer")}
             emphasisList={emphasisList}
             onResume={resumeWorkout}
             onViewCompletion={viewCompletionScreen}
           />
-        ) : page === "editor" ? (
+        );
+
+      case "editor":
+        return (
           <TechniqueEditorAny
             techniques={techniques}
             setTechniques={persistTechniques}
             onBack={() => setPage("timer")}
           />
-        ) : page === "completed" && lastWorkout ? (
+        );
+
+      case "completed":
+        if (!lastWorkout) return null;
+        return (
           <WorkoutCompleted
             stats={lastWorkout}
             onRestart={() => {
@@ -261,7 +223,10 @@ export default function App() {
             onReset={() => setPage("timer")}
             onViewLog={() => setPage("logs")}
           />
-        ) : (
+        );
+
+      default: // "timer"
+        return (
           <>
             <div
               style={{
@@ -342,7 +307,35 @@ export default function App() {
               />
             )}
           </>
-        )}
+        );
+    }
+  };
+
+  // --- 9. Render ---
+  return (
+    <>
+      <OnboardingModal
+        open={showOnboardingMsg}
+        modalScrollPosition={modalScrollPosition}
+        linkButtonStyle={linkButtonStyle}
+        setPage={setPage}
+        onClose={() => setShowOnboardingMsg(false)}
+      />
+
+      <AppLayout
+        isActive={isActive}
+        page={page}
+        onHelp={() => setShowOnboardingMsg(true)}
+        onLogoClick={() => {
+          setPage("timer");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        hasSelectedEmphasis={hasSelectedEmphasis}
+        linkButtonStyle={linkButtonStyle}
+        setPage={setPage}
+        setShowOnboardingMsg={setShowOnboardingMsg}
+      >
+        {renderPageContent()}
       </AppLayout>
 
       <PWAInstallPrompt
