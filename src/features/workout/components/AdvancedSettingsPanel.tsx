@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
-import { AnalyticsEvents } from "../utils/analytics";
-import type { UnifiedVoice } from "../utils/ttsService";
+import { AnalyticsEvents } from "@/utils/analytics";
+import type { UnifiedVoice } from "@/utils/ttsService";
 
 // Define Props Interfaces
 export type AdvancedSettingsPanelProps = {

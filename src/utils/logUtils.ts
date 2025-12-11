@@ -1,4 +1,4 @@
-import { WORKOUTS_STORAGE_KEY } from "../constants/storage";
+import { WORKOUTS_STORAGE_KEY } from "@/constants/storage";
 
 export function createWorkoutLogEntry(
   settings: any,

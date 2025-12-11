@@ -2,7 +2,7 @@ import {
   type EmphasisKey,
   type TechniquesShape,
   type TechniqueWithStyle,
-} from "../types";
+} from "@/types";
 
 export type TechniqueShape = {
   label: string;

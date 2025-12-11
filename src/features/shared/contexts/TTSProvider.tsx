@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo } from "react";
+
+import type { UnifiedVoice } from "@/utils/ttsService";
 import { useTTS } from "../hooks/useTTS";
-import type { UnifiedVoice } from "../utils/ttsService";
 
 // Context for TTS state
 interface TTSContextValue {

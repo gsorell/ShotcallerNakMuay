@@ -2,7 +2,7 @@ import {
   DEFAULT_USER_SETTINGS,
   USER_SETTINGS_STORAGE_KEY,
   type UserSettings,
-} from "../constants/storage";
+} from "@/constants/storage";
 
 export function loadUserSettings(): UserSettings {
   try {

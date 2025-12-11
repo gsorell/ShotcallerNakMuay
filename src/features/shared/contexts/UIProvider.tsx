@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
-import type { Page } from "../types";
+import type { Page } from "@/types";
 
 // Context for UI state (navigation, modals, etc.)
 interface UIContextValue {

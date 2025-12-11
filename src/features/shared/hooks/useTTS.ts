@@ -3,7 +3,7 @@ import {
   type TTSOptions,
   ttsService,
   type UnifiedVoice,
-} from "../utils/ttsService";
+} from "@/utils/ttsService";
 
 // Emergency WebMediaPlayer cleanup on module load
 (() => {

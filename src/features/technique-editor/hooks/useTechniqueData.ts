@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   TECHNIQUES_STORAGE_KEY,
   TECHNIQUES_VERSION_KEY,
-} from "../constants/storage";
-import { INITIAL_TECHNIQUES } from "../constants/techniques";
-import type { TechniquesShape } from "../types";
-import { normalizeKey } from "../utils/techniqueUtils";
+} from "@/constants/storage";
+import { INITIAL_TECHNIQUES } from "@/constants/techniques";
+import type { TechniquesShape } from "@/types";
+import { normalizeKey } from "@/utils/techniqueUtils";
 
 const TECHNIQUES_VERSION = "v35";
 

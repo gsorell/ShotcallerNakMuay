@@ -1,7 +1,7 @@
 import React from "react";
 
-import type { EmphasisKey, TechniquesShape } from "../types"; // Adjust path to types
-import { ImageWithFallback } from "./ImageWithFallback";
+import type { EmphasisKey, TechniquesShape } from "@/types"; // Adjust path to types
+import { ImageWithFallback } from "../../shared";
 
 interface EmphasisSelectorProps {
   emphasisList: any[]; // You can type this strictly based on your emphasisList definition

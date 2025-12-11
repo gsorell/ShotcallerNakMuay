@@ -1,5 +1,6 @@
+import type { Page } from "@/types";
 import React from "react";
-import type { Page } from "../types";
+
 import { Footer } from "./Footer";
 import Header from "./Header";
 import { HeroBackground } from "./HeroBackground";

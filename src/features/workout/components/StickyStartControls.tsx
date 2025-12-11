@@ -1,5 +1,5 @@
 import React from "react";
-import { type Difficulty, type EmphasisKey } from "../types";
+import { type Difficulty, type EmphasisKey } from "@/types";
 
 interface StickyStartControlsProps {
   onStart: () => void;

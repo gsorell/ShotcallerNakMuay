@@ -1,8 +1,8 @@
 import React from "react";
-import type { Difficulty, EmphasisKey, TechniquesShape } from "../types";
+import type { Difficulty, EmphasisKey, TechniquesShape } from "@/types";
 import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
-import { EmphasisSelector } from "./EmphasisSelector";
-import { ImageWithFallback } from "./ImageWithFallback";
+import { EmphasisSelector } from "../../technique-editor";
+import { ImageWithFallback } from "../../shared";
 import { StickyStartControls } from "./StickyStartControls";
 import { WorkoutConfiguration } from "./WorkoutConfiguration";
 

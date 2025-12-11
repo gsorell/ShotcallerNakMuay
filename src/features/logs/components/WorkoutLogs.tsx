@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import "../styles/editor.css";
+import "@/styles/editor.css";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
 const EMPHASIS_ICONS: Record<string, string> = {

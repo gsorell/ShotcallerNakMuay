@@ -1,11 +1,11 @@
 // src/hooks/useWorkoutSettings.ts
 import { useEffect, useRef, useState } from "react";
-import { type Difficulty, type EmphasisKey } from "../types"; // Adjust path if needed
-import { normalizeKey } from "../utils/techniqueUtils"; // Adjust path if needed
+import { type Difficulty, type EmphasisKey } from "@/types"; // Adjust path if needed
+import { normalizeKey } from "@/utils/techniqueUtils"; // Adjust path if needed
 import {
   loadUserSettings,
   saveUserSettings,
-} from "../utils/userSettingsManager"; // Adjust path if needed
+} from "@/utils/userSettingsManager"; // Adjust path if needed
 
 // Helper to load southpaw mode safely
 const loadSouthpaw = () => {

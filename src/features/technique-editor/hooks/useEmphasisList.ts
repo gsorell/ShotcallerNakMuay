@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { INITIAL_TECHNIQUES } from "../constants/techniques";
-import { BASE_EMPHASIS_CONFIG } from "../emphasisConfig";
-import { type TechniquesShape } from "../types";
+import { INITIAL_TECHNIQUES } from "@/constants/techniques";
+import { BASE_EMPHASIS_CONFIG } from "@/emphasisConfig";
+import { type TechniquesShape } from "@/types";
 
 export function useEmphasisList(techniques: TechniquesShape) {
   return useMemo(() => {

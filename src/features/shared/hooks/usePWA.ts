@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 
-interface BeforeInstallPromptEvent extends Event {
+export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-interface PWAState {
+export interface PWAState {
   isInstallable: boolean;
   isInstalled: boolean;
   showInstallPrompt: boolean;
   installPrompt: BeforeInstallPromptEvent | null;
 }
 
-interface PWAHook extends PWAState {
+export interface PWAHook extends PWAState {
   promptInstall: () => Promise<boolean>;
   dismissPrompt: () => void;
   shouldShowPrompt: (userStats: UserEngagementStats) => boolean;
 }
 
-interface UserEngagementStats {
+export interface UserEngagementStats {
   visitCount: number;
   timeOnSite: number;
   completedWorkouts: number;

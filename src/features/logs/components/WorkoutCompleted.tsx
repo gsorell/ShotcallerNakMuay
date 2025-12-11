@@ -5,7 +5,7 @@ import {
   generateWorkoutFilename,
   shareWorkoutImage,
   type WorkoutStats,
-} from "../utils/imageUtils";
+} from "@/utils/imageUtils";
 
 interface WorkoutCompletedProps {
   stats: WorkoutStats;

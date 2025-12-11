@@ -1,21 +1,16 @@
 import React, { createContext, useCallback, useContext } from "react";
-import { DEFAULT_REST_MINUTES } from "../constants/storage";
-import { useAndroidAudioDucking } from "../hooks/useAndroidAudioDucking";
+import { DEFAULT_REST_MINUTES } from "@/constants/storage";
+import { useAndroidAudioDucking, useIOSAudioSession, useWakeLock, useTTSContext, useUIContext } from "../../shared";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
-import { useEmphasisList } from "../hooks/useEmphasisList";
-import { useHomeStats } from "../hooks/useHomeStats";
-import { useIOSAudioSession } from "../hooks/useIOSAudioSession";
+import { useEmphasisList, useTechniqueData } from "../../technique-editor";
+import { useHomeStats } from "../../logs";
 import { useSoundEffects } from "../hooks/useSoundEffects";
-import { useTechniqueData } from "../hooks/useTechniqueData";
-import { useWakeLock } from "../hooks/useWakeLock";
 import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
-import type { EmphasisKey, TechniqueWithStyle } from "../types";
-import { AnalyticsEvents, trackEvent } from "../utils/analytics";
-import { createWorkoutLogEntry } from "../utils/logUtils";
-import { generateTechniquePool } from "../utils/techniqueUtils";
-import { useTTSContext } from "./TTSProvider";
-import { useUIContext } from "./UIProvider";
+import type { EmphasisKey, TechniqueWithStyle } from "@/types";
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+import { createWorkoutLogEntry } from "@/utils/logUtils";
+import { generateTechniquePool } from "@/utils/techniqueUtils";
 
 // Context for workout-related state
 interface WorkoutContextValue {

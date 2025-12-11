@@ -1,6 +1,6 @@
 import React from "react";
-import { type EmphasisKey } from "../types";
-import { ImageWithFallback } from "./ImageWithFallback";
+import { type EmphasisKey } from "@/types";
+import { ImageWithFallback } from "../../shared";
 import StatusTimer from "./StatusTimer";
 
 // Helper styles moved here

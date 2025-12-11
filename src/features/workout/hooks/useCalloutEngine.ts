@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { TechniqueWithStyle } from "../types";
-import { mirrorTechnique } from "../utils/textUtils";
+import type { TechniqueWithStyle } from "@/types";
+import { mirrorTechnique } from "@/utils/textUtils";
 
 interface UseCalloutEngineProps {
   timer: {

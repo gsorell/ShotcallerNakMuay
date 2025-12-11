@@ -3,39 +3,37 @@ import React, { useEffect, useRef } from "react";
 // Types
 
 // Storage
-import { VOICE_STORAGE_KEY } from "./constants/storage";
+import { VOICE_STORAGE_KEY } from "@/constants/storage";
 
 // Components
-import ActiveSessionUI from "./components/ActiveSessionUI";
-import { AppLayout } from "./components/AppLayout";
-import { OnboardingModal } from "./components/OnboardingModal";
-import PWAInstallPrompt from "./components/PWAInstallPrompt";
-import WorkoutSetup from "./components/WorkoutSetup";
+import { WorkoutCompleted, WorkoutLogs } from "@/features/logs";
+import {
+  AppLayout,
+  OnboardingModal,
+  PWAInstallPrompt,
+  useNavigationGestures,
+  usePWA,
+  useTTSContext,
+  useUIContext,
+  useUserEngagement,
+} from "@/features/shared";
 
-// Contexts
-import { useTTSContext } from "./contexts/TTSProvider";
-import { useUIContext } from "./contexts/UIProvider";
-import { useWorkoutContext } from "./contexts/WorkoutProvider";
-
-// Pages
-import TechniqueEditor from "./pages/TechniqueEditor";
-import WorkoutCompleted from "./pages/WorkoutCompleted";
-import WorkoutLogs from "./pages/WorkoutLogs";
-
-// Hooks
-import { useNavigationGestures } from "./hooks/useNavigationGestures";
-import { usePWA } from "./hooks/usePWA";
-import { useUserEngagement } from "./hooks/useUserEngagement";
+import { TechniqueEditor } from "@/features/technique-editor";
+import {
+  ActiveSessionUI,
+  WorkoutSetup,
+  useWorkoutContext,
+} from "@/features/workout";
 
 // Utilities
-import { initializeGA4, trackEvent } from "./utils/analytics";
-import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
-import { fmtTime } from "./utils/timeUtils";
-import { ttsService } from "./utils/ttsService";
+import { initializeGA4, trackEvent } from "@/utils/analytics";
+import { displayInAppBrowserWarning } from "@/utils/inAppBrowserDetector";
+import { fmtTime } from "@/utils/timeUtils";
+import { ttsService } from "@/utils/ttsService";
 
 // CSS
-import "./App.css";
-import "./styles/difficulty.css";
+import "@/App.css";
+import "@/styles/difficulty.css";
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;

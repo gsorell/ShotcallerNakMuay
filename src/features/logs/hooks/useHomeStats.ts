@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { WORKOUTS_STORAGE_KEY } from "../constants/storage";
+import { WORKOUTS_STORAGE_KEY } from "@/constants/storage";
 
 export interface HomeStats {
   mostCommonEmphasis: string;
