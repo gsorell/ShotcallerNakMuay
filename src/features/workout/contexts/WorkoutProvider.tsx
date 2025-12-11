@@ -1,10 +1,9 @@
 import React, { createContext, useCallback, useContext } from "react";
 import { DEFAULT_REST_MINUTES } from "@/constants/storage";
-import { useAndroidAudioDucking, useIOSAudioSession, useWakeLock, useTTSContext, useUIContext } from "../../shared";
+import { useAudioSystem, useWakeLock, useUIContext } from "../../shared";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
 import { useEmphasisList, useTechniqueData } from "../../technique-editor";
 import { useHomeStats } from "../../logs";
-import { useSoundEffects } from "../hooks/useSoundEffects";
 import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import type { EmphasisKey, TechniqueWithStyle } from "@/types";
@@ -29,11 +28,9 @@ interface WorkoutContextValue {
   calloutEngine: ReturnType<typeof useCalloutEngine>;
 
   // Audio
-  iosAudioSession: ReturnType<typeof useIOSAudioSession>;
-  androidAudioDucking: ReturnType<typeof useAndroidAudioDucking>;
-  playBell: () => void;
-  playWarningSound: () => void;
-  ensureMediaUnlocked: () => Promise<void>;
+  tts: any;
+  sfx: any;
+  platform: any;
 
   // Wake Lock
   shouldKeepAwake: boolean;
@@ -70,7 +67,6 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   children,
 }) => {
   // Contexts
-  const { speakSystem, browserVoice, speak: ttsSpeak } = useTTSContext();
   const { setPage, setLastWorkout, triggerStatsRefresh } = useUIContext();
 
   // Data hooks
@@ -80,10 +76,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   const settings = useWorkoutSettings(techniques, techniqueIndexRef);
 
   // Audio hooks
-  const iosAudioSession = useIOSAudioSession();
-  const androidAudioDucking = useAndroidAudioDucking();
-  const { playBell, playWarningSound, ensureMediaUnlocked } =
-    useSoundEffects(iosAudioSession);
+  const { tts, sfx, platform } = useAudioSystem();
 
   // Timer handlers
   const stopSessionCleanup = useCallback(() => {
@@ -91,26 +84,26 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   }, []);
 
   const handleRoundStart = useCallback(() => {
-    playBell();
-  }, [playBell]);
+    sfx.playBell();
+  }, [sfx]);
 
   const handleRoundEnd = useCallback(() => {
     stopSessionCleanup();
-    playBell();
+    sfx.playBell();
     // Stop callouts logic will be moved here
-  }, [stopSessionCleanup, playBell]);
+  }, [stopSessionCleanup, sfx]);
 
   const handleRestWarning = useCallback(() => {
-    speakSystem("10 seconds", settings.voiceSpeed);
-  }, [speakSystem, settings.voiceSpeed]);
+    tts.speakSystem("10 seconds", settings.voiceSpeed);
+  }, [tts, settings.voiceSpeed]);
 
   const handleRestBell = useCallback(() => {
-    playWarningSound();
-  }, [playWarningSound]);
+    sfx.playWarningSound();
+  }, [sfx]);
 
   const handleRestEnd = useCallback(() => {
-    playBell();
-  }, [playBell]);
+    sfx.playBell();
+  }, [sfx]);
 
   // Timer
   const timer = useWorkoutTimer({
@@ -188,9 +181,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     });
 
     // Audio setup
-    void ensureMediaUnlocked();
-    if (androidAudioDucking.isAndroidNative)
-      void androidAudioDucking.requestAudioFocus();
+    void sfx.ensureMediaUnlocked();
+    if (platform.android.isAndroidNative)
+      void platform.android.requestAudioFocus();
 
     // Init Engine
     if (settings.readInOrder) {
@@ -205,21 +198,14 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
     // Silent speak to init engine
     try {
-      ttsSpeak(" ", {
+      tts.speak(" ", {
         volume: 0,
         rate: settings.voiceSpeed,
-        voice: browserVoice
-          ? {
-              id: browserVoice.name,
-              name: browserVoice.name,
-              language: browserVoice.lang,
-              browserVoice: browserVoice,
-            }
-          : null,
+        voice: tts.currentVoice,
       });
     } catch {}
 
-    speakSystem("Get ready", settings.voiceSpeed);
+    tts.speakSystem("Get ready", settings.voiceSpeed);
     timer.startTimer();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [
@@ -227,12 +213,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     getTechniquePool,
     settings,
     trackEvent,
-    ensureMediaUnlocked,
-    androidAudioDucking,
+    sfx,
+    platform,
     calloutEngine,
-    ttsSpeak,
-    browserVoice,
-    speakSystem,
+    tts,
     timer,
   ]);
 
@@ -291,7 +275,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
           alert("Cannot resume: No techniques found.");
           return;
         }
-        void ensureMediaUnlocked();
+        void sfx.ensureMediaUnlocked();
         if (logEntry.settings?.readInOrder) {
           calloutEngine.currentPoolRef.current = pool;
         } else {
@@ -302,22 +286,15 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         calloutEngine.orderedIndexRef.current = 0;
 
         try {
-          ttsSpeak(" ", {
+          tts.speak(" ", {
             volume: 0,
             rate: settings.voiceSpeed,
-            voice: browserVoice
-              ? {
-                  id: browserVoice.name,
-                  name: browserVoice.name,
-                  language: browserVoice.lang,
-                  browserVoice: browserVoice,
-                }
-              : null,
+            voice: tts.currentVoice,
           });
         } catch {}
 
         timer.resumeTimerState(logEntry);
-        speakSystem("Resuming workout. Get ready", settings.voiceSpeed);
+        tts.speakSystem("Resuming workout. Get ready", settings.voiceSpeed);
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 150);
     },
@@ -326,11 +303,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       calloutEngine,
       setPage,
       getTechniquePool,
-      ensureMediaUnlocked,
-      ttsSpeak,
-      browserVoice,
+      sfx,
+      tts,
       timer,
-      speakSystem,
     ]
   );
 
@@ -360,11 +335,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     persistTechniques,
     timer,
     calloutEngine,
-    iosAudioSession,
-    androidAudioDucking,
-    playBell,
-    playWarningSound,
-    ensureMediaUnlocked,
+    tts,
+    sfx,
+    platform,
     shouldKeepAwake,
     getTechniquePool,
     hasSelectedEmphasis,

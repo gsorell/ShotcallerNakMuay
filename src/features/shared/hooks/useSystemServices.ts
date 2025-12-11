@@ -3,7 +3,8 @@ import { useWakeLock } from './useWakeLock';
 
 export const useSystemServices = () => {
   const pwa = usePWA();
-  useWakeLock({ enabled: true });
+  // WakeLock is managed conditionally in WorkoutProvider, so disable globally
+  useWakeLock({ enabled: false });
   // useVisibilityManager might need to remain separate if it depends on specific UI state
 
   return {

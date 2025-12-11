@@ -12,7 +12,7 @@ import {
   OnboardingModal,
   PWAInstallPrompt,
   useNavigationGestures,
-  usePWA,
+  useSystemServices,
   useTTSContext,
   useUIContext,
   useUserEngagement,
@@ -58,7 +58,7 @@ export default function App() {
   }, []);
 
   // --- 2. Contexts ---
-  const pwa = usePWA();
+  const { pwa } = useSystemServices();
   const {
     techniques,
     emphasisList,

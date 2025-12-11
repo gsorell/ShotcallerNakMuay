@@ -8,4 +8,3 @@ export { WorkoutProvider, useWorkoutContext } from './contexts/WorkoutProvider';
 export { useWorkoutTimer } from './hooks/useWorkoutTimer';
 export { useWorkoutSettings } from './hooks/useWorkoutSettings';
 export { useCalloutEngine } from './hooks/useCalloutEngine';
-export { useSoundEffects } from './hooks/useSoundEffects';
