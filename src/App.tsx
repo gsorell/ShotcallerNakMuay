@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // Types
 import type { EmphasisKey, Page, TechniqueWithStyle } from "./types";
@@ -129,11 +135,25 @@ export default function App() {
     testVoice: ttsTestVoice,
   } = useTTS();
 
-  const voice = currentVoice
-    ? currentVoice.browserVoice ||
-      unifiedVoices.find((v) => v.name === currentVoice.name)?.browserVoice ||
-      null
-    : null;
+  const derivedVoice = useMemo(() => {
+    if (!currentVoice) return null;
+    if (currentVoice.browserVoice) return currentVoice.browserVoice;
+
+    const found = unifiedVoices.find((v) => v.name === currentVoice.name);
+    return found ? found.browserVoice : null;
+  }, [currentVoice, unifiedVoices]);
+
+  // TMP(or.ricon): temporarily log for debugging voice selection
+  useEffect(() => {
+    console.log("[Voice Debug]", {
+      hasCurrentVoice: !!currentVoice,
+      currentVoiceName: currentVoice?.name,
+      totalUnifiedVoices: unifiedVoices.length,
+      resolvedVoice: derivedVoice,
+    });
+  }, [currentVoice, unifiedVoices, derivedVoice]);
+
+  const voice = derivedVoice;
 
   const speakSystem = useCallback(
     (text: string, v: any, s: number) => {
@@ -506,6 +526,7 @@ export default function App() {
 
   const TechniqueEditorAny =
     TechniqueEditor as unknown as React.ComponentType<any>;
+
   const linkButtonStyle: React.CSSProperties = {
     all: "unset",
     cursor: "pointer",
