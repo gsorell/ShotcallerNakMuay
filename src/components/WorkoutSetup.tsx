@@ -37,12 +37,10 @@ interface WorkoutSetupProps {
   setReadInOrder: (b: boolean) => void;
 
   // Voice props
-  voice: SpeechSynthesisVoice | null;
-  voices: SpeechSynthesisVoice[];
-  unifiedVoices: any[];
+  currentVoice: any; // UnifiedVoice | null
+  voices: any[]; // UnifiedVoice[]
   setCurrentVoice: (v: any) => void;
   saveVoicePreference: (v: any) => void;
-  checkVoiceCompatibility: (v: any, list: any) => void;
   ttsService: any;
   voiceSpeed: number;
   setVoiceSpeed: (n: number) => void;
@@ -83,12 +81,10 @@ export default function WorkoutSetup(props: WorkoutSetupProps) {
     setAddCalisthenics,
     readInOrder,
     setReadInOrder,
-    voice,
+    currentVoice,
     voices,
-    unifiedVoices,
     setCurrentVoice,
     saveVoicePreference,
-    checkVoiceCompatibility,
     ttsService,
     voiceSpeed,
     setVoiceSpeed,
@@ -198,12 +194,10 @@ export default function WorkoutSetup(props: WorkoutSetupProps) {
             setAddCalisthenics={setAddCalisthenics}
             readInOrder={readInOrder}
             setReadInOrder={setReadInOrder}
-            voice={voice}
+            currentVoice={currentVoice}
             voices={voices}
-            unifiedVoices={unifiedVoices}
             setCurrentVoice={setCurrentVoice}
             saveVoicePreference={saveVoicePreference}
-            checkVoiceCompatibility={checkVoiceCompatibility}
             ttsService={ttsService}
             voiceSpeed={voiceSpeed}
             ttsAvailable={ttsAvailable}

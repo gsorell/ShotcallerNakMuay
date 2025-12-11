@@ -1,16 +1,9 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 // Types
-import type { EmphasisKey, Page, TechniqueWithStyle } from "./types";
 
 // Storage
-import { DEFAULT_REST_MINUTES, VOICE_STORAGE_KEY } from "./constants/storage";
+import { VOICE_STORAGE_KEY } from "./constants/storage";
 
 // Components
 import ActiveSessionUI from "./components/ActiveSessionUI";
@@ -19,37 +12,29 @@ import { OnboardingModal } from "./components/OnboardingModal";
 import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import WorkoutSetup from "./components/WorkoutSetup";
 
+// Contexts
+import { useTTSContext } from "./contexts/TTSProvider";
+import { useUIContext } from "./contexts/UIProvider";
+
 // Pages
 import TechniqueEditor from "./pages/TechniqueEditor";
 import WorkoutCompleted from "./pages/WorkoutCompleted";
 import WorkoutLogs from "./pages/WorkoutLogs";
 
 // Hooks
-import { useAndroidAudioDucking } from "./hooks/useAndroidAudioDucking";
-import { useCalloutEngine } from "./hooks/useCalloutEngine";
-import { useEmphasisList } from "./hooks/useEmphasisList";
-import { useHomeStats } from "./hooks/useHomeStats";
-import { useIOSAudioSession } from "./hooks/useIOSAudioSession";
 import { useNavigationGestures } from "./hooks/useNavigationGestures";
 import { usePWA } from "./hooks/usePWA";
-import { useSoundEffects } from "./hooks/useSoundEffects";
-import { useTechniqueData } from "./hooks/useTechniqueData";
-import { useTTS } from "./hooks/useTTS";
 import { useUserEngagement } from "./hooks/useUserEngagement";
-import { useWakeLock } from "./hooks/useWakeLock";
-import { useWorkoutSettings } from "./hooks/useWorkoutSettings";
-import { useWorkoutTimer } from "./hooks/useWorkoutTimer";
 
 // Utilities
-import { AnalyticsEvents, initializeGA4, trackEvent } from "./utils/analytics";
+import { initializeGA4, trackEvent } from "./utils/analytics";
 import { displayInAppBrowserWarning } from "./utils/inAppBrowserDetector";
-import { createWorkoutLogEntry } from "./utils/logUtils";
-import { generateTechniquePool } from "./utils/techniqueUtils";
 import { fmtTime } from "./utils/timeUtils";
 import { ttsService } from "./utils/ttsService";
 
 // CSS
 import "./App.css";
+import { useWorkoutContext } from "./contexts/WorkoutProvider";
 import "./styles/difficulty.css";
 
 // Global state to persist modal scroll position across re-renders
@@ -74,22 +59,42 @@ export default function App() {
     }
   }, []);
 
-  // --- 2. Data Hooks ---
+  // --- 2. Contexts ---
   const pwa = usePWA();
-  const iosAudioSession = useIOSAudioSession();
-  const androidAudioDucking = useAndroidAudioDucking();
-  const { techniques, persistTechniques, techniquesRef, techniqueIndexRef } =
-    useTechniqueData();
-  const emphasisList = useEmphasisList(techniques);
+  const {
+    techniques,
+    emphasisList,
+    settings,
+    timer,
+    calloutEngine,
+    homePageStats,
+    favoriteConfig,
+    persistTechniques,
+    hasSelectedEmphasis,
+    startSession,
+    pauseSession,
+    stopSession,
+    resumeWorkout,
+    viewCompletionScreen,
+  } = useWorkoutContext();
 
   // --- 3. UI State ---
-  const [showPWAPrompt, setShowPWAPrompt] = useState(false);
-  const [page, setPage] = useState<Page>("timer");
-  const [lastWorkout, setLastWorkout] = useState<any>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showAllEmphases, setShowAllEmphases] = useState(false);
-  const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
-  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0);
+  const {
+    page,
+    setPage,
+    lastWorkout,
+    setLastWorkout,
+    showAdvanced,
+    setShowAdvanced,
+    showAllEmphases,
+    setShowAllEmphases,
+    showOnboardingMsg,
+    setShowOnboardingMsg,
+    showPWAPrompt,
+    setShowPWAPrompt,
+    statsRefreshTrigger,
+    triggerStatsRefresh,
+  } = useUIContext();
   const isEditorRef = useRef(false);
 
   useEffect(() => {
@@ -97,30 +102,6 @@ export default function App() {
   }, [page]);
 
   const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
-  const settings = useWorkoutSettings(techniques, techniqueIndexRef);
-
-  // --- 4. Sound & TTS ---
-  const { playBell, playWarningSound, ensureMediaUnlocked } =
-    useSoundEffects(iosAudioSession);
-
-  const saveVoicePreference = useCallback(
-    (voice: SpeechSynthesisVoice | null) => {
-      if (!voice || !voice.lang.toLowerCase().startsWith("en")) {
-        localStorage.removeItem(VOICE_STORAGE_KEY);
-        return;
-      }
-      localStorage.setItem(
-        VOICE_STORAGE_KEY,
-        JSON.stringify({
-          name: voice.name,
-          lang: voice.lang,
-          localService: voice.localService,
-          default: voice.default,
-        })
-      );
-    },
-    []
-  );
 
   const {
     voices: unifiedVoices,
@@ -133,15 +114,9 @@ export default function App() {
     isAvailable: ttsAvailable,
     voiceCompatibilityWarning,
     testVoice: ttsTestVoice,
-  } = useTTS();
-
-  const derivedVoice = useMemo(() => {
-    if (!currentVoice) return null;
-    if (currentVoice.browserVoice) return currentVoice.browserVoice;
-
-    const found = unifiedVoices.find((v) => v.name === currentVoice.name);
-    return found ? found.browserVoice : null;
-  }, [currentVoice, unifiedVoices]);
+    browserVoice,
+    saveVoicePreference,
+  } = useTTSContext();
 
   // TMP(or.ricon): temporarily log for debugging voice selection
   useEffect(() => {
@@ -149,11 +124,9 @@ export default function App() {
       hasCurrentVoice: !!currentVoice,
       currentVoiceName: currentVoice?.name,
       totalUnifiedVoices: unifiedVoices.length,
-      resolvedVoice: derivedVoice,
+      browserVoice: browserVoice,
     });
-  }, [currentVoice, unifiedVoices, derivedVoice]);
-
-  const voice = derivedVoice;
+  }, [currentVoice, unifiedVoices, browserVoice]);
 
   const speakSystem = useCallback(
     (text: string, v: any, s: number) => {
@@ -162,132 +135,7 @@ export default function App() {
     [ttsSpeakSystem]
   );
 
-  // --- 5. Timer & Logic Handlers ---
-
-  // NOTE: We define Callout Engine AFTER timer, but we need variables from it.
-  // Actually we need timer state for callout engine.
-  // We need to define the handlers for timer first.
-
-  const stopSessionCleanup = useCallback(() => {
-    stopTTS();
-    if (androidAudioDucking.isAndroidNative)
-      void androidAudioDucking.releaseAudioFocus();
-  }, [stopTTS, androidAudioDucking]);
-
-  const handleRoundStart = useCallback(() => {
-    playBell();
-  }, [playBell]);
-
-  // We need a ref to access the callout engine's stop method inside round end
-  const stopCalloutsRef = useRef<() => void>(() => {});
-  const setCurrentCalloutRef = useRef<(s: string) => void>(() => {});
-  const shotsCalledOutRef = useRef<number>(0);
-
-  const handleRoundEnd = useCallback(() => {
-    stopSessionCleanup();
-    playBell();
-    stopCalloutsRef.current(); // Stop the engine
-    setCurrentCalloutRef.current("");
-  }, [stopSessionCleanup, playBell]);
-
-  const handleWorkoutComplete = useCallback(() => {
-    stopSessionCleanup();
-
-    const logEntry = createWorkoutLogEntry(
-      settings,
-      { running: false, currentRound: settings.roundsCount } as any,
-      shotsCalledOutRef.current,
-      emphasisList,
-      "completed"
-    );
-
-    // Update Engagement
-    const updatedEngagement = {
-      ...userEngagement,
-      completedWorkouts: userEngagement.completedWorkouts + 1,
-    };
-    setUserEngagement(updatedEngagement);
-    localStorage.setItem(
-      "user_engagement_stats",
-      JSON.stringify({
-        ...updatedEngagement,
-        lastVisit: updatedEngagement.lastVisit.toISOString(),
-      })
-    );
-    setStatsRefreshTrigger((prev) => prev + 1);
-
-    // Set UI Data
-    setLastWorkout({
-      timestamp: logEntry.timestamp,
-      emphases: logEntry.emphases,
-      difficulty: logEntry.difficulty,
-      shotsCalledOut: logEntry.shotsCalledOut,
-      roundsCompleted: logEntry.roundsCompleted,
-      roundsPlanned: logEntry.roundsPlanned,
-      roundLengthMin: logEntry.roundLengthMin,
-      suggestInstall: !pwa.isInstalled && userEngagement.completedWorkouts >= 1,
-    });
-    setPage("completed");
-  }, [
-    stopSessionCleanup,
-    settings,
-    emphasisList,
-    userEngagement,
-    setUserEngagement,
-    pwa.isInstalled,
-  ]);
-
-  const handleRestWarning = useCallback(() => {
-    speakSystem("10 seconds", voice, settings.voiceSpeed);
-  }, [speakSystem, voice, settings.voiceSpeed]);
-
-  const handleRestBell = useCallback(() => {
-    playWarningSound();
-  }, [playWarningSound]);
-
-  const handleRestEnd = useCallback(() => {
-    playBell();
-  }, [playBell]);
-
-  const timer = useWorkoutTimer({
-    roundMin: settings.roundMin,
-    restMinutes: settings.restMinutes,
-    roundsCount: settings.roundsCount,
-    onRoundStart: handleRoundStart,
-    onRoundEnd: handleRoundEnd,
-    onRestWarning: handleRestWarning,
-    onRestBell: handleRestBell,
-    onRestEnd: handleRestEnd,
-    onWorkoutComplete: handleWorkoutComplete,
-  });
-
-  // --- 6. The Callout Engine (New Hook) ---
-  const calloutEngine = useCalloutEngine({
-    timer,
-    settings,
-    tts: { speakSystemWithDuration: ttsSpeakSystemWithDuration },
-  });
-
-  // Link refs for callbacks
-  useEffect(() => {
-    stopCalloutsRef.current = calloutEngine.stopTechniqueCallouts;
-    setCurrentCalloutRef.current = calloutEngine.setCurrentCallout;
-    // We sync the ref so we can log it later
-    shotsCalledOutRef.current = calloutEngine.shotsCalledOutRef.current;
-  }, [
-    calloutEngine.stopTechniqueCallouts,
-    calloutEngine.setCurrentCallout,
-    calloutEngine.shotsCalledOutRef.current,
-  ]);
-
-  // Keep Ref updated constantly for the complete handler
-  useEffect(() => {
-    shotsCalledOutRef.current = calloutEngine.shotsCalledOutRef.current;
-  });
-
-  // WakeLock
-  const shouldKeepAwake = (timer.running && !timer.paused) || timer.isPreRound;
-  useWakeLock({ enabled: shouldKeepAwake, log: false });
+  // --- 5. Navigation / PWA ---
 
   // --- 7. Navigation / PWA ---
   useEffect(() => {
@@ -320,34 +168,7 @@ export default function App() {
     debugLog: false,
   });
 
-  const homePageStats = useHomeStats(statsRefreshTrigger);
-  const favoriteConfig = homePageStats?.mostCommonEmphasis
-    ? emphasisList.find(
-        (e) =>
-          e.label.trim().toLowerCase() ===
-          homePageStats.mostCommonEmphasis.trim().toLowerCase()
-      )
-    : null;
   const isActive = timer.running || timer.isPreRound;
-
-  // --- 8. Actions ---
-  const getTechniquePool = useCallback((): TechniqueWithStyle[] => {
-    return generateTechniquePool(
-      techniquesRef.current,
-      settings.selectedEmphases,
-      settings.addCalisthenics,
-      techniqueIndexRef.current
-    );
-  }, [
-    settings.selectedEmphases,
-    settings.addCalisthenics,
-    techniquesRef,
-    techniqueIndexRef,
-  ]);
-
-  const hasSelectedEmphasis = Object.values(settings.selectedEmphases).some(
-    Boolean
-  );
 
   function getStatus():
     | "ready"
@@ -362,167 +183,6 @@ export default function App() {
     if (timer.isResting) return "resting";
     return "running";
   }
-
-  function startSession() {
-    if (!hasSelectedEmphasis) return;
-    const pool = getTechniquePool();
-    const timerOnlySelected =
-      settings.selectedEmphases.timer_only &&
-      Object.values(settings.selectedEmphases).filter(Boolean).length === 1;
-    if (!pool.length && !timerOnlySelected) {
-      alert("No techniques found for the selected emphasis(es).");
-      return;
-    }
-
-    trackEvent(AnalyticsEvents.WorkoutStart, {
-      selected_emphases: Object.keys(settings.selectedEmphases).filter(
-        (k) => settings.selectedEmphases[k as EmphasisKey]
-      ),
-      difficulty: settings.difficulty,
-      rounds: settings.roundsCount,
-    });
-
-    void ensureMediaUnlocked();
-    if (androidAudioDucking.isAndroidNative)
-      void androidAudioDucking.requestAudioFocus();
-
-    // Init Engine
-    if (settings.readInOrder) {
-      calloutEngine.currentPoolRef.current = pool;
-    } else {
-      calloutEngine.currentPoolRef.current = pool.sort(
-        () => Math.random() - 0.5
-      );
-    }
-    calloutEngine.orderedIndexRef.current = 0;
-    calloutEngine.shotsCalledOutRef.current = 0;
-
-    // Silent speak to init engine
-    try {
-      ttsSpeak(" ", {
-        volume: 0,
-        rate: settings.voiceSpeed,
-        voice: voice
-          ? {
-              id: voice.name,
-              name: voice.name,
-              language: voice.lang,
-              browserVoice: voice,
-            }
-          : null,
-      });
-    } catch {}
-
-    speakSystem("Get ready", voice, settings.voiceSpeed);
-    timer.startTimer();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function pauseSession() {
-    if (!timer.running) return;
-    const p = !timer.paused;
-    timer.pauseTimer();
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try {
-        if (p) window.speechSynthesis.pause();
-        else window.speechSynthesis.resume();
-      } catch {}
-    }
-  }
-
-  function stopSession() {
-    stopSessionCleanup();
-    calloutEngine.stopAllNarration();
-
-    // Auto-log partially completed workout
-    createWorkoutLogEntry(
-      settings,
-      timer,
-      calloutEngine.shotsCalledOutRef.current,
-      emphasisList,
-      "abandoned"
-    );
-    setStatsRefreshTrigger((prev) => prev + 1);
-
-    timer.stopTimer();
-    calloutEngine.setCurrentCallout("");
-  }
-
-  const resumeWorkout = useCallback(
-    (logEntry: any) => {
-      if (logEntry.settings) {
-        settings.setSelectedEmphases(logEntry.settings.selectedEmphases);
-        settings.setAddCalisthenics(logEntry.settings.addCalisthenics);
-        settings.setReadInOrder(logEntry.settings.readInOrder);
-        settings.setSouthpawMode(logEntry.settings.southpawMode);
-      }
-      settings.setRoundsCount(logEntry.roundsPlanned);
-      settings.setRoundMin(logEntry.roundLengthMin);
-      settings.setRestMinutes(logEntry.restMinutes || DEFAULT_REST_MINUTES);
-      settings.setDifficulty(logEntry.difficulty || "medium");
-      calloutEngine.shotsCalledOutRef.current = logEntry.shotsCalledOut || 0;
-      setPage("timer");
-
-      setTimeout(() => {
-        const pool = getTechniquePool();
-        if (!pool.length && !logEntry.settings?.selectedEmphases?.timer_only) {
-          alert("Cannot resume: No techniques found.");
-          return;
-        }
-        void ensureMediaUnlocked();
-        if (logEntry.settings?.readInOrder) {
-          calloutEngine.currentPoolRef.current = pool;
-        } else {
-          calloutEngine.currentPoolRef.current = pool.sort(
-            () => Math.random() - 0.5
-          );
-        }
-        calloutEngine.orderedIndexRef.current = 0;
-
-        try {
-          ttsSpeak(" ", {
-            volume: 0,
-            rate: settings.voiceSpeed,
-            voice: voice
-              ? {
-                  id: voice.name,
-                  name: voice.name,
-                  language: voice.lang,
-                  browserVoice: voice,
-                }
-              : null,
-          });
-        } catch {}
-
-        timer.resumeTimerState(logEntry);
-        speakSystem("Resuming workout. Get ready", voice, settings.voiceSpeed);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 150);
-    },
-    [
-      getTechniquePool,
-      ensureMediaUnlocked,
-      settings,
-      voice,
-      speakSystem,
-      timer,
-      calloutEngine,
-    ]
-  );
-
-  const viewCompletionScreen = useCallback((logEntry: any) => {
-    setLastWorkout({
-      timestamp: logEntry.timestamp,
-      emphases: logEntry.emphases,
-      difficulty: logEntry.difficulty,
-      shotsCalledOut: logEntry.shotsCalledOut,
-      roundsCompleted: logEntry.roundsCompleted,
-      roundsPlanned: logEntry.roundsPlanned,
-      roundLengthMin: logEntry.roundLengthMin,
-      suggestInstall: false,
-    });
-    setPage("completed");
-  }, []);
 
   const TechniqueEditorAny =
     TechniqueEditor as unknown as React.ComponentType<any>;
@@ -661,22 +321,10 @@ export default function App() {
                 setAddCalisthenics={settings.setAddCalisthenics}
                 readInOrder={settings.readInOrder}
                 setReadInOrder={settings.setReadInOrder}
-                voice={voice}
-                voices={unifiedVoices.map(
-                  (v) =>
-                    v.browserVoice ||
-                    ({
-                      name: v.name,
-                      lang: v.language,
-                      default: v.isDefault,
-                      localService: true,
-                      voiceURI: v.id,
-                    } as SpeechSynthesisVoice)
-                )}
-                unifiedVoices={unifiedVoices}
+                currentVoice={currentVoice}
+                voices={unifiedVoices}
                 setCurrentVoice={setCurrentVoice}
                 saveVoicePreference={saveVoicePreference}
-                checkVoiceCompatibility={() => {}}
                 ttsService={ttsService}
                 voiceSpeed={settings.voiceSpeed}
                 setVoiceSpeed={settings.setVoiceSpeed}
@@ -685,7 +333,7 @@ export default function App() {
                   stopTTS();
                   setTimeout(() => ttsTestVoice(), 50);
                 }}
-                voiceCompatibilityWarning={voiceCompatibilityWarning as string}
+                voiceCompatibilityWarning={voiceCompatibilityWarning}
                 trackEvent={trackEvent}
                 onStart={startSession}
                 difficulty={settings.difficulty}

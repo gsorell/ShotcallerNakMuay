@@ -10,20 +10,15 @@ export type AdvancedSettingsPanelProps = {
   setAddCalisthenics: (value: boolean) => void;
   readInOrder: boolean;
   setReadInOrder: (value: boolean) => void;
-  voice: SpeechSynthesisVoice | null;
-  voices: SpeechSynthesisVoice[];
-  unifiedVoices: UnifiedVoice[];
-  setCurrentVoice: (voice: UnifiedVoice) => void;
-  saveVoicePreference: (voice: SpeechSynthesisVoice) => void;
-  checkVoiceCompatibility: (
-    selected: SpeechSynthesisVoice,
-    allVoices: SpeechSynthesisVoice[]
-  ) => void;
+  currentVoice: UnifiedVoice | null;
+  voices: UnifiedVoice[];
+  setCurrentVoice: (voice: UnifiedVoice | null) => void;
+  saveVoicePreference: (voice: UnifiedVoice | null) => void;
   ttsService: any;
   voiceSpeed: number;
   ttsAvailable: boolean;
   testVoice: () => void;
-  voiceCompatibilityWarning: string | null;
+  voiceCompatibilityWarning: string;
   setVoiceSpeed: (speed: number) => void;
   trackEvent: (eventName: string, properties?: object) => void;
 };
@@ -110,12 +105,10 @@ const ToggleOption = ({ label, description, checked, onChange }: any) => (
 // Sub-Component: Voice Settings
 // ---------------------------------------------------------------------------
 const VoiceSettings = ({
-  voice,
+  currentVoice,
   voices,
-  unifiedVoices,
   setCurrentVoice,
   saveVoicePreference,
-  checkVoiceCompatibility,
   ttsService,
   voiceSpeed,
   setVoiceSpeed,
@@ -132,40 +125,22 @@ const VoiceSettings = ({
   | "setReadInOrder"
   | "trackEvent"
 >) => {
-  // Complex voice logic moved here
+  // Voice selection logic
   const handleVoiceSelection = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>) => {
       const selectedName = e.target.value;
-      const selected = voices.find((v) => v.name === selectedName) || null;
+      const selectedVoice = voices.find((v) => v.name === selectedName) || null;
 
-      if (!selected) return;
-
-      // 1. Find Unified Voice
-      let unifiedVoice = unifiedVoices.find(
-        (v) => v.name === selected.name && v.language === selected.lang
-      );
-
-      // Fallbacks
-      if (!unifiedVoice) {
-        unifiedVoice = unifiedVoices.find((v) => v.name === selected.name);
-      }
-      if (!unifiedVoice) {
-        unifiedVoice = unifiedVoices.find((v) =>
-          v.language.toLowerCase().startsWith("en")
-        );
-      }
-
-      if (unifiedVoice) {
-        setCurrentVoice(unifiedVoice);
-        saveVoicePreference(selected);
-        checkVoiceCompatibility(selected, voices);
+      if (selectedVoice) {
+        setCurrentVoice(selectedVoice);
+        saveVoicePreference(selectedVoice);
 
         // Announce change
         setTimeout(async () => {
           try {
             await ttsService.speakImmediate(
-              `Voice switched to ${unifiedVoice?.name}`,
-              { voice: unifiedVoice, rate: voiceSpeed }
+              `Voice switched to ${selectedVoice.name}`,
+              { voice: selectedVoice, rate: voiceSpeed }
             );
           } catch (error) {
             console.warn("Voice switch announcement failed", error);
@@ -173,15 +148,7 @@ const VoiceSettings = ({
         }, 50);
       }
     },
-    [
-      voices,
-      unifiedVoices,
-      setCurrentVoice,
-      saveVoicePreference,
-      checkVoiceCompatibility,
-      ttsService,
-      voiceSpeed,
-    ]
+    [voices, setCurrentVoice, saveVoicePreference, ttsService, voiceSpeed]
   );
 
   return (
@@ -196,7 +163,7 @@ const VoiceSettings = ({
           </label>
           <select
             id="voice-select"
-            value={voice?.name || ""}
+            value={currentVoice?.name || ""}
             onChange={handleVoiceSelection}
             style={styles.selectInput}
           >
@@ -206,7 +173,7 @@ const VoiceSettings = ({
                 : "Select a voice"}
             </option>
             {voices
-              .filter((v) => v.lang.toLowerCase().startsWith("en"))
+              .filter((v) => v.language.toLowerCase().startsWith("en"))
               .map((v) => (
                 <VoiceOption key={v.name} voice={v} />
               ))}
@@ -270,8 +237,8 @@ const VoiceSettings = ({
 };
 
 // Helper for rendering <option> logic
-const VoiceOption = ({ voice }: { voice: SpeechSynthesisVoice }) => {
-  const lang = voice.lang.toLowerCase();
+const VoiceOption = ({ voice }: { voice: UnifiedVoice }) => {
+  const lang = voice.language.toLowerCase();
   const isAmerican =
     lang.includes("en-us") ||
     lang.includes("united states") ||
@@ -281,7 +248,7 @@ const VoiceOption = ({ voice }: { voice: SpeechSynthesisVoice }) => {
   return (
     <option value={voice.name} style={{ padding: "0.5rem 0.75rem" }}>
       {flag}
-      {voice.name} ({voice.lang})
+      {voice.name} ({voice.language})
     </option>
   );
 };
@@ -303,12 +270,10 @@ export const AdvancedSettingsPanel = (props: AdvancedSettingsPanelProps) => {
       />
 
       <VoiceSettings
-        voice={props.voice}
+        currentVoice={props.currentVoice}
         voices={props.voices}
-        unifiedVoices={props.unifiedVoices}
         setCurrentVoice={props.setCurrentVoice}
         saveVoicePreference={props.saveVoicePreference}
-        checkVoiceCompatibility={props.checkVoiceCompatibility}
         ttsService={props.ttsService}
         voiceSpeed={props.voiceSpeed}
         setVoiceSpeed={props.setVoiceSpeed}
