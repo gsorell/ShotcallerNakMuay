@@ -1,0 +1,62 @@
+/* Footer.css - Component-specific styles for Footer */
+
+/* Footer container */
+.app-footer {
+  text-align: center;
+  margin-top: 4rem;
+  padding: 2rem;
+  padding-bottom: var(--footer-padding-bottom, 2rem);
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Inner content wrapper */
+.app-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: #f9a8d4;
+}
+
+/* Logo image */
+.app-footer-logo {
+  height: 32px;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+}
+
+/* Links/Buttons */
+.app-footer-link {
+  all: unset;
+  cursor: pointer;
+  color: #f9a8d4;
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.app-footer-link:hover {
+  opacity: 0.8;
+}
+
+/* Instagram link */
+.app-footer-social {
+  display: inline-flex;
+  align-items: center;
+  opacity: 1;
+  transition: opacity 0.2s;
+  height: 32px;
+  margin-left: 0.5rem;
+}
+
+.app-footer-social img {
+  height: 24px;
+  width: 24px;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}

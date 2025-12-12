@@ -1,0 +1,63 @@
+/* WorkoutSetup.css - Component-specific styles for WorkoutSetup */
+
+/* Stats/Favorites container */
+.workout-setup-stats-container {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Stats buttons */
+.workout-setup-stat-btn {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.workout-setup-stat-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.workout-setup-stat-btn img {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.workout-setup-stat-btn span {
+  font-weight: 600;
+}
+
+/* Main container */
+.workout-setup-container {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+/* "Show Advanced" button */
+.workout-setup-advanced-toggle {
+  all: unset;
+  cursor: pointer;
+  color: #f9a8d4;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.workout-setup-advanced-toggle:hover {
+  opacity: 0.8;
+}

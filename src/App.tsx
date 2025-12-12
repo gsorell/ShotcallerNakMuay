@@ -3,7 +3,6 @@ import React, { useEffect, useRef } from "react";
 // Types
 
 // Storage
-import { VOICE_STORAGE_KEY } from "@/constants/storage";
 
 // Components
 import { WorkoutCompleted, WorkoutLogs } from "@/features/logs";
@@ -27,10 +26,9 @@ import {
 } from "@/features/workout";
 
 // Utilities
-import { initializeGA4, trackEvent } from "@/utils/analytics";
+import { initializeGA4 } from "@/utils/analytics";
 import { displayInAppBrowserWarning } from "@/utils/inAppBrowserDetector";
 import { fmtTime } from "@/utils/timeUtils";
-import { ttsService } from "@/utils/ttsService";
 
 // CSS
 import "@/App.css";

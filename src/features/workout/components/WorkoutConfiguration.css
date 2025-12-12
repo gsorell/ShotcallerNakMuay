@@ -1,0 +1,93 @@
+/* WorkoutConfiguration.css - Component-specific styles for WorkoutConfiguration */
+
+/* Main section wrapper */
+.workout-config-section {
+  max-width: 48rem;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+/* Container for each configuration group */
+.workout-config-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Heading styles */
+.workout-config-title {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: white;
+  margin: 0;
+}
+
+/* Control group wrapper */
+.workout-config-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: rgba(255,255,255,0.1);
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  min-height: 70px;
+}
+
+/* Chip button styles (increment/decrement buttons) */
+.workout-config-chip-btn {
+  all: unset;
+  cursor: pointer;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background-color: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Input field styles */
+.workout-config-input {
+  width: 4rem;
+  height: 3rem;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  box-shadow: none;
+}
+
+/* Value display (current count) */
+.workout-config-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  min-width: 4rem;
+  text-align: center;
+}
+
+/* Helper text/label styles */
+.workout-config-label {
+  font-size: 0.75rem;
+  color: #f9a8d4;
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+/* Container for value and label */
+.workout-config-value-container {
+  min-width: 4rem;
+  text-align: center;
+}

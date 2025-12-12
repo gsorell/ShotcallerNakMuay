@@ -1,0 +1,412 @@
+/* TechniqueEditor.css */
+
+/* Panel style */
+.tech-editor-panel {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Input style */
+.tech-editor-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Base button style */
+.tech-editor-btn {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%);
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Delete button modifier */
+.tech-editor-btn--delete {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  padding: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  line-height: 2.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Technique item style */
+.tech-editor-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  min-height: 36px;
+}
+
+/* Section header style */
+.tech-editor-section-header {
+  color: #f9a8d4;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.375rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Layout & Containers */
+.tech-editor-container {
+  max-width: none;
+  margin: 0;
+  padding: 1rem 0.25rem;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tech-editor-group-header {
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  position: relative;
+  min-height: 48px;
+  gap: 0;
+}
+.tech-editor-group-header.is-expanded {
+  margin-bottom: 1rem;
+}
+
+.tech-editor-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-direction: row;
+  min-height: 48px;
+}
+
+.tech-editor-buttons-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Typography */
+.tech-editor-page-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+}
+
+.tech-editor-subtitle {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.tech-editor-panel-title {
+  margin-top: 0;
+  color: white;
+}
+
+.tech-editor-title {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  min-width: 0;
+  word-break: break-word;
+  flex-grow: 1;
+}
+
+.tech-editor-label {
+  color: #a5b4fc;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.tech-editor-count {
+  color: rgba(249, 168, 212, 0.6);
+  font-size: 0.875rem;
+  margin-left: auto;
+}
+
+/* Inputs & Textareas */
+.tech-editor-input--title {
+  max-width: 320px;
+  font-weight: 500;
+  font-size: 1.125rem;
+  background: rgba(0, 0, 0, 0.25);
+  color: white;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.tech-editor-textarea {
+  min-height: auto;
+  height: auto;
+  resize: vertical;
+  font-size: 0.875rem;
+  color: white;
+  font-family: inherit;
+  line-height: 1.5;
+  overflow: hidden;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+.tech-editor-description-box {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem;
+  font-style: italic;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  min-height: auto;
+  font-size: 0.875rem;
+  color: #a3a3a3;
+  border-radius: 0.375rem;
+}
+
+.tech-editor-input--item {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.825rem;
+  color: white;
+  min-height: 28px;
+}
+.tech-editor-input--item:read-only {
+  color: #a3a3a3;
+}
+
+/* Buttons */
+.tech-editor-btn--back {
+  all: unset;
+  cursor: pointer;
+  color: white;
+  padding: 0.625rem 1.125rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: all 0.2s ease;
+}
+.tech-editor-btn--back:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.tech-editor-btn--create {
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: none;
+  background-color: transparent;
+  color: #f9a8d4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-width: 120px;
+  opacity: 0.8;
+  margin-left: auto;
+}
+.tech-editor-btn--create:hover {
+  opacity: 1;
+  background-color: rgba(249, 168, 212, 0.1);
+}
+
+.tech-editor-btn--copy,
+.tech-editor-btn--expand,
+.tech-editor-btn--action {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.75rem;
+  border: none;
+  background-color: transparent;
+  color: #f9a8d4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.tech-editor-btn--copy:hover,
+.tech-editor-btn--expand:hover,
+.tech-editor-btn--action:hover {
+  opacity: 1;
+  background-color: rgba(249, 168, 212, 0.1);
+}
+
+.tech-editor-btn--star {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f9a8d4;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.875rem;
+  padding: 0;
+  line-height: 1.75rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  border: none;
+}
+.tech-editor-btn--star.is-active {
+  background: rgba(36, 229, 251, 0.25);
+  color: #facc15;
+}
+
+.tech-editor-btn--add {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.tech-editor-btn--add:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%);
+  transform: translateY(-1px);
+}
+
+.tech-editor-btn--delete-group {
+  width: auto;
+  height: 32px;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  border-radius: 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+}
+
+.tech-editor-reset-panel {
+  background: rgba(159, 18, 57, 0.2);
+  border-color: rgba(251, 113, 133, 0.3);
+  margin-top: 2rem;
+  text-align: center;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.tech-editor-btn--reset {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%);
+  color: #fca5a5;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.tech-editor-btn--reset:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(220, 38, 38, 0.4) 100%);
+  transform: translateY(-1px);
+}
+
+.tech-editor-thumbnail {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.18);
+  background: #18181b;
+  margin-right: 8px;
+}
+
+/* Additional classes for remaining styles */
+.tech-editor-back-btn {
+  all: unset;
+  cursor: pointer;
+  color: white;
+  padding: 0.625rem 1.125rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  transition: all 0.2s ease;
+}
+.tech-editor-back-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.tech-editor-export-btn,
+.tech-editor-import-btn {
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  border: none;
+  background-color: transparent;
+  color: #f9a8d4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  min-width: 120px;
+  opacity: 0.8;
+}
+.tech-editor-export-btn:hover,
+.tech-editor-import-btn:hover {
+  opacity: 1;
+  background-color: rgba(249, 168, 212, 0.1);
+}

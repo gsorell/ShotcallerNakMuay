@@ -6,6 +6,7 @@ import { useWorkoutContext } from "../contexts/WorkoutProvider";
 import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
 import { StickyStartControls } from "./StickyStartControls";
 import { WorkoutConfiguration } from "./WorkoutConfiguration";
+import "./WorkoutSetup.css";
 
 export default function WorkoutSetup() {
   const {
@@ -35,43 +36,29 @@ export default function WorkoutSetup() {
   return (
     <div>
       {/* Compact Favorite Style & Streak */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.5rem",
-          justifyContent: "center",
-          alignItems: "center",
-          marginBottom: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="workout-setup-stats-container">
         {stats && (
           <React.Fragment>
             {favoriteConfig && (
-              <button
-                type="button"
-                onClick={() => setPage("logs")}
-                style={/* ... styles from App.tsx ... */ {}}
-              >
+                <button
+                  type="button"
+                  onClick={() => setPage("logs")}
+                  className="workout-setup-stat-btn"
+                >
                 <ImageWithFallback
                   srcPath={favoriteConfig.iconPath}
                   alt={favoriteConfig.label}
                   emoji={favoriteConfig.emoji || "🎯"}
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: 3,
-                    objectFit: "cover",
-                  }}
+                  className="workout-setup-stat-icon"
                 />
                 <span style={{ fontWeight: 600 }}>{favoriteConfig.label}</span>
               </button>
             )}
             <button
-              type="button"
-              onClick={() => setPage("logs")}
-              style={/* ... styles from App.tsx ... */ {}}
-            >
+                type="button"
+                onClick={() => setPage("logs")}
+                className="workout-setup-stat-btn"
+              >
               <span role="img" aria-label="flame">
                 🔥
               </span>
@@ -81,7 +68,7 @@ export default function WorkoutSetup() {
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "3rem" }}>
+      <div className="workout-setup-container">
         <EmphasisSelector
           emphasisList={emphasisList}
           selectedEmphases={selectedEmphases}
@@ -101,14 +88,7 @@ export default function WorkoutSetup() {
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          style={{
-            all: "unset",
-            cursor: "pointer",
-            color: "#f9a8d4",
-            padding: "0.5rem 0.75rem",
-            textAlign: "center",
-            fontWeight: 700,
-          }}
+          className="workout-setup-advanced-toggle"
         >
           {showAdvanced ? "Hide" : "Show"} Advanced Settings
         </button>

@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useState } from "react";
 import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import "@/styles/editor.css";
 import {
@@ -8,6 +7,8 @@ import {
   normalizeTechniques,
   type TechniqueShape as UtilsTechniqueShape,
 } from "@/utils/techniqueUtils";
+import React, { useEffect, useRef, useState } from "react";
+import "./TechniqueEditor.css";
 
 type TechniqueDetail = {
   name: string;
@@ -52,80 +53,6 @@ const uploadIcon = "/assets/icon_upload.png";
 
 // Define the path to the trash icon
 const trashIcon = "/assets/icon_trash.png";
-
-// Reusable styles for the new theme
-const panelStyle: React.CSSProperties = {
-  background: "rgba(0,0,0,0.2)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  borderRadius: "0.75rem",
-  padding: "0.75rem",
-  marginBottom: "0.75rem",
-};
-
-const inputStyle: React.CSSProperties = {
-  background: "rgba(0,0,0,0.3)",
-  border: "1px solid rgba(255,255,255,0.2)",
-  borderRadius: "0.375rem",
-  padding: "0.5rem 0.75rem",
-  color: "white",
-  width: "100%",
-  boxSizing: "border-box",
-};
-
-const buttonStyle: React.CSSProperties = {
-  background:
-    "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
-  color: "#f9a8d4",
-  border: "1px solid rgba(236, 72, 153, 0.3)",
-  borderRadius: "0.75rem",
-  padding: "0.5rem 1rem",
-  cursor: "pointer",
-  fontWeight: 500,
-  fontSize: "0.875rem",
-  transition: "all 0.2s ease",
-  boxShadow: "0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
-  backdropFilter: "blur(8px)",
-  height: "36px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const deleteButtonStyle: React.CSSProperties = {
-  ...buttonStyle,
-  background: "rgba(220, 38, 38, 0.2)",
-  color: "#fca5a5",
-  border: "1px solid rgba(220, 38, 38, 0.4)",
-  padding: "0",
-  width: "2.5rem",
-  height: "2.5rem",
-  lineHeight: "2.5rem",
-  textAlign: "center" as const,
-  flexShrink: 0,
-};
-
-// Compact technique item style for mobile-friendly layout
-const techniqueItemStyle: React.CSSProperties = {
-  display: "flex",
-  gap: "0.5rem",
-  alignItems: "center",
-  padding: "0.5rem 0.75rem",
-  background: "rgba(0,0,0,0.15)",
-  borderRadius: "0.375rem",
-  border: "1px solid rgba(255,255,255,0.05)",
-  minHeight: "36px",
-};
-
-// Compact section header style
-const sectionHeaderStyle: React.CSSProperties = {
-  color: "#f9a8d4",
-  fontSize: "0.95rem",
-  fontWeight: "600",
-  margin: "0.75rem 0 0.375rem 0",
-  display: "flex",
-  alignItems: "center",
-  gap: "0.5rem",
-};
 
 type TechniqueEditorProps = {
   techniques: Record<string, TechniqueShape>;
@@ -520,43 +447,20 @@ export default function TechniqueEditor({
 
       return (
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            marginBottom: expanded ? "1rem" : 0,
-            userSelect: "none",
-            position: "relative",
-            minHeight: 48,
-            gap: 0,
-          }}
-          className="group-header"
+          className={`tech-editor-group-header ${
+            expanded ? "is-expanded" : ""
+          }`}
         >
           {/* Top row: icon and title only */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexDirection: "row",
-              minHeight: 48,
-            }}
-          >
+          <div className="tech-editor-header-row">
             {thumbnail && (
               <img
                 src={thumbnail}
                 alt={`${group.title ?? group.label ?? keyName} thumbnail`}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  objectFit: "cover",
-                  boxShadow: "0 1px 4px 0 rgba(0,0,0,0.18)",
-                  background: "#18181b",
-                  marginRight: 8,
-                }}
+                className="tech-editor-thumbnail"
               />
             )}
-            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+            <div>
               {expanded && !isCoreStyle ? (
                 <input
                   ref={inputRef}
@@ -604,17 +508,7 @@ export default function TechniqueEditor({
                       (e.currentTarget as HTMLInputElement).blur();
                     }
                   }}
-                  style={{
-                    ...inputStyle,
-                    maxWidth: 320,
-                    fontWeight: 500,
-                    fontSize: "1.125rem",
-                    background: "rgba(0,0,0,0.25)",
-                    color: "white",
-                    border: "none",
-                    outline: "none",
-                    fontFamily: "inherit",
-                  }}
+                  className="tech-editor-input tech-editor-input--title"
                   autoCapitalize="none"
                   autoComplete="off"
                   autoCorrect="off"
@@ -627,67 +521,19 @@ export default function TechniqueEditor({
                   placeholder="Group Name"
                 />
               ) : (
-                <h3
-                  style={{
-                    margin: 0,
-                    color: "white",
-                    fontSize: "1.25rem",
-                    fontWeight: 600,
-                    textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                    minWidth: 0,
-                    wordBreak: "break-word",
-                    flexGrow: 1,
-                  }}
-                >
+                <h3 className="tech-editor-title">
                   {group.title ?? group.label ?? keyName}
                 </h3>
               )}
             </div>
           </div>
           {/* Buttons row: copy on left, expand on right */}
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: 8,
-              flexWrap: "wrap",
-              width: "100%",
-            }}
-            className="group-header-buttons"
-          >
+          <div className="tech-editor-buttons-row">
             {/* Copy button for all groups on the left */}
             {onDuplicate ? (
               <button
                 onClick={onDuplicate}
-                style={{
-                  padding: "0.375rem 0.75rem",
-                  borderRadius: "0.75rem",
-                  border: "none",
-                  backgroundColor: "transparent",
-                  color: "#f9a8d4",
-                  boxShadow: "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontWeight: 500,
-                  fontSize: "0.875rem",
-                  transition: "all 0.2s",
-                  cursor: "pointer",
-                  minWidth: 0,
-                  opacity: 0.8,
-                  height: "32px",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "1";
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(249, 168, 212, 0.1)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = "0.8";
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
+                className="tech-editor-btn--copy"
                 aria-label="Duplicate group"
                 title="Create a copy of this style"
               >
@@ -700,35 +546,7 @@ export default function TechniqueEditor({
             {/* Expand/collapse button on the right */}
             <button
               onClick={() => toggleGroupExpanded(keyName)}
-              style={{
-                padding: "0.5rem",
-                borderRadius: "0.75rem",
-                border: "none",
-                backgroundColor: "transparent",
-                color: "#f9a8d4",
-                boxShadow: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 500,
-                fontSize: "1rem",
-                transition: "all 0.2s",
-                cursor: "pointer",
-                width: 36,
-                height: 36,
-                opacity: 0.8,
-                zIndex: 2,
-                position: "relative",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "1";
-                e.currentTarget.style.backgroundColor =
-                  "rgba(249, 168, 212, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "0.8";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
+              className="tech-editor-btn--expand"
               aria-label={expanded ? "Collapse group" : "Expand group"}
               tabIndex={0}
             >
@@ -757,49 +575,14 @@ export default function TechniqueEditor({
   );
 
   return (
-    <div
-      ref={topRef}
-      style={{
-        maxWidth: "none",
-        margin: 0,
-        padding: "0.25rem",
-        paddingTop: "1rem",
-        position: "relative",
-        width: "100%",
-        boxSizing: "border-box",
-      }}
-    >
+    <div ref={topRef} className="tech-editor-container">
       {/* Top-left Back button, visually aligned and not overlapping */}
       {onBack && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            position: "relative",
-            marginBottom: "1.5rem",
-            marginLeft: "0.5rem",
-            zIndex: 2,
-          }}
-        >
+        <div>
           <button
             type="button"
             onClick={onBack}
-            style={{
-              all: "unset",
-              cursor: "pointer",
-              color: "white",
-              padding: "0.625rem 1.125rem",
-              borderRadius: "0.75rem",
-              border: "1px solid rgba(255,255,255,0.15)",
-              background: "rgba(255,255,255,0.08)",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.375rem",
-              transition: "all 0.2s ease",
-            }}
+            className="tech-editor-btn--back"
             title="Back to Training (Esc)"
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(255,255,255,0.12)";
@@ -810,90 +593,39 @@ export default function TechniqueEditor({
               e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <span style={{ fontSize: "1rem" }}>←</span>
+            <span>←</span>
             Back
           </button>
         </div>
       )}
       {/* Clean Header & Quick Actions */}
-      <div style={{ marginBottom: "1.5rem" }}>
+      <div>
         {/* Page Title */}
-        <h1
-          style={{
-            margin: "0 0 0.75rem 0",
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            color: "white",
-            textAlign: "center",
-          }}
-        >
-          Technique Manager
-        </h1>
+        <h1 className="tech-editor-page-title">Technique Manager</h1>
 
         {/* Subtitle */}
-        <p
-          style={{
-            margin: "0 0 1rem 0",
-            fontSize: "0.9rem",
-            color: "rgba(255,255,255,0.7)",
-            textAlign: "center",
-            lineHeight: 1.4,
-          }}
-        >
+        <p className="tech-editor-subtitle">
           Customize your training routines • Star favorites • Manage technique
           sets
         </p>
       </div>
 
       {/* --- Move Create New Emphasis block to the top --- */}
-      <div className="add-emphasis-panel" style={panelStyle}>
-        <h3 style={{ marginTop: 0, color: "white" }}>Create New Style</h3>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.75rem",
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
+      <div className="add-emphasis-panel tech-editor-panel">
+        <h3 className="tech-editor-panel-title">Create New Style</h3>
+        <div>
           <input
             id="new-group-name"
             type="text"
             placeholder="Title (e.g., My Style)"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
-            style={{ ...inputStyle, flexGrow: 1 }}
+            className="tech-editor-input"
             aria-label="New technique style name"
           />
           <button
             onClick={() => addGroup(newGroupName)}
-            style={{
-              padding: ".75rem 1rem",
-              borderRadius: "1rem",
-              border: "none",
-              backgroundColor: "transparent",
-              color: "#f9a8d4",
-              boxShadow: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              fontWeight: 500,
-              fontSize: "0.95rem",
-              transition: "all 0.2s",
-              cursor: "pointer",
-              minWidth: "120px",
-              opacity: 0.8,
-              marginLeft: "auto",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "1";
-              e.currentTarget.style.backgroundColor =
-                "rgba(249, 168, 212, 0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = "0.8";
-              e.currentTarget.style.backgroundColor = "transparent";
-            }}
+            className="tech-editor-btn--create"
           >
             Create Style
           </button>
@@ -911,7 +643,7 @@ export default function TechniqueEditor({
           : GROUP_THUMBNAILS[key];
         const expanded = !!expandedGroups[key];
         return (
-          <div key={key} style={panelStyle}>
+          <div key={key} className="tech-editor-panel">
             <GroupHeader
               keyName={key}
               group={group}
@@ -928,33 +660,12 @@ export default function TechniqueEditor({
             {expanded && (
               <>
                 {/* Description for all groups */}
-                <div style={{ marginBottom: "1.5rem" }}>
-                  <label
-                    htmlFor={`desc-${key}`}
-                    style={{
-                      color: "#a5b4fc",
-                      fontWeight: 500,
-                      display: "block",
-                      marginBottom: 6,
-                    }}
-                  >
+                <div>
+                  <label htmlFor={`desc-${key}`} className="tech-editor-label">
                     Description
                   </label>
                   {isCoreStyle ? (
-                    <div
-                      style={{
-                        ...inputStyle,
-                        minHeight: "auto",
-                        fontSize: "0.875rem",
-                        color: "#a3a3a3",
-                        background: "rgba(0,0,0,0.15)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        padding: "0.75rem",
-                        fontStyle: "italic",
-                        lineHeight: 1.5,
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
+                    <div className="tech-editor-description-box">
                       {group.description || "No description available"}
                     </div>
                   ) : (
@@ -964,17 +675,7 @@ export default function TechniqueEditor({
                       onChange={(e) =>
                         updateGroupDescription(key, e.target.value)
                       }
-                      style={{
-                        ...inputStyle,
-                        minHeight: "auto",
-                        height: "auto",
-                        resize: "vertical",
-                        fontSize: "0.875rem",
-                        color: "white",
-                        fontFamily: "inherit",
-                        lineHeight: 1.5,
-                        overflow: "hidden",
-                      }}
+                      className="tech-editor-textarea"
                       placeholder="Describe this group (purpose, focus, etc.)"
                       aria-label="Group Description"
                       rows={Math.max(
@@ -989,26 +690,17 @@ export default function TechniqueEditor({
                     />
                   )}
                 </div>
-                <div
-                  className="technique-sections"
-                  style={{ marginBottom: "1rem" }}
-                >
+                <div className="technique-sections">
                   <div>
-                    <h4 style={sectionHeaderStyle}>
+                    <h4 className="tech-editor-section-header">
                       Single Strikes
-                      <span
-                        style={{
-                          color: "rgba(249, 168, 212, 0.6)",
-                          fontSize: "0.875rem",
-                          marginLeft: "auto",
-                        }}
-                      >
+                      <span className="tech-editor-count">
                         ({singles.length})
                       </span>
                     </h4>
-                    <div style={{ display: "grid", gap: "0.5rem" }}>
+                    <div>
                       {singles.map((single, idx) => (
-                        <div key={idx} style={techniqueItemStyle}>
+                        <div key={idx} className="tech-editor-item">
                           <input
                             id={`single-${key}-${idx}`}
                             type="text"
@@ -1017,16 +709,7 @@ export default function TechniqueEditor({
                               !isCoreStyle &&
                               updateSingle(key, idx, e.target.value)
                             }
-                            style={{
-                              ...inputStyle,
-                              flexGrow: 1,
-                              background: "transparent",
-                              border: "none",
-                              padding: "0.25rem 0.5rem",
-                              fontSize: "0.825rem",
-                              color: isCoreStyle ? "#a3a3a3" : "white",
-                              minHeight: "28px",
-                            }}
+                            className="tech-editor-input tech-editor-input--item"
                             placeholder="e.g., jab"
                             aria-label={`Single technique ${idx + 1}`}
                             readOnly={isCoreStyle}
@@ -1034,21 +717,9 @@ export default function TechniqueEditor({
                           />
                           <button
                             onClick={() => toggleSingleFavorite(key, idx)}
-                            style={{
-                              ...buttonStyle,
-                              background: single.favorite
-                                ? "rgba(36, 229, 251, 0.25)"
-                                : "rgba(255,255,255,0.08)",
-                              color: single.favorite ? "#facc15" : "#f9a8d4",
-                              width: "1.75rem",
-                              height: "1.75rem",
-                              fontSize: "0.875rem",
-                              padding: 0,
-                              lineHeight: "1.75rem",
-                              opacity: 1,
-                              cursor: "pointer",
-                              borderRadius: "0.25rem",
-                            }}
+                            className={`tech-editor-btn--star ${
+                              single.favorite ? "is-active" : ""
+                            }`}
                             aria-label={single.favorite ? "Unstar" : "Star"}
                             title={
                               single.favorite
@@ -1061,15 +732,7 @@ export default function TechniqueEditor({
                           {!isCoreStyle && (
                             <button
                               onClick={() => removeSingle(key, idx)}
-                              style={{
-                                ...deleteButtonStyle,
-                                width: "1.75rem",
-                                height: "1.75rem",
-                                lineHeight: "1.75rem",
-                                borderRadius: "0.25rem",
-                                fontSize: "0.875rem",
-                                fontWeight: "600",
-                              }}
+                              className="tech-editor-btn tech-editor-btn--delete"
                               aria-label="Delete single"
                             >
                               ×
@@ -1081,48 +744,22 @@ export default function TechniqueEditor({
                     {!isCoreStyle && (
                       <button
                         onClick={() => addSingle(key)}
-                        style={{
-                          ...buttonStyle,
-                          marginTop: "0.75rem",
-                          fontSize: "0.875rem",
-                          padding: "0.5rem 0.75rem",
-                          background:
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)",
-                          color: "#3b82f6",
-                          border: "1px solid rgba(59, 130, 246, 0.3)",
-                          fontWeight: 500,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%)";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
+                        className="tech-editor-btn--add"
                       >
                         Add Single
                       </button>
                     )}
                   </div>
                   <div>
-                    <h4 style={sectionHeaderStyle}>
+                    <h4 className="tech-editor-section-header">
                       Combos
-                      <span
-                        style={{
-                          color: "rgba(249, 168, 212, 0.6)",
-                          fontSize: "0.875rem",
-                          marginLeft: "auto",
-                        }}
-                      >
+                      <span className="tech-editor-count">
                         ({combos.length})
                       </span>
                     </h4>
-                    <div style={{ display: "grid", gap: "0.5rem" }}>
+                    <div>
                       {combos.map((combo, idx) => (
-                        <div key={idx} style={techniqueItemStyle}>
+                        <div key={idx} className="tech-editor-item">
                           <input
                             id={`combo-${key}-${idx}`}
                             type="text"
@@ -1131,16 +768,7 @@ export default function TechniqueEditor({
                               !isCoreStyle &&
                               updateCombo(key, idx, e.target.value)
                             }
-                            style={{
-                              ...inputStyle,
-                              flexGrow: 1,
-                              background: "transparent",
-                              border: "none",
-                              padding: "0.25rem 0.5rem",
-                              fontSize: "0.825rem",
-                              color: isCoreStyle ? "#a3a3a3" : "white",
-                              minHeight: "28px",
-                            }}
+                            className="tech-editor-input tech-editor-input--item"
                             placeholder="e.g., 1, 2, 3"
                             aria-label={`Combo technique ${idx + 1}`}
                             readOnly={isCoreStyle}
@@ -1148,21 +776,7 @@ export default function TechniqueEditor({
                           />
                           <button
                             onClick={() => toggleComboFavorite(key, idx)}
-                            style={{
-                              ...buttonStyle,
-                              background: combo.favorite
-                                ? "rgba(251,191,36,0.25)"
-                                : "rgba(255,255,255,0.08)",
-                              color: combo.favorite ? "#facc15" : "#f9a8d4",
-                              width: "1.75rem",
-                              height: "1.75rem",
-                              fontSize: "0.875rem",
-                              padding: 0,
-                              lineHeight: "1.75rem",
-                              opacity: 1,
-                              cursor: "pointer",
-                              borderRadius: "0.25rem",
-                            }}
+                            className={`tech-editor-btn--star ${combo.favorite ? 'is-active' : ''}`}
                             aria-label={combo.favorite ? "Unstar" : "Star"}
                             title={
                               combo.favorite
@@ -1175,15 +789,7 @@ export default function TechniqueEditor({
                           {!isCoreStyle && (
                             <button
                               onClick={() => removeCombo(key, idx)}
-                              style={{
-                                ...deleteButtonStyle,
-                                width: "1.75rem",
-                                height: "1.75rem",
-                                lineHeight: "1.75rem",
-                                borderRadius: "0.25rem",
-                                fontSize: "0.875rem",
-                                fontWeight: "600",
-                              }}
+                              className="tech-editor-btn tech-editor-btn--delete"
                               aria-label="Delete combo"
                             >
                               ×
@@ -1195,27 +801,7 @@ export default function TechniqueEditor({
                     {!isCoreStyle && (
                       <button
                         onClick={() => addCombo(key)}
-                        style={{
-                          ...buttonStyle,
-                          marginTop: "0.75rem",
-                          fontSize: "0.875rem",
-                          padding: "0.5rem 0.75rem",
-                          background:
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)",
-                          color: "#3b82f6",
-                          border: "1px solid rgba(59, 130, 246, 0.3)",
-                          fontWeight: 500,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.35) 100%)";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.25) 100%)";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
+                        className="tech-editor-btn--add"
                       >
                         Add Combo
                       </button>
@@ -1223,31 +809,14 @@ export default function TechniqueEditor({
                   </div>
                 </div>
                 {!isCoreStyle && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      marginTop: "1rem",
-                      paddingTop: "0.75rem",
-                      borderTop: "1px solid rgba(255,255,255,0.05)",
-                    }}
-                  >
+                  <div>
                     <button
                       onClick={() => {
                         const next = { ...local };
                         delete next[key];
                         persist(next);
                       }}
-                      style={{
-                        ...deleteButtonStyle,
-                        width: "auto",
-                        height: "32px",
-                        padding: "0 1rem",
-                        fontSize: "0.875rem",
-                        display: "flex",
-                        alignItems: "center",
-                        borderRadius: "0.75rem",
-                      }}
+                      className="tech-editor-btn--action"
                       aria-label={`Delete group ${group.label}`}
                     >
                       Delete Group
@@ -1261,43 +830,8 @@ export default function TechniqueEditor({
       })}
 
       {/* Backup Actions - Moved to end of interface */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          margin: "1rem 0",
-        }}
-      >
-        <button
-          onClick={handleExport}
-          style={{
-            padding: ".75rem 1rem",
-            borderRadius: "1rem",
-            border: "none",
-            backgroundColor: "transparent",
-            color: "#f9a8d4",
-            boxShadow: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            fontWeight: 500,
-            fontSize: "0.95rem",
-            transition: "all 0.2s",
-            cursor: "pointer",
-            minWidth: 0,
-            opacity: 0.8,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-            e.currentTarget.style.backgroundColor = "rgba(249, 168, 212, 0.1)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.8";
-            e.currentTarget.style.backgroundColor = "transparent";
-          }}
-        >
+      <div>
+        <button onClick={handleExport} className="tech-editor-export-btn">
           Export Backup
         </button>
 
@@ -1305,31 +839,7 @@ export default function TechniqueEditor({
           onClick={() =>
             document.getElementById("technique-import-input")?.click()
           }
-          style={{
-            padding: ".75rem 1rem",
-            borderRadius: "1rem",
-            border: "none",
-            backgroundColor: "transparent",
-            color: "#f9a8d4",
-            boxShadow: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            fontWeight: 500,
-            fontSize: "0.95rem",
-            transition: "all 0.2s",
-            cursor: "pointer",
-            minWidth: 0,
-            opacity: 0.8,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-            e.currentTarget.style.backgroundColor = "rgba(249, 168, 212, 0.1)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.8";
-            e.currentTarget.style.backgroundColor = "transparent";
-          }}
+          className="tech-editor-import-btn"
         >
           Import Backup
         </button>
@@ -1341,57 +851,19 @@ export default function TechniqueEditor({
         type="file"
         accept=".json"
         onChange={handleImport}
-        style={{ display: "none" }}
       />
 
       {/* Reset Data - Moved to bottom */}
-      <div
-        className="reset-panel"
-        style={{
-          ...panelStyle,
-          background: "rgba(159, 18, 57, 0.2)",
-          borderColor: "rgba(251, 113, 133, 0.3)",
-          marginTop: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <h3 style={{ marginTop: 0, color: "#fca5a5", fontSize: "1rem" }}>
+      <div className="tech-editor-reset-panel">
+        <h3>
           Reset Data
         </h3>
-        <p
-          style={{
-            margin: "0 0 1rem 0",
-            color: "#fecdd3",
-            fontSize: "0.875rem",
-          }}
-        >
+        <p>
           This will restore the original set of techniques and remove any custom
           ones you have added. This action cannot be undone.
         </p>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <button
-            onClick={resetToDefault}
-            style={{
-              ...buttonStyle,
-              background:
-                "linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)",
-              color: "#fca5a5",
-              border: "1px solid rgba(220, 38, 38, 0.4)",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              padding: "0.625rem 1.25rem",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background =
-                "linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(220, 38, 38, 0.4) 100%)";
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background =
-                "linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
+        <div>
+          <button onClick={resetToDefault} className="tech-editor-btn--reset">
             Reset to Default Techniques
           </button>
         </div>

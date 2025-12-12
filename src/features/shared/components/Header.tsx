@@ -49,35 +49,6 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     };
   }, []);
 
-  const logoContainerStyle: React.CSSProperties = {
-    cursor: "pointer",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    width: "100%",
-    height: "100%",
-    minHeight: 0,
-    minWidth: 0,
-    overflow: "hidden",
-    // Prevent mobile focus/active states
-    outline: "none",
-    userSelect: "none",
-    WebkitTapHighlightColor: "transparent",
-    WebkitTouchCallout: "none",
-    WebkitUserSelect: "none",
-    touchAction: "manipulation",
-    // Force transparent background
-    background: "transparent",
-    backgroundColor: "transparent",
-    // Additional properties to prevent any highlights
-    WebkitAppearance: "none",
-    MozAppearance: "none",
-    border: "none",
-    boxShadow: "none",
-    // Force hardware acceleration
-    transform: "translateZ(0)",
-    willChange: "auto",
-  };
 
   const modalOverlayStyle: React.CSSProperties = {
     position: "fixed",
@@ -253,7 +224,6 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     <>
       <header
         className="app-header"
-        style={{ width: "100%", padding: 0, margin: 0 }}
       >
         <button
           ref={logoRef}
@@ -263,23 +233,6 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
           onMouseUp={handleMouseUp}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          style={{
-            ...logoContainerStyle,
-            // Button-specific mobile-focused styling
-            border: "none",
-            padding: 0,
-            margin: 0,
-            background: "transparent",
-            backgroundColor: "transparent",
-            WebkitAppearance: "none",
-            MozAppearance: "none",
-            appearance: "none",
-            // Enhanced mobile focus management
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation",
-            // Force blur after interaction
-            transition: "none",
-          }}
           tabIndex={-1} // Prevent keyboard focus
           aria-label="Go to home page"
           onBlur={() => {

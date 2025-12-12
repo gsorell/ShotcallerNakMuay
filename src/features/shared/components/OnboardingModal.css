@@ -1,0 +1,159 @@
+/* OnboardingModal.css - Component-specific styles for OnboardingModal */
+
+/* Backdrop */
+.onboarding-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+/* Modal content */
+.onboarding-content {
+  max-width: 40rem;
+  width: calc(100% - 2rem);
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Header section */
+.onboarding-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Help icon */
+.onboarding-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.10);
+}
+
+.onboarding-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  flex: 1;
+}
+
+/* Intro text */
+.onboarding-text {
+  color: #f9a8d4;
+  margin: 0.5rem 0 1.25rem 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.onboarding-text strong {
+  color: #fdf2f8;
+  font-weight: 800;
+}
+
+.onboarding-text span {
+  display: block;
+  margin-bottom: 1.1em;
+}
+
+/* Features list */
+.onboarding-list {
+  color: #f9a8d4;
+  margin: 0 0 0.5rem 1.25rem;
+  padding: 0;
+  list-style: disc inside;
+  font-size: 1rem;
+}
+
+.onboarding-list li {
+  margin-bottom: 0.35rem;
+  line-height: 1.5;
+}
+
+.onboarding-list strong {
+  color: #fdf2f8;
+}
+
+/* Glossary section */
+.onboarding-table-section {
+  margin-top: 0.75rem;
+}
+
+.onboarding-table-section h4 {
+  margin: 0 0 0.5rem 0;
+  color: #f9a8d4;
+}
+
+.onboarding-table-container {
+  overflow-x: auto;
+}
+
+.onboarding-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #f9a8d4;
+  font-size: 0.9rem;
+}
+
+.onboarding-th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.onboarding-td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  color: #f3e8ff;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Button styles */
+.onboarding-btn {
+  all: unset;
+  color: #f9a8d4;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0;
+  margin: 0;
+  background: none;
+  font-size: inherit;
+  border: none;
+}
+
+.onboarding-btn:hover {
+  opacity: 0.8;
+}
+
+/* Privacy policy section */
+.onboarding-privacy-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+}
+
+.onboarding-privacy-link {
+  color: rgba(249, 168, 212, 0.7);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.onboarding-privacy-link:hover {
+  color: #f9a8d4;
+}

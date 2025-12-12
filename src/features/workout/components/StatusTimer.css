@@ -1,0 +1,111 @@
+/* StatusTimer.css - Component-specific styles for StatusTimer */
+
+/* Main container */
+.status-timer-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+/* Round info container */
+.status-timer-round-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Round info text */
+.status-timer-round-text {
+  font-size: 0.875rem;
+  color: #f9a8d4;
+  text-align: center;
+}
+
+/* Round dots container */
+.status-timer-dots {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+/* Individual dot */
+.status-timer-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+  background-color: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+}
+
+/* Active dot */
+.status-timer-dot.is-active {
+  background-color: #f9a8d4;
+  border: 1px solid #ec4899;
+}
+
+/* Status text */
+.status-timer-text {
+  font-size: 1.125rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Status colors */
+.status-timer-text.status--ready {
+  color: #4ade80;
+}
+
+.status-timer-text.status--running {
+  color: #60a5fa;
+}
+
+.status-timer-text.status--paused {
+  color: #fbbf24;
+}
+
+.status-timer-text.status--stopped {
+  color: #9ca3af;
+}
+
+.status-timer-text.status--resting {
+  color: #a5b4fc;
+}
+
+.status-timer-text.status--pre-round {
+  color: #facc15;
+}
+
+/* Main timer display */
+.status-timer-display {
+  font-size: 8rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: 0.05em;
+  text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-align: center;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Responsive timer sizes */
+@media (max-width: 768px) {
+  .status-timer-display {
+    font-size: 12vw !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-timer-display {
+    font-size: 16vw !important;
+  }
+}

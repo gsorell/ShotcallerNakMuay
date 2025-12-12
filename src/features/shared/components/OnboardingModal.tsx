@@ -1,5 +1,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
+import "./OnboardingModal.css";
 
 export const OnboardingModal: React.FC<{
   open: boolean;
@@ -56,80 +57,37 @@ export const OnboardingModal: React.FC<{
         aria-modal="true"
         onClick={onClose} // click backdrop to close
         ref={modalRef}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          zIndex: 10000, // above any running overlays
-          padding: "1rem",
-          overflowY: "auto",
-          pointerEvents: "auto",
-        }}
+        className="onboarding-backdrop"
       >
         <div
           onClick={(e) => e.stopPropagation()} // prevent backdrop close when clicking content
-          style={{
-            maxWidth: "40rem",
-            width: "calc(100% - 2rem)",
-            padding: "1.25rem 1.5rem",
-            borderRadius: "0.75rem",
-            background: "#0f172a",
-            color: "white",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
-          }}
+          className="onboarding-content"
         >
           {/* ADD: Help icon at the top */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              marginBottom: "0.5rem",
-            }}
-          >
+          <div className="onboarding-header">
             <img
               src="/assets/icon_help.png"
               alt="Help"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                background: "rgba(255,255,255,0.04)",
-                flexShrink: 0,
-                boxShadow: "0 2px 8px rgba(59,130,246,0.10)",
-              }}
+              className="onboarding-icon"
             />
-            <h3 style={{ margin: 0, fontSize: "1.125rem", flex: 1 }}>
-              How to Use Nak Muay Shot Caller
-            </h3>
-            <button onClick={onClose} style={{ ...linkButtonStyle }}>
+            <h3>How to Use Nak Muay Shot Caller</h3>
+            <button onClick={onClose} className="onboarding-btn">
               Close
             </button>
           </div>
 
           {/* REPLACED: onboarding intro text */}
-          <p
-            style={{
-              color: "#f9a8d4",
-              margin: "0.5rem 0 1.25rem 0",
-              fontSize: "1.05rem",
-              lineHeight: 1.7,
-              whiteSpace: "pre-line",
-            }}
-          >
-            <span style={{ display: "block", marginBottom: "1.1em" }}>
-              <strong style={{ color: "#fdf2f8", fontWeight: 800 }}>
+          <p className="onboarding-text">
+            <span>
+              <strong>
                 Turn your shadowboxing and bagwork into dynamic, guided sessions
                 with spoken techniques and timed rounds.
               </strong>{" "}
               Think of it as having a personal trainer right in your ear,
               helping you focus on reaction time and flow.
             </span>
-            <span style={{ display: "block", marginBottom: "1.1em" }}>
-              <strong style={{ color: "#fdf2f8", fontWeight: 800 }}>
+            <span>
+              <strong>
                 This app assumes you already know the proper form for each
                 strike.
               </strong>{" "}
@@ -137,66 +95,39 @@ export const OnboardingModal: React.FC<{
               the techniques, it is highly recommended that you first learn them
               from a qualified coach.
             </span>
-            <span style={{ display: "block", marginBottom: "1.1em" }}>
+            <span>
               The on-screen text is there to help you get started and to
               double-check a technique if you miss a verbal cue.{" "}
-              <strong style={{ color: "#fdf2f8", fontWeight: 800 }}>
+              <strong>
                 However, the goal is to train without looking at the screen
               </strong>
               , so you can keep your hands up and focus on responding to the
               verbal commands.
             </span>
-            <span style={{ display: "block", marginBottom: "1.1em" }}>
+            <span>
               This isn't a game to play on the subway -- it's a powerful tool
               designed to help take you to the next level -- so{" "}
-              <strong style={{ color: "#fdf2f8", fontWeight: 800 }}>
+              <strong>
                 Let's Go!
               </strong>
             </span>
           </p>
-          <div
-            style={{
-              color: "#f9a8d4",
-              margin: "0.5rem 0 0.5rem 0",
-              fontWeight: 700,
-              fontSize: "1.08rem",
-              letterSpacing: "0.01em",
-            }}
-          >
+          <div className="onboarding-features-title">
             Features:
           </div>
-          <ul
-            style={{
-              color: "#f9a8d4",
-              margin: "0 0 0.5rem 1.25rem",
-              padding: 0,
-              listStyle: "disc inside",
-              fontSize: "1rem",
-            }}
-          >
-            <li style={{ marginBottom: "0.35rem", lineHeight: 1.5 }}>
-              <strong style={{ color: "#fdf2f8" }}>Guided Sessions:</strong>{" "}
+          <ul className="onboarding-list">
+            <li>
+              <strong>Guided Sessions:</strong>{" "}
               Just pick one or more emphases and a difficulty level to get
               started.
             </li>
-            <li style={{ lineHeight: 1.5 }}>
-              <strong style={{ color: "#fdf2f8" }}>
+            <li>
+              <strong>
                 Workout Customization:
               </strong>{" "}
               Want to create your own unique session?{" "}
               <button
-                style={{
-                  all: "unset",
-                  color: "#f9a8d4",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  padding: 0,
-                  margin: 0,
-                  background: "none",
-                  fontSize: "inherit",
-                  border: "none",
-                }}
+                className="onboarding-btn"
                 onClick={() => {
                   onClose();
                   setPage("editor");
@@ -211,40 +142,17 @@ export const OnboardingModal: React.FC<{
           </ul>
           {/* END REPLACEMENT */}
 
-          <div style={{ marginTop: "0.75rem" }}>
-            <h4 style={{ margin: "0 0 0.5rem 0", color: "#f9a8d4" }}>
-              Glossary
-            </h4>
+          <div className="onboarding-table-section">
+            <h4>Glossary</h4>
 
-            <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  color: "#f9a8d4",
-                  fontSize: "0.9rem",
-                }}
-              >
+            <div className="onboarding-table-container">
+              <table className="onboarding-table">
                 <thead>
                   <tr>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "0.5rem 0.75rem",
-                        color: "#fff",
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                      }}
-                    >
+                    <th className="onboarding-th">
                       Term
                     </th>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "0.5rem 0.75rem",
-                        color: "#f3e8ff",
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                      }}
-                    >
+                    <th className="onboarding-th">
                       Description
                     </th>
                   </tr>
@@ -321,16 +229,10 @@ export const OnboardingModal: React.FC<{
                     ],
                   ].map(([term, desc]) => (
                     <tr key={term}>
-                      <td
-                        style={{
-                          padding: "0.5rem 0.75rem",
-                          verticalAlign: "top",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {term}
+                      <td className="onboarding-td">
+                        <strong>{term}</strong>
                       </td>
-                      <td style={{ padding: "0.5rem 0.75rem" }}>{desc}</td>
+                      <td className="onboarding-td">{desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -339,28 +241,12 @@ export const OnboardingModal: React.FC<{
           </div>
 
           {/* Privacy Policy Link */}
-          <div
-            style={{
-              marginTop: "1.5rem",
-              paddingTop: "1rem",
-              borderTop: "1px solid rgba(255,255,255,0.08)",
-              textAlign: "center",
-            }}
-          >
+          <div className="onboarding-privacy-section">
             <a
               href="https://github.com/gsorell/ShotcallerNakMuay/blob/main/PRIVACY_POLICY.md"
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                color: "rgba(249, 168, 212, 0.7)",
-                fontSize: "0.875rem",
-                textDecoration: "none",
-                transition: "color 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#f9a8d4")}
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "rgba(249, 168, 212, 0.7)")
-              }
+              className="onboarding-privacy-link"
             >
               Privacy Policy
             </a>
