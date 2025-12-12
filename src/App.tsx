@@ -206,51 +206,7 @@ export default function App() {
               />
             </SessionTransitionWrapper>
 
-            {!isActive && (
-              <WorkoutSetup
-                stats={homePageStats}
-                favoriteConfig={favoriteConfig}
-                emphasisList={emphasisList}
-                selectedEmphases={settings.selectedEmphases}
-                toggleEmphasis={settings.toggleEmphasis}
-                techniques={techniques}
-                showAllEmphases={showAllEmphases}
-                setShowAllEmphases={setShowAllEmphases}
-                setPage={setPage}
-                roundsCount={settings.roundsCount}
-                setRoundsCount={settings.setRoundsCount}
-                roundMin={settings.roundMin}
-                setRoundMin={settings.setRoundMin}
-                restMinutes={settings.restMinutes}
-                setRestMinutes={settings.setRestMinutes}
-                showAdvanced={showAdvanced}
-                setShowAdvanced={setShowAdvanced}
-                southpawMode={settings.southpawMode}
-                setSouthpawMode={settings.setSouthpawMode}
-                addCalisthenics={settings.addCalisthenics}
-                setAddCalisthenics={settings.setAddCalisthenics}
-                readInOrder={settings.readInOrder}
-                setReadInOrder={settings.setReadInOrder}
-                currentVoice={currentVoice}
-                voices={unifiedVoices}
-                setCurrentVoice={setCurrentVoice}
-                saveVoicePreference={saveVoicePreference}
-                ttsService={ttsService}
-                voiceSpeed={settings.voiceSpeed}
-                setVoiceSpeed={settings.setVoiceSpeed}
-                ttsAvailable={ttsAvailable}
-                testVoice={() => {
-                  stopTTS();
-                  setTimeout(() => ttsTestVoice(), 50);
-                }}
-                voiceCompatibilityWarning={voiceCompatibilityWarning}
-                trackEvent={trackEvent}
-                onStart={startSession}
-                difficulty={settings.difficulty}
-                setDifficulty={settings.setDifficulty}
-                clearAllEmphases={settings.clearAllEmphases}
-              />
-            )}
+            {!isActive && <WorkoutSetup />}
           </>
         );
     }

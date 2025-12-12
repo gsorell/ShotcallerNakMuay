@@ -1,60 +1,43 @@
 import React, { useCallback } from "react";
-import { AnalyticsEvents } from "@/utils/analytics";
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import type { UnifiedVoice } from "@/utils/ttsService";
+import { ttsService } from "@/utils/ttsService";
+import { useWorkoutContext } from "../contexts/WorkoutProvider";
+import { useTTSContext } from "../../shared";
 
-// Define Props Interfaces
+// Define Props Interfaces (minimal, just for trackEvent if needed)
 export type AdvancedSettingsPanelProps = {
-  southpawMode: boolean;
-  setSouthpawMode: (value: boolean) => void;
-  addCalisthenics: boolean;
-  setAddCalisthenics: (value: boolean) => void;
-  readInOrder: boolean;
-  setReadInOrder: (value: boolean) => void;
-  currentVoice: UnifiedVoice | null;
-  voices: UnifiedVoice[];
-  setCurrentVoice: (voice: UnifiedVoice | null) => void;
-  saveVoicePreference: (voice: UnifiedVoice | null) => void;
-  ttsService: any;
-  voiceSpeed: number;
-  ttsAvailable: boolean;
-  testVoice: () => void;
-  voiceCompatibilityWarning: string;
-  setVoiceSpeed: (speed: number) => void;
-  trackEvent: (eventName: string, properties?: object) => void;
+  trackEvent?: (eventName: string, properties?: object) => void;
 };
 
 // ---------------------------------------------------------------------------
 // Sub-Component: Training Options
 // ---------------------------------------------------------------------------
 const TrainingOptions = ({
-  southpawMode,
-  setSouthpawMode,
   trackEvent,
-  addCalisthenics,
-  setAddCalisthenics,
-  readInOrder,
-  setReadInOrder,
-}: Pick<
-  AdvancedSettingsPanelProps,
-  | "southpawMode"
-  | "setSouthpawMode"
-  | "trackEvent"
-  | "addCalisthenics"
-  | "setAddCalisthenics"
-  | "readInOrder"
-  | "setReadInOrder"
->) => {
+}: Pick<AdvancedSettingsPanelProps, "trackEvent">) => {
+  const { settings } = useWorkoutContext();
+  const {
+    southpawMode,
+    setSouthpawMode,
+    addCalisthenics,
+    setAddCalisthenics,
+    readInOrder,
+    setReadInOrder,
+  } = settings;
   // Logic extracted to a named handler
   const handleSouthpawChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
     setSouthpawMode(newValue);
-    try {
-      trackEvent(AnalyticsEvents.SettingToggle, {
-        setting_name: "southpaw_mode",
-        setting_value: newValue,
-      });
-    } catch (error) {
-      console.warn("Analytics tracking failed", error);
+    if (trackEvent) {
+      try {
+        trackEvent(AnalyticsEvents.SettingToggle, {
+          setting_name: "southpaw_mode",
+          setting_value: newValue,
+        });
+      } catch (error) {
+        console.warn("Analytics tracking failed", error);
+      }
     }
   };
 
@@ -104,27 +87,18 @@ const ToggleOption = ({ label, description, checked, onChange }: any) => (
 // ---------------------------------------------------------------------------
 // Sub-Component: Voice Settings
 // ---------------------------------------------------------------------------
-const VoiceSettings = ({
-  currentVoice,
-  voices,
-  setCurrentVoice,
-  saveVoicePreference,
-  ttsService,
-  voiceSpeed,
-  setVoiceSpeed,
-  ttsAvailable,
-  testVoice,
-  voiceCompatibilityWarning,
-}: Omit<
-  AdvancedSettingsPanelProps,
-  | "southpawMode"
-  | "setSouthpawMode"
-  | "addCalisthenics"
-  | "setAddCalisthenics"
-  | "readInOrder"
-  | "setReadInOrder"
-  | "trackEvent"
->) => {
+const VoiceSettings = () => {
+  const { settings } = useWorkoutContext();
+  const {
+    currentVoice,
+    voices,
+    setCurrentVoice,
+    saveVoicePreference,
+    isAvailable: ttsAvailable,
+    testVoice,
+    voiceCompatibilityWarning,
+  } = useTTSContext();
+  const { voiceSpeed, setVoiceSpeed } = settings;
   // Voice selection logic
   const handleVoiceSelection = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -257,30 +231,13 @@ const VoiceOption = ({ voice }: { voice: UnifiedVoice }) => {
 // Main Component
 // ---------------------------------------------------------------------------
 export const AdvancedSettingsPanel = (props: AdvancedSettingsPanelProps) => {
+  const trackEventToUse = props.trackEvent || trackEvent;
+
   return (
     <div className="advanced-settings-panel" style={styles.panelContainer}>
-      <TrainingOptions
-        southpawMode={props.southpawMode}
-        setSouthpawMode={props.setSouthpawMode}
-        trackEvent={props.trackEvent}
-        addCalisthenics={props.addCalisthenics}
-        setAddCalisthenics={props.setAddCalisthenics}
-        readInOrder={props.readInOrder}
-        setReadInOrder={props.setReadInOrder}
-      />
+      <TrainingOptions trackEvent={trackEventToUse} />
 
-      <VoiceSettings
-        currentVoice={props.currentVoice}
-        voices={props.voices}
-        setCurrentVoice={props.setCurrentVoice}
-        saveVoicePreference={props.saveVoicePreference}
-        ttsService={props.ttsService}
-        voiceSpeed={props.voiceSpeed}
-        setVoiceSpeed={props.setVoiceSpeed}
-        ttsAvailable={props.ttsAvailable}
-        testVoice={props.testVoice}
-        voiceCompatibilityWarning={props.voiceCompatibilityWarning}
-      />
+      <VoiceSettings />
     </div>
   );
 };

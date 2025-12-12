@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from "react";
+import { useWorkoutContext } from "../contexts/WorkoutProvider";
 
-interface WorkoutConfigurationProps {
-  roundsCount: number;
-  setRoundsCount: (val: number) => void;
-  roundMin: number;
-  setRoundMin: (val: number) => void;
-  restMinutes: number;
-  setRestMinutes: (val: number) => void;
-}
-
-export const WorkoutConfiguration: React.FC<WorkoutConfigurationProps> = ({
-  roundsCount,
-  setRoundsCount,
-  roundMin,
-  setRoundMin,
-  restMinutes,
-  setRestMinutes,
-}) => {
+export const WorkoutConfiguration: React.FC = () => {
+  const { settings } = useWorkoutContext();
+  const {
+    roundsCount,
+    setRoundsCount,
+    roundMin,
+    setRoundMin,
+    restMinutes,
+    setRestMinutes,
+  } = settings;
   // Local state for text inputs to allow typing "1." without it forcing "1" immediately
   const [roundMinInput, setRoundMinInput] = useState<string>(String(roundMin));
   const [restMinutesInput, setRestMinutesInput] = useState<string>(

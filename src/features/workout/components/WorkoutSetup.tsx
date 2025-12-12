@@ -1,104 +1,37 @@
+import { trackEvent } from "@/utils/analytics";
 import React from "react";
-import type { Difficulty, EmphasisKey, TechniquesShape } from "@/types";
-import type { UnifiedVoice } from "@/utils/ttsService";
-import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
+import { ImageWithFallback, useUIContext } from "../../shared";
 import { EmphasisSelector } from "../../technique-editor";
-import { ImageWithFallback } from "../../shared";
+import { useWorkoutContext } from "../contexts/WorkoutProvider";
+import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
 import { StickyStartControls } from "./StickyStartControls";
 import { WorkoutConfiguration } from "./WorkoutConfiguration";
 
-// Define the data this component needs from the parent
-interface WorkoutSetupProps {
-  stats: any; // The homePageStats
-  favoriteConfig: any;
-  emphasisList: any[];
-  selectedEmphases: Record<EmphasisKey, boolean>;
-  toggleEmphasis: (k: EmphasisKey) => void;
-  techniques: TechniquesShape;
-  showAllEmphases: boolean;
-  setShowAllEmphases: any;
-  setPage: (page: any) => void;
-
-  // Configuration props
-  roundsCount: number;
-  setRoundsCount: (n: number) => void;
-  roundMin: number;
-  setRoundMin: (n: number) => void;
-  restMinutes: number;
-  setRestMinutes: (n: number) => void;
-
-  // Advanced Settings props
-  showAdvanced: boolean;
-  setShowAdvanced: (show: boolean) => void;
-  southpawMode: boolean;
-  setSouthpawMode: (b: boolean) => void;
-  addCalisthenics: boolean;
-  setAddCalisthenics: (b: boolean) => void;
-  readInOrder: boolean;
-  setReadInOrder: (b: boolean) => void;
-
-  // Voice props
-  currentVoice: UnifiedVoice | null;
-  voices: UnifiedVoice[];
-  setCurrentVoice: (v: UnifiedVoice | null) => void;
-  saveVoicePreference: (v: UnifiedVoice | null) => void;
-  ttsService: any;
-  voiceSpeed: number;
-  setVoiceSpeed: (n: number) => void;
-  ttsAvailable: boolean;
-  testVoice: () => void;
-  voiceCompatibilityWarning: string;
-  trackEvent: (name: string, data?: any) => void;
-
-  // Start Controls
-  onStart: () => void;
-  difficulty: Difficulty;
-  setDifficulty: (d: Difficulty) => void;
-  clearAllEmphases: () => void;
-}
-
-export default function WorkoutSetup(props: WorkoutSetupProps) {
+export default function WorkoutSetup() {
   const {
-    stats,
-    favoriteConfig,
-    setPage,
+    settings,
     emphasisList,
-    selectedEmphases,
-    toggleEmphasis,
     techniques,
-    showAllEmphases,
-    setShowAllEmphases,
-    roundsCount,
-    setRoundsCount,
-    roundMin,
-    setRoundMin,
-    restMinutes,
-    setRestMinutes,
+    homePageStats: stats,
+    favoriteConfig,
+    startSession: onStart,
+  } = useWorkoutContext();
+
+  const {
+    setPage,
     showAdvanced,
     setShowAdvanced,
-    southpawMode,
-    setSouthpawMode,
-    addCalisthenics,
-    setAddCalisthenics,
-    readInOrder,
-    setReadInOrder,
-    currentVoice,
-    voices,
-    setCurrentVoice,
-    saveVoicePreference,
-    ttsService,
-    voiceSpeed,
-    setVoiceSpeed,
-    ttsAvailable,
-    testVoice,
-    voiceCompatibilityWarning,
-    trackEvent,
-    onStart,
+    showAllEmphases,
+    setShowAllEmphases,
+  } = useUIContext();
+
+  const {
+    selectedEmphases,
+    toggleEmphasis,
     difficulty,
     setDifficulty,
     clearAllEmphases,
-  } = props;
-
+  } = settings;
   return (
     <div>
       {/* Compact Favorite Style & Streak */}
@@ -164,14 +97,7 @@ export default function WorkoutSetup(props: WorkoutSetupProps) {
           }}
         />
 
-        <WorkoutConfiguration
-          roundsCount={roundsCount}
-          setRoundsCount={setRoundsCount}
-          roundMin={roundMin}
-          setRoundMin={setRoundMin}
-          restMinutes={restMinutes}
-          setRestMinutes={setRestMinutes}
-        />
+        <WorkoutConfiguration />
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -187,27 +113,7 @@ export default function WorkoutSetup(props: WorkoutSetupProps) {
           {showAdvanced ? "Hide" : "Show"} Advanced Settings
         </button>
 
-        {showAdvanced && (
-          <AdvancedSettingsPanel
-            southpawMode={southpawMode}
-            setSouthpawMode={setSouthpawMode}
-            addCalisthenics={addCalisthenics}
-            setAddCalisthenics={setAddCalisthenics}
-            readInOrder={readInOrder}
-            setReadInOrder={setReadInOrder}
-            currentVoice={currentVoice}
-            voices={voices}
-            setCurrentVoice={setCurrentVoice}
-            saveVoicePreference={saveVoicePreference}
-            ttsService={ttsService}
-            voiceSpeed={voiceSpeed}
-            ttsAvailable={ttsAvailable}
-            testVoice={testVoice}
-            voiceCompatibilityWarning={voiceCompatibilityWarning}
-            setVoiceSpeed={setVoiceSpeed}
-            trackEvent={trackEvent}
-          />
-        )}
+        {showAdvanced && <AdvancedSettingsPanel />}
 
         <StickyStartControls
           onStart={onStart}

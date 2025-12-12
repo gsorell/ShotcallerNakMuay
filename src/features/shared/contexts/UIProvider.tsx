@@ -15,7 +15,7 @@ interface UIContextValue {
   showAdvanced: boolean;
   setShowAdvanced: (show: boolean) => void;
   showAllEmphases: boolean;
-  setShowAllEmphases: (show: boolean) => void;
+  setShowAllEmphases: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Last workout
   lastWorkout: any;
