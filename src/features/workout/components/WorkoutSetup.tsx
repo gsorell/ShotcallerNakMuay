@@ -1,5 +1,6 @@
 import React from "react";
 import type { Difficulty, EmphasisKey, TechniquesShape } from "@/types";
+import type { UnifiedVoice } from "@/utils/ttsService";
 import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
 import { EmphasisSelector } from "../../technique-editor";
 import { ImageWithFallback } from "../../shared";
@@ -37,10 +38,10 @@ interface WorkoutSetupProps {
   setReadInOrder: (b: boolean) => void;
 
   // Voice props
-  currentVoice: any; // UnifiedVoice | null
-  voices: any[]; // UnifiedVoice[]
-  setCurrentVoice: (v: any) => void;
-  saveVoicePreference: (v: any) => void;
+  currentVoice: UnifiedVoice | null;
+  voices: UnifiedVoice[];
+  setCurrentVoice: (v: UnifiedVoice | null) => void;
+  saveVoicePreference: (v: UnifiedVoice | null) => void;
   ttsService: any;
   voiceSpeed: number;
   setVoiceSpeed: (n: number) => void;

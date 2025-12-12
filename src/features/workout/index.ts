@@ -1,5 +1,6 @@
 export { default as ActiveSessionUI } from './components/ActiveSessionUI';
 export { AdvancedSettingsPanel } from './components/AdvancedSettingsPanel';
+export { default as SessionTransitionWrapper } from './components/SessionTransitionWrapper';
 export { default as StatusTimer } from './components/StatusTimer';
 export { StickyStartControls } from './components/StickyStartControls';
 export { WorkoutConfiguration } from './components/WorkoutConfiguration';

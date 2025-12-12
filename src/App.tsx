@@ -21,6 +21,7 @@ import {
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
+  SessionTransitionWrapper,
   WorkoutSetup,
   useWorkoutContext,
 } from "@/features/workout";
@@ -43,18 +44,6 @@ export default function App() {
   useEffect(() => {
     displayInAppBrowserWarning();
     initializeGA4();
-    // Clean up voice prefs on load
-    try {
-      const stored = localStorage.getItem(VOICE_STORAGE_KEY);
-      if (stored) {
-        const voiceData = JSON.parse(stored);
-        if (!voiceData.lang?.toLowerCase().startsWith("en")) {
-          localStorage.removeItem(VOICE_STORAGE_KEY);
-        }
-      }
-    } catch {
-      localStorage.removeItem(VOICE_STORAGE_KEY);
-    }
   }, []);
 
   // --- 2. Contexts ---
@@ -74,6 +63,8 @@ export default function App() {
     stopSession,
     resumeWorkout,
     viewCompletionScreen,
+    status,
+    restartSession,
   } = useWorkoutContext();
 
   // --- 3. UI State ---
@@ -144,20 +135,6 @@ export default function App() {
 
   const isActive = timer.running || timer.isPreRound;
 
-  function getStatus():
-    | "ready"
-    | "running"
-    | "paused"
-    | "stopped"
-    | "resting"
-    | "pre-round" {
-    if (timer.isPreRound) return "pre-round";
-    if (!timer.running) return "ready";
-    if (timer.paused) return "paused";
-    if (timer.isResting) return "resting";
-    return "running";
-  }
-
   const TechniqueEditorAny =
     TechniqueEditor as unknown as React.ComponentType<any>;
 
@@ -199,25 +176,7 @@ export default function App() {
         return (
           <WorkoutCompleted
             stats={lastWorkout}
-            onRestart={() => {
-              stopSession();
-              // Restore settings
-              const emphasisKeys = lastWorkout.emphases
-                .map((label: string) => {
-                  const found = emphasisList.find((e) => e.label === label);
-                  return found ? found.key : null;
-                })
-                .filter(Boolean);
-              const restoredEmphases: any = {};
-              emphasisKeys.forEach((key: string) => {
-                restoredEmphases[key] = true;
-              });
-              settings.setSelectedEmphases(restoredEmphases);
-              setPage("timer");
-              setTimeout(() => {
-                startSession();
-              }, 150);
-            }}
+            onRestart={() => restartSession(lastWorkout)}
             onReset={() => setPage("timer")}
             onViewLog={() => setPage("logs")}
           />
@@ -226,38 +185,26 @@ export default function App() {
       default: // "timer"
         return (
           <>
-            <div
-              style={{
-                minHeight: isActive ? "220px" : "0",
-                transition: "min-height 0.3s ease-in-out",
-              }}
-            >
-              <div
-                style={{
-                  minHeight: isActive ? "220px" : "0",
-                  transition: "min-height 0.3s ease-in-out",
-                }}
-              >
-                <ActiveSessionUI
-                  running={timer.running}
-                  isPreRound={timer.isPreRound}
-                  paused={timer.paused}
-                  isResting={timer.isResting}
-                  timeLeft={timer.timeLeft}
-                  currentRound={timer.currentRound}
-                  roundsCount={settings.roundsCount}
-                  restTimeLeft={timer.restTimeLeft}
-                  preRoundTimeLeft={timer.preRoundTimeLeft}
-                  fmtTime={fmtTime}
-                  getStatus={getStatus}
-                  currentCallout={calloutEngine.currentCallout}
-                  onPause={pauseSession}
-                  onStop={stopSession}
-                  selectedEmphases={settings.selectedEmphases}
-                  emphasisList={emphasisList}
-                />
-              </div>
-            </div>
+            <SessionTransitionWrapper isActive={isActive}>
+              <ActiveSessionUI
+                running={timer.running}
+                isPreRound={timer.isPreRound}
+                paused={timer.paused}
+                isResting={timer.isResting}
+                timeLeft={timer.timeLeft}
+                currentRound={timer.currentRound}
+                roundsCount={settings.roundsCount}
+                restTimeLeft={timer.restTimeLeft}
+                preRoundTimeLeft={timer.preRoundTimeLeft}
+                fmtTime={fmtTime}
+                getStatus={() => status}
+                currentCallout={calloutEngine.currentCallout}
+                onPause={pauseSession}
+                onStop={stopSession}
+                selectedEmphases={settings.selectedEmphases}
+                emphasisList={emphasisList}
+              />
+            </SessionTransitionWrapper>
 
             {!isActive && (
               <WorkoutSetup

@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext } from "react";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { DEFAULT_REST_MINUTES } from "@/constants/storage";
 import { useAudioSystem, useWakeLock, useUIContext } from "../../shared";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
@@ -35,12 +35,16 @@ interface WorkoutContextValue {
   // Wake Lock
   shouldKeepAwake: boolean;
 
+  // Status
+  status: "ready" | "running" | "paused" | "resting" | "pre-round";
+
   // Actions
   getTechniquePool: () => TechniqueWithStyle[];
   hasSelectedEmphasis: boolean;
   startSession: () => void;
   pauseSession: () => void;
   stopSession: () => void;
+  restartSession: (lastWorkout: any) => void;
   resumeWorkout: (logEntry: any) => void;
   viewCompletionScreen: (logEntry: any) => void;
 
@@ -126,6 +130,15 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     settings,
     tts: { speakSystemWithDuration: () => Promise.resolve() }, // Placeholder
   });
+
+  // Status
+  const status = useMemo((): "ready" | "running" | "paused" | "resting" | "pre-round" => {
+    if (timer.isPreRound) return "pre-round";
+    if (!timer.running) return "ready";
+    if (timer.paused) return "paused";
+    if (timer.isResting) return "resting";
+    return "running";
+  }, [timer.isPreRound, timer.running, timer.paused, timer.isResting]);
 
   // Wake Lock
   const shouldKeepAwake = (timer.running && !timer.paused) || timer.isPreRound;
@@ -326,6 +339,26 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     [setLastWorkout, setPage]
   );
 
+  const restartSession = useCallback((lastWorkout: any) => {
+    stopSession();
+    // Restore settings
+    const emphasisKeys = lastWorkout.emphases
+      .map((label: string) => {
+        const found = emphasisList.find((e) => e.label === label);
+        return found ? found.key : null;
+      })
+      .filter(Boolean);
+    const restoredEmphases: any = {};
+    emphasisKeys.forEach((key: string) => {
+      restoredEmphases[key] = true;
+    });
+    settings.setSelectedEmphases(restoredEmphases);
+    setPage("timer");
+    setTimeout(() => {
+      startSession();
+    }, 150);
+  }, [stopSession, emphasisList, settings, setPage, startSession]);
+
   const value: WorkoutContextValue = {
     settings,
     techniques,
@@ -339,11 +372,13 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     sfx,
     platform,
     shouldKeepAwake,
+    status,
     getTechniquePool,
     hasSelectedEmphasis,
     startSession,
     pauseSession,
     stopSession,
+    restartSession,
     resumeWorkout,
     viewCompletionScreen,
     homePageStats,

@@ -1,5 +1,6 @@
-import React, { createContext, useCallback, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo } from "react";
 
+import { VOICE_STORAGE_KEY } from "@/constants/storage";
 import type { UnifiedVoice } from "@/utils/ttsService";
 import { useTTS } from "../hooks/useTTS";
 
@@ -92,6 +93,26 @@ export const TTSProvider: React.FC<TTSProviderProps> = ({ children }) => {
         isDefault: voice.isDefault,
       })
     );
+  }, []);
+
+  // Debug logging for voice changes
+  useEffect(() => {
+    console.log('TTS Debug: unifiedVoices.length:', unifiedVoices.length, 'currentVoice:', currentVoice);
+  }, [unifiedVoices.length, currentVoice]);
+
+  // Clean up voice prefs on load
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(VOICE_STORAGE_KEY);
+      if (stored) {
+        const voiceData = JSON.parse(stored);
+        if (!voiceData.lang?.toLowerCase().startsWith("en")) {
+          localStorage.removeItem(VOICE_STORAGE_KEY);
+        }
+      }
+    } catch {
+      localStorage.removeItem(VOICE_STORAGE_KEY);
+    }
   }, []);
 
   const value: TTSContextValue = {
