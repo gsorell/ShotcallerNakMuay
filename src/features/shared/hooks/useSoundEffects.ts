@@ -10,6 +10,7 @@ export function useSoundEffects(iosAudioSession: any) {
     try {
       const AudioCtx =
         (window as any).AudioContext || (window as any).webkitAudioContext;
+
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
@@ -137,8 +138,12 @@ export function useSoundEffects(iosAudioSession: any) {
         const bellPrevVol = bell.volume;
         bell.volume = 0;
         bell.muted = true;
-        await bell.play().catch(() => {});
-        bell.pause();
+        try {
+          await bell.play();
+          bell.pause();
+        } catch {
+          // Play failed (autoplay policy, etc.) - don't call pause
+        }
         bell.currentTime = 0;
         bell.muted = false;
         bell.volume = bellPrevVol;
@@ -149,8 +154,12 @@ export function useSoundEffects(iosAudioSession: any) {
         const warnPrevVol = warn.volume;
         warn.volume = 0;
         warn.muted = true;
-        await warn.play().catch(() => {});
-        warn.pause();
+        try {
+          await warn.play();
+          warn.pause();
+        } catch {
+          // Play failed - don't call pause
+        }
         warn.currentTime = 0;
         warn.muted = false;
         warn.volume = warnPrevVol;

@@ -1,15 +1,15 @@
-import React, { createContext, useCallback, useContext, useMemo } from "react";
 import { DEFAULT_REST_MINUTES } from "@/constants/storage";
-import { useAudioSystem, useWakeLock, useUIContext } from "../../shared";
-import { useCalloutEngine } from "../hooks/useCalloutEngine";
-import { useEmphasisList, useTechniqueData } from "../../technique-editor";
-import { useHomeStats } from "../../logs";
-import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
-import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import type { EmphasisKey, TechniqueWithStyle } from "@/types";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { createWorkoutLogEntry } from "@/utils/logUtils";
 import { generateTechniquePool } from "@/utils/techniqueUtils";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
+import { useHomeStats } from "../../logs";
+import { useAudioSystem, useUIContext, useWakeLock } from "../../shared";
+import { useEmphasisList, useTechniqueData } from "../../technique-editor";
+import { useCalloutEngine } from "../hooks/useCalloutEngine";
+import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
+import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 
 // Context for workout-related state
 interface WorkoutContextValue {
@@ -102,7 +102,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   }, [tts, settings.voiceSpeed]);
 
   const handleRestBell = useCallback(() => {
-    sfx.playWarningSound();
+    sfx.playBell();
   }, [sfx]);
 
   const handleRestEnd = useCallback(() => {
@@ -132,7 +132,12 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   });
 
   // Status
-  const status = useMemo((): "ready" | "running" | "paused" | "resting" | "pre-round" => {
+  const status = useMemo(():
+    | "ready"
+    | "running"
+    | "paused"
+    | "resting"
+    | "pre-round" => {
     if (timer.isPreRound) return "pre-round";
     if (!timer.running) return "ready";
     if (timer.paused) return "paused";
@@ -173,7 +178,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     Boolean
   );
 
-  const startSession = useCallback(() => {
+  const startSession = useCallback(async () => {
     if (!hasSelectedEmphasis) return;
     const pool = getTechniquePool();
     const timerOnlySelected =
@@ -193,8 +198,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       rounds: settings.roundsCount,
     });
 
-    // Audio setup
-    void sfx.ensureMediaUnlocked();
+    await sfx.ensureMediaUnlocked();
     if (platform.android.isAndroidNative)
       void platform.android.requestAudioFocus();
 
@@ -282,13 +286,13 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       calloutEngine.shotsCalledOutRef.current = logEntry.shotsCalledOut || 0;
       setPage("timer");
 
-      setTimeout(() => {
+      setTimeout(async () => {
         const pool = getTechniquePool();
         if (!pool.length && !logEntry.settings?.selectedEmphases?.timer_only) {
           alert("Cannot resume: No techniques found.");
           return;
         }
-        void sfx.ensureMediaUnlocked();
+        await sfx.ensureMediaUnlocked();
         if (logEntry.settings?.readInOrder) {
           calloutEngine.currentPoolRef.current = pool;
         } else {
@@ -311,15 +315,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         window.scrollTo({ top: 0, behavior: "smooth" });
       }, 150);
     },
-    [
-      settings,
-      calloutEngine,
-      setPage,
-      getTechniquePool,
-      sfx,
-      tts,
-      timer,
-    ]
+    [settings, calloutEngine, setPage, getTechniquePool, sfx, tts, timer]
   );
 
   const viewCompletionScreen = useCallback(
@@ -339,25 +335,28 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     [setLastWorkout, setPage]
   );
 
-  const restartSession = useCallback((lastWorkout: any) => {
-    stopSession();
-    // Restore settings
-    const emphasisKeys = lastWorkout.emphases
-      .map((label: string) => {
-        const found = emphasisList.find((e) => e.label === label);
-        return found ? found.key : null;
-      })
-      .filter(Boolean);
-    const restoredEmphases: any = {};
-    emphasisKeys.forEach((key: string) => {
-      restoredEmphases[key] = true;
-    });
-    settings.setSelectedEmphases(restoredEmphases);
-    setPage("timer");
-    setTimeout(() => {
-      startSession();
-    }, 150);
-  }, [stopSession, emphasisList, settings, setPage, startSession]);
+  const restartSession = useCallback(
+    (lastWorkout: any) => {
+      stopSession();
+      // Restore settings
+      const emphasisKeys = lastWorkout.emphases
+        .map((label: string) => {
+          const found = emphasisList.find((e) => e.label === label);
+          return found ? found.key : null;
+        })
+        .filter(Boolean);
+      const restoredEmphases: any = {};
+      emphasisKeys.forEach((key: string) => {
+        restoredEmphases[key] = true;
+      });
+      settings.setSelectedEmphases(restoredEmphases);
+      setPage("timer");
+      setTimeout(() => {
+        startSession();
+      }, 150);
+    },
+    [stopSession, emphasisList, settings, setPage, startSession]
+  );
 
   const value: WorkoutContextValue = {
     settings,

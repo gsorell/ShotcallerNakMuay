@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 /**
  * Hook to configure iOS audio session for background music compatibility
@@ -31,24 +31,28 @@ export const useIOSAudioSession = () => {
     configureIOSAudio();
   }, []);
 
-  // Return utility functions for audio session management
-  return {
-    isIOSNative: Capacitor.getPlatform() === "ios",
+  const isIOSNative = useMemo(() => Capacitor.getPlatform() === "ios", []);
 
-    // Helper to check if we should use different audio behavior
-    shouldMixWithOthers: () => {
-      return Capacitor.getPlatform() === "ios";
-    },
+  // Helper to check if we should use different audio behavior
+  const shouldMixWithOthers = useCallback(() => {
+    return Capacitor.getPlatform() === "ios";
+  }, []);
 
-    // Helper to configure audio elements for iOS compatibility only
-    configureAudioElement: (audioElement: HTMLAudioElement) => {
-      if (Capacitor.getPlatform() === "ios") {
-        audioElement.setAttribute("webkit-playsinline", "true");
-        audioElement.setAttribute("playsinline", "true");
-        // Configure for iOS background music compatibility
-        console.log("iOS: Configured audio element for inline playback");
-      }
-      return audioElement;
-    },
-  };
+  // Helper to configure audio elements for iOS compatibility only
+  const configureAudioElement = useCallback((audioElement: HTMLAudioElement) => {
+    if (Capacitor.getPlatform() === "ios") {
+      audioElement.setAttribute("webkit-playsinline", "true");
+      audioElement.setAttribute("playsinline", "true");
+      // Configure for iOS background music compatibility
+      console.log("iOS: Configured audio element for inline playback");
+    }
+    return audioElement;
+  }, []);
+
+  // Return memoized object to prevent unnecessary re-renders
+  return useMemo(() => ({
+    isIOSNative,
+    shouldMixWithOthers,
+    configureAudioElement,
+  }), [isIOSNative, shouldMixWithOthers, configureAudioElement]);
 };
