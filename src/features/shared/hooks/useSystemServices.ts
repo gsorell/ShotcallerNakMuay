@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { usePWA } from './usePWA';
 import { useWakeLock } from './useWakeLock';
 
@@ -7,8 +8,5 @@ export const useSystemServices = () => {
   useWakeLock({ enabled: false });
   // useVisibilityManager might need to remain separate if it depends on specific UI state
 
-  return {
-    pwa,
-    // ...
-  };
+  return useMemo(() => ({ pwa }), [pwa]);
 };

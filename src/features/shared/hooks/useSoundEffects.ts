@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 // You will pass the iosAudioSession object from your existing hook into this one
 export function useSoundEffects(iosAudioSession: any) {
@@ -169,5 +169,8 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, []);
 
-  return { playBell, playWarningSound, ensureMediaUnlocked };
+  return useMemo(
+    () => ({ playBell, playWarningSound, ensureMediaUnlocked }),
+    [playBell, playWarningSound, ensureMediaUnlocked]
+  );
 }

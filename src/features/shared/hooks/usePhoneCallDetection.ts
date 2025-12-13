@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface PhoneCallState {
   isCallActive: boolean;
@@ -334,32 +334,32 @@ export const usePhoneCallDetection = (
     log,
   ]);
 
-  return {
-    callState,
+  const forceInterruption = useCallback(
+    (reason: string = "manual") => {
+      handleInterruption(reason as PhoneCallState["interruptionReason"]);
+    },
+    [handleInterruption]
+  );
 
-    // Utility methods
-    forceInterruption: useCallback(
-      (reason: string = "manual") => {
-        handleInterruption(reason as PhoneCallState["interruptionReason"]);
-      },
-      [handleInterruption]
-    ),
+  const forceResume = useCallback(
+    (reason: string = "manual") => {
+      handleInterruptionEnd(reason);
+    },
+    [handleInterruptionEnd]
+  );
 
-    forceResume: useCallback(
-      (reason: string = "manual") => {
-        handleInterruptionEnd(reason);
-      },
-      [handleInterruptionEnd]
-    ),
-
-    // Check if currently interrupted
-    isInterrupted: callState.isCallInterrupted,
-
-    // Get time since last interruption
-    timeSinceInterruption: callState.lastInterruption
-      ? Date.now() - callState.lastInterruption.getTime()
-      : null,
-  };
+  return useMemo(
+    () => ({
+      callState,
+      forceInterruption,
+      forceResume,
+      isInterrupted: callState.isCallInterrupted,
+      timeSinceInterruption: callState.lastInterruption
+        ? Date.now() - callState.lastInterruption.getTime()
+        : null,
+    }),
+    [callState, forceInterruption, forceResume]
+  );
 };
 
 export default usePhoneCallDetection;

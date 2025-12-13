@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -238,10 +238,13 @@ export function usePWA(): PWAHook {
     }
   }, []);
 
-  return {
-    ...state,
-    promptInstall,
-    dismissPrompt,
-    shouldShowPrompt,
-  };
+  return useMemo(
+    () => ({
+      ...state,
+      promptInstall,
+      dismissPrompt,
+      shouldShowPrompt,
+    }),
+    [state, promptInstall, dismissPrompt, shouldShowPrompt]
+  );
 }

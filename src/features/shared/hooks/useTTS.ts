@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   type TTSOptions,
   ttsService,
@@ -342,31 +342,51 @@ export const useTTS = (): UseTTSReturn => {
   // Expose guard update function for integration with existing app logic
   (speak as any).updateGuards = updateGuards;
 
-  return {
-    // Voice management
-    voices,
-    currentVoice,
-    setCurrentVoice,
-    englishVoices,
+  return useMemo(
+    () => ({
+      // Voice management
+      voices,
+      currentVoice,
+      setCurrentVoice,
+      englishVoices,
 
-    // Speech controls
-    speak,
-    speakSystem,
-    speakSystemWithDuration,
-    speakTechnique,
-    stop,
-    pause,
-    resume,
+      // Speech controls
+      speak,
+      speakSystem,
+      speakSystemWithDuration,
+      speakTechnique,
+      stop,
+      pause,
+      resume,
 
-    // Status
-    isAvailable,
-    isSpeaking,
-    platform,
+      // Status
+      isAvailable,
+      isSpeaking,
+      platform,
 
-    // Compatibility
-    voiceCompatibilityWarning,
+      // Compatibility
+      voiceCompatibilityWarning,
 
-    // Testing
-    testVoice,
-  };
+      // Testing
+      testVoice,
+    }),
+    [
+      voices,
+      currentVoice,
+      setCurrentVoice,
+      englishVoices,
+      speak,
+      speakSystem,
+      speakSystemWithDuration,
+      speakTechnique,
+      stop,
+      pause,
+      resume,
+      isAvailable,
+      isSpeaking,
+      platform,
+      voiceCompatibilityWarning,
+      testVoice,
+    ]
+  );
 };

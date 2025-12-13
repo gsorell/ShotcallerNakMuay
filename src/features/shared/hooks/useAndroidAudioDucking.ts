@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 /**
  * Hook to manage Android audio ducking via native plugin
@@ -79,9 +79,8 @@ export const useAndroidAudioDucking = () => {
     }
   }, [isAndroidNative]);
 
-  return {
-    isAndroidNative,
-    requestAudioFocus,
-    releaseAudioFocus,
-  };
+  return useMemo(
+    () => ({ isAndroidNative, requestAudioFocus, releaseAudioFocus }),
+    [isAndroidNative, requestAudioFocus, releaseAudioFocus]
+  );
 };
