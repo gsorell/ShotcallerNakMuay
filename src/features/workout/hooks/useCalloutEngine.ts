@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TechniqueWithStyle } from "@/types";
 import { mirrorTechnique } from "@/utils/textUtils";
 
+type SpeakWithDurationFn = (
+  text: string,
+  speed: number,
+  onEnd: (duration: number) => void
+) => void;
+
 interface UseCalloutEngineProps {
   timer: {
     running: boolean;
@@ -10,19 +16,13 @@ interface UseCalloutEngineProps {
     isPreRound: boolean;
   };
   settings: any; // We accept the full settings object to access refs like voiceSpeedRef
-  tts: {
-    speakSystemWithDuration: (
-      text: string,
-      speed: number,
-      onEnd: (duration: number) => void
-    ) => void;
-  };
+  speakWithDuration: SpeakWithDurationFn;
 }
 
 export function useCalloutEngine({
   timer,
   settings,
-  tts,
+  speakWithDuration,
 }: UseCalloutEngineProps) {
   const [currentCallout, setCurrentCallout] = useState<string>("");
 
@@ -142,7 +142,7 @@ export function useCalloutEngine({
         setCurrentCallout(finalPhrase);
 
         // Speak
-        tts.speakSystemWithDuration(
+        speakWithDuration(
           finalPhrase,
           settings.voiceSpeedRef.current,
           (actualDurationMs: number) => {
@@ -176,7 +176,7 @@ export function useCalloutEngine({
       settings.southpawModeRef,
       settings.voiceSpeedRef,
       stopTechniqueCallouts,
-      tts,
+      speakWithDuration,
     ]
   );
 

@@ -128,7 +128,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   const calloutEngine = useCalloutEngine({
     timer,
     settings,
-    tts: { speakSystemWithDuration: () => Promise.resolve() }, // Placeholder
+    speakWithDuration: tts.speakSystemWithDuration,
   });
 
   // Status

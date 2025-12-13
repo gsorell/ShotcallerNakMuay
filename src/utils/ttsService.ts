@@ -20,7 +20,7 @@ export interface TTSOptions {
   pitch?: number;
   volume?: number;
   onStart?: () => void;
-  onDone?: () => void;
+  onDone?: (durationMs?: number) => void;
   onError?: (error: Error) => void;
 }
 
@@ -349,6 +349,7 @@ class TTSService {
     try {
       if (this.isNativeApp) {
         // Use Capacitor TTS for native apps
+        const startTime = Date.now();
         if (options.onStart) options.onStart();
 
         // Choose a voice param that works with the Capacitor plugin.
@@ -368,7 +369,8 @@ class TTSService {
           voice: voiceParam,
         });
 
-        options.onDone?.();
+        const durationMs = Date.now() - startTime;
+        options.onDone?.(durationMs);
       } else {
         // Use browser TTS for web
         if ("speechSynthesis" in window) {
@@ -421,19 +423,10 @@ class TTSService {
 
           if (options.onDone) {
             utterance.onend = () => {
-              const endTime = Date.now();
-              const actualDuration = endTime - this.utteranceStartTime;
-              this.currentUtterance = null; // Clear reference
-
-              // Reset failure count on successful completion
+              const actualDuration = Date.now() - this.utteranceStartTime;
+              this.currentUtterance = null;
               this.consecutiveFailures = 0;
-
-              // Pass actual duration to onDone callback if it accepts it
-              if (options.onDone!.length > 0) {
-                (options.onDone as any)(actualDuration);
-              } else {
-                options.onDone!();
-              }
+              options.onDone!(actualDuration);
             };
           }
 
