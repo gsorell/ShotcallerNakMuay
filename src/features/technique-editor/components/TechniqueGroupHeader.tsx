@@ -34,7 +34,7 @@ export default function TechniqueGroupHeader({
     <div
       className={`tech-editor-group-header ${expanded ? "is-expanded" : ""}`}
     >
-      {/* Top row: icon and title only */}
+      {/* Top row: icon and title */}
       <div className="tech-editor-header-row">
         {thumbnail && (
           <img
@@ -43,7 +43,7 @@ export default function TechniqueGroupHeader({
             className="tech-editor-thumbnail"
           />
         )}
-        <div>
+        <div style={{ flex: 1 }}>
           {expanded && !isCoreStyle ? (
             <input
               type="text"
@@ -87,8 +87,8 @@ export default function TechniqueGroupHeader({
             <h3 className="tech-editor-title">{currentTitle}</h3>
           )}
         </div>
-        {/* Buttons row */}
-        <div className="tech-editor-buttons-row">
+        {/* Buttons row - inline with icon/title */}
+        <div className="tech-editor-buttons-row-inline">
           {onDuplicate && (
             <button
               onClick={onDuplicate}
@@ -96,7 +96,7 @@ export default function TechniqueGroupHeader({
               title="Duplicate this group"
               aria-label="Duplicate group"
             >
-              📋
+              ⧉
             </button>
           )}
           <button

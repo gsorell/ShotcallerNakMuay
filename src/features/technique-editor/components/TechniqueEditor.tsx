@@ -214,7 +214,7 @@ export default function TechniqueEditor({
       })}
 
       {/* Backup Actions - Moved to end of interface */}
-      <div>
+      <div className="tech-editor-backup-actions">
         <button onClick={handleExport} className="tech-editor-export-btn">
           Export Backup
         </button>
@@ -233,6 +233,7 @@ export default function TechniqueEditor({
         type="file"
         accept=".json"
         onChange={handleImportChange}
+        style={{ display: "none" }}
       />
 
       {/* Reset Data - Moved to bottom */}

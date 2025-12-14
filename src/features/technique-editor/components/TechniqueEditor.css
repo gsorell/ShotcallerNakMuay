@@ -41,15 +41,27 @@
 
 /* Delete button modifier */
 .tech-editor-btn--delete {
-  background: rgba(220, 38, 38, 0.2);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.25) 100%);
   color: #fca5a5;
-  border: 1px solid rgba(220, 38, 38, 0.4);
+  border: 1px solid rgba(220, 38, 38, 0.3);
   padding: 0;
-  width: 2.5rem;
-  height: 2.5rem;
-  line-height: 2.5rem;
-  text-align: center;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+.tech-editor-btn--delete:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
 }
 
 /* Technique item style */
@@ -100,19 +112,29 @@
 .tech-editor-header-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-direction: row;
-  min-height: 48px;
+  min-height: auto;
+  width: 100%;
 }
 
 .tech-editor-buttons-row {
   display: flex;
   gap: 6px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-top: 8px;
   flex-wrap: wrap;
   width: 100%;
+}
+
+.tech-editor-buttons-row-inline {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex-wrap: nowrap;
 }
 
 /* Typography */
@@ -143,9 +165,8 @@
   font-size: 1.25rem;
   font-weight: 600;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  min-width: 0;
   word-break: break-word;
-  flex-grow: 1;
+  flex: 1;
 }
 
 .tech-editor-label {
@@ -284,20 +305,30 @@
 }
 
 .tech-editor-btn--star {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%);
   color: #f9a8d4;
-  width: 1.75rem;
-  height: 1.75rem;
-  font-size: 0.875rem;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  width: 36px;
+  height: 36px;
+  font-size: 1rem;
   padding: 0;
-  line-height: 1.75rem;
   cursor: pointer;
-  border-radius: 0.25rem;
-  border: none;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+}
+.tech-editor-btn--star:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
 }
 .tech-editor-btn--star.is-active {
-  background: rgba(36, 229, 251, 0.25);
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.25) 0%, rgba(250, 204, 21, 0.35) 100%);
   color: #facc15;
+  border-color: rgba(250, 204, 21, 0.4);
 }
 
 .tech-editor-btn--add {
@@ -386,6 +417,14 @@
 .tech-editor-back-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   transform: translateY(-1px);
+}
+
+.tech-editor-backup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  flex-wrap: wrap;
 }
 
 .tech-editor-export-btn,
