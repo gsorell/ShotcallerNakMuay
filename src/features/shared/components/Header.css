@@ -4,7 +4,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0.1rem 2rem;
+  width: 100%;
+  padding: 0;
+  margin: 0;
   background-color: #0a0019;
   /* Prevent any focus styles on the header itself */
   outline: none !important;
