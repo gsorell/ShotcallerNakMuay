@@ -16,6 +16,7 @@ export default function WorkoutSetup() {
     homePageStats: stats,
     favoriteConfig,
     startSession: onStart,
+    hasSelectedEmphasis,
   } = useWorkoutContext();
 
   const {
@@ -95,13 +96,15 @@ export default function WorkoutSetup() {
 
         {showAdvanced && <AdvancedSettingsPanel />}
 
-        <StickyStartControls
-          onStart={onStart}
-          difficulty={difficulty}
-          setDifficulty={setDifficulty}
-          selectedEmphases={selectedEmphases}
-          onClearEmphases={clearAllEmphases}
-        />
+        {hasSelectedEmphasis && (
+          <StickyStartControls
+            onStart={onStart}
+            difficulty={difficulty}
+            setDifficulty={setDifficulty}
+            selectedEmphases={selectedEmphases}
+            onClearEmphases={clearAllEmphases}
+          />
+        )}
       </div>
     </div>
   );
