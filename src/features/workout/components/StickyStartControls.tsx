@@ -122,6 +122,7 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
                   className={`difficulty-btn ${
                     difficulty === level ? "active" : ""
                   }`}
+                  aria-pressed={difficulty === level}
                   onClick={() => setDifficulty(level)}
                   style={{
                     flex: 1,
