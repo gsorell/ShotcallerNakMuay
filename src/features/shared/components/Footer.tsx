@@ -17,7 +17,10 @@ export const Footer = ({
 }: FooterProps) => (
   <footer
     className="app-footer"
-    style={{ paddingBottom: !isActive && hasSelectedEmphasis ? "200px" : "2rem" }}
+    style={{ 
+      paddingBottom: !isActive && hasSelectedEmphasis ? "200px" : "2rem",
+      marginBottom: hasSelectedEmphasis ? "32px" : "0"
+    }}
   >
     <div className="app-footer-content">
       <img

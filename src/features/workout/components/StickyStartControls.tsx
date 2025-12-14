@@ -27,7 +27,7 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
           bottom: 0,
           zIndex: 998,
           pointerEvents: "none",
-          background: `linear-gradient(180deg, rgba(24,24,36,0) 0%, rgba(24,24,36,0.7) 100%)`,
+          background: `linear-gradient(180deg, rgba(24,24,36,0) 0%, rgba(24,24,36,0.3) 100%)`,
           opacity: 1,
           transition: "opacity 0.3s",
         }}
