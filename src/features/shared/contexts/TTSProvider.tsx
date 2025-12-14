@@ -95,11 +95,6 @@ export const TTSProvider: React.FC<TTSProviderProps> = ({ children }) => {
     );
   }, []);
 
-  // Debug logging for voice changes
-  useEffect(() => {
-    console.log('TTS Debug: unifiedVoices.length:', unifiedVoices.length, 'currentVoice:', currentVoice);
-  }, [unifiedVoices.length, currentVoice]);
-
   // Clean up voice prefs on load
   useEffect(() => {
     try {
