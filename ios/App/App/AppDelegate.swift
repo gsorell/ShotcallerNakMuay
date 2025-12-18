@@ -9,10 +9,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Configure audio session for background music compatibility
-        // This allows Spotify, Apple Music, etc. to continue playing at full volume alongside TTS callouts
+        // Use .ambient category to allow mixing with other audio apps (Spotify, Apple Music, etc.)
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.mixWithOthers])
+            try audioSession.setCategory(.ambient, mode: .default)
             try audioSession.setActive(true)
             print("✅ iOS Audio Session configured: Background music will play simultaneously with TTS")
         } catch {
