@@ -1,4 +1,5 @@
 // Import Capacitor TTS plugin for native apps
+import { Capacitor } from "@capacitor/core";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
 // This service uses browser TTS for web builds and Capacitor TTS for native apps
@@ -40,7 +41,8 @@ class TTSService {
 
   constructor() {
     // Detect if we're in a Capacitor (native) environment
-    this.isNativeApp = !!(window as any).Capacitor;
+    // Use Capacitor.isNativePlatform() - not just window.Capacitor which exists even in web mode
+    this.isNativeApp = Capacitor.isNativePlatform();
 
     this.initializeVoices();
     this.setupVisibilityHandling();
@@ -82,7 +84,7 @@ class TTSService {
         this.isBusy = true;
         await nextOperation();
       } catch (error) {
-        // Error processing TTS queue
+        console.warn("[TTS] Error processing queue:", error);
       } finally {
         this.isBusy = false;
         // Process next item in queue
@@ -455,6 +457,7 @@ class TTSService {
         }
       }
     } catch (error) {
+      console.warn("[TTS] Error in speakInternal:", error);
       if (options.onError) {
         options.onError(error as Error);
       }
@@ -493,6 +496,7 @@ class TTSService {
       // Now speak immediately without queueing
       await this.speakInternal(text, options);
     } catch (error) {
+      console.warn("[TTS] Error in speakImmediate:", error);
       if (options.onError) {
         options.onError(error as Error);
       }
@@ -562,6 +566,55 @@ class TTSService {
       return true; // Capacitor TTS should always be available
     } else {
       return "speechSynthesis" in window;
+    }
+  }
+
+  // Unlock TTS on iOS Safari by speaking a brief utterance during user gesture
+  // iOS Safari requires an audible utterance (not volume: 0) to unlock speech synthesis
+  private ttsUnlocked = false;
+
+  // Synchronous TTS unlock for iOS Safari - must be called directly in user gesture handler
+  // iOS Safari requires speech synthesis to be triggered synchronously within a user gesture
+  ensureTTSUnlocked(): void {
+    // Skip if already unlocked or on native app (native doesn't need this)
+    if (this.ttsUnlocked || this.isNativeApp) {
+      return;
+    }
+
+    if (!("speechSynthesis" in window)) {
+      return;
+    }
+
+    try {
+      // CRITICAL: This must be synchronous - no async/await!
+      // iOS Safari only allows speechSynthesis in the direct call stack of a user gesture
+      const utterance = new SpeechSynthesisUtterance(".");
+      utterance.volume = 0.01; // Very quiet but not silent
+      utterance.rate = 2; // Fast to minimize duration
+      utterance.lang = "en-US";
+
+      // Get a voice to ensure proper initialization
+      const voices = window.speechSynthesis.getVoices();
+      const firstVoice = voices[0];
+      if (firstVoice) {
+        utterance.voice = firstVoice;
+      }
+
+      utterance.onend = () => {
+        this.ttsUnlocked = true;
+      };
+      utterance.onerror = () => {
+        // Still mark as "attempted" even on error
+        this.ttsUnlocked = true;
+      };
+
+      window.speechSynthesis.speak(utterance);
+
+      // Mark as unlocked immediately - the actual audio may come slightly later
+      // but the important thing is we initiated speech in the user gesture context
+      this.ttsUnlocked = true;
+    } catch {
+      this.ttsUnlocked = true;
     }
   }
 

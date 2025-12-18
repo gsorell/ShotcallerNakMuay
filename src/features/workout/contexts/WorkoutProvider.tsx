@@ -198,7 +198,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       rounds: settings.roundsCount,
     });
 
+    // Unlock audio for iOS Safari (must happen during user gesture)
+    // CRITICAL: TTS unlock must be synchronous - no await before it!
+    tts.ensureTTSUnlocked();
     await sfx.ensureMediaUnlocked();
+
     if (platform.android.isAndroidNative)
       void platform.android.requestAudioFocus();
 
@@ -212,15 +216,6 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     }
     calloutEngine.orderedIndexRef.current = 0;
     calloutEngine.shotsCalledOutRef.current = 0;
-
-    // Silent speak to init engine
-    try {
-      tts.speak(" ", {
-        volume: 0,
-        rate: settings.voiceSpeed,
-        voice: tts.currentVoice,
-      });
-    } catch {}
 
     tts.speakSystem("Get ready", settings.voiceSpeed);
     timer.startTimer();
@@ -292,7 +287,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
           alert("Cannot resume: No techniques found.");
           return;
         }
+        // Unlock audio for iOS Safari (must happen during user gesture)
+        // CRITICAL: TTS unlock must be synchronous - no await before it!
+        tts.ensureTTSUnlocked();
         await sfx.ensureMediaUnlocked();
+
         if (logEntry.settings?.readInOrder) {
           calloutEngine.currentPoolRef.current = pool;
         } else {
@@ -301,14 +300,6 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
           );
         }
         calloutEngine.orderedIndexRef.current = 0;
-
-        try {
-          tts.speak(" ", {
-            volume: 0,
-            rate: settings.voiceSpeed,
-            voice: tts.currentVoice,
-          });
-        } catch {}
 
         timer.resumeTimerState(logEntry);
         tts.speakSystem("Resuming workout. Get ready", settings.voiceSpeed);

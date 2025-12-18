@@ -51,6 +51,9 @@ export interface UseTTSReturn {
   pause: () => Promise<void>;
   resume: () => Promise<void>;
 
+  // Unlock TTS for iOS Safari (must be called during user gesture, synchronously)
+  ensureTTSUnlocked: () => void;
+
   // Status
   isAvailable: boolean;
   isSpeaking: boolean;
@@ -309,6 +312,11 @@ export const useTTS = (): UseTTSReturn => {
     await ttsService.resume();
   }, []);
 
+  // Unlock TTS for iOS Safari (must be called during user gesture, synchronously)
+  const ensureTTSUnlocked = useCallback(() => {
+    ttsService.ensureTTSUnlocked();
+  }, []);
+
   // Test voice function (adapted from your existing code)
   const testVoice = useCallback(async () => {
     try {
@@ -358,6 +366,7 @@ export const useTTS = (): UseTTSReturn => {
       stop,
       pause,
       resume,
+      ensureTTSUnlocked,
 
       // Status
       isAvailable,
@@ -382,6 +391,7 @@ export const useTTS = (): UseTTSReturn => {
       stop,
       pause,
       resume,
+      ensureTTSUnlocked,
       isAvailable,
       isSpeaking,
       platform,
