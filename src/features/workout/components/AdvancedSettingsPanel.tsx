@@ -102,8 +102,8 @@ const VoiceSettings = () => {
   // Voice selection logic
   const handleVoiceSelection = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const selectedName = e.target.value;
-      const selectedVoice = voices.find((v) => v.name === selectedName) || null;
+      const selectedId = e.target.value;
+      const selectedVoice = voices.find((v) => v.id === selectedId) || null;
 
       if (selectedVoice) {
         setCurrentVoice(selectedVoice);
@@ -137,7 +137,7 @@ const VoiceSettings = () => {
           </label>
           <select
             id="voice-select"
-            value={currentVoice?.name || ""}
+            value={currentVoice?.id || ""}
             onChange={handleVoiceSelection}
             style={styles.selectInput}
           >
@@ -149,7 +149,7 @@ const VoiceSettings = () => {
             {voices
               .filter((v) => v.language.toLowerCase().startsWith("en"))
               .map((v) => (
-                <VoiceOption key={v.name} voice={v} />
+                <VoiceOption key={v.id} voice={v} />
               ))}
           </select>
         </div>
@@ -220,7 +220,7 @@ const VoiceOption = ({ voice }: { voice: UnifiedVoice }) => {
   const flag = isAmerican ? "🇺🇸 " : "🌐 ";
 
   return (
-    <option value={voice.name} style={{ padding: "0.5rem 0.75rem" }}>
+    <option value={voice.id} style={{ padding: "0.5rem 0.75rem" }}>
       {flag}
       {voice.name} ({voice.language})
     </option>
