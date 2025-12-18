@@ -84,7 +84,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   // Timer handlers
   const stopSessionCleanup = useCallback(() => {
-    // This will be implemented when we move the logic here
+    // Cleanup when workout session ends
   }, []);
 
   const handleRoundStart = useCallback(() => {
@@ -242,9 +242,6 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // CRITICAL: TTS unlock must be synchronous - no await before it!
     tts.ensureTTSUnlocked();
     await sfx.ensureMediaUnlocked();
-
-    if (platform.android.isAndroidNative)
-      void platform.android.requestAudioFocus();
 
     // Init Engine
     if (settings.readInOrder) {

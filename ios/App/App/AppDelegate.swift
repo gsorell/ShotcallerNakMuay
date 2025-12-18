@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,6 +8,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Configure audio session for background music compatibility
+        // This allows Spotify, Apple Music, etc. to continue playing at full volume alongside TTS callouts
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .spokenAudio, options: [.mixWithOthers])
+            try audioSession.setActive(true)
+            print("✅ iOS Audio Session configured: Background music will play simultaneously with TTS")
+        } catch {
+            print("⚠️ Failed to configure audio session: \(error.localizedDescription)")
+        }
+
         // Override point for customization after application launch.
         return true
     }

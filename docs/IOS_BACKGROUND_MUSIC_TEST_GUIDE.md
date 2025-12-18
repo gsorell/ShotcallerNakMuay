@@ -4,22 +4,26 @@
 iOS users were reporting that their music (Spotify, Apple Music, etc.) was being cut off when they started a workout with the Shotcaller Nak Muay app. This issue was iOS-specific, as Android users could successfully continue their background music.
 
 ## Solution Implemented
-The fix involves configuring iOS audio sessions to allow cooperative audio playback, meaning both the background music and the TTS callouts can play simultaneously without the TTS interrupting the music.
+The fix involves configuring iOS audio sessions to allow cooperative audio playback (mixing). This means both the background music and the TTS callouts can play simultaneously at their respective volumes without one interrupting the other.
 
 ## Changes Made
 
-### 1. Capacitor Configuration Update
-- Updated `capacitor.config.ts` to configure the TextToSpeech plugin with iOS-specific audio session settings
-- Uses `ambient` audio session category with `mixWithOthers` option
+### 1. iOS Audio Session Configuration
+- Updated `AppDelegate.swift` to configure AVAudioSession with `.mixWithOthers` option
+- Uses `.playback` category with `.spokenAudio` mode for optimal TTS delivery
+- Allows simultaneous playback of background music and TTS callouts
+- Added `UIBackgroundModes` with `audio` in `Info.plist` to enable background audio handling
 
-### 2. iOS Audio Session Hook
-- Created `useIOSAudioSession.ts` hook that configures iOS audio sessions for cooperative playback
-- Uses the custom AudioSessionManager plugin that's already implemented in the iOS native code
+### 2. Audio Mixing Approach
+- No audio focus management - both apps play simultaneously
+- User can control background music volume independently
+- TTS plays at configured volume without affecting other audio
+- Simple, predictable behavior that works consistently
 
-### 3. Audio Element Optimization
-- Modified audio element initialization in `App.tsx` to use iOS-specific settings
-- Reduced volume levels slightly on iOS to ensure better mixing with background music
-- Added `webkit-playsinline` and `playsinline` attributes for iOS compatibility
+### 3. iOS Audio Session Hook
+- Created `useIOSAudioSession.ts` hook for iOS-specific audio configuration
+- Handles cooperative audio session management
+- Configures audio elements with iOS-specific attributes for compatibility
 
 ## Testing Instructions
 
@@ -35,7 +39,7 @@ The fix involves configuring iOS audio sessions to allow cooperative audio playb
    - Open Shotcaller Nak Muay app
    - Configure a workout with TTS callouts enabled
    - Start the workout
-   - **Expected Result:** Background music should continue playing at full volume while TTS callouts are heard clearly
+   - **Expected Result:** Background music should continue playing at full volume while TTS callouts play simultaneously. Both audio streams are audible. User can adjust Spotify volume if needed to hear callouts better.
 
 3. **Test Scenario 2: Apple Music Background Music**
    - Open Apple Music on iOS device
@@ -43,7 +47,7 @@ The fix involves configuring iOS audio sessions to allow cooperative audio playb
    - Open Shotcaller Nak Muay app
    - Configure a workout with TTS callouts enabled
    - Start the workout
-   - **Expected Result:** Background music should continue playing at full volume while TTS callouts are heard clearly
+   - **Expected Result:** Background music should continue playing at full volume while TTS callouts play simultaneously. Both audio streams are audible. User can adjust Apple Music volume if needed to hear callouts better.
 
 4. **Test Scenario 3: Web Browser Music**
    - Open Safari and play music from YouTube or any music streaming website
@@ -63,15 +67,16 @@ The fix involves configuring iOS audio sessions to allow cooperative audio playb
 ### What to Look For:
 
 ✅ **Success Indicators:**
-- Background music continues playing during TTS callouts
-- Both audio sources are audible
-- No volume reduction (ducking) of background music during TTS
-- Smooth audio transitions
+- Background music continues playing during TTS callouts (not stopped or paused)
+- Both audio streams play simultaneously at their set volumes
+- TTS callouts are audible alongside the music
+- User can control background music volume independently via their music app
+- No audio interruptions or conflicts
 
 ❌ **Failure Indicators:**
-- Background music stops when workout starts
-- Background music pauses during TTS announcements
-- Background music volume significantly reduces during TTS
+- Background music stops completely when workout starts
+- Background music pauses when TTS plays
+- App takes exclusive audio control preventing other audio
 - Complete audio conflict causing crashes
 
 ## Fallback Behavior
@@ -103,10 +108,12 @@ After making these changes:
 
 ## Technical Notes
 
-- The fix only affects iOS devices; Android behavior remains unchanged
-- The native AudioSessionManager plugin is already implemented in the iOS codebase
-- The audio volume is slightly reduced on iOS (bell: 0.3 instead of 0.5, warning: 0.2 instead of 0.4) to ensure better mixing
-- Web version benefits from improved AudioContext handling for iOS Safari
+- **iOS**: Uses AVAudioSession with `.mixWithOthers` option - allows simultaneous playback without interruption
+- **Android**: Native apps automatically support audio mixing - no special configuration needed
+- Both platforms allow background music and TTS to play simultaneously at their respective volumes
+- No audio focus management - simple cooperative audio playback
+- Users can control background music volume via their music app at any time
+- Web/PWA version benefits from improved audio session handling
 
 ## Rollback Instructions
 

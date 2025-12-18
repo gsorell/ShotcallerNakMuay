@@ -8,8 +8,8 @@
 
 ### iOS Background Music Compatibility
 - **Fixed**: iOS users can now run workouts while background music (Spotify, Apple Music, etc.) continues playing
-- **Technical**: Implemented cooperative audio session management using Capacitor TextToSpeech plugin configuration
-- **Impact**: Resolves the most requested iOS feature - no more interrupted music during training sessions
+- **Technical**: Implemented AVAudioSession with `.mixWithOthers` option - allows simultaneous playback of music and TTS
+- **Impact**: Resolves the most requested iOS feature - music no longer stops when workout starts
 
 ### Smart Auto-Pause System
 - **New**: App automatically pauses when you navigate away (close browser, switch apps)
@@ -20,8 +20,9 @@
 
 ### Audio System Enhancements
 - Added `useIOSAudioSession` hook for iOS-specific audio configuration
-- Configured Capacitor with `ambient` audio session category and `mixWithOthers` option
-- Optimized audio element volumes on iOS (30% bell, 20% warning) for better mixing
+- Configured AVAudioSession in AppDelegate with `.mixWithOthers` option for simultaneous playback
+- No audio focus management - simple cooperative audio mixing
+- Users can control background music volume independently
 - Fixed round start bell initialization issue
 
 ### Visibility Management
@@ -37,17 +38,18 @@
 ## 📱 **Platform Compatibility**
 
 ### iOS (Native App)
-- ✅ **Full background music compatibility** - music continues at full volume during TTS
+- ✅ **Background music compatibility** - music plays simultaneously with TTS callouts
 - ✅ **Smart auto-pause** when switching apps
-- ✅ **Cooperative audio session** management
+- ✅ **Cooperative audio mixing** with `.mixWithOthers` option
 
 ### iOS (Safari/PWA)
 - ✅ **Improved compatibility** with background audio (browser limitations may still apply)
 - ✅ **Auto-pause functionality** when tab switching
 
-### Android
-- ✅ **No changes** - existing functionality maintained
-- ✅ **Auto-pause** now available for consistency
+### Android (Native App)
+- ✅ **Background music compatibility** - music plays simultaneously with TTS callouts
+- ✅ **Smart auto-pause** when switching apps
+- ✅ **Cooperative audio mixing** built into platform
 
 ### Web Browsers
 - ✅ **Enhanced visibility handling** for all desktop browsers
@@ -58,8 +60,9 @@
 ### For iOS Native App:
 1. Start background music in Spotify/Apple Music
 2. Open Shotcaller Nak Muay and start workout
-3. Verify music continues at full volume during TTS callouts
-4. Test app switching (both audio should coexist)
+3. Verify music continues playing alongside TTS callouts
+4. Verify both audio streams are audible
+5. Test adjusting music volume independently during workout
 
 ### For All Platforms:
 1. Start a workout session

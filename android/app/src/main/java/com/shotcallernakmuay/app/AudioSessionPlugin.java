@@ -8,6 +8,7 @@ import android.os.Build;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 /**
@@ -38,6 +39,7 @@ public class AudioSessionPlugin extends Plugin {
    * Request transient audio focus with ducking enabled
    * This tells Android to lower background music volume during the workout
    */
+  @PluginMethod
   public void requestAudioFocus(PluginCall call) {
     try {
       if (audioManager == null) {
@@ -93,6 +95,7 @@ public class AudioSessionPlugin extends Plugin {
   /**
    * Release audio focus so background music can resume at full volume
    */
+  @PluginMethod
   public void releaseAudioFocus(PluginCall call) {
     try {
       if (audioManager == null) {
