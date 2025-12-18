@@ -114,7 +114,7 @@ export default function TechniqueGroupPanel({
             />
           </div>
           {!isCoreStyle && (
-            <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button
                 onClick={onDeleteGroup}
                 className="tech-editor-btn--action"

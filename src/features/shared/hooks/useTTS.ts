@@ -144,7 +144,55 @@ export const useTTS = (): UseTTSReturn => {
     };
 
     initVoices();
-  }, []);
+
+    // Subscribe to voice loading updates (for async voice loading)
+    const unsubscribe = ttsService.onVoicesLoaded(async (loadedVoices) => {
+      // Re-initialize voices when they become available
+      const allVoices = await ttsService.getVoices();
+      const englishOnly = await ttsService.getEnglishVoices();
+
+      setVoices(allVoices);
+      setEnglishVoices(englishOnly);
+
+      // Update compatibility warning
+      if (allVoices.length === 0) {
+        setVoiceCompatibilityWarning("No text-to-speech voices available.");
+      } else if (englishOnly.length === 0) {
+        setVoiceCompatibilityWarning(
+          "No English text-to-speech voices available."
+        );
+      } else {
+        setVoiceCompatibilityWarning("");
+      }
+
+      // Only auto-select a voice if we don't have one already
+      if (!currentVoice || currentVoice.id === "system_fallback") {
+        const savedVoice = loadVoicePreference(englishOnly);
+        if (savedVoice) {
+          setCurrentVoiceState(savedVoice);
+          ttsService.setVoice(savedVoice);
+        } else {
+          // Auto-select American English voice if available
+          const americanVoice = englishOnly.find(
+            (v) =>
+              v.language.toLowerCase() === "en-us" ||
+              v.language.toLowerCase().startsWith("en-us") ||
+              v.name.toLowerCase().includes("united states")
+          );
+
+          const defaultVoice = americanVoice || englishOnly.find((v) => v.isDefault) || englishOnly[0];
+          if (defaultVoice) {
+            setCurrentVoiceState(defaultVoice);
+            ttsService.setVoice(defaultVoice);
+          }
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Voice persistence helpers (adapted from your existing code)
   const saveVoicePreference = useCallback((voice: UnifiedVoice | null) => {

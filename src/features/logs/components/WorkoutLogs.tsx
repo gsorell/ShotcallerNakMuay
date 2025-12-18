@@ -337,15 +337,17 @@ export default function WorkoutLogs({
             boxSizing: "border-box",
           }}
         >
-          {/* Favorite Style */}
-          {favoriteConfig && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: "0.5rem",
-              }}
-            >
+          {/* Favorite Style and Streaks - Combined Container */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem",
+              alignItems: "center",
+            }}
+          >
+            {/* Favorite Style */}
+            {favoriteConfig && (
               <div
                 style={{
                   display: "flex",
@@ -362,73 +364,73 @@ export default function WorkoutLogs({
                 />
                 <span>Favorite: {favoriteConfig.label}</span>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Streaks */}
-          <div
-            style={{
-              display: "flex",
-              gap: "0.75rem",
-              justifyContent: "center",
-              fontSize: "0.8rem",
-            }}
-          >
-            {/* Current Streak */}
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.25rem",
-                  marginBottom: "0.125rem",
-                }}
-              >
-                <span style={{ fontSize: "1rem" }}>🔥</span>
-                <span
+            {/* Streaks */}
+            <div
+              style={{
+                display: "flex",
+                gap: "0.75rem",
+                justifyContent: "center",
+                fontSize: "0.8rem",
+              }}
+            >
+              {/* Current Streak */}
+              <div style={{ textAlign: "center" }}>
+                <div
                   style={{
-                    fontWeight: 700,
-                    color: "white",
-                    fontSize: "1.125rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.25rem",
+                    marginBottom: "0.125rem",
                   }}
                 >
-                  {stats.current}
-                </span>
+                  <span style={{ fontSize: "1rem" }}>🔥</span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: "white",
+                      fontSize: "1.125rem",
+                    }}
+                  >
+                    {stats.current}
+                  </span>
+                </div>
+                <div
+                  style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.7rem" }}
+                >
+                  Current Streak
+                </div>
               </div>
-              <div
-                style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.7rem" }}
-              >
-                Current Streak
-              </div>
-            </div>
 
-            {/* Longest Streak */}
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.25rem",
-                  marginBottom: "0.125rem",
-                }}
-              >
-                <span style={{ fontSize: "1rem" }}>🏆</span>
-                <span
+              {/* Longest Streak */}
+              <div style={{ textAlign: "center" }}>
+                <div
                   style={{
-                    fontWeight: 700,
-                    color: "white",
-                    fontSize: "1.125rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.25rem",
+                    marginBottom: "0.125rem",
                   }}
                 >
-                  {stats.longest}
-                </span>
-              </div>
-              <div
-                style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.7rem" }}
-              >
-                Best Streak
+                  <span style={{ fontSize: "1rem" }}>🏆</span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: "white",
+                      fontSize: "1.125rem",
+                    }}
+                  >
+                    {stats.longest}
+                  </span>
+                </div>
+                <div
+                  style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.7rem" }}
+                >
+                  Best Streak
+                </div>
               </div>
             </div>
           </div>
@@ -523,33 +525,33 @@ export default function WorkoutLogs({
                             style={{
                               position: "absolute",
                               top: "0.5rem",
-                              right: "2.25rem",
-                              width: "1.5rem",
-                              height: "1.5rem",
+                              right: "3rem",
+                              background: "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
+                              color: "#f9a8d4",
+                              border: "none",
+                              width: "36px",
+                              height: "36px",
+                              fontSize: "1rem",
+                              padding: 0,
+                              cursor: "pointer",
+                              borderRadius: "0.75rem",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              background: "rgba(34, 211, 238, 0.2)",
-                              border: "1px solid rgba(34, 211, 238, 0.4)",
-                              borderRadius: "0.375rem",
-                              color: "#22d3ee",
-                              cursor: "pointer",
-                              fontSize: "0.75rem",
                               transition: "all 0.2s ease",
-                              padding: 0,
+                              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+                              backdropFilter: "blur(8px)",
+                              flexShrink: 0,
+                              lineHeight: 1,
+                              textAlign: "center",
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background =
-                                "rgba(34, 211, 238, 0.3)";
-                              e.currentTarget.style.borderColor = "#22d3ee";
-                              e.currentTarget.style.transform = "scale(1.05)";
+                              e.currentTarget.style.opacity = "0.8";
+                              e.currentTarget.style.transform = "translateY(-1px)";
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background =
-                                "rgba(34, 211, 238, 0.2)";
-                              e.currentTarget.style.borderColor =
-                                "rgba(34, 211, 238, 0.4)";
-                              e.currentTarget.style.transform = "scale(1)";
+                              e.currentTarget.style.opacity = "1";
+                              e.currentTarget.style.transform = "translateY(0)";
                             }}
                           >
                             ▶
@@ -566,33 +568,33 @@ export default function WorkoutLogs({
                           style={{
                             position: "absolute",
                             top: "0.5rem",
-                            right: "2.25rem",
-                            width: "1.5rem",
-                            height: "1.5rem",
+                            right: "3rem",
+                            background: "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
+                            color: "#f9a8d4",
+                            border: "none",
+                            width: "36px",
+                            height: "36px",
+                            fontSize: "1rem",
+                            padding: 0,
+                            cursor: "pointer",
+                            borderRadius: "0.75rem",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            background: "rgba(249, 168, 212, 0.2)",
-                            border: "1px solid rgba(249, 168, 212, 0.4)",
-                            borderRadius: "0.375rem",
-                            color: "#f9a8d4",
-                            cursor: "pointer",
-                            fontSize: "0.75rem",
                             transition: "all 0.2s ease",
-                            padding: 0,
+                            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+                            backdropFilter: "blur(8px)",
+                            flexShrink: 0,
+                            lineHeight: 1,
+                            textAlign: "center",
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background =
-                              "rgba(249, 168, 212, 0.3)";
-                            e.currentTarget.style.borderColor = "#f9a8d4";
-                            e.currentTarget.style.transform = "scale(1.05)";
+                            e.currentTarget.style.opacity = "0.8";
+                            e.currentTarget.style.transform = "translateY(-1px)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background =
-                              "rgba(249, 168, 212, 0.2)";
-                            e.currentTarget.style.borderColor =
-                              "rgba(249, 168, 212, 0.4)";
-                            e.currentTarget.style.transform = "scale(1)";
+                            e.currentTarget.style.opacity = "1";
+                            e.currentTarget.style.transform = "translateY(0)";
                           }}
                         >
                           🏆
@@ -606,33 +608,32 @@ export default function WorkoutLogs({
                           position: "absolute",
                           top: "0.5rem",
                           right: "0.5rem",
-                          background: "rgba(239, 68, 68, 0.2)",
-                          border: "1px solid rgba(239, 68, 68, 0.4)",
-                          color: "#ef4444",
-                          fontSize: "0.875rem",
-                          cursor: "pointer",
+                          background: "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
+                          color: "#f9a8d4",
+                          border: "none",
+                          width: "36px",
+                          height: "36px",
+                          fontSize: "1rem",
                           padding: 0,
-                          width: "1.5rem",
-                          height: "1.5rem",
+                          cursor: "pointer",
+                          borderRadius: "0.75rem",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          borderRadius: "0.375rem",
                           transition: "all 0.2s ease",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+                          backdropFilter: "blur(8px)",
+                          flexShrink: 0,
                           lineHeight: 1,
+                          textAlign: "center",
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background =
-                            "rgba(239, 68, 68, 0.3)";
-                          e.currentTarget.style.borderColor = "#ef4444";
-                          e.currentTarget.style.transform = "scale(1.05)";
+                          e.currentTarget.style.opacity = "0.8";
+                          e.currentTarget.style.transform = "translateY(-1px)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background =
-                            "rgba(239, 68, 68, 0.2)";
-                          e.currentTarget.style.borderColor =
-                            "rgba(239, 68, 68, 0.4)";
-                          e.currentTarget.style.transform = "scale(1)";
+                          e.currentTarget.style.opacity = "1";
+                          e.currentTarget.style.transform = "translateY(0)";
                         }}
                         aria-label="Delete log"
                       >

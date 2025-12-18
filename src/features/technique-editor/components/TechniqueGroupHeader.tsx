@@ -107,7 +107,7 @@ export default function TechniqueGroupHeader({
             title={expanded ? "Collapse" : "Expand"}
             aria-label={expanded ? "Collapse group" : "Expand group"}
           >
-            {expanded ? "−" : "+"}
+            {expanded ? "▲" : "▼"}
           </button>
         </div>
       </div>

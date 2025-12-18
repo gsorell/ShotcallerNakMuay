@@ -36,16 +36,16 @@ export default function WorkoutSetup() {
   } = settings;
   return (
     <div>
-      {/* Compact Favorite Style & Streak */}
+      {/* Compact Favorite Style & Streak - Combined Button */}
       <div className="workout-setup-stats-container">
         {stats && (
-          <React.Fragment>
+          <button
+            type="button"
+            onClick={() => setPage("logs")}
+            className="workout-setup-stat-btn"
+          >
             {favoriteConfig && (
-                <button
-                  type="button"
-                  onClick={() => setPage("logs")}
-                  className="workout-setup-stat-btn"
-                >
+              <>
                 <ImageWithFallback
                   srcPath={favoriteConfig.iconPath}
                   alt={favoriteConfig.label}
@@ -53,19 +53,13 @@ export default function WorkoutSetup() {
                   className="workout-setup-stat-icon"
                 />
                 <span style={{ fontWeight: 600 }}>{favoriteConfig.label}</span>
-              </button>
+              </>
             )}
-            <button
-                type="button"
-                onClick={() => setPage("logs")}
-                className="workout-setup-stat-btn"
-              >
-              <span role="img" aria-label="flame">
-                🔥
-              </span>
-              <span style={{ fontWeight: 700 }}>{stats.current}</span>
-            </button>
-          </React.Fragment>
+            <span role="img" aria-label="flame">
+              🔥
+            </span>
+            <span style={{ fontWeight: 700 }}>{stats.current}</span>
+          </button>
         )}
       </div>
 

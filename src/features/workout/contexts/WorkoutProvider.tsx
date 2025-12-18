@@ -109,6 +109,39 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     sfx.playBell();
   }, [sfx]);
 
+  // Create refs to store latest values for workout completion
+  const calloutEngineRef = React.useRef<any>(null);
+  const settingsRef = React.useRef(settings);
+  const timerRef = React.useRef<any>(null);
+  const viewCompletionScreenRef = React.useRef<any>(null);
+
+  // Update refs when values change
+  settingsRef.current = settings;
+
+  const handleWorkoutComplete = useCallback(() => {
+    if (!calloutEngineRef.current || !timerRef.current) return;
+
+    // Save workout log and show completion screen
+    const logEntry = createWorkoutLogEntry(
+      settingsRef.current,
+      timerRef.current,
+      calloutEngineRef.current.shotsCalledOutRef.current,
+      emphasisList,
+      "completed"
+    );
+
+    // Trigger stats refresh
+    triggerStatsRefresh();
+
+    // Show completion screen
+    if (viewCompletionScreenRef.current) {
+      viewCompletionScreenRef.current(logEntry);
+    }
+
+    // Announce completion
+    tts.speakSystem("Workout complete! Great job!", settingsRef.current.voiceSpeed);
+  }, [emphasisList, triggerStatsRefresh, tts]);
+
   // Timer
   const timer = useWorkoutTimer({
     roundMin: settings.roundMin,
@@ -119,10 +152,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     onRestWarning: handleRestWarning,
     onRestBell: handleRestBell,
     onRestEnd: handleRestEnd,
-    onWorkoutComplete: () => {
-      // Handle workout complete
-    },
+    onWorkoutComplete: handleWorkoutComplete,
   });
+
+  // Store timer in ref
+  timerRef.current = timer;
 
   // Callout Engine
   const calloutEngine = useCalloutEngine({
@@ -130,6 +164,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     settings,
     speakWithDuration: tts.speakSystemWithDuration,
   });
+
+  // Store callout engine in ref
+  calloutEngineRef.current = calloutEngine;
 
   // Status
   const status = useMemo(():
@@ -325,6 +362,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     },
     [setLastWorkout, setPage]
   );
+
+  // Store viewCompletionScreen in ref for use in handleWorkoutComplete
+  viewCompletionScreenRef.current = viewCompletionScreen;
 
   const restartSession = useCallback(
     (lastWorkout: any) => {

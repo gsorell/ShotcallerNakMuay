@@ -38,6 +38,7 @@ class TTSService {
   private consecutiveFailures = 0; // Track consecutive TTS failures
   private isBusy = false; // Prevent concurrent TTS operations
   private pendingQueue: Array<() => Promise<void>> = []; // Queue for pending TTS calls
+  private voiceLoadedCallbacks: Array<(voices: UnifiedVoice[]) => void> = []; // Callbacks for when voices are loaded
 
   constructor() {
     // Detect if we're in a Capacitor (native) environment
@@ -217,6 +218,9 @@ class TTSService {
             browserVoice: voice,
           }));
 
+          // Notify any listeners that voices have been loaded
+          this.notifyVoiceLoadedCallbacks();
+
           // Remove the event listener once we have voices
           window.speechSynthesis.onvoiceschanged = null;
         } else {
@@ -228,20 +232,56 @@ class TTSService {
       // Try to get voices immediately
       loadBrowserVoices();
 
-      // If no voices yet, set up listener for when they become available
-      if (this.availableVoices.length === 0) {
-        window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
+      // Always set up listener for when voices become available (or are updated)
+      // This ensures we catch voices that load asynchronously
+      window.speechSynthesis.onvoiceschanged = loadBrowserVoices;
 
-        // Also add a timeout fallback in case the event never fires
-        setTimeout(() => {
-          if (this.availableVoices.length === 0) {
-            this.addFallbackVoice();
-          }
-        }, 3000);
-      }
+      // Also add a timeout fallback in case voices never load
+      setTimeout(() => {
+        if (this.availableVoices.length === 0 ||
+            (this.availableVoices.length === 1 && this.availableVoices[0].id === "system_fallback")) {
+          // Try one more time before giving up
+          loadBrowserVoices();
+        }
+      }, 1000);
+
+      // Final fallback after longer timeout
+      setTimeout(() => {
+        if (this.availableVoices.length === 0) {
+          this.addFallbackVoice();
+        }
+      }, 3000);
     } else {
       this.addFallbackVoice();
     }
+  }
+
+  // Allow external code to be notified when voices are loaded
+  onVoicesLoaded(callback: (voices: UnifiedVoice[]) => void): () => void {
+    this.voiceLoadedCallbacks.push(callback);
+
+    // If voices are already loaded, call the callback immediately
+    if (this.availableVoices.length > 0) {
+      callback(this.availableVoices);
+    }
+
+    // Return unsubscribe function
+    return () => {
+      const index = this.voiceLoadedCallbacks.indexOf(callback);
+      if (index > -1) {
+        this.voiceLoadedCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  private notifyVoiceLoadedCallbacks(): void {
+    this.voiceLoadedCallbacks.forEach(callback => {
+      try {
+        callback(this.availableVoices);
+      } catch (error) {
+        console.warn("[TTS] Error in voice loaded callback:", error);
+      }
+    });
   }
 
   private addFallbackVoice() {
@@ -593,12 +633,9 @@ class TTSService {
       utterance.rate = 2; // Fast to minimize duration
       utterance.lang = "en-US";
 
-      // Get a voice to ensure proper initialization
-      const voices = window.speechSynthesis.getVoices();
-      const firstVoice = voices[0];
-      if (firstVoice) {
-        utterance.voice = firstVoice;
-      }
+      // Don't call getVoices() here - it can interfere with async voice loading
+      // The utterance will use the system default voice automatically
+      // Setting a voice is optional for the unlock utterance
 
       utterance.onend = () => {
         this.ttsUnlocked = true;
