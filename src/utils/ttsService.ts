@@ -239,7 +239,7 @@ class TTSService {
       // Also add a timeout fallback in case voices never load
       setTimeout(() => {
         if (this.availableVoices.length === 0 ||
-            (this.availableVoices.length === 1 && this.availableVoices[0].id === "system_fallback")) {
+            (this.availableVoices.length === 1 && this.availableVoices[0]?.id === "system_fallback")) {
           // Try one more time before giving up
           loadBrowserVoices();
         }

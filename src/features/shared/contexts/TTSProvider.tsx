@@ -5,7 +5,7 @@ import type { UnifiedVoice } from "@/utils/ttsService";
 import { useTTS } from "../hooks/useTTS";
 
 // Context for TTS state
-interface TTSContextValue {
+export interface TTSContextValue {
   // Voice management
   voices: UnifiedVoice[];
   currentVoice: UnifiedVoice | null;
