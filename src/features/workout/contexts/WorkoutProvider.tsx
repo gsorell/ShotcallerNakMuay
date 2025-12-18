@@ -274,11 +274,23 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   const pauseSession = useCallback(() => {
     if (!timer.running) return;
-    timer.pauseTimer();
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try {
-        window.speechSynthesis.pause();
-      } catch {}
+
+    // If currently paused, we're resuming
+    if (timer.paused) {
+      timer.pauseTimer(); // Toggle to unpause
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.resume();
+        } catch {}
+      }
+    } else {
+      // Currently running, so pause
+      timer.pauseTimer(); // Toggle to pause
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.pause();
+        } catch {}
+      }
     }
   }, [timer]);
 
