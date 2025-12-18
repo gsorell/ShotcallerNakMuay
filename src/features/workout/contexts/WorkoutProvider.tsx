@@ -98,14 +98,17 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   }, [stopSessionCleanup, sfx]);
 
   const handleRestWarning = useCallback(() => {
+    // 10 seconds warning - just TTS announcement, no bell
     tts.speakSystem("10 seconds", settings.voiceSpeed);
   }, [tts, settings.voiceSpeed]);
 
   const handleRestBell = useCallback(() => {
-    sfx.playBell();
+    // 5 seconds warning - interval bell (not the big bell)
+    sfx.playWarningSound();
   }, [sfx]);
 
   const handleRestEnd = useCallback(() => {
+    // Round starting - big bell
     sfx.playBell();
   }, [sfx]);
 

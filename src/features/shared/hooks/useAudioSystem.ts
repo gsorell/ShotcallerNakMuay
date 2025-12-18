@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAndroidAudioDucking } from './useAndroidAudioDucking';
 import { useIOSAudioSession } from './useIOSAudioSession';
-import { useTTS } from './useTTS';
+import { useTTSContext } from '../contexts/TTSProvider';
 import { useSoundEffects } from './useSoundEffects';
 
 export const useAudioSystem = () => {
@@ -9,8 +9,9 @@ export const useAudioSystem = () => {
   const android = useAndroidAudioDucking();
   const ios = useIOSAudioSession();
 
-  // 2. Initialize TTS
-  const tts = useTTS();
+  // 2. Get TTS from context (shared with voice settings)
+  // This ensures the voice selected in settings is used for callouts
+  const tts = useTTSContext();
 
   // 3. Initialize Sound Effects (pass ios session if required by hook)
   const sfx = useSoundEffects(ios);

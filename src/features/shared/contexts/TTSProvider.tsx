@@ -23,6 +23,9 @@ interface TTSContextValue {
   stop: () => Promise<void>;
   testVoice: () => Promise<void>;
 
+  // Unlock TTS for iOS Safari (must be called during user gesture)
+  ensureTTSUnlocked: () => void;
+
   // Status
   isAvailable: boolean;
   voiceCompatibilityWarning: string;
@@ -62,6 +65,7 @@ export const TTSProvider: React.FC<TTSProviderProps> = ({ children }) => {
     isAvailable,
     voiceCompatibilityWarning,
     testVoice,
+    ensureTTSUnlocked,
   } = useTTS();
 
   // For backward compatibility: extract browser voice if available
@@ -120,6 +124,7 @@ export const TTSProvider: React.FC<TTSProviderProps> = ({ children }) => {
     speakSystemWithDuration,
     stop,
     testVoice,
+    ensureTTSUnlocked,
     isAvailable,
     voiceCompatibilityWarning,
     browserVoice,
