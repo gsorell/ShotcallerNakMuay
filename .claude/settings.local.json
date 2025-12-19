@@ -3,7 +3,21 @@
     "allow": [
       "Bash(npx tsc:*)",
       "Bash(npm run dev:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix callouts not resuming after workout is paused\n\nWhen resuming a paused workout, the speech synthesis was not being\nresumed, causing callouts to remain silent. The pauseSession function\nnow checks the current pause state and calls speechSynthesis.resume\\(\\)\nwhen unpausing, instead of always calling pause\\(\\).\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)",
+      "Bash(echo:*)",
+      "Bash(./gradlew:*)",
+      "Bash(if [ -d \"$LOCALAPPDATA/Android/Sdk\" ])",
+      "Bash(then echo \"$LOCALAPPDATA/Android/Sdk\")",
+      "Bash(elif [ -d \"C:/Users/$USERNAME/AppData/Local/Android/Sdk\" ])",
+      "Bash(then echo \"C:/Users/$USERNAME/AppData/Local/Android/Sdk\")",
+      "Bash(else echo \"SDK not found in standard locations\")",
+      "Bash(fi)",
+      "Bash(npm install:*)",
+      "Bash(npx cap:*)"
     ]
   }
 }

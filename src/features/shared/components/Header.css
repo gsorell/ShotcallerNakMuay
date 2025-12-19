@@ -8,6 +8,8 @@
   padding: 0;
   margin: 0;
   background-color: #0a0019;
+  /* Add safe area padding for Android/iOS status bar */
+  padding-top: env(safe-area-inset-top);
   /* Prevent any focus styles on the header itself */
   outline: none !important;
   -webkit-tap-highlight-color: transparent !important;
