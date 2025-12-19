@@ -103,7 +103,31 @@ export async function shareGroup(
       throw new Error("Failed to share group. Please try again.");
     }
   } else {
-    // Web platform - use the same approach as downloadJSON from fileUtils
+    // Web platform (including PWA)
+    if ("share" in navigator) {
+      try {
+        const file = new File([blob], filename, { type: "application/json" });
+
+        // Try to share with the file
+        await navigator.share({
+          title: `Shotcaller Nak Muay - ${groupTitle}`,
+          text: shareText,
+          files: [file],
+        });
+        // If share succeeds, we're done
+        return;
+      } catch (error: any) {
+        // If user cancels (AbortError), just return without doing anything
+        if (error.name === "AbortError") {
+          return;
+        }
+        // If sharing with files failed (NotAllowedError, TypeError, etc.),
+        // fall through to download
+        console.log("Web Share with files not supported, downloading instead:", error.message);
+      }
+    }
+
+    // Fallback: Download the file
     try {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
