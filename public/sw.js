@@ -145,8 +145,13 @@ self.addEventListener('fetch', (event) => {
     }
   }
 
-  // For all other requests, just use network
-  event.respondWith(fetch(request));
+  // For all other requests, try network with cache fallback
+  event.respondWith(
+    fetch(request).catch(() => {
+      // If fetch fails, try to serve from cache
+      return caches.match(request);
+    })
+  );
 });
 
 // Handle messages from the main thread

@@ -6,6 +6,7 @@ import {
   normalizeTechniques,
   type TechniqueShape,
 } from "@/utils/techniqueUtils";
+import { downloadJSON } from "@/utils/fileUtils";
 import { useEffect, useState } from "react";
 
 interface UseTechniqueEditorProps {
@@ -184,15 +185,13 @@ export function useTechniqueEditor({
     persist(INITIAL_TECHNIQUES as any);
   }
 
-  function handleExport() {
-    const data = JSON.stringify(local, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "techniques_backup.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  async function handleExport() {
+    try {
+      await downloadJSON(local, "techniques_backup");
+    } catch (error) {
+      console.error("Error exporting techniques:", error);
+      alert("Failed to export backup. Please try again.");
+    }
   }
 
   function handleImport(file: File) {
