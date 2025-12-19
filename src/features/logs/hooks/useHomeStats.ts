@@ -30,6 +30,9 @@ export function useHomeStats(trigger: number) {
         emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : [],
       }));
 
+      console.log('[Streak Debug] Total workout logs:', logs.length);
+      console.log('[Streak Debug] All timestamps:', logs.map((l: any) => l.timestamp));
+
       // Calculate stats
       const emphasesCount: Record<string, number> = {};
       logs.forEach((l: any) =>
@@ -51,21 +54,33 @@ export function useHomeStats(trigger: number) {
   return homePageStats;
 }
 
+// Helper function to get local date string (YYYY-MM-DD) without timezone conversion
+function getLocalDateString(timestamp: string): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Helper logic extracted from the hook
 function calculateStreaks(logs: any[]) {
   if (!logs.length) return { current: 0, longest: 0 };
 
-  // Get unique workout days, sorted chronologically
+  // Get unique workout days, sorted chronologically (using local timezone)
   const days = Array.from(
     new Set(
-      logs
-        .map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
-        .sort((a, b) => a.localeCompare(b))
+      logs.map((l) => getLocalDateString(l.timestamp))
     )
-  );
+  ).sort((a, b) => a.localeCompare(b));
+
+  console.log('[Streak Debug] Unique workout days:', days);
 
   if (days.length === 0) return { current: 0, longest: 0 };
-  if (days.length === 1) return { current: 1, longest: 1 };
+  if (days.length === 1) {
+    console.log('[Streak Debug] Only 1 day, returning current: 1, longest: 1');
+    return { current: 1, longest: 1 };
+  }
 
   // Calculate longest streak
   let longest = 1,
@@ -85,11 +100,9 @@ function calculateStreaks(logs: any[]) {
     }
   }
 
-  // Calculate current streak
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  // Calculate current streak (using local timezone)
+  const today = getLocalDateString(new Date().toISOString());
+  const yesterday = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
   const lastWorkoutDay = days[days.length - 1];
 
   // Only count as current streak if last workout was today or yesterday
@@ -105,6 +118,7 @@ function calculateStreaks(logs: any[]) {
     const diff = Math.round(
       (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
     );
+    console.log(`[Streak Debug] Comparing ${days[i]} vs ${days[i - 1]}, diff: ${diff} days`);
     if (diff === 1) {
       currentStreak += 1;
     } else {
@@ -112,5 +126,6 @@ function calculateStreaks(logs: any[]) {
     }
   }
 
+  console.log(`[Streak Debug] Final result - current: ${currentStreak}, longest: ${max}`);
   return { current: currentStreak, longest: max };
 }

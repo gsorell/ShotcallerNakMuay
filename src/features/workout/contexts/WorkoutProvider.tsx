@@ -92,9 +92,12 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   }, [sfx]);
 
   const handleRoundEnd = useCallback(() => {
+    // Immediately stop any ongoing callouts mid-utterance
+    if (calloutEngineRef.current?.stopAllNarration) {
+      calloutEngineRef.current.stopAllNarration();
+    }
     stopSessionCleanup();
     sfx.playBell();
-    // Stop callouts logic will be moved here
   }, [stopSessionCleanup, sfx]);
 
   const handleRestWarning = useCallback(() => {
