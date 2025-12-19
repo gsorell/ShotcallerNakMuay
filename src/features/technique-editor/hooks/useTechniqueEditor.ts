@@ -7,7 +7,6 @@ import {
   type TechniqueShape,
 } from "@/utils/techniqueUtils";
 import { downloadJSON } from "@/utils/fileUtils";
-import { shareGroup, parseGroupFromFile } from "@/utils/groupShareUtils";
 import { useEffect, useState } from "react";
 
 interface UseTechniqueEditorProps {
@@ -232,74 +231,6 @@ export function useTechniqueEditor({
     reader.readAsText(file);
   }
 
-  async function handleShareGroup(groupKey: string) {
-    try {
-      const group = local[groupKey];
-      if (!group) {
-        alert("Group not found.");
-        return;
-      }
-      await shareGroup(groupKey, group);
-    } catch (error) {
-      console.error("Error sharing group:", error);
-      alert(
-        error instanceof Error ? error.message : "Failed to share group. Please try again."
-      );
-    }
-  }
-
-  async function handleImportGroup(file: File) {
-    try {
-      // Parse and validate the shared group file
-      const shareData = await parseGroupFromFile(file);
-      const { label, title, description, singles, combos } = shareData.group;
-
-      // Check if group with same label already exists
-      let finalLabel = label;
-      if (local[label]) {
-        const groupTitle = title || label;
-        const userResponse = window.prompt(
-          `A group named "${groupTitle}" already exists. Enter a new name for the imported group:`,
-          `${groupTitle} (Imported)`
-        );
-
-        if (!userResponse || !userResponse.trim()) {
-          // User cancelled or entered empty name
-          return;
-        }
-
-        finalLabel = userResponse.trim();
-
-        // Check if the new name also exists
-        if (local[finalLabel]) {
-          alert(`A group named "${finalLabel}" already exists. Import cancelled.`);
-          return;
-        }
-      }
-
-      // Add the imported group
-      const next = { ...local };
-      next[finalLabel] = {
-        label: finalLabel,
-        title: title || finalLabel,
-        description,
-        singles,
-        combos,
-      };
-      persist(next);
-
-      const groupTitle = title || finalLabel;
-      alert(`Group "${groupTitle}" imported successfully!`);
-    } catch (error) {
-      console.error("Error importing group:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to import group. Please check the file and try again."
-      );
-    }
-  }
-
   return {
     local,
     updateGroupLabel,
@@ -318,7 +249,5 @@ export function useTechniqueEditor({
     resetToDefault,
     handleExport,
     handleImport,
-    handleShareGroup,
-    handleImportGroup,
   };
 }
