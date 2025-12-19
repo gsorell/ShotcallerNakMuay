@@ -44,18 +44,25 @@ type EmphasisListItem = {
 
 const WORKOUTS_STORAGE_KEY = "shotcaller_workouts";
 
+// Helper function to get local date string (YYYY-MM-DD) without timezone conversion
+function getLocalDateString(timestamp: string): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // --- Utility: Calculate streaks (days with at least one workout) ---
 function calculateStreaks(logs: WorkoutEntry[]) {
   if (!logs.length) return { current: 0, longest: 0 };
 
-  // Get unique workout days, sorted chronologically
+  // Get unique workout days, sorted chronologically (using local timezone)
   const days = Array.from(
     new Set(
-      logs
-        .map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
-        .sort((a, b) => a.localeCompare(b))
+      logs.map((l) => getLocalDateString(l.timestamp))
     )
-  );
+  ).sort((a, b) => a.localeCompare(b));
 
   if (days.length === 0) return { current: 0, longest: 0 };
   if (days.length === 1) return { current: 1, longest: 1 };
@@ -78,11 +85,9 @@ function calculateStreaks(logs: WorkoutEntry[]) {
     }
   }
 
-  // Calculate current streak (must end on today or yesterday to be "current")
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  // Calculate current streak (must end on today or yesterday to be "current", using local timezone)
+  const today = getLocalDateString(new Date().toISOString());
+  const yesterday = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
   const lastWorkoutDay = days[days.length - 1];
 
   // Only count as current streak if last workout was today or yesterday
