@@ -30,9 +30,6 @@ export function useHomeStats(trigger: number) {
         emphases: Array.isArray(p?.emphases) ? p.emphases.map(String) : [],
       }));
 
-      console.log('[Streak Debug] Total workout logs:', logs.length);
-      console.log('[Streak Debug] All timestamps:', logs.map((l: any) => l.timestamp));
-
       // Calculate stats
       const emphasesCount: Record<string, number> = {};
       logs.forEach((l: any) =>
@@ -74,13 +71,8 @@ function calculateStreaks(logs: any[]) {
     )
   ).sort((a, b) => a.localeCompare(b));
 
-  console.log('[Streak Debug] Unique workout days:', days);
-
   if (days.length === 0) return { current: 0, longest: 0 };
-  if (days.length === 1) {
-    console.log('[Streak Debug] Only 1 day, returning current: 1, longest: 1');
-    return { current: 1, longest: 1 };
-  }
+  if (days.length === 1) return { current: 1, longest: 1 };
 
   // Calculate longest streak
   let longest = 1,
@@ -118,7 +110,6 @@ function calculateStreaks(logs: any[]) {
     const diff = Math.round(
       (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
     );
-    console.log(`[Streak Debug] Comparing ${days[i]} vs ${days[i - 1]}, diff: ${diff} days`);
     if (diff === 1) {
       currentStreak += 1;
     } else {
@@ -126,6 +117,5 @@ function calculateStreaks(logs: any[]) {
     }
   }
 
-  console.log(`[Streak Debug] Final result - current: ${currentStreak}, longest: ${max}`);
   return { current: currentStreak, longest: max };
 }
