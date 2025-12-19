@@ -21,7 +21,7 @@ export interface TTSContextValue {
     onDurationMeasured?: (durationMs: number) => void
   ) => Promise<void>;
   stop: () => Promise<void>;
-  testVoice: () => Promise<void>;
+  testVoice: (rate?: number) => Promise<void>;
 
   // Unlock TTS for iOS Safari (must be called during user gesture)
   ensureTTSUnlocked: () => void;

@@ -63,7 +63,7 @@ export interface UseTTSReturn {
   voiceCompatibilityWarning: string;
 
   // Testing
-  testVoice: () => Promise<void>;
+  testVoice: (rate?: number) => Promise<void>;
 }
 
 export const useTTS = (): UseTTSReturn => {
@@ -366,7 +366,7 @@ export const useTTS = (): UseTTSReturn => {
   }, []);
 
   // Test voice function (adapted from your existing code)
-  const testVoice = useCallback(async () => {
+  const testVoice = useCallback(async (rate: number = 1.0) => {
     try {
       // For web, resume audio context on user interaction
       if (platform === "web" && "AudioContext" in window) {
@@ -378,7 +378,7 @@ export const useTTS = (): UseTTSReturn => {
       // Use speakImmediate to avoid queueing and ensure immediate playback with current voice
       await ttsService.speakImmediate(`Testing voice with current settings.`, {
         voice: currentVoice,
-        rate: 1.0,
+        rate,
         onStart: () => setIsSpeaking(true),
         onDone: () => setIsSpeaking(false),
         onError: () => setIsSpeaking(false),

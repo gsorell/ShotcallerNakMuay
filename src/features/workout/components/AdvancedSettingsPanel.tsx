@@ -156,7 +156,7 @@ const VoiceSettings = () => {
 
         {/* Test Button */}
         <div style={styles.testButtonContainer}>
-          <button type="button" onClick={testVoice} style={styles.testButton}>
+          <button type="button" onClick={() => testVoice(voiceSpeed)} style={styles.testButton}>
             Test Voice
           </button>
         </div>
