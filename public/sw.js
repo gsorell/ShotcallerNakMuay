@@ -65,6 +65,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Skip analytics and external tracking requests
+  if (url.hostname.includes('google-analytics.com') ||
+      url.hostname.includes('googletagmanager.com') ||
+      url.hostname.includes('doubleclick.net')) {
+    return; // Let browser handle these normally
+  }
+
   // Handle same-origin requests
   if (url.origin === self.location.origin) {
     // Audio files - cache first, then network
