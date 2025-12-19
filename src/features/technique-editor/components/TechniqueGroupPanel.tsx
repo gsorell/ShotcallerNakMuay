@@ -22,6 +22,7 @@ interface TechniqueGroupPanelProps {
   onRemoveCombo: (idx: number) => void;
   onAddCombo: () => void;
   onDeleteGroup: () => void;
+  onShareGroup?: () => void;
 }
 
 export default function TechniqueGroupPanel({
@@ -42,6 +43,7 @@ export default function TechniqueGroupPanel({
   onRemoveCombo,
   onAddCombo,
   onDeleteGroup,
+  onShareGroup,
 }: TechniqueGroupPanelProps) {
   const singles = normalizeArray(group.singles);
   const combos = normalizeArray(group.combos);
@@ -114,7 +116,14 @@ export default function TechniqueGroupPanel({
             />
           </div>
           {!isCoreStyle && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
+              <button
+                onClick={onShareGroup}
+                className="tech-editor-btn--action"
+                aria-label={`Share group ${group.label}`}
+              >
+                Share Group
+              </button>
               <button
                 onClick={onDeleteGroup}
                 className="tech-editor-btn--action"

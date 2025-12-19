@@ -48,6 +48,8 @@ export default function TechniqueEditor({
     resetToDefault,
     handleExport,
     handleImport,
+    handleShareGroup,
+    handleImportGroup,
   } = useTechniqueEditor({ techniques, setTechniques });
 
   const [newGroupName, setNewGroupName] = useState("");
@@ -88,10 +90,15 @@ export default function TechniqueEditor({
   // --- NEW: Export/Import logic ---
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleImport(file);
+      // Check if it's a shared group file (*.nakmuay.json) or a backup file
+      if (file.name.endsWith('.nakmuay.json')) {
+        await handleImportGroup(file);
+      } else {
+        handleImport(file);
+      }
     }
     e.target.value = "";
   };
@@ -209,6 +216,7 @@ export default function TechniqueEditor({
             onRemoveCombo={(idx) => removeCombo(key, idx)}
             onAddCombo={() => addCombo(key)}
             onDeleteGroup={() => deleteGroup(key)}
+            onShareGroup={() => handleShareGroup(key)}
           />
         );
       })}
