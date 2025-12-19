@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import type { TechniqueShape } from "./techniqueUtils";
@@ -22,11 +23,7 @@ export interface ShareableGroup {
  * Check if running as a native Capacitor app
  */
 function isNativeApp(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.Capacitor !== undefined &&
-    window.Capacitor.isNativePlatform?.()
-  );
+  return Capacitor.isNativePlatform();
 }
 
 /**
@@ -39,6 +36,10 @@ async function blobToBase64(blob: Blob): Promise<string> {
       const result = reader.result as string;
       // Remove data URL prefix (e.g., "data:application/json;base64,")
       const base64 = result.split(",")[1];
+      if (!base64) {
+        reject(new Error("Failed to convert blob to base64"));
+        return;
+      }
       resolve(base64);
     };
     reader.onerror = reject;
