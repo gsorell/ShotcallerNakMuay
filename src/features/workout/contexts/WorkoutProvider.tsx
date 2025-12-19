@@ -71,7 +71,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   children,
 }) => {
   // Contexts
-  const { setPage, setLastWorkout, triggerStatsRefresh } = useUIContext();
+  const { setPage, setLastWorkout, triggerStatsRefresh, statsRefreshTrigger } = useUIContext();
 
   // Data hooks
   const { techniques, persistTechniques, techniquesRef, techniqueIndexRef } =
@@ -190,7 +190,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   useWakeLock({ enabled: shouldKeepAwake, log: false });
 
   // Stats
-  const homePageStats = useHomeStats(0); // Will need refresh trigger
+  const homePageStats = useHomeStats(statsRefreshTrigger);
   const favoriteConfig = homePageStats?.mostCommonEmphasis
     ? emphasisList.find(
         (e) =>

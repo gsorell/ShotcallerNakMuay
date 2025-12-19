@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from "react";
+import { StatusBar, Style } from "@capacitor/status-bar";
+import { Capacitor } from "@capacitor/core";
 
 // Types
 
@@ -42,6 +44,13 @@ export default function App() {
   useEffect(() => {
     displayInAppBrowserWarning();
     initializeGA4();
+
+    // Configure status bar on native platforms
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: "#831843" }).catch(() => {});
+      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+    }
   }, []);
 
   // --- 2. Contexts ---
