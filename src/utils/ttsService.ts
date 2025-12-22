@@ -29,6 +29,7 @@ class TTSService {
   private availableVoices: UnifiedVoice[] = [];
   private currentVoice: UnifiedVoice | null = null;
   private isNativeApp: boolean;
+  private isIOSSafari: boolean;
   private isPageVisible = true;
 
   private currentUtterance: SpeechSynthesisUtterance | null = null;
@@ -44,6 +45,13 @@ class TTSService {
     // Detect if we're in a Capacitor (native) environment
     // Use Capacitor.isNativePlatform() - not just window.Capacitor which exists even in web mode
     this.isNativeApp = Capacitor.isNativePlatform();
+
+    // Detect iOS Safari (PWA or browser) - iOS voices speak faster at the same rate setting
+    const ua = navigator.userAgent;
+    this.isIOSSafari =
+      !this.isNativeApp &&
+      /iPad|iPhone|iPod/.test(ua) &&
+      !(window as any).MSStream;
 
     this.initializeVoices();
     this.setupVisibilityHandling();
@@ -455,7 +463,13 @@ class TTSService {
             }
           }
 
-          utterance.rate = rate;
+          // iOS Safari voices speak noticeably faster than Android/Chrome at the same rate.
+          // Scale down the rate on iOS to achieve equivalent perceived speed.
+          // At Pro difficulty (1.4x), iOS needs ~1.2x to sound similar to Android's 1.4x.
+          // This is approximately a 0.857 (6/7) scaling factor.
+          const adjustedRate = this.isIOSSafari ? rate * 0.857 : rate;
+
+          utterance.rate = adjustedRate;
           utterance.pitch = pitch;
           utterance.volume = volume;
 
@@ -465,9 +479,27 @@ class TTSService {
 
           if (options.onDone) {
             utterance.onend = () => {
-              const actualDuration = Date.now() - this.utteranceStartTime;
+              const measuredDuration = Date.now() - this.utteranceStartTime;
               this.currentUtterance = null;
               this.consecutiveFailures = 0;
+
+              // iOS Safari often reports artificially short durations due to onend firing early.
+              // Calculate a minimum expected duration based on text length and speech rate.
+              // Average speaking rate is ~150 words/min = 2.5 words/sec = ~12 chars/sec at rate 1.0
+              // For short technique callouts, use a more conservative estimate.
+              const charCount = text.length;
+              const wordsEstimate = charCount / 5; // Average word length ~5 chars
+              const baseSecondsPerWord = 0.4; // 150 words/min = 0.4 sec/word
+              const adjustedSecondsPerWord = baseSecondsPerWord / adjustedRate;
+              const minExpectedDuration = Math.max(
+                300, // Absolute minimum 300ms for any utterance
+                wordsEstimate * adjustedSecondsPerWord * 1000
+              );
+
+              // Use the larger of measured or minimum expected duration
+              // This prevents iOS Safari's premature onend from causing rapid-fire callouts
+              const actualDuration = Math.max(measuredDuration, minExpectedDuration);
+
               options.onDone!(actualDuration);
             };
           }

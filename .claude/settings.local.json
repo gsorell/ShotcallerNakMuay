@@ -17,7 +17,9 @@
       "Bash(else echo \"SDK not found in standard locations\")",
       "Bash(fi)",
       "Bash(npm install:*)",
-      "Bash(npx cap:*)"
+      "Bash(npx cap:*)",
+      "Bash(git revert:*)",
+      "Bash(cat:*)"
     ]
   }
 }
