@@ -99,6 +99,13 @@ const VoiceSettings = () => {
     voiceCompatibilityWarning,
   } = useTTSContext();
   const { voiceSpeed, setVoiceSpeed } = settings;
+
+  // Detect iOS Safari - TTS rate is scaled by 0.857x to match Android's perceived speed
+  const isIOSSafari =
+    typeof navigator !== "undefined" &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+    !(window as any).MSStream;
+  const displaySpeed = isIOSSafari ? voiceSpeed * 0.857 : voiceSpeed;
   // Voice selection logic
   const handleVoiceSelection = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -184,7 +191,7 @@ const VoiceSettings = () => {
           onChange={(e) => setVoiceSpeed(Number(e.target.value))}
           style={{ width: "100%" }}
         />
-        <div style={styles.speedLabel}>{voiceSpeed.toFixed(2)}x</div>
+        <div style={styles.speedLabel}>{displaySpeed.toFixed(2)}x</div>
       </div>
 
       {/* Footer Info */}
