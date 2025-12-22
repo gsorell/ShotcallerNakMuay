@@ -483,16 +483,18 @@ class TTSService {
               this.currentUtterance = null;
               this.consecutiveFailures = 0;
 
-              // iOS Safari often reports artificially short durations due to onend firing early.
+              // iOS Safari consistently under-reports speech duration due to onend firing early.
               // Calculate a minimum expected duration based on text length and speech rate.
-              // Average speaking rate is ~150 words/min = 2.5 words/sec = ~12 chars/sec at rate 1.0
-              // For short technique callouts, use a more conservative estimate.
+              // Use more conservative estimates for iOS to match Android's actual timing.
               const charCount = text.length;
               const wordsEstimate = charCount / 5; // Average word length ~5 chars
-              const baseSecondsPerWord = 0.4; // 150 words/min = 0.4 sec/word
+
+              // Base speaking rate: ~130 words/min = 0.46 sec/word at rate 1.0
+              // This is slower than the theoretical 150 wpm to account for natural pauses
+              const baseSecondsPerWord = this.isIOSSafari ? 0.55 : 0.4;
               const adjustedSecondsPerWord = baseSecondsPerWord / adjustedRate;
               const minExpectedDuration = Math.max(
-                300, // Absolute minimum 300ms for any utterance
+                this.isIOSSafari ? 500 : 300, // Higher minimum for iOS
                 wordsEstimate * adjustedSecondsPerWord * 1000
               );
 
