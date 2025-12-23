@@ -464,10 +464,11 @@ class TTSService {
           }
 
           // iOS Safari voices speak noticeably faster than Android/Chrome at the same rate.
-          // Scale down the rate on iOS to achieve equivalent perceived speed.
-          // At Pro difficulty (1.4x), iOS needs ~1.2x to sound similar to Android's 1.4x.
-          // This is approximately a 0.857 (6/7) scaling factor.
-          const adjustedRate = this.isIOSSafari ? rate * 0.857 : rate;
+          // Scale down the rate on iOS for elevated speeds (Pro difficulty) to match Android's perceived speed.
+          // Pro difficulty (1.4x) needs to become 1.12x on iOS (0.8 multiplier).
+          // Normal speeds (1.0x and below) remain unchanged.
+          const iosProMultiplier = 0.8; // 1.4 * 0.8 = 1.12
+          const adjustedRate = this.isIOSSafari && rate > 1.0 ? rate * iosProMultiplier : rate;
 
           utterance.rate = adjustedRate;
           utterance.pitch = pitch;
