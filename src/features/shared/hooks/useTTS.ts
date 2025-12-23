@@ -27,6 +27,42 @@ import {
 // Storage key for voice preferences (from your existing code)
 const VOICE_STORAGE_KEY = "selectedVoice";
 
+// Detect iOS Safari for platform-specific voice defaults
+const isIOSSafari = (() => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+})();
+
+// Find the best default voice for the platform
+const findDefaultVoice = (englishVoices: UnifiedVoice[]): UnifiedVoice | null => {
+  // On iOS Safari, prefer Samantha as the default voice
+  if (isIOSSafari) {
+    const samantha = englishVoices.find(
+      (v) => v.name.toLowerCase().includes("samantha")
+    );
+    if (samantha) return samantha;
+  }
+
+  // Find American English voice
+  const americanVoice = englishVoices.find(
+    (v) =>
+      v.language.toLowerCase() === "en-us" ||
+      v.language.toLowerCase() === "en_us" ||
+      v.language.toLowerCase().startsWith("en-us") ||
+      v.language.toLowerCase().startsWith("en_us") ||
+      v.name.toLowerCase().includes("united states") ||
+      v.name.toLowerCase().includes("us english") ||
+      (v.name.toLowerCase().includes("english") &&
+        v.name.toLowerCase().includes(" us "))
+  );
+
+  if (americanVoice) return americanVoice;
+
+  // Fallback to system default or first English voice
+  return englishVoices.find((v) => v.isDefault) || englishVoices[0] || null;
+};
+
 export interface UseTTSReturn {
   // Voice management
   voices: UnifiedVoice[];
@@ -110,29 +146,8 @@ export const useTTS = (): UseTTSReturn => {
           setCurrentVoiceState(savedVoice);
           ttsService.setVoice(savedVoice);
         } else {
-          // Auto-select American English voice if available, otherwise first English voice
-          let defaultVoice = englishOnly.find((v) => v.isDefault) || null;
-
-          // Prioritize American English voices
-          const americanVoice = englishOnly.find(
-            (v) =>
-              v.language.toLowerCase() === "en-us" ||
-              v.language.toLowerCase() === "en_us" ||
-              v.language.toLowerCase().startsWith("en-us") ||
-              v.language.toLowerCase().startsWith("en_us") ||
-              v.name.toLowerCase().includes("united states") ||
-              v.name.toLowerCase().includes("us english") ||
-              (v.name.toLowerCase().includes("english") &&
-                v.name.toLowerCase().includes(" us "))
-          );
-
-          if (americanVoice) {
-            defaultVoice = americanVoice;
-          } else {
-            // Fallback to any English voice
-            defaultVoice = defaultVoice || englishOnly[0]!;
-          }
-
+          // Auto-select best default voice for the platform
+          const defaultVoice = findDefaultVoice(englishOnly);
           if (defaultVoice) {
             setCurrentVoiceState(defaultVoice);
             ttsService.setVoice(defaultVoice);
@@ -172,15 +187,8 @@ export const useTTS = (): UseTTSReturn => {
           setCurrentVoiceState(savedVoice);
           ttsService.setVoice(savedVoice);
         } else {
-          // Auto-select American English voice if available
-          const americanVoice = englishOnly.find(
-            (v) =>
-              v.language.toLowerCase() === "en-us" ||
-              v.language.toLowerCase().startsWith("en-us") ||
-              v.name.toLowerCase().includes("united states")
-          );
-
-          const defaultVoice = americanVoice || englishOnly.find((v) => v.isDefault) || englishOnly[0];
+          // Auto-select best default voice for the platform
+          const defaultVoice = findDefaultVoice(englishOnly);
           if (defaultVoice) {
             setCurrentVoiceState(defaultVoice);
             ttsService.setVoice(defaultVoice);
