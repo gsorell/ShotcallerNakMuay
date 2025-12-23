@@ -130,42 +130,41 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, []);
 
-  // Proactively unlock audio on user gesture
+  // Proactively unlock audio on user gesture using Web Audio API
+  // iOS Safari ignores volume=0 and muted=true on first play, so we use
+  // a truly silent oscillator instead of playing the actual audio files
   const ensureMediaUnlocked = useCallback(async () => {
     try {
-      const bell = bellSoundRef.current;
-      if (bell) {
-        const bellPrevVol = bell.volume;
-        bell.volume = 0;
-        bell.muted = true;
-        try {
-          await bell.play();
-          bell.pause();
-        } catch {
-          // Play failed (autoplay policy, etc.) - don't call pause
+      const AudioCtx =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        // Create a silent oscillator (gain = 0) - guaranteed silent on all platforms
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.001);
+
+        // Resume context if suspended (iOS requirement)
+        if (ctx.state === "suspended") {
+          await ctx.resume();
         }
-        bell.currentTime = 0;
-        bell.muted = false;
-        bell.volume = bellPrevVol;
+
+        // Close context after brief delay to ensure unlock registered
+        setTimeout(() => ctx.close(), 100);
       }
 
-      const warn = warningSoundRef.current;
-      if (warn) {
-        const warnPrevVol = warn.volume;
-        warn.volume = 0;
-        warn.muted = true;
-        try {
-          await warn.play();
-          warn.pause();
-        } catch {
-          // Play failed - don't call pause
-        }
-        warn.currentTime = 0;
-        warn.muted = false;
-        warn.volume = warnPrevVol;
+      // Pre-buffer the actual audio files without playing them
+      if (bellSoundRef.current) {
+        bellSoundRef.current.load();
+      }
+      if (warningSoundRef.current) {
+        warningSoundRef.current.load();
       }
     } catch {
-      /* noop */
+      /* noop - unlock failed but app can continue */
     }
   }, []);
 
