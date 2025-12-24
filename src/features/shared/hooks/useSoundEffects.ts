@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 export function useSoundEffects(iosAudioSession: any) {
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
+  const silenceRef = useRef<HTMLAudioElement | null>(null);
+  const mediaUnlockedRef = useRef(false);
 
   // Simple Web Audio fallback chime
   const webAudioChime = useCallback(() => {
@@ -54,6 +56,15 @@ export function useSoundEffects(iosAudioSession: any) {
           iosAudioSession.configureAudioElement(warningSoundRef.current);
         }
       }
+
+      // Create silent audio for unlock (tiny silent WAV)
+      if (!silenceRef.current) {
+        silenceRef.current = new Audio("/silence.wav");
+        silenceRef.current.preload = "auto";
+        if (iosAudioSession && iosAudioSession.configureAudioElement) {
+          iosAudioSession.configureAudioElement(silenceRef.current);
+        }
+      }
     } catch (error) {
       console.warn("[AudioInit] Failed to initialize audio elements:", error);
     }
@@ -72,6 +83,12 @@ export function useSoundEffects(iosAudioSession: any) {
           warningSoundRef.current.src = "";
           warningSoundRef.current.load();
           warningSoundRef.current = null;
+        }
+        if (silenceRef.current) {
+          silenceRef.current.pause();
+          silenceRef.current.src = "";
+          silenceRef.current.load();
+          silenceRef.current = null;
         }
       } catch (error) {
         console.warn("[AudioCleanup] Error during cleanup:", error);
@@ -130,41 +147,55 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, []);
 
-  // Proactively unlock audio on user gesture using Web Audio API
-  // iOS Safari ignores volume=0 and muted=true on first play, so we use
-  // a truly silent oscillator instead of playing the actual audio files
+  // Proactively unlock audio on user gesture
+  // iOS Safari limitation: Each HTMLAudioElement must be played during user gesture
+  // AND iOS ignores volume/muted on the VERY FIRST play ever on the site
+  // Trade-off: First visit will have brief audible unlock, subsequent visits are silent
   const ensureMediaUnlocked = useCallback(async () => {
+    // Only unlock once per session
+    if (mediaUnlockedRef.current) return;
+    mediaUnlockedRef.current = true;
+
     try {
-      const AudioCtx =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        // Create a silent oscillator (gain = 0) - guaranteed silent on all platforms
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0, ctx.currentTime);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.001);
-
-        // Resume context if suspended (iOS requirement)
-        if (ctx.state === "suspended") {
-          await ctx.resume();
+      // Unlock each audio element individually
+      // On first-ever visit, may be briefly audible due to iOS Safari limitation
+      const bell = bellSoundRef.current;
+      if (bell) {
+        const origVol = bell.volume;
+        bell.muted = true;
+        bell.volume = 0;
+        bell.currentTime = 0;
+        try {
+          await bell.play();
+          bell.pause();
+          bell.currentTime = 0;
+          bell.muted = false;
+          bell.volume = origVol; // Restore original volume
+        } catch {
+          bell.muted = false;
+          bell.volume = origVol;
         }
-
-        // Close context after brief delay to ensure unlock registered
-        setTimeout(() => ctx.close(), 100);
       }
 
-      // Pre-buffer the actual audio files without playing them
-      if (bellSoundRef.current) {
-        bellSoundRef.current.load();
-      }
-      if (warningSoundRef.current) {
-        warningSoundRef.current.load();
+      const warn = warningSoundRef.current;
+      if (warn) {
+        const origVol = warn.volume;
+        warn.muted = true;
+        warn.volume = 0;
+        warn.currentTime = 0;
+        try {
+          await warn.play();
+          warn.pause();
+          warn.currentTime = 0;
+          warn.muted = false;
+          warn.volume = origVol; // Restore original volume
+        } catch {
+          warn.muted = false;
+          warn.volume = origVol;
+        }
       }
     } catch {
-      /* noop - unlock failed but app can continue */
+      // Unlock failed but we continue
     }
   }, []);
 
