@@ -19,7 +19,26 @@
       "Bash(npm install:*)",
       "Bash(npx cap:*)",
       "Bash(git revert:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(ipconfig:*)",
+      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(zipinfo:*)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" logcat -d)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe logcat -d)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe logcat -c)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe devices)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe install -r android/app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe uninstall com.shotcallernakmuay.app)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe install android/app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe shell pm list packages)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe shell pm path com.shotcallernakmuay.app)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe devices -l)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe shell dumpsys package com.shotcallernakmuay.app)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe logcat:*)",
+      "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe shell \"ps -A | grep shotcaller\")",
+      "Bash(git rm:*)"
     ]
   }
 }
