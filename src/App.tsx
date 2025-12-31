@@ -89,21 +89,12 @@ export default function App() {
     setShowPWAPrompt,
   } = useUIContext();
 
-  // --- 4. Subscription State ---
-  const { isSubscribed, isLoading: subscriptionLoading, isNative } = useSubscription();
-  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
+  // --- 4. UI Refs ---
   const isEditorRef = useRef(false);
 
   useEffect(() => {
     isEditorRef.current = page === "editor";
   }, [page]);
-
-  // Check subscription status on native platforms after loading
-  useEffect(() => {
-    if (isNative && !subscriptionLoading && !isSubscribed) {
-      setShowSubscriptionModal(true);
-    }
-  }, [isNative, subscriptionLoading, isSubscribed]);
 
   const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
 
@@ -244,11 +235,6 @@ export default function App() {
   // --- 9. Render ---
   return (
     <>
-      <SubscriptionModal
-        open={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-      />
-
       <OnboardingModal
         open={showOnboardingMsg}
         modalScrollPosition={modalScrollPosition}
