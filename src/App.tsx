@@ -12,7 +12,9 @@ import {
   AppLayout,
   OnboardingModal,
   PWAInstallPrompt,
+  SubscriptionModal,
   useNavigationGestures,
+  useSubscription,
   useSystemServices,
   useTTSContext,
   useUIContext,
@@ -88,11 +90,22 @@ export default function App() {
     showPWAPrompt,
     setShowPWAPrompt,
   } = useUIContext();
+
+  // --- 4. Subscription State ---
+  const { isSubscribed, isLoading: subscriptionLoading, isNative } = useSubscription();
+  const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
   const isEditorRef = useRef(false);
 
   useEffect(() => {
     isEditorRef.current = page === "editor";
   }, [page]);
+
+  // Check subscription status on native platforms after loading
+  useEffect(() => {
+    if (isNative && !subscriptionLoading && !isSubscribed) {
+      setShowSubscriptionModal(true);
+    }
+  }, [isNative, subscriptionLoading, isSubscribed]);
 
   const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
 
@@ -118,7 +131,18 @@ export default function App() {
 
   useEffect(() => {
     if (isEditorRef.current) return;
-    if (!pwa.isInstalled) {
+
+    // Detect if user is on Android
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    // For Android PWA users, show immediately (no delay)
+    // For other users, show after 30 seconds if PWA not installed
+    if (isAndroid) {
+      const dismissed = localStorage.getItem("pwa_install_dismissed");
+      if (!dismissed) {
+        setShowPWAPrompt(true);
+      }
+    } else if (!pwa.isInstalled) {
       const dismissed = localStorage.getItem("pwa_install_dismissed");
       if (!dismissed) {
         const t = setTimeout(() => {
@@ -222,6 +246,11 @@ export default function App() {
   // --- 9. Render ---
   return (
     <>
+      <SubscriptionModal
+        open={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+      />
+
       <OnboardingModal
         open={showOnboardingMsg}
         modalScrollPosition={modalScrollPosition}
