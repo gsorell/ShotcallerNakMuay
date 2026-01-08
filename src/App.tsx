@@ -11,7 +11,6 @@ import { WorkoutCompleted, WorkoutLogs } from "@/features/logs";
 import {
   AppLayout,
   OnboardingModal,
-  PWAInstallPrompt,
   useNavigationGestures,
   useSystemServices,
   useTTSContext,
@@ -54,7 +53,7 @@ export default function App() {
   }, []);
 
   // --- 2. Contexts ---
-  const { pwa } = useSystemServices();
+  useSystemServices();
   const {
     techniques,
     emphasisList,
@@ -85,8 +84,6 @@ export default function App() {
     setShowAllEmphases,
     showOnboardingMsg,
     setShowOnboardingMsg,
-    showPWAPrompt,
-    setShowPWAPrompt,
   } = useUIContext();
 
   // --- 4. UI Refs ---
@@ -117,31 +114,6 @@ export default function App() {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, []);
-
-  useEffect(() => {
-    if (isEditorRef.current) return;
-
-    // Detect if user is on Android
-    const isAndroid = /Android/i.test(navigator.userAgent);
-
-    // For Android PWA users, show immediately (no delay)
-    // For other users, show after 30 seconds if PWA not installed
-    if (isAndroid) {
-      const dismissed = localStorage.getItem("pwa_install_dismissed");
-      if (!dismissed) {
-        setShowPWAPrompt(true);
-      }
-    } else if (!pwa.isInstalled) {
-      const dismissed = localStorage.getItem("pwa_install_dismissed");
-      if (!dismissed) {
-        const t = setTimeout(() => {
-          if (!pwa.isInstalled && !isEditorRef.current) setShowPWAPrompt(true);
-        }, 30000);
-        return () => clearTimeout(t);
-      }
-    }
-    return;
-  }, [pwa.isInstalled]);
 
   useNavigationGestures({
     onBack: () => {
@@ -258,20 +230,6 @@ export default function App() {
       >
         {renderPageContent()}
       </AppLayout>
-
-      <PWAInstallPrompt
-        isVisible={showPWAPrompt && !pwa.isInstalled}
-        onInstall={async () => {
-          const success = await pwa.promptInstall();
-          setShowPWAPrompt(false);
-          return success;
-        }}
-        onDismiss={() => setShowPWAPrompt(false)}
-        onDismissPermanently={() => {
-          localStorage.setItem("pwa_install_dismissed", "true");
-          setShowPWAPrompt(false);
-        }}
-      />
     </>
   );
 }
