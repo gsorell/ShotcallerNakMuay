@@ -136,11 +136,19 @@ jobs:
       - name: Upload to TestFlight
         if: ${{ github.event.inputs.upload_to_testflight == 'true' }}
         run: |
+          # Create the private_keys directory and save the API key
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
+
+          # Upload using altool
           xcrun altool --upload-app \
             --type ios \
             --file ios/App/build/*.ipa \
             --apiKey ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
             --apiIssuer ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+
+          # Clean up
+          rm -rf ~/private_keys
 
       - name: Upload IPA as artifact
         uses: actions/upload-artifact@v4
