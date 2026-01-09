@@ -46,7 +46,8 @@ export default function App() {
 
     // Configure status bar on native platforms
     if (Capacitor.isNativePlatform()) {
-      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+      // Dark style = white/light text for dark backgrounds
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
       // Make status bar transparent so content extends behind it
       StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
     }
