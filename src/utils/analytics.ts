@@ -36,13 +36,27 @@ declare global {
 // Your GA4 Measurement ID - replace 'G-XXXXXXXXXX' with your actual measurement ID
 export const GA_MEASUREMENT_ID = "G-5GY5JTX5KZ";
 
+// Check if running in Capacitor native app
+const isCapacitorNative = () => {
+  return (
+    typeof window !== "undefined" &&
+    (window as any).Capacitor?.isNativePlatform?.() === true
+  );
+};
+
 // Initialize GA4
 export const initializeGA4 = () => {
-  // Only initialize in production (not on localhost)
-  if (
-    typeof window === "undefined" ||
-    window.location.hostname === "localhost"
-  ) {
+  // Skip if no window
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  // Allow on native apps OR non-localhost web
+  const isNative = isCapacitorNative();
+  const isLocalhost = window.location.hostname === "localhost";
+
+  if (!isNative && isLocalhost) {
+    // Skip analytics on localhost web development only
     return;
   }
 
