@@ -46,8 +46,8 @@ export default function App() {
 
     // Configure status bar on native platforms
     if (Capacitor.isNativePlatform()) {
-      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: "#831843" }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Light }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: "#0a0019" }).catch(() => {});
       StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
     }
   }, []);
