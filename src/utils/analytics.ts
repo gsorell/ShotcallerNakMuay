@@ -60,23 +60,34 @@ export const initializeGA4 = () => {
     return;
   }
 
-  // Load the Google Analytics script
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-  document.head.appendChild(script);
+  console.log("[GA4] Initializing analytics, isNative:", isNative);
 
-  // Initialize dataLayer and gtag
+  // Initialize dataLayer and gtag BEFORE loading script
   window.dataLayer = window.dataLayer || [];
   window.gtag = function (...args: any[]) {
     window.dataLayer.push(arguments);
   };
 
-  window.gtag("js", new Date());
-  window.gtag("config", GA_MEASUREMENT_ID, {
-    page_title: "Nak Muay Shot Caller",
-    page_location: window.location.href,
-  });
+  // Load the Google Analytics script
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+
+  script.onload = () => {
+    console.log("[GA4] Script loaded successfully");
+    window.gtag("js", new Date());
+    window.gtag("config", GA_MEASUREMENT_ID, {
+      page_title: "Nak Muay Shot Caller",
+      page_location: window.location.href,
+    });
+    console.log("[GA4] Config sent");
+  };
+
+  script.onerror = (error) => {
+    console.error("[GA4] Failed to load script:", error);
+  };
+
+  document.head.appendChild(script);
 };
 
 // Track events
