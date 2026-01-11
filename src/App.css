@@ -486,3 +486,20 @@ body {
   box-shadow: none;
   outline: none;
 }
+
+/* Prevent iOS Safari from zooming on input focus
+   iOS auto-zooms when input font-size is less than 16px */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Alternative: Use touch-action to prevent zoom gestures on inputs */
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
