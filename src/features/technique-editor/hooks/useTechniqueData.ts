@@ -35,18 +35,7 @@ export function useTechniqueData() {
     }
   });
 
-  // 2. Persist Data
-  const persistTechniques = (next: TechniquesShape) => {
-    try {
-      setTechniques(next);
-      localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(next));
-      localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
-    } catch (err) {
-      console.error("Failed to persist techniques", err);
-    }
-  };
-
-  // 3. Build Index (Memoized)
+  // 2. Build Index (Memoized)
   const techniqueIndex = useMemo(() => {
     const idx: Record<string, string> = {};
     Object.keys(techniques || {}).forEach((k) => {
@@ -56,10 +45,12 @@ export function useTechniqueData() {
     return idx;
   }, [techniques]);
 
-  // 4. Create Refs (for use in timers/callbacks inside App.tsx)
+  // 3. Create Refs (for use in timers/callbacks)
+  // These are declared before persistTechniques so they can be updated synchronously
   const techniquesRef = useRef<TechniquesShape>(techniques);
   const techniqueIndexRef = useRef<Record<string, string>>(techniqueIndex);
 
+  // Keep refs in sync via effects (for normal state updates)
   useEffect(() => {
     techniquesRef.current = techniques;
   }, [techniques]);
@@ -67,6 +58,29 @@ export function useTechniqueData() {
   useEffect(() => {
     techniqueIndexRef.current = techniqueIndex;
   }, [techniqueIndex]);
+
+  // 4. Persist Data
+  const persistTechniques = (next: TechniquesShape) => {
+    try {
+      setTechniques(next);
+      localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
+
+      // Immediately update refs so new groups work without needing app restart
+      // This ensures refs are current before the next render cycle
+      techniquesRef.current = next;
+
+      // Rebuild the index synchronously
+      const idx: Record<string, string> = {};
+      Object.keys(next || {}).forEach((k) => {
+        idx[k] = k;
+        idx[normalizeKey(k)] = k;
+      });
+      techniqueIndexRef.current = idx;
+    } catch (err) {
+      console.error("Failed to persist techniques", err);
+    }
+  };
 
   return {
     techniques,
