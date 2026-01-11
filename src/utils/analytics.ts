@@ -67,13 +67,23 @@ const getClientId = (): string => {
   return clientId;
 };
 
+// Get or create session ID
+const getSessionId = (): string => {
+  const storageKey = "ga_session_id";
+  let sessionId = sessionStorage.getItem(storageKey);
+  if (!sessionId) {
+    sessionId = Date.now().toString();
+    sessionStorage.setItem(storageKey, sessionId);
+  }
+  return sessionId;
+};
+
 // Send event via GA4 Measurement Protocol (for iOS native)
 const sendMeasurementProtocolEvent = async (
   eventName: string,
   params?: Record<string, any>
 ) => {
   // Measurement Protocol requires an API secret
-  // If not configured, log and skip
   if (!GA_API_SECRET) {
     console.log("[GA4-MP] API secret not configured, skipping:", eventName);
     return;
@@ -81,39 +91,48 @@ const sendMeasurementProtocolEvent = async (
 
   try {
     const clientId = getClientId();
+    const sessionId = getSessionId();
+
     const payload = {
       client_id: clientId,
+      user_id: clientId, // Optional but helps with user tracking
+      timestamp_micros: Date.now() * 1000,
+      non_personalized_ads: false,
       events: [
         {
           name: eventName,
           params: {
-            engagement_time_msec: "100",
-            session_id: sessionStorage.getItem("ga_session_id") || Date.now().toString(),
+            engagement_time_msec: 100, // Must be a number, not string
+            session_id: sessionId,
             ...params,
           },
         },
       ],
     };
 
-    // Store session ID for consistency
-    if (!sessionStorage.getItem("ga_session_id")) {
-      sessionStorage.setItem("ga_session_id", Date.now().toString());
-    }
-
     const url = `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
+
+    console.log("[GA4-MP] Sending event:", eventName, "to:", url);
+    console.log("[GA4-MP] Payload:", JSON.stringify(payload));
 
     const response = await fetch(url, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
-    if (response.ok) {
-      console.log("[GA4-MP] Event sent:", eventName);
+    console.log("[GA4-MP] Response status:", response.status);
+
+    if (response.ok || response.status === 204) {
+      console.log("[GA4-MP] Event sent successfully:", eventName);
     } else {
-      console.warn("[GA4-MP] Failed to send event:", response.status);
+      const text = await response.text();
+      console.warn("[GA4-MP] Failed to send event:", response.status, text);
     }
   } catch (error) {
-    console.warn("[GA4-MP] Error sending event:", error);
+    console.error("[GA4-MP] Error sending event:", error);
   }
 };
 
@@ -144,6 +163,9 @@ export const initializeGA4 = () => {
   if (isIOS) {
     console.log("[GA4] iOS detected - using Measurement Protocol");
     usingMeasurementProtocol = true;
+
+    // Send session_start first (required for realtime to work)
+    sendMeasurementProtocolEvent("session_start", {});
 
     // Send initial page view via Measurement Protocol
     sendMeasurementProtocolEvent("page_view", {
