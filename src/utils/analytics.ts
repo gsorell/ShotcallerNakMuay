@@ -1,3 +1,6 @@
+import { Preferences } from '@capacitor/preferences';
+import { Capacitor } from '@capacitor/core';
+
 // Analytics event names
 export const AnalyticsEvents = {
   // Timer events
@@ -56,26 +59,78 @@ const isIOSNative = () => {
 };
 
 // Generate or retrieve a client ID for Measurement Protocol
-const getClientId = (): string => {
+const getClientId = async (): Promise<string> => {
   const storageKey = "ga_client_id";
-  let clientId = localStorage.getItem(storageKey);
-  if (!clientId) {
-    // Generate a random client ID
-    clientId = `${Date.now()}.${Math.random().toString(36).substring(2)}`;
-    localStorage.setItem(storageKey, clientId);
+  
+  try {
+    // Use Capacitor Preferences for native apps (more reliable on iOS)
+    if (isCapacitorNative()) {
+      const { value } = await Preferences.get({ key: storageKey });
+      if (value) {
+        return value;
+      }
+      // Generate new client ID
+      const clientId = `${Date.now()}.${Math.random().toString(36).substring(2)}`;
+      await Preferences.set({ key: storageKey, value: clientId });
+      return clientId;
+    }
+    
+    // Fallback to localStorage for web
+    let clientId = localStorage.getItem(storageKey);
+    if (!clientId) {
+      clientId = `${Date.now()}.${Math.random().toString(36).substring(2)}`;
+      localStorage.setItem(storageKey, clientId);
+    }
+    return clientId;
+  } catch (error) {
+    console.error("[GA4] Error managing client ID:", error);
+    // Fallback to a temporary client ID
+    return `${Date.now()}.${Math.random().toString(36).substring(2)}`;
   }
-  return clientId;
 };
 
-// Get or create session ID
-const getSessionId = (): string => {
+// Get or create session ID with timeout (30 minutes)
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const getSessionId = async (): Promise<string> => {
   const storageKey = "ga_session_id";
-  let sessionId = sessionStorage.getItem(storageKey);
-  if (!sessionId) {
-    sessionId = Date.now().toString();
-    sessionStorage.setItem(storageKey, sessionId);
+  const timestampKey = "ga_session_timestamp";
+  
+  try {
+    // Use Capacitor Preferences for native apps
+    if (isCapacitorNative()) {
+      const { value: sessionId } = await Preferences.get({ key: storageKey });
+      const { value: timestamp } = await Preferences.get({ key: timestampKey });
+      
+      const now = Date.now();
+      
+      // Check if session is still valid
+      if (sessionId && timestamp) {
+        const lastActivity = parseInt(timestamp, 10);
+        if (now - lastActivity < SESSION_TIMEOUT_MS) {
+          // Update timestamp
+          await Preferences.set({ key: timestampKey, value: now.toString() });
+          return sessionId;
+        }
+      }
+      
+      // Create new session
+      const newSessionId = now.toString();
+      await Preferences.set({ key: storageKey, value: newSessionId });
+      await Preferences.set({ key: timestampKey, value: now.toString() });
+      return newSessionId;
+    }
+    
+    // Fallback to sessionStorage for web
+    let sessionId = sessionStorage.getItem(storageKey);
+    if (!sessionId) {
+      sessionId = Date.now().toString();
+      sessionStorage.setItem(storageKey, sessionId);
+    }
+    return sessionId;
+  } catch (error) {
+    console.error("[GA4] Error managing session ID:", error);
+    return Date.now().toString();
   }
-  return sessionId;
 };
 
 // Send event via GA4 Measurement Protocol (for iOS native)
@@ -85,25 +140,27 @@ const sendMeasurementProtocolEvent = async (
 ) => {
   // Measurement Protocol requires an API secret
   if (!GA_API_SECRET) {
-    console.log("[GA4-MP] API secret not configured, skipping:", eventName);
     return;
   }
 
   try {
-    const clientId = getClientId();
-    const sessionId = getSessionId();
+    // Get IDs asynchronously
+    const clientId = await getClientId();
+    const sessionId = await getSessionId();
 
     const payload = {
       client_id: clientId,
-      user_id: clientId, // Optional but helps with user tracking
+      user_id: clientId,
       timestamp_micros: Date.now() * 1000,
       non_personalized_ads: false,
       events: [
         {
           name: eventName,
           params: {
-            engagement_time_msec: 100, // Must be a number, not string
+            engagement_time_msec: 100,
             session_id: sessionId,
+            platform: Capacitor.getPlatform(),
+            app_version: "1.4.23",
             ...params,
           },
         },
@@ -111,9 +168,6 @@ const sendMeasurementProtocolEvent = async (
     };
 
     const url = `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
-
-    console.log("[GA4-MP] Sending event:", eventName, "to:", url);
-    console.log("[GA4-MP] Payload:", JSON.stringify(payload));
 
     const response = await fetch(url, {
       method: "POST",
@@ -123,16 +177,11 @@ const sendMeasurementProtocolEvent = async (
       body: JSON.stringify(payload),
     });
 
-    console.log("[GA4-MP] Response status:", response.status);
-
-    if (response.ok || response.status === 204) {
-      console.log("[GA4-MP] Event sent successfully:", eventName);
-    } else {
-      const text = await response.text();
-      console.warn("[GA4-MP] Failed to send event:", response.status, text);
+    if (!response.ok && response.status !== 204) {
+      console.error("[GA4] Analytics error:", response.status);
     }
   } catch (error) {
-    console.error("[GA4-MP] Error sending event:", error);
+    console.error("[GA4] Analytics error:", error);
   }
 };
 
@@ -152,26 +201,31 @@ export const initializeGA4 = () => {
   const isLocalhost = window.location.hostname === "localhost";
 
   if (!isNative && isLocalhost) {
-    // Skip analytics on localhost web development only
     return;
   }
 
-  console.log("[GA4] Initializing analytics, isNative:", isNative, "isIOS:", isIOS);
-
   // For iOS native, use Measurement Protocol (fetch-based)
-  // because WKWebView blocks external scripts
+  // because WKWebView blocks external scripts and has ITP restrictions
   if (isIOS) {
-    console.log("[GA4] iOS detected - using Measurement Protocol");
     usingMeasurementProtocol = true;
 
     // Send session_start first (required for realtime to work)
-    sendMeasurementProtocolEvent("session_start", {});
-
-    // Send initial page view via Measurement Protocol
-    sendMeasurementProtocolEvent("page_view", {
-      page_title: "Nak Muay Shot Caller",
-      page_location: "app://shotcallernakmuay",
-    });
+    // Use setTimeout to ensure storage is initialized
+    setTimeout(async () => {
+      try {
+        await sendMeasurementProtocolEvent("session_start", {
+          engagement_time_msec: 100,
+        });
+        
+        await sendMeasurementProtocolEvent("page_view", {
+          page_title: "Nak Muay Shot Caller",
+          page_location: "app://shotcallernakmuay/home",
+          engagement_time_msec: 100,
+        });
+      } catch (error) {
+        console.error("[GA4] Initialization error:", error);
+      }
+    }, 100);
     return;
   }
 
@@ -188,19 +242,14 @@ export const initializeGA4 = () => {
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
 
   script.onload = () => {
-    console.log("[GA4] Script loaded successfully");
     window.gtag("js", new Date());
     window.gtag("config", GA_MEASUREMENT_ID, {
       page_title: "Nak Muay Shot Caller",
       page_location: window.location.href,
     });
-    console.log("[GA4] Config sent");
   };
 
-  script.onerror = (error) => {
-    console.error("[GA4] Failed to load script:", error);
-    // Fallback to Measurement Protocol if script fails to load
-    console.log("[GA4] Falling back to Measurement Protocol");
+  script.onerror = () => {
     usingMeasurementProtocol = true;
     sendMeasurementProtocolEvent("page_view", {
       page_title: "Nak Muay Shot Caller",
