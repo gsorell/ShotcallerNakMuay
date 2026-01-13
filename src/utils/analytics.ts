@@ -44,18 +44,12 @@ const GA_API_SECRET = "GYagL3PhQGa2d8daPA6hJg";
 
 // Check if running in Capacitor native app
 const isCapacitorNative = () => {
-  return (
-    typeof window !== "undefined" &&
-    (window as any).Capacitor?.isNativePlatform?.() === true
-  );
+  return Capacitor.isNativePlatform();
 };
 
 // Check if running on iOS native
 const isIOSNative = () => {
-  return (
-    typeof window !== "undefined" &&
-    (window as any).Capacitor?.getPlatform?.() === "ios"
-  );
+  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 };
 
 // Generate or retrieve a client ID for Measurement Protocol
