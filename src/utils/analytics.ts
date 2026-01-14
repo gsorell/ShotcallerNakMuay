@@ -1,5 +1,6 @@
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp } from '@capacitor/core';
 
 // Analytics event names
 export const AnalyticsEvents = {
@@ -187,27 +188,48 @@ const sendMeasurementProtocolEvent = async (
       : "https://www.google-analytics.com/mp/collect";
     const url = `${endpoint}?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
 
-    addDebugLog(`Fetching: ${eventName}...`);
+    addDebugLog(`Sending via CapacitorHttp: ${eventName}...`);
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    // Use CapacitorHttp for native iOS to bypass WKWebView CORS restrictions
+    if (isIOSNative()) {
+      const response = await CapacitorHttp.post({
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        data: payload,
+      });
 
-    addDebugLog(`Response status: ${response.status}`);
+      addDebugLog(`Response status: ${response.status}`);
 
-    // Debug endpoint returns validation info as JSON
-    if (GA_DEBUG_MODE) {
-      const debugResponse = await response.text();
-      addDebugLog(`Debug resp: ${debugResponse.substring(0, 100)}`);
-    } else if (!response.ok && response.status !== 204) {
-      addDebugLog(`ERROR: ${response.status}`);
+      // Debug endpoint returns validation info as JSON
+      if (GA_DEBUG_MODE && response.data) {
+        const debugStr = typeof response.data === 'string'
+          ? response.data
+          : JSON.stringify(response.data);
+        addDebugLog(`Debug resp: ${debugStr.substring(0, 100)}`);
+      }
+    } else {
+      // Fallback to fetch for web
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      addDebugLog(`Response status: ${response.status}`);
+
+      if (GA_DEBUG_MODE) {
+        const debugResponse = await response.text();
+        addDebugLog(`Debug resp: ${debugResponse.substring(0, 100)}`);
+      } else if (!response.ok && response.status !== 204) {
+        addDebugLog(`ERROR: ${response.status}`);
+      }
     }
   } catch (error) {
-    addDebugLog(`FETCH ERROR: ${error}`);
+    addDebugLog(`HTTP ERROR: ${error}`);
   }
 };
 
