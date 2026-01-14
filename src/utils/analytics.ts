@@ -44,7 +44,8 @@ export const GA_MEASUREMENT_ID = "G-5GY5JTX5KZ";
 const GA_API_SECRET = "GYagL3PhQGa2d8daPA6hJg";
 
 // Enable debug mode to see events in GA4 DebugView
-const GA_DEBUG_MODE = true;
+// Set to false for production - debug endpoint validates but doesn't send to GA4
+const GA_DEBUG_MODE = false;
 
 // Check if running in Capacitor native app
 const isCapacitorNative = () => {
@@ -260,15 +261,12 @@ export const initializeGA4 = () => {
     addDebugLog("Using Measurement Protocol for iOS");
     usingMeasurementProtocol = true;
 
-    // Send session_start first (required for realtime to work)
+    // Send initial events (page_view required for realtime to work)
+    // Note: session_start is reserved by GA4, so we just send page_view
     // Use setTimeout to ensure storage is initialized
     setTimeout(async () => {
       try {
         addDebugLog("Sending initial events...");
-        await sendMeasurementProtocolEvent("session_start", {
-          engagement_time_msec: 100,
-        });
-
         await sendMeasurementProtocolEvent("page_view", {
           page_title: "Nak Muay Shot Caller",
           page_location: "app://shotcallernakmuay/home",
