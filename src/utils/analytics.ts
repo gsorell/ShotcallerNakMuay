@@ -42,6 +42,9 @@ export const GA_MEASUREMENT_ID = "G-5GY5JTX5KZ";
 // This is safe to include in client code - it only allows sending data, not reading
 const GA_API_SECRET = "GYagL3PhQGa2d8daPA6hJg";
 
+// Enable debug mode to see events in GA4 DebugView
+const GA_DEBUG_MODE = true;
+
 // Check if running in Capacitor native app
 const isCapacitorNative = () => {
   return Capacitor.isNativePlatform();
@@ -155,13 +158,20 @@ const sendMeasurementProtocolEvent = async (
             session_id: sessionId,
             platform: Capacitor.getPlatform(),
             app_version: "1.4.23",
+            debug_mode: GA_DEBUG_MODE ? 1 : 0,
             ...params,
           },
         },
       ],
     };
 
-    const url = `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
+    // Use debug endpoint if debug mode is enabled
+    const endpoint = GA_DEBUG_MODE
+      ? "https://www.google-analytics.com/debug/mp/collect"
+      : "https://www.google-analytics.com/mp/collect";
+    const url = `${endpoint}?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
+
+    console.log(`[GA4] Sending ${eventName} to ${GA_DEBUG_MODE ? 'debug' : 'prod'} endpoint`);
 
     const response = await fetch(url, {
       method: "POST",
@@ -171,7 +181,11 @@ const sendMeasurementProtocolEvent = async (
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok && response.status !== 204) {
+    // Debug endpoint returns validation info as JSON
+    if (GA_DEBUG_MODE) {
+      const debugResponse = await response.text();
+      console.log("[GA4] Debug response:", debugResponse);
+    } else if (!response.ok && response.status !== 204) {
       console.error("[GA4] Analytics error:", response.status);
     }
   } catch (error) {
@@ -198,9 +212,12 @@ export const initializeGA4 = () => {
     return;
   }
 
+  console.log(`[GA4] Platform detection - isNative: ${isNative}, isIOS: ${isIOS}, platform: ${Capacitor.getPlatform()}`);
+
   // For iOS native, use Measurement Protocol (fetch-based)
   // because WKWebView blocks external scripts and has ITP restrictions
   if (isIOS) {
+    console.log("[GA4] Using Measurement Protocol for iOS");
     usingMeasurementProtocol = true;
 
     // Send session_start first (required for realtime to work)
