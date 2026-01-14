@@ -22,6 +22,7 @@ export const AnalyticsEvents = {
   PageChange: "page_change",
   TechniqueEditorOpen: "technique_editor_open",
   WorkoutLogsOpen: "workout_logs_open",
+  CustomGroupCreated: "custom_group_created",
 
   // PWA events
   PWAInstallPrompt: "pwa_install_prompt",

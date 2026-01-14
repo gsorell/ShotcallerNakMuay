@@ -1,5 +1,6 @@
 import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import "@/styles/editor.css";
+import { trackEvent } from "@/utils/analytics";
 import { type TechniqueShape as UtilsTechniqueShape } from "@/utils/techniqueUtils";
 import React, { useRef, useState } from "react";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
@@ -72,6 +73,7 @@ export default function TechniqueEditor({
       setExpandedGroups((prev) => ({ ...prev, [result.key!]: true }));
       setNewGroupName("");
       scrollToTop();
+      trackEvent("custom_group_created", { group_name: key });
     }
   };
 

@@ -41,7 +41,10 @@ export default function WorkoutSetup() {
         {stats && (
           <button
             type="button"
-            onClick={() => setPage("logs")}
+            onClick={() => {
+              trackEvent("workout_logs_open", { source: "stats_button" });
+              setPage("logs");
+            }}
             className="workout-setup-stat-btn"
           >
             {favoriteConfig && (

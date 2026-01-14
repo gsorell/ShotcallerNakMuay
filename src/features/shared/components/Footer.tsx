@@ -1,3 +1,4 @@
+import { trackEvent } from "@/utils/analytics";
 import "./Footer.css";
 
 export type FooterProps = {
@@ -43,7 +44,10 @@ export const Footer = ({
       />
       <span>Train smart, fight smarter</span>
       <button
-        onClick={() => setPage("logs")}
+        onClick={() => {
+          trackEvent("workout_logs_open", { source: "footer" });
+          setPage("logs");
+        }}
         className="app-footer-link"
       >
         Workout Logs
