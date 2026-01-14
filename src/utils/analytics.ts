@@ -61,18 +61,6 @@ const isIOSNative = () => {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 };
 
-// Debug log storage for on-screen display (iOS only)
-export const debugLogs: string[] = [];
-const addDebugLog = (message: string) => {
-  // Only collect debug logs on iOS native
-  if (!isIOSNative()) return;
-  const timestamp = new Date().toLocaleTimeString();
-  debugLogs.push(`[${timestamp}] ${message}`);
-  // Keep only last 20 logs
-  if (debugLogs.length > 20) debugLogs.shift();
-  console.log(`[GA4] ${message}`);
-};
-
 // Generate or retrieve a client ID for Measurement Protocol
 const getClientId = async (): Promise<string> => {
   const storageKey = "ga_client_id";
@@ -153,11 +141,8 @@ const sendMeasurementProtocolEvent = async (
   eventName: string,
   params?: Record<string, any>
 ) => {
-  addDebugLog(`Preparing to send: ${eventName}`);
-
   // Measurement Protocol requires an API secret
   if (!GA_API_SECRET) {
-    addDebugLog("ERROR: No API secret");
     return;
   }
 
@@ -165,7 +150,6 @@ const sendMeasurementProtocolEvent = async (
     // Get IDs asynchronously
     const clientId = await getClientId();
     const sessionId = await getSessionId();
-    addDebugLog(`clientId: ${clientId.substring(0, 10)}...`);
 
     const payload = {
       client_id: clientId,
@@ -201,48 +185,27 @@ const sendMeasurementProtocolEvent = async (
       : "https://www.google-analytics.com/mp/collect";
     const url = `${endpoint}?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
 
-    addDebugLog(`Sending via CapacitorHttp: ${eventName}...`);
-
     // Use CapacitorHttp for native iOS to bypass WKWebView CORS restrictions
     if (isIOSNative()) {
-      const response = await CapacitorHttp.post({
+      await CapacitorHttp.post({
         url,
         headers: {
           "Content-Type": "application/json",
         },
         data: payload,
       });
-
-      addDebugLog(`Response status: ${response.status}`);
-
-      // Debug endpoint returns validation info as JSON
-      if (GA_DEBUG_MODE && response.data) {
-        const debugStr = typeof response.data === 'string'
-          ? response.data
-          : JSON.stringify(response.data);
-        addDebugLog(`Debug resp: ${debugStr.substring(0, 100)}`);
-      }
     } else {
       // Fallback to fetch for web
-      const response = await fetch(url, {
+      await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-
-      addDebugLog(`Response status: ${response.status}`);
-
-      if (GA_DEBUG_MODE) {
-        const debugResponse = await response.text();
-        addDebugLog(`Debug resp: ${debugResponse.substring(0, 100)}`);
-      } else if (!response.ok && response.status !== 204) {
-        addDebugLog(`ERROR: ${response.status}`);
-      }
     }
   } catch (error) {
-    addDebugLog(`HTTP ERROR: ${error}`);
+    console.error("[GA4] Error sending event:", error);
   }
 };
 
@@ -265,26 +228,20 @@ export const initializeGA4 = () => {
     return;
   }
 
-  addDebugLog(`Platform: isNative=${isNative}, isIOS=${isIOS}, platform=${Capacitor.getPlatform()}`);
-
   // For iOS native, use Measurement Protocol (fetch-based)
   // because WKWebView blocks external scripts and has ITP restrictions
   if (isIOS) {
-    addDebugLog("Using Measurement Protocol for iOS");
     usingMeasurementProtocol = true;
 
-    // Send initial events (page_view required for realtime to work)
-    // Note: session_start is reserved by GA4, so we just send page_view
+    // Send initial page_view (required for realtime to work)
     // Use setTimeout to ensure storage is initialized
     setTimeout(async () => {
       try {
-        addDebugLog("Sending initial events...");
         await sendMeasurementProtocolEvent("page_view", {
           page_title: "Nak Muay Shot Caller",
           page_location: "app://shotcallernakmuay/home",
           engagement_time_msec: 100,
         });
-        addDebugLog("Initial events sent!");
       } catch (error) {
         console.error("[GA4] Initialization error:", error);
       }
