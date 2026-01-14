@@ -191,6 +191,7 @@ const sendMeasurementProtocolEvent = async (
         url,
         headers: {
           "Content-Type": "application/json",
+          "User-Agent": navigator.userAgent || "ShotcallerNakMuay/iOS",
         },
         data: payload,
       });
