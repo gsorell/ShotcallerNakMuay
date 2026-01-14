@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { Capacitor } from "@capacitor/core";
 
@@ -27,7 +27,7 @@ import {
 } from "@/features/workout";
 
 // Utilities
-import { initializeGA4 } from "@/utils/analytics";
+import { initializeGA4, debugLogs } from "@/utils/analytics";
 import { displayInAppBrowserWarning } from "@/utils/inAppBrowserDetector";
 import { fmtTime } from "@/utils/timeUtils";
 
@@ -37,6 +37,88 @@ import "@/styles/difficulty.css";
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;
+
+// Debug panel component - only shows on iOS native
+const AnalyticsDebugPanel = () => {
+  const [logs, setLogs] = useState<string[]>([]);
+  const [minimized, setMinimized] = useState(false);
+
+  // Only show on iOS native
+  const isIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+
+  useEffect(() => {
+    if (!isIOS) return;
+    // Update logs every second
+    const interval = setInterval(() => {
+      setLogs([...debugLogs]);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isIOS]);
+
+  if (!isIOS) return null;
+
+  if (minimized) {
+    return (
+      <button
+        onClick={() => setMinimized(false)}
+        style={{
+          position: "fixed",
+          bottom: 10,
+          right: 10,
+          zIndex: 99999,
+          background: "#333",
+          color: "#0f0",
+          border: "1px solid #0f0",
+          borderRadius: 4,
+          padding: "4px 8px",
+          fontSize: 10,
+        }}
+      >
+        GA4 Debug ({logs.length})
+      </button>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 10,
+        left: 10,
+        right: 10,
+        zIndex: 99999,
+        background: "rgba(0,0,0,0.9)",
+        border: "1px solid #0f0",
+        borderRadius: 8,
+        padding: 10,
+        maxHeight: "40vh",
+        overflow: "auto",
+        fontFamily: "monospace",
+        fontSize: 11,
+        color: "#0f0",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <strong>GA4 Debug (iOS)</strong>
+        <button
+          onClick={() => setMinimized(true)}
+          style={{ background: "none", border: "none", color: "#0f0", cursor: "pointer" }}
+        >
+          [minimize]
+        </button>
+      </div>
+      {logs.length === 0 ? (
+        <div style={{ color: "#ff0" }}>No logs yet... waiting for analytics init</div>
+      ) : (
+        logs.map((log, i) => (
+          <div key={i} style={{ borderBottom: "1px solid #333", padding: "2px 0" }}>
+            {log}
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
 
 export default function App() {
   // --- 1. Init & Global Config ---
@@ -208,6 +290,8 @@ export default function App() {
   // --- 9. Render ---
   return (
     <>
+      <AnalyticsDebugPanel />
+
       <OnboardingModal
         open={showOnboardingMsg}
         modalScrollPosition={modalScrollPosition}

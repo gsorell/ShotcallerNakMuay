@@ -28,3 +28,8 @@ dist-ssr
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Sensitive files
+*-base64.txt
+*api-key*.txt
+*certificate*.txt

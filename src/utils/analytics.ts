@@ -55,6 +55,18 @@ const isIOSNative = () => {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 };
 
+// Debug log storage for on-screen display (iOS only)
+export const debugLogs: string[] = [];
+const addDebugLog = (message: string) => {
+  // Only collect debug logs on iOS native
+  if (!isIOSNative()) return;
+  const timestamp = new Date().toLocaleTimeString();
+  debugLogs.push(`[${timestamp}] ${message}`);
+  // Keep only last 20 logs
+  if (debugLogs.length > 20) debugLogs.shift();
+  console.log(`[GA4] ${message}`);
+};
+
 // Generate or retrieve a client ID for Measurement Protocol
 const getClientId = async (): Promise<string> => {
   const storageKey = "ga_client_id";
@@ -135,8 +147,11 @@ const sendMeasurementProtocolEvent = async (
   eventName: string,
   params?: Record<string, any>
 ) => {
+  addDebugLog(`Preparing to send: ${eventName}`);
+
   // Measurement Protocol requires an API secret
   if (!GA_API_SECRET) {
+    addDebugLog("ERROR: No API secret");
     return;
   }
 
@@ -144,6 +159,7 @@ const sendMeasurementProtocolEvent = async (
     // Get IDs asynchronously
     const clientId = await getClientId();
     const sessionId = await getSessionId();
+    addDebugLog(`clientId: ${clientId.substring(0, 10)}...`);
 
     const payload = {
       client_id: clientId,
@@ -171,7 +187,7 @@ const sendMeasurementProtocolEvent = async (
       : "https://www.google-analytics.com/mp/collect";
     const url = `${endpoint}?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
 
-    console.log(`[GA4] Sending ${eventName} to ${GA_DEBUG_MODE ? 'debug' : 'prod'} endpoint`);
+    addDebugLog(`Fetching: ${eventName}...`);
 
     const response = await fetch(url, {
       method: "POST",
@@ -181,15 +197,17 @@ const sendMeasurementProtocolEvent = async (
       body: JSON.stringify(payload),
     });
 
+    addDebugLog(`Response status: ${response.status}`);
+
     // Debug endpoint returns validation info as JSON
     if (GA_DEBUG_MODE) {
       const debugResponse = await response.text();
-      console.log("[GA4] Debug response:", debugResponse);
+      addDebugLog(`Debug resp: ${debugResponse.substring(0, 100)}`);
     } else if (!response.ok && response.status !== 204) {
-      console.error("[GA4] Analytics error:", response.status);
+      addDebugLog(`ERROR: ${response.status}`);
     }
   } catch (error) {
-    console.error("[GA4] Analytics error:", error);
+    addDebugLog(`FETCH ERROR: ${error}`);
   }
 };
 
@@ -212,27 +230,29 @@ export const initializeGA4 = () => {
     return;
   }
 
-  console.log(`[GA4] Platform detection - isNative: ${isNative}, isIOS: ${isIOS}, platform: ${Capacitor.getPlatform()}`);
+  addDebugLog(`Platform: isNative=${isNative}, isIOS=${isIOS}, platform=${Capacitor.getPlatform()}`);
 
   // For iOS native, use Measurement Protocol (fetch-based)
   // because WKWebView blocks external scripts and has ITP restrictions
   if (isIOS) {
-    console.log("[GA4] Using Measurement Protocol for iOS");
+    addDebugLog("Using Measurement Protocol for iOS");
     usingMeasurementProtocol = true;
 
     // Send session_start first (required for realtime to work)
     // Use setTimeout to ensure storage is initialized
     setTimeout(async () => {
       try {
+        addDebugLog("Sending initial events...");
         await sendMeasurementProtocolEvent("session_start", {
           engagement_time_msec: 100,
         });
-        
+
         await sendMeasurementProtocolEvent("page_view", {
           page_title: "Nak Muay Shot Caller",
           page_location: "app://shotcallernakmuay/home",
           engagement_time_msec: 100,
         });
+        addDebugLog("Initial events sent!");
       } catch (error) {
         console.error("[GA4] Initialization error:", error);
       }

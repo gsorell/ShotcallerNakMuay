@@ -38,7 +38,13 @@
       "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe shell dumpsys package com.shotcallernakmuay.app)",
       "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe logcat:*)",
       "Bash(C:/Users/gsore/AppData/Local/Android/Sdk/platform-tools/adb.exe shell \"ps -A | grep shotcaller\")",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(powershell -Command \"[Convert]::ToBase64String\\([IO.File]::ReadAllBytes\\(''C:\\\\Users\\\\gsore\\\\Downloads\\\\Shotcaller_Nak_Muay_App_Store.mobileprovision''\\)\\) | Out-File ''C:\\\\Users\\\\gsore\\\\ShotcallerNakMuay\\\\provisioning-profile-base64.txt''\")",
+      "Bash(powershell -Command \"[Convert]::ToBase64String\\([IO.File]::ReadAllBytes\\(''C:\\\\Users\\\\gsore\\\\Downloads\\\\Apple Distribution_ Gabriel Sorell.p12''\\)\\) | Out-File ''C:\\\\Users\\\\gsore\\\\ShotcallerNakMuay\\\\distribution-certificate-base64.txt''\")",
+      "Bash(powershell -Command:*)",
+      "Bash(npx expo export:*)",
+      "Bash(git restore:*)"
     ]
   }
 }
