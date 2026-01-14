@@ -48,6 +48,9 @@ const GA_API_SECRET = "GYagL3PhQGa2d8daPA6hJg";
 // Set to false for production - debug endpoint validates but doesn't send to GA4
 const GA_DEBUG_MODE = false;
 
+// App version - imported from package.json at build time
+const APP_VERSION = "1.4.24";
+
 // Check if running in Capacitor native app
 const isCapacitorNative = () => {
   return Capacitor.isNativePlatform();
@@ -169,14 +172,22 @@ const sendMeasurementProtocolEvent = async (
       user_id: clientId,
       timestamp_micros: Date.now() * 1000,
       non_personalized_ads: false,
+      // User properties for device identification
+      user_properties: {
+        device_category: { value: "mobile" },
+        app_platform: { value: "ios" },
+        app_version: { value: APP_VERSION },
+      },
       events: [
         {
           name: eventName,
           params: {
             engagement_time_msec: 100,
             session_id: sessionId,
+            // Device and app info
             platform: Capacitor.getPlatform(),
-            app_version: "1.4.23",
+            device_category: "mobile",
+            app_version: APP_VERSION,
             debug_mode: GA_DEBUG_MODE ? 1 : 0,
             ...params,
           },
