@@ -103,10 +103,16 @@ export default function App() {
 
   const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
 
+  // Track if user has dismissed the prompt this session
+  const hasUserDismissedPrompt = useRef(false);
+
   // Show app install prompt based on user engagement (only for web visitors)
   useEffect(() => {
     // Don't show if already running as native app
     if (Capacitor.isNativePlatform()) return;
+
+    // Don't show if user already dismissed this session
+    if (hasUserDismissedPrompt.current) return;
 
     // Check if we should show the prompt based on engagement
     if (shouldShowPrompt(userEngagement) && !showPWAPrompt) {
@@ -224,6 +230,7 @@ export default function App() {
   };
 
   const handleDismissPWAPrompt = () => {
+    hasUserDismissedPrompt.current = true;
     setShowPWAPrompt(false);
   };
 
