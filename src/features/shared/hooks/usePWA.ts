@@ -168,8 +168,8 @@ export function usePWA(): PWAHook {
         // Completed at least one workout
         completedWorkout: userStats.completedWorkouts > 0,
 
-        // Been on site for at least 30 seconds this session
-        currentSessionEngagement: userStats.timeOnSite >= 30,
+        // Been on site for at least 2 seconds this session
+        currentSessionEngagement: userStats.timeOnSite >= 2,
       };
 
       // Show prompt if user meets any of the engagement criteria

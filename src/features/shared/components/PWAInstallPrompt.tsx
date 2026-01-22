@@ -2,30 +2,44 @@ import React from "react";
 import "./PWAInstallPrompt.css";
 
 interface PWAInstallPromptProps {
-  onInstall: () => Promise<boolean>;
   onDismiss: () => void;
   onDismissPermanently: () => void;
   isVisible: boolean;
 }
 
+const APP_STORE_URL = "https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.shotcallernakmuay.app&pcampaignid=web_share";
+
+type Platform = "ios" | "android" | "other";
+
+function detectPlatform(): Platform {
+  const ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua)) return "ios";
+  if (/Android/i.test(ua)) return "android";
+  return "other";
+}
+
 const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
-  onInstall,
   onDismiss,
   onDismissPermanently,
   isVisible,
 }) => {
   if (!isVisible) return null;
 
-  // Detect if user is on Android
-  const isAndroid = /Android/i.test(navigator.userAgent);
+  const platform = detectPlatform();
 
-  const handleOpenPlayStore = () => {
-    window.open('https://play.google.com/store/apps/details?id=com.shotcallernakmuay.app', '_blank');
+  const handleOpenAppStore = () => {
+    window.open(APP_STORE_URL, "_blank");
     onDismissPermanently();
   };
 
-  // Show Play Store modal for Android users
-  if (isAndroid) {
+  const handleOpenPlayStore = () => {
+    window.open(PLAY_STORE_URL, "_blank");
+    onDismissPermanently();
+  };
+
+  // Show App Store modal for iOS users
+  if (platform === "ios") {
     return (
       <div
         className="pwa-prompt-backdrop"
@@ -35,11 +49,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
           }
         }}
       >
-        <div
-          className="pwa-prompt-card"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* App Icon */}
+        <div className="pwa-prompt-card" onClick={(e) => e.stopPropagation()}>
           <div className="pwa-prompt-icon">
             <img
               src="/assets/logo_icon.png"
@@ -47,21 +57,71 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
-                target.parentElement!.innerHTML = '<span class="pwa-prompt-icon-fallback">🥊</span>';
+                target.parentElement!.innerHTML =
+                  '<span class="pwa-prompt-icon-fallback">🥊</span>';
               }}
             />
           </div>
 
-          {/* Content */}
-          <h2 className="pwa-prompt-title">
-            Now Available on Google Play!
-          </h2>
+          <h2 className="pwa-prompt-title">Now Available on the App Store!</h2>
 
           <p className="pwa-prompt-description">
-            Get the best experience with the native Android app. Download now from the Google Play Store for better performance, offline support, and enhanced features.
+            Get the native iOS app for the best experience and to support
+            continued development.
           </p>
 
-          {/* Actions */}
+          <div className="pwa-prompt-buttons">
+            <button
+              onClick={handleOpenAppStore}
+              className="pwa-prompt-btn pwa-prompt-btn-primary"
+            >
+              Open in App Store
+            </button>
+
+            <button
+              onClick={onDismiss}
+              className="pwa-prompt-btn pwa-prompt-btn-secondary"
+            >
+              Continue with Web Version
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Play Store modal for Android users
+  if (platform === "android") {
+    return (
+      <div
+        className="pwa-prompt-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onDismiss();
+          }
+        }}
+      >
+        <div className="pwa-prompt-card" onClick={(e) => e.stopPropagation()}>
+          <div className="pwa-prompt-icon">
+            <img
+              src="/assets/logo_icon.png"
+              alt="Nak Muay Shot Caller"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = "none";
+                target.parentElement!.innerHTML =
+                  '<span class="pwa-prompt-icon-fallback">🥊</span>';
+              }}
+            />
+          </div>
+
+          <h2 className="pwa-prompt-title">Now Available on Google Play!</h2>
+
+          <p className="pwa-prompt-description">
+            Get the native Android app for the best experience and to support
+            continued development.
+          </p>
+
           <div className="pwa-prompt-buttons">
             <button
               onClick={handleOpenPlayStore}
@@ -82,22 +142,17 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
     );
   }
 
-  // Show regular PWA install prompt for non-Android users
+  // Show native app promotion for desktop/other users
   return (
     <div
       className="pwa-prompt-backdrop"
       onClick={(e) => {
-        // Close on backdrop click
         if (e.target === e.currentTarget) {
           onDismiss();
         }
       }}
     >
-      <div
-        className="pwa-prompt-card"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* App Icon */}
+      <div className="pwa-prompt-card" onClick={(e) => e.stopPropagation()}>
         <div className="pwa-prompt-icon">
           <img
             src="/assets/logo_icon.png"
@@ -105,51 +160,39 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = "none";
-              target.parentElement!.innerHTML = '<span class="pwa-prompt-icon-fallback">🥊</span>';
+              target.parentElement!.innerHTML =
+                '<span class="pwa-prompt-icon-fallback">🥊</span>';
             }}
           />
         </div>
 
-        {/* Content */}
-        <h2 className="pwa-prompt-title">
-          Download this App!
-        </h2>
+        <h2 className="pwa-prompt-title">Get the Mobile App!</h2>
 
         <p className="pwa-prompt-description">
-          Install it right from your browser! Get faster loading,
-          distraction-free full-screen training, and offline access.
+          Get the native app for iPhone or Android for the best experience and
+          to support continued development.
         </p>
 
-        <div className="pwa-prompt-instructions">
-          <div>
-            <strong>Desktop Chrome:</strong>
-            <br />
-            • Look for ⊕ icon in address bar
-            <br />• Or: Menu (⋮) → "Install Nak Muay Shot Caller"
-          </div>
-          <div>
-            <strong>Mobile:</strong>
-            <br />
-            • Menu → "Add to Home Screen"
-            <br />• Or: Share → "Add to Home Screen"
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="pwa-prompt-buttons">
+        <div className="pwa-prompt-buttons pwa-prompt-buttons-stacked">
           <button
-            onClick={onDismiss}
-            className="pwa-prompt-btn pwa-prompt-btn-primary"
+            onClick={handleOpenAppStore}
+            className="pwa-prompt-btn pwa-prompt-btn-primary pwa-prompt-btn-appstore"
           >
-            Got It!
+            Download for iPhone
           </button>
 
           <button
-            onClick={onDismissPermanently}
-            className="pwa-prompt-btn pwa-prompt-btn-secondary"
-            title="Don't show this again"
+            onClick={handleOpenPlayStore}
+            className="pwa-prompt-btn pwa-prompt-btn-primary pwa-prompt-btn-playstore"
           >
-            Don't Show Again
+            Download for Android
+          </button>
+
+          <button
+            onClick={onDismiss}
+            className="pwa-prompt-btn pwa-prompt-btn-secondary"
+          >
+            Continue with Web Version
           </button>
         </div>
       </div>

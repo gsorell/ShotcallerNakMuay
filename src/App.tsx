@@ -11,7 +11,9 @@ import { WorkoutCompleted, WorkoutLogs } from "@/features/logs";
 import {
   AppLayout,
   OnboardingModal,
+  PWAInstallPrompt,
   useNavigationGestures,
+  usePWA,
   useSystemServices,
   useTTSContext,
   useUIContext,
@@ -85,7 +87,12 @@ export default function App() {
     setShowAllEmphases,
     showOnboardingMsg,
     setShowOnboardingMsg,
+    showPWAPrompt,
+    setShowPWAPrompt,
   } = useUIContext();
+
+  // --- 3a. PWA / App Install Prompt ---
+  const { shouldShowPrompt, dismissPrompt } = usePWA();
 
   // --- 4. UI Refs ---
   const isEditorRef = useRef(false);
@@ -95,6 +102,17 @@ export default function App() {
   }, [page]);
 
   const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
+
+  // Show app install prompt based on user engagement (only for web visitors)
+  useEffect(() => {
+    // Don't show if already running as native app
+    if (Capacitor.isNativePlatform()) return;
+
+    // Check if we should show the prompt based on engagement
+    if (shouldShowPrompt(userEngagement) && !showPWAPrompt) {
+      setShowPWAPrompt(true);
+    }
+  }, [userEngagement, shouldShowPrompt, showPWAPrompt, setShowPWAPrompt]);
 
   const {
     voices: unifiedVoices,
@@ -205,9 +223,24 @@ export default function App() {
     }
   };
 
+  const handleDismissPWAPrompt = () => {
+    setShowPWAPrompt(false);
+  };
+
+  const handleDismissPWAPromptPermanently = () => {
+    dismissPrompt();
+    setShowPWAPrompt(false);
+  };
+
   // --- 9. Render ---
   return (
     <>
+      <PWAInstallPrompt
+        isVisible={showPWAPrompt}
+        onDismiss={handleDismissPWAPrompt}
+        onDismissPermanently={handleDismissPWAPromptPermanently}
+      />
+
       <OnboardingModal
         open={showOnboardingMsg}
         modalScrollPosition={modalScrollPosition}

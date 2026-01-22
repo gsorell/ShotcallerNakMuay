@@ -1,4 +1,4 @@
-/* PWAInstallPrompt.css - Component-specific styles for PWAInstallPrompt */
+/* PWAInstallPrompt.css */
 
 /* Backdrop */
 .pwa-prompt-backdrop {
@@ -7,78 +7,69 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
   padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Card container */
 .pwa-prompt-card {
-  max-width: 400px;
+  max-width: 360px;
   width: 100%;
-  background: #1a1a1a;
+  background: #1a1a2e;
   color: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  padding: 1.75rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   text-align: center;
 }
 
 /* Icon container */
 .pwa-prompt-icon {
-  width: 64px;
-  height: 64px;
-  background: rgba(255,255,255,0.1);
+  width: 72px;
+  height: 72px;
+  background: rgba(249, 168, 212, 0.15);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1.5rem auto;
+  margin: 0 auto 1.25rem auto;
 }
 
 .pwa-prompt-icon img {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
   object-fit: cover;
 }
 
 .pwa-prompt-icon-fallback {
-  font-size: 32px;
+  font-size: 36px;
 }
 
 /* Content */
 .pwa-prompt-title {
-  margin: 0 0 1rem 0;
-  color: #f9a8d4;
+  margin: 0 0 0.5rem 0;
+  color: #fff;
   font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .pwa-prompt-description {
   margin: 0 0 1.5rem 0;
   line-height: 1.5;
-  color: #e5e7eb;
-}
-
-/* Instructions box */
-.pwa-prompt-instructions {
-  background: #2a2a2a;
-  padding: 1rem;
-  border-radius: 8px;
-  margin: 1rem 0;
-  text-align: left;
+  color: #9ca3af;
   font-size: 0.9rem;
-}
-
-.pwa-prompt-instructions div {
-  margin-bottom: 0.75rem;
-}
-
-.pwa-prompt-instructions strong {
-  color: #60a5fa;
 }
 
 /* Action buttons */
@@ -89,30 +80,56 @@
 }
 
 .pwa-prompt-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  border: none;
 }
 
 .pwa-prompt-btn-primary {
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: #ec4899;
   color: white;
 }
 
 .pwa-prompt-btn-primary:hover {
-  background: rgba(255,255,255,0.25);
+  background: #db2777;
 }
 
 .pwa-prompt-btn-secondary {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #f9a8d4;
+  color: #9ca3af;
 }
 
 .pwa-prompt-btn-secondary:hover {
-  background: rgba(249,168,212,0.1);
+  color: #f9a8d4;
+}
+
+/* Stacked buttons for desktop view */
+.pwa-prompt-buttons-stacked {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pwa-prompt-buttons-stacked .pwa-prompt-btn {
+  width: 100%;
+}
+
+/* Store-specific button colors */
+.pwa-prompt-btn-appstore {
+  background: #3b82f6;
+}
+
+.pwa-prompt-btn-appstore:hover {
+  background: #2563eb;
+}
+
+.pwa-prompt-btn-playstore {
+  background: #22c55e;
+}
+
+.pwa-prompt-btn-playstore:hover {
+  background: #16a34a;
 }
