@@ -1,7 +1,7 @@
 export function HeroBackground() {
   return (
     <div className="hero-bg">
-      <picture>
+      <picture style={{ pointerEvents: "none" }}>
         <source media="(min-width:1200px)" srcSet="/assets/hero_desktop.png" />
         <source media="(min-width:600px)" srcSet="/assets/hero_tablet.png" />
         <img
@@ -12,6 +12,7 @@ export function HeroBackground() {
             height: "100vh",
             minHeight: "100dvh",
             objectFit: "cover",
+            pointerEvents: "none",
           }}
         />
       </picture>

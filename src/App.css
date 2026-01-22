@@ -11,6 +11,11 @@
   --gap: 16px;
 }
 
+/* Force all elements to allow scrolling */
+* {
+  touch-action: pan-x pan-y !important;
+}
+
 body,
 #root {
   margin: 0;
@@ -20,6 +25,7 @@ body,
   color: #101010;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  touch-action: pan-x pan-y;
 }
 
 /* Disable long-press context menu on images (iOS) */
@@ -345,10 +351,17 @@ input[type="number"] {
   white-space: nowrap;
 }
 
-/* Optional safety to avoid page-wide horizontal scroll */
+/* Enable proper scrolling while preventing horizontal overflow */
 html,
 body {
   overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Ensure touch scrolling works properly on mobile */
+html {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Sticky start button in the bottom container */
@@ -499,4 +512,9 @@ input,
 textarea,
 select {
   touch-action: manipulation;
+}
+
+/* Allow vertical scrolling on all buttons */
+button {
+  touch-action: pan-y;
 }

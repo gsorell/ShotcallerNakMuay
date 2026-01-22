@@ -32,7 +32,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   return (
     <>
-
       <Header onHelp={onHelp} onLogoClick={onLogoClick} />
 
       <div className="app-layout-wrapper">

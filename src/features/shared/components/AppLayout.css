@@ -6,12 +6,13 @@
   color: #fdf2f8;
   font-family: system-ui, sans-serif;
   padding: 2rem;
+  touch-action: pan-y;
 }
 
 /* Wrapper div */
 .app-layout-wrapper {
-  position: relative;
-  z-index: 0;
+  position: static;
+  touch-action: pan-y;
 }
 
 /* Main timer styles (moved from inline) */
@@ -49,7 +50,7 @@
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  overflow: hidden;
+  pointer-events: none;
 }
 
 /* Emphasis grid */
@@ -83,6 +84,7 @@
   box-sizing: border-box;
   max-width: 100%;
   word-break: break-word;
+  touch-action: pan-y;
 }
 
 @media (max-width: 600px) {
@@ -93,10 +95,19 @@
   }
 }
 
-/* Global overflow prevention */
-html, body, #root {
-  max-width: 100vw;
+/* Global overflow and scroll settings */
+html, body {
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#root {
+  min-height: 100%;
+  max-width: 100vw;
 }
 
 /* Mobile-specific layouts */

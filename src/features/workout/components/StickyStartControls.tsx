@@ -23,22 +23,6 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
           position: "fixed",
           left: 0,
           right: 0,
-          top: `calc(70vh - 120px)`,
-          bottom: 0,
-          zIndex: 998,
-          pointerEvents: "none",
-          background: `linear-gradient(180deg, rgba(24,24,36,0) 0%, rgba(24,24,36,0.3) 100%)`,
-          opacity: 1,
-          transition: "opacity 0.3s",
-        }}
-        aria-hidden="true"
-      />
-
-      <div
-        style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
           bottom: 0,
           zIndex: 999,
           padding: "1rem 1rem 2.5rem 1rem",

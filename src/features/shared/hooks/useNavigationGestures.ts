@@ -97,7 +97,8 @@ export function useNavigationGestures({
       }
 
       // Prevent default scrolling if we're in a valid horizontal swipe
-      if (Math.abs(deltaX) > 10) {
+      // Only call preventDefault if the event is cancelable to avoid browser warnings
+      if (Math.abs(deltaX) > 10 && e.cancelable) {
         e.preventDefault();
       }
     };

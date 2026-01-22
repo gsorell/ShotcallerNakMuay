@@ -11,7 +11,8 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
   const logoRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    document.body.style.overscrollBehaviorY = "contain";
+    // Removed overscrollBehaviorY to test scrolling
+    // document.body.style.overscrollBehaviorY = "contain";
 
     // Mobile-specific: Continuously enforce no tap highlighting for button element
     const enforceNoHighlight = () => {
@@ -44,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
     const interval = setInterval(enforceNoHighlight, 1000);
 
     return () => {
-      document.body.style.overscrollBehaviorY = "auto";
+      // document.body.style.overscrollBehaviorY = "auto";
       clearInterval(interval);
     };
   }, []);
