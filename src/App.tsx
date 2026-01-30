@@ -74,6 +74,7 @@ export default function App() {
     viewCompletionScreen,
     status,
     restartSession,
+    isInterruptedByCall,
   } = useWorkoutContext();
 
   // --- 3. UI State ---
@@ -220,6 +221,7 @@ export default function App() {
                 onStop={stopSession}
                 selectedEmphases={settings.selectedEmphases}
                 emphasisList={emphasisList}
+                isInterruptedByCall={isInterruptedByCall}
               />
             </SessionTransitionWrapper>
 

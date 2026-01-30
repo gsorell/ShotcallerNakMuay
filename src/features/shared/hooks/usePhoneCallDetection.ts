@@ -35,8 +35,8 @@ export interface UsePhoneCallDetectionOptions {
   enabled?: boolean;
 
   /**
-   * Minimum duration in ms before considering a visibility change as an interruption (default: 30000)
-   * This prevents false positives from app navigation, tab switches, and normal multitasking
+   * Minimum duration in ms before considering a visibility change as an interruption (default: 2000)
+   * A short threshold ensures quick pause when receiving calls on mobile
    */
   interruptionThreshold?: number;
 
@@ -66,7 +66,7 @@ export const usePhoneCallDetection = (
     onCallEnd,
     onInterruptionChange,
     enabled = true,
-    interruptionThreshold = 30000,
+    interruptionThreshold = 2000,
     debug = false,
   } = options;
 
@@ -171,7 +171,8 @@ export const usePhoneCallDetection = (
     [enabled, log, updateCallState]
   );
 
-  // Visibility change detection (very conservative - only for extremely long interruptions)
+  // Visibility change detection - triggers interruption when app goes to background
+  // On mobile, phone calls cause the app to lose visibility
   const handleVisibilityChange = useCallback(() => {
     if (!enabled) return;
 
@@ -182,15 +183,15 @@ export const usePhoneCallDetection = (
 
     if (isHidden) {
       visibilityTimeRef.current = now;
-      // Only trigger after a very long period (30+ seconds) - likely a genuine phone call or device locked
-      setTimeout(() => {
+      // Trigger interruption after short threshold - likely a phone call or notification
+      // The short delay prevents false positives from quick app switches
+      interruptionTimeoutRef.current = window.setTimeout(() => {
         if (
           document.hidden &&
           Date.now() - visibilityTimeRef.current >= interruptionThreshold
         ) {
-          // Double-check: only interrupt if still hidden after the full threshold period
           log(
-            `Long interruption detected: ${Math.round(
+            `Interruption detected after ${Math.round(
               (Date.now() - visibilityTimeRef.current) / 1000
             )}s`
           );
@@ -201,11 +202,14 @@ export const usePhoneCallDetection = (
       const hiddenDuration = now - visibilityTimeRef.current;
       log(`App became visible after ${Math.round(hiddenDuration / 1000)}s`);
 
-      // Only resume if it was a long interruption that we actually paused for
-      if (
-        hiddenDuration >= interruptionThreshold &&
-        callStateRef.current.isCallInterrupted
-      ) {
+      // Clear any pending interruption timeout
+      if (interruptionTimeoutRef.current) {
+        clearTimeout(interruptionTimeoutRef.current);
+        interruptionTimeoutRef.current = null;
+      }
+
+      // If we were interrupted, signal that the call ended (user returned)
+      if (callStateRef.current.isCallInterrupted) {
         handleInterruptionEnd("call-ended");
       }
     }
@@ -238,7 +242,7 @@ export const usePhoneCallDetection = (
     return;
   }, [log]);
 
-  // Native app interruption handling (simplified)
+  // Native app interruption handling
   const setupNativeInterruptions = useCallback(async () => {
     if (!isNativeAppRef.current) return;
 
@@ -249,21 +253,30 @@ export const usePhoneCallDetection = (
       App.addListener("appStateChange", ({ isActive }) => {
         log(`App state change: ${isActive ? "active" : "inactive"}`);
 
-        // Very conservative approach: only trigger after extended inactivity
         if (!isActive) {
-          setTimeout(() => {
-            // Check if app is still inactive after a long delay - likely a phone call or device locked
+          // Clear any existing timeout
+          if (interruptionTimeoutRef.current) {
+            clearTimeout(interruptionTimeoutRef.current);
+          }
+          // Trigger interruption after short threshold
+          interruptionTimeoutRef.current = window.setTimeout(() => {
             if (!document.hasFocus()) {
               log(
-                `Extended app inactivity detected: ${
-                  interruptionThreshold / 1000
-                }s`
+                `App inactivity detected after ${interruptionThreshold / 1000}s`
               );
               handleInterruption("phone-call");
             }
-          }, interruptionThreshold); // Use the same 30s threshold
-        } else if (callStateRef.current.isCallInterrupted) {
-          handleInterruptionEnd("call-ended");
+          }, interruptionThreshold);
+        } else {
+          // Clear pending timeout
+          if (interruptionTimeoutRef.current) {
+            clearTimeout(interruptionTimeoutRef.current);
+            interruptionTimeoutRef.current = null;
+          }
+          // If we were interrupted, signal call ended
+          if (callStateRef.current.isCallInterrupted) {
+            handleInterruptionEnd("call-ended");
+          }
         }
       });
 
@@ -271,7 +284,7 @@ export const usePhoneCallDetection = (
     } catch (error) {
       log("Failed to initialize native interruption handling:", error);
     }
-  }, [log, handleInterruption, handleInterruptionEnd]);
+  }, [log, handleInterruption, handleInterruptionEnd, interruptionThreshold]);
 
   // Cleanup function
   const cleanup = useCallback(() => {

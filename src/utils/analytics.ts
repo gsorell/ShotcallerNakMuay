@@ -49,7 +49,7 @@ const GA_API_SECRET = "GYagL3PhQGa2d8daPA6hJg";
 const GA_DEBUG_MODE = false;
 
 // App version - imported from package.json at build time
-const APP_VERSION = "1.4.24";
+const APP_VERSION = "1.5.0";
 
 // Check if running in Capacitor native app
 const isCapacitorNative = () => {

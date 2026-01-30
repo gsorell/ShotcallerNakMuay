@@ -3,9 +3,9 @@ import type { EmphasisKey, TechniqueWithStyle } from "@/types";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { createWorkoutLogEntry } from "@/utils/logUtils";
 import { generateTechniquePool } from "@/utils/techniqueUtils";
-import React, { createContext, useCallback, useContext, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from "react";
 import { useHomeStats } from "../../logs";
-import { useAudioSystem, useUIContext, useWakeLock } from "../../shared";
+import { useAudioSystem, useUIContext, useWakeLock, usePhoneCallDetection } from "../../shared";
 import { useEmphasisList, useTechniqueData } from "../../technique-editor";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
 import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
@@ -37,6 +37,10 @@ interface WorkoutContextValue {
 
   // Status
   status: "ready" | "running" | "paused" | "resting" | "pre-round";
+
+  // Call Interruption
+  isInterruptedByCall: boolean;
+  clearCallInterruption: () => void;
 
   // Actions
   getTechniquePool: () => TechniqueWithStyle[];
@@ -81,6 +85,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   // Audio hooks
   const { tts, sfx, platform } = useAudioSystem();
+
+  // Call interruption state
+  const [isInterruptedByCall, setIsInterruptedByCall] = useState(false);
+  const pauseSessionRef = useRef<(() => void) | null>(null);
 
   // Timer handlers
   const stopSessionCleanup = useCallback(() => {
@@ -173,6 +181,33 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   // Store callout engine in ref
   calloutEngineRef.current = calloutEngine;
+
+  // Phone call detection - auto-pause session when call is received
+  const handleCallStart = useCallback(() => {
+    if (timer.running && !timer.paused) {
+      setIsInterruptedByCall(true);
+      // Use the ref to call pauseSession to avoid dependency cycle
+      if (pauseSessionRef.current) {
+        pauseSessionRef.current();
+      }
+    }
+  }, [timer.running, timer.paused]);
+
+  const handleCallEnd = useCallback(() => {
+    // Don't auto-resume - let the user manually resume
+    // The isInterruptedByCall flag will show the UI notification
+  }, []);
+
+  usePhoneCallDetection({
+    enabled: timer.running,
+    onCallStart: handleCallStart,
+    onCallEnd: handleCallEnd,
+    debug: false,
+  });
+
+  const clearCallInterruption = useCallback(() => {
+    setIsInterruptedByCall(false);
+  }, []);
 
   // Status
   const status = useMemo(():
@@ -278,6 +313,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // If currently paused, we're resuming
     if (timer.paused) {
       timer.pauseTimer(); // Toggle to unpause
+      setIsInterruptedByCall(false); // Clear call interruption flag on resume
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.resume();
@@ -293,6 +329,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       }
     }
   }, [timer]);
+
+  // Store pauseSession in ref for phone call detection
+  useEffect(() => {
+    pauseSessionRef.current = pauseSession;
+  }, [pauseSession]);
 
   const stopSession = useCallback(() => {
     stopSessionCleanup();
@@ -418,6 +459,8 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     platform,
     shouldKeepAwake,
     status,
+    isInterruptedByCall,
+    clearCallInterruption,
     getTechniquePool,
     hasSelectedEmphasis,
     startSession,

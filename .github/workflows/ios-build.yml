@@ -83,7 +83,14 @@ jobs:
         run: |
           cd ios/App/App
           BUILD_NUMBER=${{ github.run_number }}
+          # Update build number
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Info.plist
+
+          # Sync marketing version from package.json
+          VERSION=$(node -p "require('../../../package.json').version")
+          cd ..
+          sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/g" App.xcodeproj/project.pbxproj
+          echo "Updated MARKETING_VERSION to $VERSION and build number to $BUILD_NUMBER"
 
       - name: Build iOS App
         run: |
