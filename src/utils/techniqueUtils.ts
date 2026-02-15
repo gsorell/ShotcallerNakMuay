@@ -68,7 +68,7 @@ export const generateTechniquePool = (
   addCalisthenics: boolean,
   techniqueIndex: Record<string, string>
 ): TechniqueWithStyle[] => {
-  if (selectedEmphases.timer_only) return [];
+  if (selectedEmphases.timer_only || selectedEmphases.freestyle) return [];
 
   const enabled = (Object.entries(selectedEmphases) as [EmphasisKey, boolean][])
     .filter(([, v]) => v)

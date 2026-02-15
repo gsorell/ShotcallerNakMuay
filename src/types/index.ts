@@ -4,6 +4,7 @@ export type TechniquesShape = typeof INITIAL_TECHNIQUES;
 
 export type EmphasisKey =
   | "timer_only"
+  | "freestyle"
   | "khao"
   | "mat"
   | "tae"

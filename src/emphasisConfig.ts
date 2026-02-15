@@ -13,6 +13,12 @@ export const BASE_EMPHASIS_CONFIG: {
     desc: "Just a round timer — no shotcalling, no techniques.",
     iconPath: "/assets/icon.stopwatch.png",
   },
+  freestyle: {
+    label: "Freestyle",
+    icon: "🔥",
+    desc: "You call the shots — just a clack to keep pace. No techniques, no voice. Pure flow.",
+    iconPath: "/assets/icon.flame.png",
+  },
   newb: {
     label: "Nak Muay Newb",
     icon: "👶",

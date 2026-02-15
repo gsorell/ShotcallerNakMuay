@@ -13,6 +13,7 @@ export function useEmphasisList(techniques: TechniquesShape) {
     // Core group keys in preferred order
     const CORE_ORDER: string[] = [
       "timer_only",
+      "freestyle",
       "newb",
       "two_piece",
       "boxing",
@@ -39,9 +40,10 @@ export function useEmphasisList(techniques: TechniquesShape) {
       desc?: string;
     }
 
-    // Always include timer_only as the first tile
-    const timerOnlyTile = (() => {
-      const key = "timer_only";
+    // Special tiles that always appear regardless of technique data
+    const SPECIAL_KEYS = ["timer_only", "freestyle"];
+
+    const buildSpecialTile = (key: string) => {
       const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
       const technique = techniques[key] || INITIAL_TECHNIQUES[key];
       let label: string;
@@ -68,10 +70,12 @@ export function useEmphasisList(techniques: TechniquesShape) {
         emoji: config.icon || "🎯",
         desc: config.desc || technique?.description || `Custom style: ${key}`,
       };
-    })();
+    };
+
+    const specialTiles = SPECIAL_KEYS.map(buildSpecialTile);
 
     const coreGroups = CORE_ORDER.filter(
-      (key) => key !== "timer_only" && techniqueKeys.includes(key)
+      (key) => !SPECIAL_KEYS.includes(key) && techniqueKeys.includes(key)
     ).map((key) => {
       const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
       const technique = techniques[key];
@@ -125,6 +129,6 @@ export function useEmphasisList(techniques: TechniquesShape) {
         };
       });
 
-    return [timerOnlyTile, ...coreGroups, ...userGroups];
+    return [...specialTiles, ...coreGroups, ...userGroups];
   }, [techniques]);
 }

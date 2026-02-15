@@ -29,6 +29,7 @@ export function useWorkoutSettings(
     Record<EmphasisKey, boolean>
   >({
     timer_only: false,
+    freestyle: false,
     khao: false,
     mat: false,
     tae: false,
@@ -121,9 +122,10 @@ export function useWorkoutSettings(
         } catch (e) {}
       }
 
-      if (k === "timer_only") {
+      if (k === "timer_only" || k === "freestyle") {
         const allOff = {
           timer_only: false,
+          freestyle: false,
           khao: false,
           mat: false,
           tae: false,
@@ -134,10 +136,13 @@ export function useWorkoutSettings(
           two_piece: false,
           southpaw: false,
         };
-        return { ...allOff, timer_only: isTurningOn };
+        return { ...allOff, [k]: isTurningOn };
       }
       const next = { ...prev, [k]: isTurningOn };
-      if (isTurningOn) next.timer_only = false;
+      if (isTurningOn) {
+        next.timer_only = false;
+        next.freestyle = false;
+      }
       return next;
     });
   };
@@ -145,6 +150,7 @@ export function useWorkoutSettings(
   const clearAllEmphases = () => {
     setSelectedEmphases({
       timer_only: false,
+      freestyle: false,
       khao: false,
       mat: false,
       tae: false,

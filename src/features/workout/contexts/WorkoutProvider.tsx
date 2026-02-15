@@ -8,6 +8,7 @@ import { useHomeStats } from "../../logs";
 import { useAudioSystem, useUIContext, useWakeLock, usePhoneCallDetection } from "../../shared";
 import { useEmphasisList, useTechniqueData } from "../../technique-editor";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
+import { useClackEngine } from "../hooks/useClackEngine";
 import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 
@@ -182,6 +183,17 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   // Store callout engine in ref
   calloutEngineRef.current = calloutEngine;
 
+  // Freestyle clack engine
+  const isFreestyle = settings.selectedEmphases.freestyle &&
+    Object.values(settings.selectedEmphases).filter(Boolean).length === 1;
+
+  const clackEngine = useClackEngine({
+    timer,
+    difficulty: settings.difficulty,
+    isFreestyle,
+    playClack: sfx.playClack,
+  });
+
   // Phone call detection - auto-pause session when call is received
   const handleCallStart = useCallback(() => {
     if (timer.running && !timer.paused) {
@@ -259,10 +271,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   const startSession = useCallback(async () => {
     if (!hasSelectedEmphasis) return;
     const pool = getTechniquePool();
-    const timerOnlySelected =
-      settings.selectedEmphases.timer_only &&
+    const noTechniqueMode =
+      (settings.selectedEmphases.timer_only || settings.selectedEmphases.freestyle) &&
       Object.values(settings.selectedEmphases).filter(Boolean).length === 1;
-    if (!pool.length && !timerOnlySelected) {
+    if (!pool.length && !noTechniqueMode) {
       alert("No techniques found for the selected emphasis(es).");
       return;
     }
@@ -338,6 +350,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   const stopSession = useCallback(() => {
     stopSessionCleanup();
     calloutEngine.stopAllNarration();
+    clackEngine.stopClacks();
 
     // Auto-log partially completed workout
     createWorkoutLogEntry(
@@ -353,6 +366,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   }, [
     stopSessionCleanup,
     calloutEngine,
+    clackEngine,
     settings,
     timer,
     emphasisList,
@@ -376,7 +390,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
       setTimeout(async () => {
         const pool = getTechniquePool();
-        if (!pool.length && !logEntry.settings?.selectedEmphases?.timer_only) {
+        if (!pool.length && !logEntry.settings?.selectedEmphases?.timer_only && !logEntry.settings?.selectedEmphases?.freestyle) {
           alert("Cannot resume: No techniques found.");
           return;
         }

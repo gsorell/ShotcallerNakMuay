@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 export function useSoundEffects(iosAudioSession: any) {
   const bellSoundRef = useRef<HTMLAudioElement | null>(null);
   const warningSoundRef = useRef<HTMLAudioElement | null>(null);
+  const clackSoundRef = useRef<HTMLAudioElement | null>(null);
   const silenceRef = useRef<HTMLAudioElement | null>(null);
   const mediaUnlockedRef = useRef(false);
 
@@ -12,6 +13,7 @@ export function useSoundEffects(iosAudioSession: any) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const bellBufferRef = useRef<AudioBuffer | null>(null);
   const warningBufferRef = useRef<AudioBuffer | null>(null);
+  const clackBufferRef = useRef<AudioBuffer | null>(null);
 
   const isIOSNative = Capacitor.getPlatform() === "ios";
 
@@ -93,6 +95,7 @@ export function useSoundEffects(iosAudioSession: any) {
             // Load audio from local bundle into buffers
             bellBufferRef.current = await loadAudioBuffer("/big-bell-330719.mp3", ctx);
             warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
+            clackBufferRef.current = await loadAudioBuffer("/clapperboard.wav", ctx);
 
             console.log("[iOS] Web Audio API initialized - sounds won't trigger Now Playing");
           }
@@ -117,6 +120,15 @@ export function useSoundEffects(iosAudioSession: any) {
             warningSoundRef.current.volume = 0.4;
             if (iosAudioSession && iosAudioSession.configureAudioElement) {
               iosAudioSession.configureAudioElement(warningSoundRef.current);
+            }
+          }
+
+          if (!clackSoundRef.current) {
+            clackSoundRef.current = new Audio("/clapperboard.wav");
+            clackSoundRef.current.preload = "auto";
+            clackSoundRef.current.volume = 0.6;
+            if (iosAudioSession && iosAudioSession.configureAudioElement) {
+              iosAudioSession.configureAudioElement(clackSoundRef.current);
             }
           }
 
@@ -154,6 +166,12 @@ export function useSoundEffects(iosAudioSession: any) {
           warningSoundRef.current.load();
           warningSoundRef.current = null;
         }
+        if (clackSoundRef.current) {
+          clackSoundRef.current.pause();
+          clackSoundRef.current.src = "";
+          clackSoundRef.current.load();
+          clackSoundRef.current = null;
+        }
         if (silenceRef.current) {
           silenceRef.current.pause();
           silenceRef.current.src = "";
@@ -177,6 +195,11 @@ export function useSoundEffects(iosAudioSession: any) {
       if (warningSoundRef.current && iosAudioSession.shouldMixWithOthers()) {
         warningSoundRef.current.volume = 0.2;
         iosAudioSession.configureAudioElement(warningSoundRef.current);
+      }
+
+      if (clackSoundRef.current && iosAudioSession.shouldMixWithOthers()) {
+        clackSoundRef.current.volume = 0.4;
+        iosAudioSession.configureAudioElement(clackSoundRef.current);
       }
     }
   }, [isIOSNative, iosAudioSession]);
@@ -228,6 +251,30 @@ export function useSoundEffects(iosAudioSession: any) {
           if (p && typeof p.then === "function") {
             p.catch(() => {
               /* no critical fallback for warning */
+            });
+          }
+        }
+      } catch {
+        /* noop */
+      }
+    }
+  }, [isIOSNative, playWebAudioBuffer]);
+
+  // Clapperboard clack for freestyle mode
+  const playClack = useCallback(() => {
+    if (isIOSNative) {
+      if (clackBufferRef.current) {
+        playWebAudioBuffer(clackBufferRef.current, 0.5);
+      }
+    } else {
+      try {
+        const clack = clackSoundRef.current;
+        if (clack) {
+          clack.currentTime = 0;
+          const p = clack.play();
+          if (p && typeof p.then === "function") {
+            p.catch(() => {
+              /* noop */
             });
           }
         }
@@ -291,6 +338,24 @@ export function useSoundEffects(iosAudioSession: any) {
             warn.volume = origVol;
           }
         }
+
+        const clack = clackSoundRef.current;
+        if (clack) {
+          const origVol = clack.volume;
+          clack.muted = true;
+          clack.volume = 0;
+          clack.currentTime = 0;
+          try {
+            await clack.play();
+            clack.pause();
+            clack.currentTime = 0;
+            clack.muted = false;
+            clack.volume = origVol;
+          } catch {
+            clack.muted = false;
+            clack.volume = origVol;
+          }
+        }
       } catch {
         // Unlock failed but we continue
       }
@@ -298,7 +363,7 @@ export function useSoundEffects(iosAudioSession: any) {
   }, [isIOSNative]);
 
   return useMemo(
-    () => ({ playBell, playWarningSound, ensureMediaUnlocked }),
-    [playBell, playWarningSound, ensureMediaUnlocked]
+    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked }),
+    [playBell, playWarningSound, playClack, ensureMediaUnlocked]
   );
 }
