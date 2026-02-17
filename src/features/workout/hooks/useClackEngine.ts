@@ -43,11 +43,17 @@ export function useClackEngine({
 
   const startClacks = useCallback(
     (initialDelay = 800) => {
-      // Same cadence as callout engine
+      // Consistent cadence matching callout engine
       const cadencePerMin =
         difficulty === "easy" ? 20 : difficulty === "hard" ? 42 : 26;
       const baseDelayMs = Math.round(60000 / cadencePerMin);
-      const jitterMultiplier = difficulty === "hard" ? 0.05 : 0.08;
+      
+      // Minimal jitter for consistent rhythm (±2%)
+      const jitterMultiplier = 0.02;
+      
+      // Min/max constraints to prevent timing drift
+      const minDelayMs = Math.round(baseDelayMs * 0.9);
+      const maxDelayMs = Math.round(baseDelayMs * 1.1);
 
       const scheduleNext = (delay: number) => {
         if (clackTimeoutRef.current) {
@@ -73,11 +79,14 @@ export function useClackEngine({
 
         playClack();
 
-        // Schedule next clack: base delay + jitter
+        // Schedule next with minimal jitter and timing constraints
         const jitter = Math.floor(
           baseDelayMs * jitterMultiplier * (Math.random() - 0.5)
         );
-        const nextDelay = baseDelayMs + jitter;
+        const nextDelay = Math.max(
+          minDelayMs,
+          Math.min(baseDelayMs + jitter, maxDelayMs)
+        );
         scheduleNext(nextDelay);
       };
 
