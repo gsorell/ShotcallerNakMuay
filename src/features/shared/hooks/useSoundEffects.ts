@@ -273,8 +273,8 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, [isIOSNative, playWebAudioBuffer]);
 
-  // Clapperboard clack for freestyle mode - matches bell implementation
-  const playClack = useCallback(async () => {
+  // Clapperboard clack for freestyle mode - MUST match bell's non-async pattern
+  const playClack = useCallback(() => {
     console.log("[SFX] playClack called", { 
       isIOSNative, 
       hasBuffer: !!clackBufferRef.current, 
@@ -294,41 +294,35 @@ export function useSoundEffects(iosAudioSession: any) {
       // iOS native: Web Audio API (no Now Playing widget) - same as bell
       if (clackBufferRef.current) {
         console.log("[SFX] Playing clack via Web Audio");
-        await playWebAudioBuffer(clackBufferRef.current, 0.3); // Match bell volume
+        playWebAudioBuffer(clackBufferRef.current, 0.3); // No await, like bell
       } else {
         console.warn("[SFX] No clack buffer - using fallback");
-        webAudioChime(); // Add fallback like bell
+        webAudioChime();
       }
     } else {
-      // Other platforms: HTMLAudioElement
+      // Other platforms: HTMLAudioElement - match bell exactly
       console.log("[SFX] Using HTMLAudioElement path");
       try {
         const clack = clackSoundRef.current;
         if (clack) {
           console.log("[SFX] Attempting to play clack element");
-          // iOS Safari: Try to load the audio if not ready
-          if (clack.readyState < 2) {
-            console.log("[SFX] Clack not ready, loading...");
-            clack.load();
-          }
           clack.currentTime = 0;
-          clack.volume = 0.6; // Ensure volume is set
           const p = clack.play();
           if (p && typeof p.then === "function") {
             p.then(() => {
               console.log("[SFX] Clack play SUCCESS");
             }).catch((err) => {
               console.error("[SFX] Clack play FAILED:", err);
-              webAudioChime(); // Add fallback like bell
+              webAudioChime();
             });
           }
         } else {
           console.warn("[SFX] No clack element - using fallback");
-          webAudioChime(); // Add fallback like bell
+          webAudioChime();
         }
       } catch (err) {
         console.error("[SFX] Clack error:", err);
-        webAudioChime(); // Add fallback like bell
+        webAudioChime();
       }
     }
   }, [isIOSNative, playWebAudioBuffer, webAudioChime]);
