@@ -57,8 +57,6 @@ interface WorkoutContextValue {
   homePageStats: any;
   favoriteConfig: any;
 
-  // Debug
-  clackDebugState: { lastClackTime: number; clackCount: number };
   isFreestyle: boolean;
 }
 
@@ -489,7 +487,6 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     viewCompletionScreen,
     homePageStats,
     favoriteConfig,
-    clackDebugState: sfx.clackDebugState,
     isFreestyle,
   };
 

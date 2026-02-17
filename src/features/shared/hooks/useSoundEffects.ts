@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 // All sounds use Web Audio API to avoid:
 // 1. iOS Safari autoplay blocking in setTimeout/setInterval
@@ -6,12 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // 3. Android muted-unlock hack causing audible sound bleed
 export function useSoundEffects(_iosAudioSession: any) {
   const mediaUnlockedRef = useRef(false);
-
-  // Debug: Track clack events
-  const [clackDebugState, setClackDebugState] = useState({
-    lastClackTime: 0,
-    clackCount: 0,
-  });
 
   // Web Audio API refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -95,11 +89,7 @@ export function useSoundEffects(_iosAudioSession: any) {
           warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
           clackBufferRef.current = await loadAudioBuffer("/clapperboard.mp3", ctx);
 
-          console.log("[WebAudio] All sounds initialized via Web Audio API", {
-            bellLoaded: !!bellBufferRef.current,
-            warningLoaded: !!warningBufferRef.current,
-            clackLoaded: !!clackBufferRef.current,
-          });
+
         }
       } catch (error) {
         console.warn("[WebAudio] Web Audio API init failed:", error);
@@ -138,11 +128,6 @@ export function useSoundEffects(_iosAudioSession: any) {
 
   // Clapperboard clack for freestyle mode
   const playClack = useCallback(() => {
-    setClackDebugState(prev => ({
-      lastClackTime: Date.now(),
-      clackCount: prev.clackCount + 1,
-    }));
-
     if (clackBufferRef.current && audioContextRef.current) {
       playWebAudioBuffer(clackBufferRef.current, 0.3);
     } else {
@@ -158,7 +143,6 @@ export function useSoundEffects(_iosAudioSession: any) {
     try {
       if (audioContextRef.current && audioContextRef.current.state === "suspended") {
         await audioContextRef.current.resume();
-        console.log("[WebAudio] Audio context resumed");
       }
     } catch {
       // Context resume failed
@@ -166,7 +150,7 @@ export function useSoundEffects(_iosAudioSession: any) {
   }, []);
 
   return useMemo(
-    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked, clackDebugState }),
-    [playBell, playWarningSound, playClack, ensureMediaUnlocked, clackDebugState]
+    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked }),
+    [playBell, playWarningSound, playClack, ensureMediaUnlocked]
   );
 }
