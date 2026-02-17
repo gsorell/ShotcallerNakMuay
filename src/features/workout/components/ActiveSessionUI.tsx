@@ -2,6 +2,7 @@ import React from "react";
 import { type EmphasisKey } from "@/types";
 import { ImageWithFallback } from "../../shared";
 import StatusTimer from "./StatusTimer";
+import { ClackDebugOverlay } from "./ClackDebugOverlay";
 import "./ActiveSessionUI.css";
 
 
@@ -23,6 +24,8 @@ interface ActiveSessionUIProps {
   selectedEmphases: Record<EmphasisKey, boolean>;
   emphasisList: any[];
   isInterruptedByCall?: boolean;
+  clackDebugState?: { lastClackTime: number; clackCount: number };
+  isFreestyle?: boolean;
 }
 
 export default function ActiveSessionUI({
@@ -43,11 +46,23 @@ export default function ActiveSessionUI({
   selectedEmphases,
   emphasisList,
   isInterruptedByCall = false,
+  clackDebugState = { lastClackTime: 0, clackCount: 0 },
+  isFreestyle = false,
 }: ActiveSessionUIProps) {
   if (!running && !isPreRound) return null;
 
   return (
     <div className="active-session-container">
+      {/* Debug Overlay */}
+      <ClackDebugOverlay
+        lastClackTime={clackDebugState.lastClackTime}
+        clackCount={clackDebugState.clackCount}
+        isFreestyle={isFreestyle}
+        running={running}
+        paused={paused}
+        isResting={isResting}
+      />
+
       <StatusTimer
         time={fmtTime(timeLeft)}
         round={currentRound}

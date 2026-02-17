@@ -67,16 +67,24 @@ export function useClackEngine({
       };
 
       const doClack = () => {
+        console.log("[ClackEngine] doClack tick", {
+          running: runningRef.current,
+          paused: pausedRef.current,
+          resting: isRestingRef.current,
+          freestyle: isFreestyleRef.current
+        });
         if (
           !runningRef.current ||
           pausedRef.current ||
           isRestingRef.current ||
           !isFreestyleRef.current
         ) {
+          console.log("[ClackEngine] Guards stopped clack");
           stopClacks();
           return;
         }
 
+        console.log("[ClackEngine] Calling playClack()");
         playClack();
 
         // Schedule next with minimal jitter and timing constraints

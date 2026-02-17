@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // You will pass the iosAudioSession object from your existing hook into this one
 export function useSoundEffects(iosAudioSession: any) {
@@ -8,6 +8,12 @@ export function useSoundEffects(iosAudioSession: any) {
   const clackSoundRef = useRef<HTMLAudioElement | null>(null);
   const silenceRef = useRef<HTMLAudioElement | null>(null);
   const mediaUnlockedRef = useRef(false);
+  
+  // Debug: Track clack events
+  const [clackDebugState, setClackDebugState] = useState({
+    lastClackTime: 0,
+    clackCount: 0,
+  });
 
   // Web Audio API refs for iOS native (avoids Now Playing widget)
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -97,7 +103,12 @@ export function useSoundEffects(iosAudioSession: any) {
             warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
             clackBufferRef.current = await loadAudioBuffer("/clapperboard.mp3", ctx);
 
-            console.log("[iOS] Web Audio API initialized - sounds won't trigger Now Playing");
+            console.log("[iOS] Web Audio API initialized", {
+              bellLoaded: !!bellBufferRef.current,
+              warningLoaded: !!warningBufferRef.current,
+              clackLoaded: !!clackBufferRef.current,
+              clackDuration: clackBufferRef.current?.duration
+            });
           }
         } catch (error) {
           console.warn("[iOS] Web Audio API init failed:", error);
@@ -262,9 +273,20 @@ export function useSoundEffects(iosAudioSession: any) {
 
   // Clapperboard clack for freestyle mode
   const playClack = useCallback(() => {
+    console.log("[SFX] playClack", { isIOSNative, hasBuffer: !!clackBufferRef.current, hasElement: !!clackSoundRef.current });
+    
+    // Update debug state
+    setClackDebugState(prev => ({
+      lastClackTime: Date.now(),
+      clackCount: prev.clackCount + 1,
+    }));
+    
     if (isIOSNative) {
       if (clackBufferRef.current) {
+        console.log("[SFX] Playing clack via Web Audio");
         playWebAudioBuffer(clackBufferRef.current, 0.5);
+      } else {
+        console.warn("[SFX] No clack buffer loaded on iOS!");
       }
     } else {
       try {
@@ -361,7 +383,7 @@ export function useSoundEffects(iosAudioSession: any) {
   }, [isIOSNative]);
 
   return useMemo(
-    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked }),
-    [playBell, playWarningSound, playClack, ensureMediaUnlocked]
+    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked, clackDebugState }),
+    [playBell, playWarningSound, playClack, ensureMediaUnlocked, clackDebugState]
   );
 }

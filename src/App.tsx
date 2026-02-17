@@ -75,6 +75,8 @@ export default function App() {
     status,
     restartSession,
     isInterruptedByCall,
+    clackDebugState,
+    isFreestyle,
   } = useWorkoutContext();
 
   // --- 3. UI State ---
@@ -222,6 +224,8 @@ export default function App() {
                 selectedEmphases={settings.selectedEmphases}
                 emphasisList={emphasisList}
                 isInterruptedByCall={isInterruptedByCall}
+                clackDebugState={clackDebugState}
+                isFreestyle={isFreestyle}
               />
             </SessionTransitionWrapper>
 
