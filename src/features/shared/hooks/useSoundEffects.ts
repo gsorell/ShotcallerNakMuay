@@ -273,7 +273,14 @@ export function useSoundEffects(iosAudioSession: any) {
 
   // Clapperboard clack for freestyle mode - matches bell implementation
   const playClack = useCallback(() => {
-    console.log("[SFX] playClack", { isIOSNative, hasBuffer: !!clackBufferRef.current, hasElement: !!clackSoundRef.current });
+    console.log("[SFX] playClack called", { 
+      isIOSNative, 
+      hasBuffer: !!clackBufferRef.current, 
+      hasElement: !!clackSoundRef.current,
+      elementVolume: clackSoundRef.current?.volume,
+      elementSrc: clackSoundRef.current?.src,
+      elementReadyState: clackSoundRef.current?.readyState
+    });
     
     // Update debug state
     setClackDebugState(prev => ({
@@ -292,20 +299,27 @@ export function useSoundEffects(iosAudioSession: any) {
       }
     } else {
       // Other platforms: HTMLAudioElement
+      console.log("[SFX] Using HTMLAudioElement path");
       try {
         const clack = clackSoundRef.current;
         if (clack) {
+          console.log("[SFX] Attempting to play clack element");
           clack.currentTime = 0;
           const p = clack.play();
           if (p && typeof p.then === "function") {
-            p.catch(() => {
+            p.then(() => {
+              console.log("[SFX] Clack play SUCCESS");
+            }).catch((err) => {
+              console.error("[SFX] Clack play FAILED:", err);
               webAudioChime(); // Add fallback like bell
             });
           }
         } else {
+          console.warn("[SFX] No clack element - using fallback");
           webAudioChime(); // Add fallback like bell
         }
-      } catch {
+      } catch (err) {
+        console.error("[SFX] Clack error:", err);
         webAudioChime(); // Add fallback like bell
       }
     }
