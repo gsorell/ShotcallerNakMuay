@@ -101,7 +101,8 @@ export function useSoundEffects(iosAudioSession: any) {
             // Load audio from local bundle into buffers
             bellBufferRef.current = await loadAudioBuffer("/big-bell-330719.mp3", ctx);
             warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
-            clackBufferRef.current = await loadAudioBuffer("/clapperboard.mp3", ctx);
+            // TEMP TEST: Use warning sound for clack to test if file is the issue
+            clackBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
 
             console.log("[iOS] Web Audio API initialized", {
               bellLoaded: !!bellBufferRef.current,
@@ -135,7 +136,8 @@ export function useSoundEffects(iosAudioSession: any) {
           }
 
           if (!clackSoundRef.current) {
-            clackSoundRef.current = new Audio("/clapperboard.mp3");
+            // TEMP TEST: Use warning sound for clack to test if file is the issue
+            clackSoundRef.current = new Audio("/interval.mp3");
             clackSoundRef.current.preload = "auto";
             clackSoundRef.current.volume = 0.6;
             if (iosAudioSession && iosAudioSession.configureAudioElement) {
