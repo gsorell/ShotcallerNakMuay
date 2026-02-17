@@ -312,7 +312,12 @@ export function useSoundEffects(iosAudioSession: any) {
             p.then(() => {
               console.log("[SFX] Clack play SUCCESS");
             }).catch((err) => {
-              console.error("[SFX] Clack play FAILED:", err);
+              console.error("[SFX] Clack play FAILED:", {
+                name: err.name,
+                message: err.message,
+                code: err.code,
+                toString: err.toString()
+              });
               webAudioChime();
             });
           }
