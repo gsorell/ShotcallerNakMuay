@@ -272,7 +272,7 @@ export function useSoundEffects(iosAudioSession: any) {
   }, [isIOSNative, playWebAudioBuffer]);
 
   // Clapperboard clack for freestyle mode - matches bell implementation
-  const playClack = useCallback(() => {
+  const playClack = useCallback(async () => {
     console.log("[SFX] playClack called", { 
       isIOSNative, 
       hasBuffer: !!clackBufferRef.current, 
@@ -292,7 +292,7 @@ export function useSoundEffects(iosAudioSession: any) {
       // iOS native: Web Audio API (no Now Playing widget) - same as bell
       if (clackBufferRef.current) {
         console.log("[SFX] Playing clack via Web Audio");
-        playWebAudioBuffer(clackBufferRef.current, 0.3); // Match bell volume
+        await playWebAudioBuffer(clackBufferRef.current, 0.3); // Match bell volume
       } else {
         console.warn("[SFX] No clack buffer - using fallback");
         webAudioChime(); // Add fallback like bell
@@ -304,7 +304,13 @@ export function useSoundEffects(iosAudioSession: any) {
         const clack = clackSoundRef.current;
         if (clack) {
           console.log("[SFX] Attempting to play clack element");
+          // iOS Safari: Try to load the audio if not ready
+          if (clack.readyState < 2) {
+            console.log("[SFX] Clack not ready, loading...");
+            clack.load();
+          }
           clack.currentTime = 0;
+          clack.volume = 0.6; // Ensure volume is set
           const p = clack.play();
           if (p && typeof p.then === "function") {
             p.then(() => {
