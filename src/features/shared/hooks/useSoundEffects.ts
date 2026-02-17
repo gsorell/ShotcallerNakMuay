@@ -62,15 +62,15 @@ export function useSoundEffects(iosAudioSession: any) {
   }, []);
 
   // Play audio using Web Audio API (doesn't trigger Now Playing)
-  const playWebAudioBuffer = useCallback((buffer: AudioBuffer | null, volume: number = 0.5) => {
+  const playWebAudioBuffer = useCallback(async (buffer: AudioBuffer | null, volume: number = 0.5) => {
     if (!buffer || !audioContextRef.current) return;
 
     try {
       const ctx = audioContextRef.current;
 
-      // Resume context if suspended (iOS requirement)
+      // Resume context if suspended (iOS requirement) - MUST await
       if (ctx.state === "suspended") {
-        ctx.resume();
+        await ctx.resume();
       }
 
       const source = ctx.createBufferSource();
@@ -271,7 +271,7 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, [isIOSNative, playWebAudioBuffer]);
 
-  // Clapperboard clack for freestyle mode
+  // Clapperboard clack for freestyle mode - matches bell implementation
   const playClack = useCallback(() => {
     console.log("[SFX] playClack", { isIOSNative, hasBuffer: !!clackBufferRef.current, hasElement: !!clackSoundRef.current });
     
@@ -282,27 +282,34 @@ export function useSoundEffects(iosAudioSession: any) {
     }));
     
     if (isIOSNative) {
+      // iOS native: Web Audio API (no Now Playing widget) - same as bell
       if (clackBufferRef.current) {
         console.log("[SFX] Playing clack via Web Audio");
-        playWebAudioBuffer(clackBufferRef.current, 0.5);
+        playWebAudioBuffer(clackBufferRef.current, 0.3); // Match bell volume
       } else {
-        console.warn("[SFX] No clack buffer loaded on iOS!");
+        console.warn("[SFX] No clack buffer - using fallback");
+        webAudioChime(); // Add fallback like bell
       }
     } else {
+      // Other platforms: HTMLAudioElement
       try {
         const clack = clackSoundRef.current;
         if (clack) {
           clack.currentTime = 0;
           const p = clack.play();
           if (p && typeof p.then === "function") {
-            p.catch(() => { /* noop */ });
+            p.catch(() => {
+              webAudioChime(); // Add fallback like bell
+            });
           }
+        } else {
+          webAudioChime(); // Add fallback like bell
         }
       } catch {
-        /* noop */
+        webAudioChime(); // Add fallback like bell
       }
     }
-  }, [isIOSNative, playWebAudioBuffer]);
+  }, [isIOSNative, playWebAudioBuffer, webAudioChime]);
 
   // Proactively unlock audio on user gesture
   const ensureMediaUnlocked = useCallback(async () => {
