@@ -87,34 +87,37 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, []);
 
-  // Initialize audio - Web Audio API for iOS native, HTMLAudioElement for others
+  // Initialize audio - Web Audio API for all platforms (needed for clack to avoid autoplay blocking), HTMLAudioElement as backup
   useEffect(() => {
     const initAudio = async () => {
-      if (isIOSNative) {
-        // iOS native: Use Web Audio API to avoid Now Playing widget
-        try {
-          const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-          if (AudioCtx && !audioContextRef.current) {
-            const ctx = new AudioCtx();
-            audioContextRef.current = ctx;
+      // Initialize Web Audio API for ALL platforms (not just iOS native)
+      // Needed for clack to bypass iOS Safari autoplay restrictions
+      try {
+        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx && !audioContextRef.current) {
+          const ctx = new AudioCtx();
+          audioContextRef.current = ctx;
 
-            // Load audio from local bundle into buffers
-            bellBufferRef.current = await loadAudioBuffer("/big-bell-330719.mp3", ctx);
-            warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
-            // TEMP TEST: Use warning sound for clack to test if file is the issue
-            clackBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
+          // Load audio from local bundle into buffers
+          bellBufferRef.current = await loadAudioBuffer("/big-bell-330719.mp3", ctx);
+          warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
+          // TEMP TEST: Use warning sound for clack to test if file is the issue
+          clackBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
 
-            console.log("[iOS] Web Audio API initialized", {
-              bellLoaded: !!bellBufferRef.current,
-              warningLoaded: !!warningBufferRef.current,
-              clackLoaded: !!clackBufferRef.current,
-              clackDuration: clackBufferRef.current?.duration
-            });
-          }
-        } catch (error) {
-          console.warn("[iOS] Web Audio API init failed:", error);
+          console.log("[WebAudio] Web Audio API initialized", {
+            isIOSNative,
+            bellLoaded: !!bellBufferRef.current,
+            warningLoaded: !!warningBufferRef.current,
+            clackLoaded: !!clackBufferRef.current,
+            clackDuration: clackBufferRef.current?.duration
+          });
         }
-      } else {
+      } catch (error) {
+        console.warn("[WebAudio] Web Audio API init failed:", error);
+      }
+
+      // Also init HTMLAudioElement for bell/warning (not affected by autoplay issues)
+      if (!isIOSNative) {
         // Non-iOS: Use HTMLAudioElement (works fine without Now Playing issues)
         try {
           if (!bellSoundRef.current) {
@@ -273,15 +276,13 @@ export function useSoundEffects(iosAudioSession: any) {
     }
   }, [isIOSNative, playWebAudioBuffer]);
 
-  // Clapperboard clack for freestyle mode - MUST match bell's non-async pattern
+  // Clapperboard clack for freestyle mode - Use Web Audio for all platforms to avoid iOS Safari autoplay blocking
   const playClack = useCallback(() => {
     console.log("[SFX] playClack called", { 
       isIOSNative, 
       hasBuffer: !!clackBufferRef.current, 
       hasElement: !!clackSoundRef.current,
-      elementVolume: clackSoundRef.current?.volume,
-      elementSrc: clackSoundRef.current?.src,
-      elementReadyState: clackSoundRef.current?.readyState
+      hasContext: !!audioContextRef.current
     });
     
     // Update debug state
@@ -290,22 +291,21 @@ export function useSoundEffects(iosAudioSession: any) {
       clackCount: prev.clackCount + 1,
     }));
     
-    if (isIOSNative) {
-      // iOS native: Web Audio API (no Now Playing widget) - same as bell
-      if (clackBufferRef.current) {
-        console.log("[SFX] Playing clack via Web Audio");
-        playWebAudioBuffer(clackBufferRef.current, 0.3); // No await, like bell
-      } else {
-        console.warn("[SFX] No clack buffer - using fallback");
-        webAudioChime();
-      }
+    // Use Web Audio API for ALL platforms (not just iOS native)
+    // HTMLAudioElement gets blocked by iOS Safari autoplay policy in setTimeout
+    if (clackBufferRef.current && audioContextRef.current) {
+      console.log("[SFX] Playing clack via Web Audio API");
+      playWebAudioBuffer(clackBufferRef.current, 0.3);
+    } else if (isIOSNative) {
+      // iOS native fallback (shouldn't happen)
+      console.warn("[SFX] No clack buffer on iOS native - using fallback");
+      webAudioChime();
     } else {
-      // Other platforms: HTMLAudioElement - match bell exactly
-      console.log("[SFX] Using HTMLAudioElement path");
+      // Desktop fallback to HTMLAudioElement
+      console.log("[SFX] Using HTMLAudioElement fallback (desktop)");
       try {
         const clack = clackSoundRef.current;
         if (clack) {
-          console.log("[SFX] Attempting to play clack element");
           clack.currentTime = 0;
           const p = clack.play();
           if (p && typeof p.then === "function") {
@@ -322,7 +322,6 @@ export function useSoundEffects(iosAudioSession: any) {
             });
           }
         } else {
-          console.warn("[SFX] No clack element - using fallback");
           webAudioChime();
         }
       } catch (err) {
@@ -338,17 +337,18 @@ export function useSoundEffects(iosAudioSession: any) {
     if (mediaUnlockedRef.current) return;
     mediaUnlockedRef.current = true;
 
-    if (isIOSNative) {
-      // iOS native: Resume Web Audio context on user gesture
-      try {
-        if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-          await audioContextRef.current.resume();
-          console.log("[iOS] Web Audio context resumed");
-        }
-      } catch {
-        // Context resume failed
+    // Resume Web Audio context for ALL platforms (needed for clack)
+    try {
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+        await audioContextRef.current.resume();
+        console.log("[WebAudio] Audio context resumed");
       }
-    } else {
+    } catch {
+      // Context resume failed
+    }
+
+    // Also unlock HTMLAudioElements for non-iOS native
+    if (!isIOSNative) {
       // Other platforms: Unlock HTMLAudioElements
       try {
         const bell = bellSoundRef.current;
