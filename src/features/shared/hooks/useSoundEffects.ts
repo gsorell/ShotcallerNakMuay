@@ -95,7 +95,7 @@ export function useSoundEffects(iosAudioSession: any) {
             // Load audio from local bundle into buffers
             bellBufferRef.current = await loadAudioBuffer("/big-bell-330719.mp3", ctx);
             warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
-            clackBufferRef.current = await loadAudioBuffer("/clapperboard.wav", ctx);
+            clackBufferRef.current = await loadAudioBuffer("/clapperboard.mp3", ctx);
 
             console.log("[iOS] Web Audio API initialized - sounds won't trigger Now Playing");
           }
@@ -124,7 +124,7 @@ export function useSoundEffects(iosAudioSession: any) {
           }
 
           if (!clackSoundRef.current) {
-            clackSoundRef.current = new Audio("/clapperboard.wav");
+            clackSoundRef.current = new Audio("/clapperboard.mp3");
             clackSoundRef.current.preload = "auto";
             clackSoundRef.current.volume = 0.6;
             if (iosAudioSession && iosAudioSession.configureAudioElement) {
@@ -273,9 +273,7 @@ export function useSoundEffects(iosAudioSession: any) {
           clack.currentTime = 0;
           const p = clack.play();
           if (p && typeof p.then === "function") {
-            p.catch(() => {
-              /* noop */
-            });
+            p.catch(() => { /* noop */ });
           }
         }
       } catch {
