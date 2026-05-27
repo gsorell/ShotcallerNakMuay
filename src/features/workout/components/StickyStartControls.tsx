@@ -45,6 +45,8 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
     setRestMinutes(Math.round(next / 0.25) * 0.25);
   };
 
+  const hasSelections = Object.values(selectedEmphases).some(Boolean);
+
   return (
     <div
       style={{
@@ -65,10 +67,42 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
         gap: "0.625rem",
       }}
     >
+      {hasSelections && (
+        <button
+          onClick={onClearEmphases}
+          title="Clear all selected styles"
+          aria-label="Clear all selected styles"
+          style={{
+            position: "absolute",
+            top: "0.5rem",
+            right: "0.625rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent",
+            border: "none",
+            color: "rgba(255,255,255,0.55)",
+            fontSize: "1.1rem",
+            fontWeight: 400,
+            cursor: "pointer",
+            padding: "0.25rem",
+            lineHeight: 1,
+            transition: "color 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "rgba(255,255,255,0.9)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+          }}
+        >
+          ×
+        </button>
+      )}
+
       {/* Rounds / Length / Rest */}
       <div
         style={{
-          position: "relative",
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: "0.375rem",
@@ -76,32 +110,6 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
           maxWidth: "calc(100vw - 32px)",
         }}
       >
-        <button
-          onClick={onClearEmphases}
-          title="Clear all selections"
-          aria-label="Clear all selections"
-          style={{
-            position: "absolute",
-            top: "-0.125rem",
-            right: "-0.125rem",
-            width: "1.25rem",
-            height: "1.25rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "transparent",
-            border: "none",
-            color: "rgba(255,255,255,0.5)",
-            fontSize: "1rem",
-            cursor: "pointer",
-            padding: 0,
-            lineHeight: 1,
-            zIndex: 1,
-          }}
-        >
-          ×
-        </button>
-
         <Stepper
           label="Rounds"
           value={String(roundsCount)}
