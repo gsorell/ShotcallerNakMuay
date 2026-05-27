@@ -267,7 +267,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
           }}
         >
           <button
-            onClick={onManageTechniques}
+            onClick={() => onManageTechniques()}
             style={{
               padding: ".875rem 1.25rem",
               borderRadius: "1rem",
