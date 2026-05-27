@@ -3,6 +3,7 @@ import "@/styles/editor.css";
 import { trackEvent } from "@/utils/analytics";
 import { type TechniqueShape as UtilsTechniqueShape } from "@/utils/techniqueUtils";
 import React, { useRef, useState } from "react";
+import { useUIContext } from "../../shared";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
 import { getSortedGroups } from "../utils/groupSorting";
 import "./TechniqueEditor.css";
@@ -47,9 +48,12 @@ export default function TechniqueEditor({
     duplicateGroup,
     deleteGroup,
     resetToDefault,
+    resetGroupToDefault,
     handleExport,
     handleImport,
   } = useTechniqueEditor({ techniques, setTechniques });
+
+  const { editorFocusKey, setEditorFocusKey } = useUIContext();
 
   const [newGroupName, setNewGroupName] = useState("");
 
@@ -112,6 +116,25 @@ export default function TechniqueEditor({
   const toggleGroupExpanded = React.useCallback((key: string) => {
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   }, [setExpandedGroups]);
+
+  // Deep-link: if a focus key was set before navigating here, expand that group
+  // and scroll its panel into view, then clear the focus key so it doesn't fire again.
+  React.useEffect(() => {
+    if (!editorFocusKey) return;
+    if (!local[editorFocusKey]) {
+      setEditorFocusKey(null);
+      return;
+    }
+    setExpandedGroups((prev) => ({ ...prev, [editorFocusKey]: true }));
+    const id = window.setTimeout(() => {
+      const el = document.getElementById(`group-panel-${editorFocusKey}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      setEditorFocusKey(null);
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [editorFocusKey, local, setEditorFocusKey]);
 
   // --- MODIFIED: Duplicate any group (core or user-created) and scroll to top ---
   const handleDuplicateGroup = React.useCallback(
@@ -211,6 +234,7 @@ export default function TechniqueEditor({
             onRemoveCombo={(idx) => removeCombo(key, idx)}
             onAddCombo={() => addCombo(key)}
             onDeleteGroup={() => deleteGroup(key)}
+            onResetGroup={() => resetGroupToDefault(key)}
           />
         );
       })}

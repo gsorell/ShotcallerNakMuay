@@ -5,7 +5,6 @@ import { EmphasisSelector } from "../../technique-editor";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
 import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
 import { StickyStartControls } from "./StickyStartControls";
-import { WorkoutConfiguration } from "./WorkoutConfiguration";
 import "./WorkoutSetup.css";
 
 export default function WorkoutSetup() {
@@ -13,6 +12,7 @@ export default function WorkoutSetup() {
     settings,
     emphasisList,
     techniques,
+    persistTechniques,
     homePageStats: stats,
     favoriteConfig,
     startSession: onStart,
@@ -25,6 +25,7 @@ export default function WorkoutSetup() {
     setShowAdvanced,
     showAllEmphases,
     setShowAllEmphases,
+    setEditorFocusKey,
   } = useUIContext();
 
   const {
@@ -72,17 +73,19 @@ export default function WorkoutSetup() {
           selectedEmphases={selectedEmphases}
           toggleEmphasis={toggleEmphasis}
           techniques={techniques}
+          setTechniques={persistTechniques}
           showAllEmphases={showAllEmphases}
           setShowAllEmphases={setShowAllEmphases}
-          onManageTechniques={() => {
+          onManageTechniques={(groupKey?: string) => {
             try {
-              trackEvent("technique_editor_open");
+              trackEvent("technique_editor_open", {
+                source: groupKey ? "tile_inline" : "manage_button",
+              });
             } catch {}
+            setEditorFocusKey(groupKey ?? null);
             setPage("editor");
           }}
         />
-
-        <WorkoutConfiguration />
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}

@@ -10,27 +10,33 @@ export function useEmphasisList(techniques: TechniquesShape) {
       (k) => k !== "calisthenics"
     );
 
-    // Core group keys in preferred order
+    // Core group keys in preferred order. The first 9 are above the fold
+    // (before the "More" toggle) and lead with the Muay Thai archetypes that
+    // define the app's identity. Trailing tiles (timer_only/freestyle/newb)
+    // are rendered separately at the end via TRAILING_KEYS.
     const CORE_ORDER: string[] = [
-      "timer_only",
-      "freestyle",
-      "newb",
-      "two_piece",
-      "boxing",
+      // --- Above the fold (top 9) ---
+      "meat_potatoes",
       "mat",
       "tae",
       "khao",
       "sok",
       "femur",
-      "southpaw",
-      "meat_potatoes",
       "buakaw",
-      "low_kick_legends",
-      "elbow_arsenal",
-      "ko_setups",
-      "tricky_traps",
-      "feints_and_fakeouts",
       "dutch_kickboxing",
+      "two_piece",
+      // --- Below the fold ---
+      "low_kick_legends",
+      "boxing",
+      "ko_setups",
+      "elbow_arsenal",
+      "feints_and_fakeouts",
+      "tricky_traps",
+      "southpaw",
+      // --- Trailing (filtered out and rendered separately) ---
+      "timer_only",
+      "freestyle",
+      "newb",
     ];
 
     interface EmphasisConfig {
@@ -40,8 +46,9 @@ export function useEmphasisList(techniques: TechniquesShape) {
       desc?: string;
     }
 
-    // Special tiles that always appear regardless of technique data
-    const SPECIAL_KEYS = ["timer_only", "freestyle"];
+    // Special tiles that always appear regardless of technique data,
+    // rendered at the end of the list.
+    const TRAILING_KEYS = ["timer_only", "freestyle", "newb"];
 
     const buildSpecialTile = (key: string) => {
       const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
@@ -72,10 +79,10 @@ export function useEmphasisList(techniques: TechniquesShape) {
       };
     };
 
-    const specialTiles = SPECIAL_KEYS.map(buildSpecialTile);
+    const trailingTiles = TRAILING_KEYS.map(buildSpecialTile);
 
     const coreGroups = CORE_ORDER.filter(
-      (key) => !SPECIAL_KEYS.includes(key) && techniqueKeys.includes(key)
+      (key) => !TRAILING_KEYS.includes(key) && techniqueKeys.includes(key)
     ).map((key) => {
       const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
       const technique = techniques[key];
@@ -129,6 +136,6 @@ export function useEmphasisList(techniques: TechniquesShape) {
         };
       });
 
-    return [...specialTiles, ...coreGroups, ...userGroups];
+    return [...coreGroups, ...userGroups, ...trailingTiles];
   }, [techniques]);
 }

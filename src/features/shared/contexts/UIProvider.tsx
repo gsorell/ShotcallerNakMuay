@@ -24,6 +24,10 @@ interface UIContextValue {
   // Stats refresh
   statsRefreshTrigger: number;
   triggerStatsRefresh: () => void;
+
+  // Deep-link target for the technique editor (group key to expand & scroll to)
+  editorFocusKey: string | null;
+  setEditorFocusKey: (key: string | null) => void;
 }
 
 const UIContext = createContext<UIContextValue | null>(null);
@@ -59,6 +63,9 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     setStatsRefreshTrigger((prev) => prev + 1);
   }, []);
 
+  // Deep-link target for the technique editor
+  const [editorFocusKey, setEditorFocusKey] = useState<string | null>(null);
+
   const value: UIContextValue = {
     page,
     setPage,
@@ -74,6 +81,8 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     setLastWorkout,
     statsRefreshTrigger,
     triggerStatsRefresh,
+    editorFocusKey,
+    setEditorFocusKey,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

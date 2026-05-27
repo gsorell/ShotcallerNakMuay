@@ -44,7 +44,7 @@ export default function TechniqueGroupHeader({
           />
         )}
         <div style={{ flex: 1 }}>
-          {expanded && !isCoreStyle ? (
+          {expanded ? (
             <input
               type="text"
               value={displayValue}

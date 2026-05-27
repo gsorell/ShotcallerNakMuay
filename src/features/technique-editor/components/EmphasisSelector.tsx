@@ -1,27 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
 
-import type { EmphasisKey, TechniquesShape } from "@/types"; // Adjust path to types
+import type { EmphasisKey, TechniquesShape } from "@/types";
 import { ImageWithFallback } from "../../shared";
+import { TechniqueQuickEdit } from "./TechniqueQuickEdit";
 
 interface EmphasisSelectorProps {
-  emphasisList: any[]; // You can type this strictly based on your emphasisList definition
+  emphasisList: any[];
   selectedEmphases: Record<EmphasisKey, boolean>;
   toggleEmphasis: (k: EmphasisKey) => void;
   techniques: TechniquesShape;
+  setTechniques: (t: TechniquesShape) => void;
   showAllEmphases: boolean;
   setShowAllEmphases: React.Dispatch<React.SetStateAction<boolean>>;
-  onManageTechniques: () => void;
+  onManageTechniques: (groupKey?: string) => void;
 }
+
+const TILES_WITHOUT_TECHNIQUES = new Set(["timer_only", "freestyle"]);
 
 export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   emphasisList,
   selectedEmphases,
   toggleEmphasis,
   techniques,
+  setTechniques,
   showAllEmphases,
   setShowAllEmphases,
   onManageTechniques,
 }) => {
+  const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
+
+  const toggleExpanded = (key: string) =>
+    setExpandedKeys((prev) => ({ ...prev, [key]: !prev[key] }));
+
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
       <div style={{ textAlign: "center", position: "relative" }}>
@@ -55,27 +65,37 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
             gap: "1rem",
             maxWidth: "60rem",
             margin: "0 auto",
+            alignItems: "start",
           }}
         >
           {(showAllEmphases ? emphasisList : emphasisList.slice(0, 9)).map(
             (style) => {
               const isSelected = selectedEmphases[style.key as EmphasisKey];
+              const isExpanded = !!expandedKeys[style.key];
+              const canEdit = !TILES_WITHOUT_TECHNIQUES.has(style.key);
               return (
-                <button
+                <div
                   key={style.key}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
                   onClick={() => toggleEmphasis(style.key as EmphasisKey)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleEmphasis(style.key as EmphasisKey);
+                    }
+                  }}
                   style={{
                     position: "relative",
-                    padding: "1.5rem",
+                    padding: "0.875rem 1rem",
                     borderRadius: "1rem",
                     border: isSelected
                       ? "2px solid #60a5fa"
                       : "2px solid rgba(255,255,255,0.2)",
-                    minHeight: "140px",
                     textAlign: "left",
                     cursor: "pointer",
-                    transition: "all 0.2s",
+                    transition: "border 0.2s, background 0.2s, box-shadow 0.2s",
                     backgroundColor: isSelected
                       ? "#2563eb"
                       : "rgba(255,255,255,0.1)",
@@ -83,55 +103,89 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                     boxShadow: isSelected
                       ? "0 10px 25px rgba(37,99,235,0.25)"
                       : "none",
-                    transform: isSelected ? "scale(1.02)" : "scale(1)",
                   }}
-                  onMouseUp={(e) => e.currentTarget.blur()}
                 >
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleExpanded(style.key);
+                      }}
+                      title={
+                        isExpanded
+                          ? "Hide techniques"
+                          : "View & edit techniques"
+                      }
+                      aria-label={
+                        isExpanded
+                          ? `Hide techniques for ${style.label}`
+                          : `View & edit techniques for ${style.label}`
+                      }
+                      aria-expanded={isExpanded}
+                      style={{
+                        position: "absolute",
+                        top: "0.5rem",
+                        right: "0.5rem",
+                        width: "1.75rem",
+                        height: "1.75rem",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "transparent",
+                        border: "none",
+                        color: "rgba(255,255,255,0.7)",
+                        fontSize: "1rem",
+                        lineHeight: 1,
+                        cursor: "pointer",
+                        padding: 0,
+                        transition: "transform 0.2s",
+                        transform: isExpanded ? "rotate(180deg)" : "rotate(0)",
+                      }}
+                    >
+                      ▾
+                    </button>
+                  )}
+
                   <div
                     style={{
                       display: "flex",
-                      flexDirection: "column",
-                      height: "100%",
-                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "0.625rem",
+                      paddingRight: canEdit ? "2rem" : 0,
                     }}
                   >
-                    <div>
-                      <div
+                    <ImageWithFallback
+                      srcPath={style.iconPath}
+                      alt={style.label}
+                      emoji={style.emoji}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        objectFit: "cover",
+                        display: "inline-block",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <h3
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.75rem",
-                          marginBottom: "0.5rem",
+                          fontSize: "1rem",
+                          fontWeight: 700,
+                          margin: 0,
+                          lineHeight: 1.2,
                         }}
                       >
-                        <ImageWithFallback
-                          srcPath={style.iconPath}
-                          alt={style.label}
-                          emoji={style.emoji}
-                          style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 8,
-                            objectFit: "cover",
-                            display: "inline-block",
-                          }}
-                        />
-                        <h3
-                          style={{
-                            fontSize: "1.125rem",
-                            fontWeight: 700,
-                            margin: 0,
-                          }}
-                        >
-                          {techniques[style.key]?.title?.trim() || style.label}
-                        </h3>
-                      </div>
+                        {techniques[style.key]?.title?.trim() || style.label}
+                      </h3>
                       {style.desc && (
                         <p
                           style={{
                             color: "#f9a8d4",
-                            margin: 0,
-                            fontSize: "0.875rem",
+                            margin: "0.125rem 0 0 0",
+                            fontSize: "0.75rem",
+                            lineHeight: 1.3,
                           }}
                         >
                           {style.desc}
@@ -139,13 +193,21 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       )}
                     </div>
                   </div>
-                </button>
+
+                  {canEdit && isExpanded && (
+                    <TechniqueQuickEdit
+                      groupKey={style.key}
+                      techniques={techniques as any}
+                      setTechniques={setTechniques as any}
+                      onOpenFullEditor={() => onManageTechniques(style.key)}
+                    />
+                  )}
+                </div>
               );
             }
           )}
         </div>
 
-        {/* More/Less Button Logic */}
         {emphasisList.length > 9 && (
           <div
             style={{
@@ -194,7 +256,6 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
           </div>
         )}
 
-        {/* Manage Techniques Button */}
         <div
           style={{
             display: "flex",

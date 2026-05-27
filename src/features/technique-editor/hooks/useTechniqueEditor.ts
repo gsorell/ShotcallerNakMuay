@@ -185,6 +185,23 @@ export function useTechniqueEditor({
     persist(INITIAL_TECHNIQUES as any);
   }
 
+  function resetGroupToDefault(groupKey: string): boolean {
+    const defaults = (INITIAL_TECHNIQUES as Record<string, TechniqueShape>)[
+      groupKey
+    ];
+    if (!defaults) return false;
+    const label = defaults.label ?? defaults.title ?? humanizeKey(groupKey);
+    if (
+      !window.confirm(
+        `Restore "${label}" to its default techniques? Your edits to this group will be lost.`
+      )
+    )
+      return false;
+    const next = { ...local, [groupKey]: { ...defaults } };
+    persist(next);
+    return true;
+  }
+
   async function handleExport() {
     try {
       await downloadJSON(local, "techniques_backup");
@@ -247,6 +264,7 @@ export function useTechniqueEditor({
     duplicateGroup,
     deleteGroup,
     resetToDefault,
+    resetGroupToDefault,
     handleExport,
     handleImport,
   };

@@ -3,7 +3,6 @@ export { AdvancedSettingsPanel } from './components/AdvancedSettingsPanel';
 export { default as SessionTransitionWrapper } from './components/SessionTransitionWrapper';
 export { default as StatusTimer } from './components/StatusTimer';
 export { StickyStartControls } from './components/StickyStartControls';
-export { WorkoutConfiguration } from './components/WorkoutConfiguration';
 export { default as WorkoutSetup } from './components/WorkoutSetup';
 export { WorkoutProvider, useWorkoutContext } from './contexts/WorkoutProvider';
 export { useWorkoutTimer } from './hooks/useWorkoutTimer';

@@ -6,7 +6,6 @@ interface TechniqueItem {
 interface TechniqueListSectionProps {
   title: string;
   items: TechniqueItem[];
-  readOnly: boolean;
   groupKey: string;
   kind: "single" | "combo";
   onChangeText: (idx: number, value: string) => void;
@@ -18,7 +17,6 @@ interface TechniqueListSectionProps {
 export default function TechniqueListSection({
   title,
   items,
-  readOnly,
   groupKey,
   kind,
   onChangeText,
@@ -39,12 +37,10 @@ export default function TechniqueListSection({
               id={`${kind}-${groupKey}-${idx}`}
               type="text"
               value={item.text}
-              onChange={(e) => !readOnly && onChangeText(idx, e.target.value)}
+              onChange={(e) => onChangeText(idx, e.target.value)}
               className="tech-editor-input tech-editor-input--item"
               placeholder={`e.g., ${title === "Combos" ? "1, 2, 3" : "jab"}`}
               aria-label={`${title} technique ${idx + 1}`}
-              readOnly={readOnly}
-              tabIndex={readOnly ? -1 : 0}
             />
             <button
               onClick={() => onToggleFavorite(idx)}
@@ -56,23 +52,19 @@ export default function TechniqueListSection({
             >
               ★
             </button>
-            {!readOnly && (
-              <button
-                onClick={() => onRemoveItem(idx)}
-                className="tech-editor-btn tech-editor-btn--delete"
-                aria-label="Delete item"
-              >
-                ×
-              </button>
-            )}
+            <button
+              onClick={() => onRemoveItem(idx)}
+              className="tech-editor-btn tech-editor-btn--delete"
+              aria-label="Delete item"
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
-      {!readOnly && (
-        <button onClick={onAddItem} className="tech-editor-btn--add">
-          Add {title.slice(0, -1)}
-        </button>
-      )}
+      <button onClick={onAddItem} className="tech-editor-btn--add">
+        Add {title.slice(0, -1)}
+      </button>
     </div>
   );
 }

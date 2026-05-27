@@ -22,6 +22,7 @@ interface TechniqueGroupPanelProps {
   onRemoveCombo: (idx: number) => void;
   onAddCombo: () => void;
   onDeleteGroup: () => void;
+  onResetGroup?: () => void;
 }
 
 export default function TechniqueGroupPanel({
@@ -42,6 +43,7 @@ export default function TechniqueGroupPanel({
   onRemoveCombo,
   onAddCombo,
   onDeleteGroup,
+  onResetGroup,
 }: TechniqueGroupPanelProps) {
   const singles = normalizeArray(group.singles);
   const combos = normalizeArray(group.combos);
@@ -50,7 +52,7 @@ export default function TechniqueGroupPanel({
     : GROUP_THUMBNAILS[keyName];
 
   return (
-    <div className="tech-editor-panel">
+    <div className="tech-editor-panel" id={`group-panel-${keyName}`}>
       <TechniqueGroupHeader
         keyName={keyName}
         group={group}
@@ -68,32 +70,25 @@ export default function TechniqueGroupPanel({
             <label htmlFor={`desc-${keyName}`} className="tech-editor-label">
               Description
             </label>
-            {isCoreStyle ? (
-              <div className="tech-editor-description-box">
-                {group.description || "No description available"}
-              </div>
-            ) : (
-              <textarea
-                id={`desc-${keyName}`}
-                value={group.description ?? ""}
-                onChange={(e) => updateGroupDescription(e.target.value)}
-                className="tech-editor-textarea"
-                placeholder="Describe this group (purpose, focus, etc.)"
-                aria-label="Group Description"
-                rows={Math.max(2, (group.description || "").split("\n").length)}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = "auto";
-                  target.style.height = target.scrollHeight + "px";
-                }}
-              />
-            )}
+            <textarea
+              id={`desc-${keyName}`}
+              value={group.description ?? ""}
+              onChange={(e) => updateGroupDescription(e.target.value)}
+              className="tech-editor-textarea"
+              placeholder="Describe this group (purpose, focus, etc.)"
+              aria-label="Group Description"
+              rows={Math.max(2, (group.description || "").split("\n").length)}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = target.scrollHeight + "px";
+              }}
+            />
           </div>
           <div className="technique-sections">
             <TechniqueListSection
               title="Single Strikes"
               items={singles}
-              readOnly={isCoreStyle}
               groupKey={keyName}
               kind="single"
               onChangeText={onChangeSingle}
@@ -104,7 +99,6 @@ export default function TechniqueGroupPanel({
             <TechniqueListSection
               title="Combos"
               items={combos}
-              readOnly={isCoreStyle}
               groupKey={keyName}
               kind="combo"
               onChangeText={onChangeCombo}
@@ -113,8 +107,17 @@ export default function TechniqueGroupPanel({
               onAddItem={onAddCombo}
             />
           </div>
-          {!isCoreStyle && (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
+            {isCoreStyle && onResetGroup && (
+              <button
+                onClick={onResetGroup}
+                className="tech-editor-btn--action"
+                aria-label={`Restore defaults for ${group.label}`}
+              >
+                Restore Defaults
+              </button>
+            )}
+            {!isCoreStyle && (
               <button
                 onClick={onDeleteGroup}
                 className="tech-editor-btn--action"
@@ -122,8 +125,8 @@ export default function TechniqueGroupPanel({
               >
                 Delete Group
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>
