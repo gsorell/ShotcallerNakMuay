@@ -151,8 +151,7 @@ The core timer and session management system.
 - `WorkoutSetup` - Pre-session configuration (rounds, rest, emphases)
 - `ActiveSessionUI` - Live timer display during workout
 - `StatusTimer` - Countdown timer component
-- `StickyStartControls` - Start/pause/stop button bar
-- `WorkoutConfiguration` - Settings panel
+- `StickyStartControls` - Footer bar with rounds/length/rest, difficulty, and start button
 - `AdvancedSettingsPanel` - Southpaw mode, calisthenics, etc.
 
 **Context:**
@@ -636,5 +635,5 @@ npx cap open android  # Open Android Studio
 
 ---
 
-*Last updated: January 2026*
-*App Version: 1.4.24*
+*Last updated: May 2026*
+*App Version: 1.7.0*
