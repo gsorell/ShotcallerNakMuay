@@ -2,6 +2,7 @@ export const TECHNIQUES_STORAGE_KEY = "shotcaller_techniques";
 export const TECHNIQUES_VERSION_KEY = "shotcaller_techniques_version";
 export const WORKOUTS_STORAGE_KEY = "shotcaller_workouts";
 export const VOICE_STORAGE_KEY = "shotcaller_voice_preference";
+export const MILESTONES_STORAGE_KEY = "shotcaller_streak_milestones";
 
 // User settings persistence
 export const USER_SETTINGS_STORAGE_KEY = "shotcaller_user_settings";

@@ -1,11 +1,15 @@
 import html2canvas from "html2canvas";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   captureAndDownloadElement,
   generateWorkoutFilename,
   shareWorkoutImage,
   type WorkoutStats,
 } from "@/utils/imageUtils";
+import { useHomeStats } from "../hooks/useHomeStats";
+import { claimNewMilestone } from "../utils/milestones";
+import type { StreakMilestone } from "../constants/milestones";
+import StreakCelebrationModal from "./StreakCelebrationModal";
 
 interface WorkoutCompletedProps {
   stats: WorkoutStats;
@@ -22,6 +26,18 @@ export default function WorkoutCompleted({
 }: WorkoutCompletedProps) {
   const workoutSummaryRef = useRef<HTMLDivElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const stats_home = useHomeStats(0);
+  const [celebratedMilestone, setCelebratedMilestone] =
+    useState<StreakMilestone | null>(null);
+  const claimedRef = useRef(false);
+
+  useEffect(() => {
+    if (claimedRef.current) return;
+    if (!stats_home || stats_home.current <= 0) return;
+    claimedRef.current = true;
+    const claimed = claimNewMilestone(stats_home.current);
+    if (claimed) setCelebratedMilestone(claimed);
+  }, [stats_home]);
 
   // Map internal difficulty values to display labels
   const getDifficultyLabel = (difficulty: string): string => {
@@ -68,6 +84,13 @@ export default function WorkoutCompleted({
 
   return (
     <div style={{ maxWidth: 500, margin: "2rem auto" }}>
+      {celebratedMilestone && stats_home && (
+        <StreakCelebrationModal
+          milestone={celebratedMilestone}
+          streak={stats_home.current}
+          onClose={() => setCelebratedMilestone(null)}
+        />
+      )}
       {/* Workout Summary - This will be captured for download/sharing */}
       <div
         ref={workoutSummaryRef}

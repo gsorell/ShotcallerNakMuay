@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "@/styles/editor.css";
+import CharmTrophyCase from "./CharmTrophyCase";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
 const EMPHASIS_ICONS: Record<string, string> = {
@@ -438,6 +439,12 @@ export default function WorkoutLogs({
                 </div>
               </div>
             </div>
+
+            {/* Charms */}
+            <CharmTrophyCase
+              currentStreak={stats.current}
+              longestStreak={stats.longest}
+            />
           </div>
         </div>
       )}
