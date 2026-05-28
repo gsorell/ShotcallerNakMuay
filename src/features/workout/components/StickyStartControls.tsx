@@ -50,6 +50,7 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
   return (
     <div
       style={{
+        position: "relative",
         width: "100%",
         padding:
           "0.75rem 1rem calc(2.25rem + env(safe-area-inset-bottom, 0px)) 1rem",
