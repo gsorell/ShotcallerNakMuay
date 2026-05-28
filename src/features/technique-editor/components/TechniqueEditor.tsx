@@ -2,6 +2,7 @@ import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import "@/styles/editor.css";
 import { trackEvent } from "@/utils/analytics";
 import { type TechniqueShape as UtilsTechniqueShape } from "@/utils/techniqueUtils";
+import { scrollContentToTop } from "@/utils/scroll";
 import React, { useRef, useState } from "react";
 import { useUIContext } from "../../shared";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
@@ -64,7 +65,7 @@ export default function TechniqueEditor({
       if (topRef.current) {
         topRef.current.scrollIntoView({ behavior: "auto", block: "start" });
       } else {
-        window.scrollTo({ top: 0, behavior: "auto" });
+        scrollContentToTop("auto");
       }
     }, 0);
   }, [topRef]);

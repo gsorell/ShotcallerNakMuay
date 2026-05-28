@@ -1,8 +1,31 @@
 /* AppLayout.css - Component-specific styles for AppLayout */
 
+/* App shell: full-viewport flex column so only the content region scrolls
+   and any in-flow bottom bar stays below the scrollbar. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Scrollable content region (header above, bottom bar below stay fixed). */
+.app-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 /* Main container */
 .app-layout-main {
-  min-height: var(--main-height, auto);
+  flex: 1 1 auto;
+  min-width: 0;
   color: #fdf2f8;
   font-family: system-ui, sans-serif;
   padding: 2rem;

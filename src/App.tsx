@@ -24,6 +24,7 @@ import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
   SessionTransitionWrapper,
+  StickyStartControls,
   WorkoutSetup,
   useWorkoutContext,
 } from "@/features/workout";
@@ -31,6 +32,7 @@ import {
 // Utilities
 import { initializeGA4 } from "@/utils/analytics";
 import { displayInAppBrowserWarning } from "@/utils/inAppBrowserDetector";
+import { scrollContentToTop } from "@/utils/scroll";
 import { fmtTime } from "@/utils/timeUtils";
 
 // CSS
@@ -265,12 +267,23 @@ export default function App() {
         onHelp={() => setShowOnboardingMsg(true)}
         onLogoClick={() => {
           setPage("timer");
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          scrollContentToTop();
         }}
         hasSelectedEmphasis={hasSelectedEmphasis}
         linkButtonStyle={linkButtonStyle}
         setPage={setPage}
         setShowOnboardingMsg={setShowOnboardingMsg}
+        bottomBar={
+          page === "timer" && !isActive && hasSelectedEmphasis ? (
+            <StickyStartControls
+              onStart={startSession}
+              difficulty={settings.difficulty}
+              setDifficulty={settings.setDifficulty}
+              selectedEmphases={settings.selectedEmphases}
+              onClearEmphases={settings.clearAllEmphases}
+            />
+          ) : null
+        }
       >
         {renderPageContent()}
       </AppLayout>

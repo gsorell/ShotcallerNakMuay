@@ -4,7 +4,6 @@ import { ImageWithFallback, useUIContext } from "../../shared";
 import { EmphasisSelector } from "../../technique-editor";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
 import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
-import { StickyStartControls } from "./StickyStartControls";
 import "./WorkoutSetup.css";
 
 export default function WorkoutSetup() {
@@ -15,8 +14,6 @@ export default function WorkoutSetup() {
     persistTechniques,
     homePageStats: stats,
     favoriteConfig,
-    startSession: onStart,
-    hasSelectedEmphasis,
   } = useWorkoutContext();
 
   const {
@@ -28,13 +25,7 @@ export default function WorkoutSetup() {
     setEditorFocusKey,
   } = useUIContext();
 
-  const {
-    selectedEmphases,
-    toggleEmphasis,
-    difficulty,
-    setDifficulty,
-    clearAllEmphases,
-  } = settings;
+  const { selectedEmphases, toggleEmphasis } = settings;
   return (
     <div>
       {/* Compact Favorite Style & Streak - Combined Button */}
@@ -95,16 +86,6 @@ export default function WorkoutSetup() {
         </button>
 
         {showAdvanced && <AdvancedSettingsPanel />}
-
-        {hasSelectedEmphasis && (
-          <StickyStartControls
-            onStart={onStart}
-            difficulty={difficulty}
-            setDifficulty={setDifficulty}
-            selectedEmphases={selectedEmphases}
-            onClearEmphases={clearAllEmphases}
-          />
-        )}
       </div>
     </div>
   );

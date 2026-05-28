@@ -50,12 +50,9 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
   return (
     <div
       style={{
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 999,
-        padding: "0.75rem 1rem 2.25rem 1rem",
+        width: "100%",
+        padding:
+          "0.75rem 1rem calc(2.25rem + env(safe-area-inset-bottom, 0px)) 1rem",
         background:
           "linear-gradient(180deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.98) 100%)",
         backdropFilter: "blur(24px)",
@@ -65,6 +62,7 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
         flexDirection: "column",
         alignItems: "center",
         gap: "0.625rem",
+        boxSizing: "border-box",
       }}
     >
       {hasSelections && (

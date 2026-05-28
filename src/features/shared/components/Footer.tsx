@@ -1,4 +1,5 @@
 import { trackEvent } from "@/utils/analytics";
+import { scrollContentToTop } from "@/utils/scroll";
 import "./Footer.css";
 
 export type FooterProps = {
@@ -16,13 +17,7 @@ export const Footer = ({
   setPage,
   setShowOnboardingMsg,
 }: FooterProps) => (
-  <footer
-    className="app-footer"
-    style={{ 
-      paddingBottom: !isActive && hasSelectedEmphasis ? "200px" : "2rem",
-      marginBottom: hasSelectedEmphasis ? "32px" : "0"
-    }}
-  >
+  <footer className="app-footer">
     <div className="app-footer-content">
       <img
         src="/assets/logo_icon.png"
@@ -30,13 +25,13 @@ export const Footer = ({
         className="app-footer-logo"
         onClick={() => {
           setPage("timer");
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          scrollContentToTop();
         }}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             setPage("timer");
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            scrollContentToTop();
           }
         }}
         role="button"

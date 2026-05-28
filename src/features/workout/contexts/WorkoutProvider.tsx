@@ -3,6 +3,7 @@ import type { EmphasisKey, TechniqueWithStyle } from "@/types";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { createWorkoutLogEntry } from "@/utils/logUtils";
 import { generateTechniquePool } from "@/utils/techniqueUtils";
+import { scrollContentToTop } from "@/utils/scroll";
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from "react";
 import { useHomeStats } from "../../logs";
 import { useAudioSystem, useUIContext, useWakeLock, usePhoneCallDetection } from "../../shared";
@@ -308,7 +309,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
     tts.speakSystem("Get ready", settings.voiceSpeed);
     timer.startTimer();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollContentToTop();
   }, [
     hasSelectedEmphasis,
     getTechniquePool,
@@ -412,7 +413,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
         timer.resumeTimerState(logEntry);
         tts.speakSystem("Resuming workout. Get ready", settings.voiceSpeed);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        scrollContentToTop();
       }, 150);
     },
     [settings, calloutEngine, setPage, getTechniquePool, sfx, tts, timer]
