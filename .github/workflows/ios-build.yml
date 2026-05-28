@@ -20,6 +20,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Select Xcode
+        # Apple requires the iOS 26 SDK (Xcode 26+) for App Store Connect uploads.
+        # latest-stable picks the newest stable Xcode installed on the runner.
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
