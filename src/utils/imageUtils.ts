@@ -210,6 +210,73 @@ export const generateWorkoutFilename = (stats: WorkoutStats): string => {
 };
 
 /**
+ * Shares a charm/achievement image using Capacitor Share (native) or the
+ * Web Share API (web), mirroring shareWorkoutImage but for collectibles.
+ * @param blob - Image blob to share
+ * @param charm - Charm name + Thai name for the share caption/filename
+ */
+export const shareCharmImage = async (
+  blob: Blob,
+  charm: { name: string; thaiName?: string }
+): Promise<void> => {
+  const safeName = charm.name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
+  const filename = `shotcaller-charm-${safeName || "achievement"}.png`;
+  const shareText = `I just earned the "${charm.name}"${
+    charm.thaiName ? ` (${charm.thaiName})` : ""
+  } charm in Nak Muay Shot Caller! 🥊 #NakMuay #ShotcallerNakMuay #MuayThai`;
+
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const base64Data = await blobToBase64(blob);
+      const result = await Filesystem.writeFile({
+        path: filename,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+      await Share.share({
+        title: "New Charm Earned!",
+        text: shareText,
+        url: result.uri,
+        dialogTitle: "Share your achievement",
+      });
+    } else if ("share" in navigator) {
+      const file = new File([blob], filename, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: "New Charm Earned!",
+          text: shareText,
+          files: [file],
+        });
+      } else {
+        await navigator.share({ title: "New Charm Earned!", text: shareText });
+      }
+    } else if (typeof navigator !== "undefined" && "clipboard" in navigator) {
+      await (navigator as any).clipboard.writeText(shareText);
+      alert("Achievement details copied to clipboard!");
+    } else {
+      alert("Sharing is not supported in this browser. Try the Download button instead.");
+    }
+  } catch (error) {
+    console.error("Error sharing charm:", error);
+    if (error instanceof Error && error.name !== "AbortError") {
+      alert("Unable to share. Try using the Download button instead.");
+    }
+  }
+};
+
+/** Converts a PNG blob to a bare base64 string (no data-URL prefix). */
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = String(reader.result || "");
+      resolve(result.replace(/^data:image\/png;base64,/, ""));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+/**
  * Checks if the Web Share API is available (Web or Native)
  * @returns boolean
  */
