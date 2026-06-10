@@ -10,6 +10,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    watch: {
+      // Capacitor copies the built web app into android/ (and its build
+      // intermediates), which the dev-server watcher tries to scan and can
+      // crash on (Windows scandir UNKNOWN). These folders aren't source.
+      ignored: ["**/android/**", "**/ios/**"],
+    },
+  },
   build: {
     rollupOptions: {
       external: ["nosleep.js"],
