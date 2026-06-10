@@ -1,7 +1,10 @@
 export { default as WorkoutLogs } from './components/WorkoutLogs';
 export { default as WorkoutCompleted } from './components/WorkoutCompleted';
 export { default as StreakCelebrationModal } from './components/StreakCelebrationModal';
+export { default as CharmCelebrationModal } from './components/CharmCelebrationModal';
 export { default as CharmTrophyCase } from './components/CharmTrophyCase';
 export { useHomeStats } from './hooks/useHomeStats';
 export { STREAK_MILESTONES } from './constants/milestones';
+export { ACHIEVEMENT_CHARMS } from './constants/charms';
 export { claimNewMilestone, getAwardedThresholds, getUnlockedMilestones } from './utils/milestones';
+export { claimNewCharms, getEarnedCharms, getAwardedCharmIds, readWorkoutHistory, seedAwardedCharmsOnce } from './utils/charms';

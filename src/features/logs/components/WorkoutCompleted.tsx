@@ -8,8 +8,14 @@ import {
 } from "@/utils/imageUtils";
 import { useHomeStats } from "../hooks/useHomeStats";
 import { claimNewMilestone } from "../utils/milestones";
-import type { StreakMilestone } from "../constants/milestones";
-import StreakCelebrationModal from "./StreakCelebrationModal";
+import { claimNewCharms, readWorkoutHistory } from "../utils/charms";
+import type { CharmVisual } from "../constants/charms";
+import CharmCelebrationModal from "./CharmCelebrationModal";
+
+interface Celebration {
+  charm: CharmVisual;
+  subtitle?: string;
+}
 
 interface WorkoutCompletedProps {
   stats: WorkoutStats;
@@ -27,16 +33,33 @@ export default function WorkoutCompleted({
   const workoutSummaryRef = useRef<HTMLDivElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const stats_home = useHomeStats(0);
-  const [celebratedMilestone, setCelebratedMilestone] =
-    useState<StreakMilestone | null>(null);
+  const [celebrationQueue, setCelebrationQueue] = useState<Celebration[]>([]);
   const claimedRef = useRef(false);
 
   useEffect(() => {
     if (claimedRef.current) return;
-    if (!stats_home || stats_home.current <= 0) return;
+    if (!stats_home) return;
     claimedRef.current = true;
-    const claimed = claimNewMilestone(stats_home.current);
-    if (claimed) setCelebratedMilestone(claimed);
+
+    const queue: Celebration[] = [];
+
+    // Streak milestone first (if a new one was just crossed)
+    if (stats_home.current > 0) {
+      const milestone = claimNewMilestone(stats_home.current);
+      if (milestone) {
+        queue.push({
+          charm: milestone,
+          subtitle: `${stats_home.current}-Day Streak 🔥`,
+        });
+      }
+    }
+
+    // Then any newly-earned achievement charms
+    claimNewCharms(readWorkoutHistory()).forEach((charm) =>
+      queue.push({ charm })
+    );
+
+    if (queue.length > 0) setCelebrationQueue(queue);
   }, [stats_home]);
 
   // Map internal difficulty values to display labels
@@ -84,11 +107,11 @@ export default function WorkoutCompleted({
 
   return (
     <div style={{ maxWidth: 500, margin: "2rem auto" }}>
-      {celebratedMilestone && stats_home && (
-        <StreakCelebrationModal
-          milestone={celebratedMilestone}
-          streak={stats_home.current}
-          onClose={() => setCelebratedMilestone(null)}
+      {celebrationQueue.length > 0 && (
+        <CharmCelebrationModal
+          charm={celebrationQueue[0]!.charm}
+          subtitle={celebrationQueue[0]!.subtitle}
+          onClose={() => setCelebrationQueue((q) => q.slice(1))}
         />
       )}
       {/* Workout Summary - This will be captured for download/sharing */}

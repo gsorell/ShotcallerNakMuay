@@ -7,7 +7,7 @@ import { Capacitor } from "@capacitor/core";
 // Storage
 
 // Components
-import { WorkoutCompleted, WorkoutLogs } from "@/features/logs";
+import { WorkoutCompleted, WorkoutLogs, seedAwardedCharmsOnce } from "@/features/logs";
 import {
   AppLayout,
   OnboardingModal,
@@ -47,6 +47,8 @@ export default function App() {
   useEffect(() => {
     displayInAppBrowserWarning();
     initializeGA4();
+    // Suppress a celebration backlog for users who already had history pre-charms.
+    seedAwardedCharmsOnce();
 
     // Configure status bar on native platforms
     if (Capacitor.isNativePlatform()) {
