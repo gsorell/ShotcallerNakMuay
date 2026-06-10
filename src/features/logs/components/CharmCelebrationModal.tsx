@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   captureAndDownloadElement,
   captureElementAsBlob,
@@ -68,7 +69,11 @@ export default function CharmCelebrationModal({
     }
   };
 
-  return (
+  // Portal to <body> so position:fixed resolves against the viewport. Rendered
+  // in place, the modal lives inside the .app-scroll container, and iOS WebKit
+  // positions fixed descendants of an overflow scroll container relative to
+  // that container (below the header) instead of the viewport.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -288,7 +293,8 @@ export default function CharmCelebrationModal({
           Continue
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
