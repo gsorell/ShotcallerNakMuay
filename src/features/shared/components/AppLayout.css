@@ -100,6 +100,34 @@
   }
 }
 
+/* Tiles hold one uniform height so the grid reads as an even field, whatever
+   length the title and description run to. The grid keeps `align-items: start`,
+   so an expanded tile grows by itself rather than stretching its whole row —
+   hence min-height here instead of stretching the row. Sized to the tallest
+   collapsed tile: a two-line title plus a two-line description. */
+.emphasis-tile {
+  min-height: 6.25rem;
+  box-sizing: border-box;
+}
+
+/* Bound the text to what the tile height reserves. Descriptions are written to
+   fit in two lines, so this is a backstop against overflow at odd widths (and
+   for long user-created titles), not the normal case. */
+.emphasis-tile-title,
+.emphasis-tile-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.emphasis-tile-title {
+  -webkit-line-clamp: 2;
+}
+
+.emphasis-tile-desc {
+  -webkit-line-clamp: 2;
+}
+
 .emphasis-grid > button,
 .manage-techniques-btn {
   width: 100%;
