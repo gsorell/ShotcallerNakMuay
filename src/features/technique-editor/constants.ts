@@ -19,6 +19,7 @@ export const GROUP_THUMBNAILS: Record<string, string> = {
   tricky_traps: "/assets/icon.trickytraps.png",
   feints_and_fakeouts: "/assets/icon.feintsandfakes.png",
   dutch_kickboxing: "/assets/icon.dutch.png",
+  counters: "/assets/icon.counters.png",
 };
 
 // Home page order (excluding user and calisthenics)
@@ -42,4 +43,5 @@ export const CORE_ORDER = [
   "tricky_traps",
   "feints_and_fakeouts",
   "dutch_kickboxing",
+  "counters",
 ];

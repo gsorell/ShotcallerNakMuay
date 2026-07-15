@@ -1,5 +1,10 @@
 export const TECHNIQUES_STORAGE_KEY = "shotcaller_techniques";
 export const TECHNIQUES_VERSION_KEY = "shotcaller_techniques_version";
+// Snapshot of the shipped defaults the user's saved techniques were last
+// reconciled against. Diffing stored-vs-baseline is what distinguishes "the
+// user edited this group" from "we shipped new content for this group", so an
+// update can add/refresh groups without discarding customizations.
+export const TECHNIQUES_BASELINE_KEY = "shotcaller_techniques_baseline";
 export const WORKOUTS_STORAGE_KEY = "shotcaller_workouts";
 export const VOICE_STORAGE_KEY = "shotcaller_voice_preference";
 export const MILESTONES_STORAGE_KEY = "shotcaller_streak_milestones";

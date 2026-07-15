@@ -684,6 +684,56 @@ export const INITIAL_TECHNIQUES: Record<
       "1 2, 3 to the body, Right Body Kick",
     ],
   },
+
+  // Every callout opens with a defensive technique. The incoming attack is
+  // always named ("the Jab", "the Low Kick"); numbers are always your own
+  // output, so "Block the Hook, 2 3" never reads ambiguously. Singles are
+  // intentionally empty — the pool calls singles on their own, and a bare
+  // "Slip Left" is a slip, not a counter.
+  counters: {
+    label: "counters",
+    title: "The Answer Back",
+    description: "Defense first — read the strike, then make them pay for it.",
+    singles: [],
+    combos: [
+      // Two answers to each attack — one that meets it (parry, block, check,
+      // catch) and one that avoids it (slip, duck, lean back, step) — so no
+      // attack is drilled with only one habit. Jab and low kick get a third,
+      // being the two you actually eat most often.
+      // vs Jab
+      "Parry the Jab, 2, Right Low Kick",
+      "Slip the Jab, 2, Switch Kick",
+      "Parry the Jab, Pivot Left, Right Kick",
+      // vs Cross
+      "Slip the Cross, 3 to the Body, Right Low Kick",
+      "Roll Under the Cross, 3 2, Right Knee",
+      // vs Hook
+      "Block the Hook, Right Knee, Sweep Left",
+      "Duck the Hook, 2 3, Right Low Kick",
+      // vs Uppercut
+      "Parry the Uppercut, 3, Right Low Kick",
+      "Lean Back from the Uppercut, 2 3",
+      // vs Low Kick
+      "Check the Low Kick, 2 3, Right Low Kick",
+      "Check the Low Kick, 1 2, Switch Kick",
+      "Step Back from the Low Kick, Right Low Kick",
+      // vs Body Kick
+      "Block the Body Kick, 2 3, Right Low Kick",
+      "Catch the Body Kick, Sweep Left",
+      // vs Head Kick
+      "Block the Head Kick, 2 3, Right Low Kick",
+      "Lean Back from the Head Kick, 2, Right Body Kick",
+      // vs Teep
+      "Catch the Teep, 2 3, Sweep Right",
+      "Parry the Teep, 2, Right Low Kick",
+      // vs Knee
+      "Long Guard, Right Knee, Right Elbow",
+      "Frame the Knee, Right Elbow",
+      // vs Elbow
+      "Block the Elbow, Right Elbow",
+      "Lean Back from the Elbow, 2 3",
+    ],
+  },
 };
 
 export default INITIAL_TECHNIQUES;

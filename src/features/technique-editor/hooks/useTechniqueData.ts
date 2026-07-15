@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  TECHNIQUES_BASELINE_KEY,
   TECHNIQUES_STORAGE_KEY,
   TECHNIQUES_VERSION_KEY,
 } from "@/constants/storage";
@@ -7,7 +8,44 @@ import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import type { TechniquesShape } from "@/types";
 import { normalizeKey } from "@/utils/techniqueUtils";
 
-const TECHNIQUES_VERSION = "v36";
+const TECHNIQUES_VERSION = "v37";
+
+type GroupMap = Record<string, any>;
+
+const sameGroup = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * Reconcile saved techniques against the shipped defaults on a version bump.
+ *
+ * For each core group: absent from the user's data means it's newly shipped, so
+ * add it. Identical to the baseline means the user never touched it, so take
+ * the latest content. Anything else is a customization and wins over the
+ * default — `resetToDefault` / `resetGroupToDefault` remain the way back.
+ * User-created groups are never core, so they always survive untouched.
+ */
+export const mergeTechniques = (
+  stored: GroupMap,
+  baseline: GroupMap | null
+): GroupMap => {
+  const merged: GroupMap = { ...stored };
+  for (const [key, shipped] of Object.entries(
+    INITIAL_TECHNIQUES as GroupMap
+  )) {
+    const userCopy = stored[key];
+    if (!userCopy) {
+      merged[key] = shipped;
+      continue;
+    }
+    // No baseline (first run of this migration): assume the copy is customized
+    // and keep it. Defaults haven't changed since the last forced reset, so an
+    // untouched group already equals `shipped` and loses nothing.
+    if (baseline && sameGroup(userCopy, baseline[key])) {
+      merged[key] = shipped;
+    }
+  }
+  return merged;
+};
 
 export function useTechniqueData() {
   // 1. Load Data
@@ -15,13 +53,33 @@ export function useTechniqueData() {
     try {
       const raw = localStorage.getItem(TECHNIQUES_STORAGE_KEY);
       const ver = localStorage.getItem(TECHNIQUES_VERSION_KEY);
-      let loaded = INITIAL_TECHNIQUES;
-      if (!raw || ver !== TECHNIQUES_VERSION) {
+      let loaded: GroupMap = INITIAL_TECHNIQUES;
+      if (!raw) {
+        // Fresh install.
         localStorage.setItem(
           TECHNIQUES_STORAGE_KEY,
           JSON.stringify(INITIAL_TECHNIQUES)
         );
         localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
+        localStorage.setItem(
+          TECHNIQUES_BASELINE_KEY,
+          JSON.stringify(INITIAL_TECHNIQUES)
+        );
+      } else if (ver !== TECHNIQUES_VERSION) {
+        let baseline: GroupMap | null = null;
+        try {
+          const rawBaseline = localStorage.getItem(TECHNIQUES_BASELINE_KEY);
+          if (rawBaseline) baseline = JSON.parse(rawBaseline);
+        } catch {
+          baseline = null;
+        }
+        loaded = mergeTechniques(JSON.parse(raw), baseline);
+        localStorage.setItem(TECHNIQUES_STORAGE_KEY, JSON.stringify(loaded));
+        localStorage.setItem(TECHNIQUES_VERSION_KEY, TECHNIQUES_VERSION);
+        localStorage.setItem(
+          TECHNIQUES_BASELINE_KEY,
+          JSON.stringify(INITIAL_TECHNIQUES)
+        );
       } else {
         loaded = JSON.parse(raw);
       }
@@ -29,7 +87,7 @@ export function useTechniqueData() {
       if (!loaded["timer_only"]) {
         loaded["timer_only"] = INITIAL_TECHNIQUES["timer_only"]!;
       }
-      return loaded;
+      return loaded as TechniquesShape;
     } catch {
       return INITIAL_TECHNIQUES;
     }

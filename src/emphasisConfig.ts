@@ -16,7 +16,7 @@ export const BASE_EMPHASIS_CONFIG: {
   freestyle: {
     label: "Freestyle",
     icon: "🔥",
-    desc: "You call the shots — just a clack to keep pace. No techniques, no voice. Pure flow.",
+    desc: "You call the shots — just a clack to keep pace.",
     iconPath: "/assets/icon.flame.png",
   },
   newb: {
@@ -70,7 +70,7 @@ export const BASE_EMPHASIS_CONFIG: {
   southpaw: {
     label: "Southpaw",
     icon: "🦶",
-    desc: "Left-handed stance with combos tailored for southpaw fighters",
+    desc: "Left-handed stance with combos for southpaw fighters.",
     iconPath: "/assets/icon_southpaw.png",
   },
   // --- Custom icons for new groups ---
@@ -114,13 +114,19 @@ export const BASE_EMPHASIS_CONFIG: {
   feints_and_fakeouts: {
     label: "Feints and Fakeouts",
     icon: "🎭",
-    desc: "Deceptive movements and setups that manipulate timing and rhythm.",
+    desc: "Deceptive setups that manipulate timing and rhythm.",
     iconPath: "/assets/icon.feintsandfakes.png",
   },
   dutch_kickboxing: {
     label: "Dutch Kickboxing",
     icon: "🥊",
-    desc: "High-pressure combinations emphasizing volume, flow, and power.",
+    desc: "High-pressure combinations built on volume and power.",
     iconPath: "/assets/icon.dutch.png",
+  },
+  counters: {
+    label: "The Answer Back",
+    icon: "↩️",
+    desc: "Defense first — read the strike, then make them pay.",
+    iconPath: "/assets/icon.counters.png",
   },
 };

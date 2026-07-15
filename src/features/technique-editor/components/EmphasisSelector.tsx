@@ -76,6 +76,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
               return (
                 <div
                   key={style.key}
+                  className="emphasis-tile"
                   role="button"
                   tabIndex={0}
                   aria-pressed={isSelected}
@@ -170,6 +171,8 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                     />
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <h3
+                        className="emphasis-tile-title"
+                        title={techniques[style.key]?.title?.trim() || style.label}
                         style={{
                           fontSize: "1rem",
                           fontWeight: 700,
@@ -181,6 +184,8 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       </h3>
                       {style.desc && (
                         <p
+                          className="emphasis-tile-desc"
+                          title={style.desc}
                           style={{
                             color: "#f9a8d4",
                             margin: "0.125rem 0 0 0",
