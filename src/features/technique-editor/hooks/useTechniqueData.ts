@@ -8,7 +8,7 @@ import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import type { TechniquesShape } from "@/types";
 import { normalizeKey } from "@/utils/techniqueUtils";
 
-const TECHNIQUES_VERSION = "v36";
+const TECHNIQUES_VERSION = "v37";
 
 type GroupMap = Record<string, any>;
 

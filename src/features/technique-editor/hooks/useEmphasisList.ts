@@ -26,6 +26,7 @@ export function useEmphasisList(techniques: TechniquesShape) {
       "dutch_kickboxing",
       "two_piece",
       // --- Below the fold ---
+      "counters",
       "low_kick_legends",
       "boxing",
       "ko_setups",

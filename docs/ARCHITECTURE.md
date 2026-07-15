@@ -401,6 +401,7 @@ Record<string, TechniqueGroup>
 | `tricky_traps` | Tricky Traps | Spinning techniques |
 | `feints_and_fakeouts` | Feints and Fakeouts | Deceptive setups |
 | `dutch_kickboxing` | Dutch Kickboxing | High-pressure volume |
+| `counters` | The Answer Back | Defense-first counters |
 
 ### Pool Generation
 

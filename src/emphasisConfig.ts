@@ -123,4 +123,10 @@ export const BASE_EMPHASIS_CONFIG: {
     desc: "High-pressure combinations emphasizing volume, flow, and power.",
     iconPath: "/assets/icon.dutch.png",
   },
+  counters: {
+    label: "The Answer Back",
+    icon: "↩️",
+    desc: "Defense first — read the strike, then make them pay.",
+    iconPath: "/assets/icon.counters.png",
+  },
 };
