@@ -1,0 +1,340 @@
+import React, { useEffect, useMemo, useState } from "react";
+import type { PurchasesPackage } from "@revenuecat/purchases-capacitor";
+
+import { useEntitlement } from "@/features/entitlement";
+import { trackEvent } from "@/utils/analytics";
+
+const TERMS_URL = "https://shotcallernakmuay.com/terms.html";
+const PRIVACY_URL = "https://shotcallernakmuay.com/privacy-policy.html";
+
+interface PaywallModalProps {
+  source?: string;
+  onClose: () => void;
+}
+
+interface PackageMeta {
+  period: string;
+  badge?: string;
+  order: number;
+}
+
+// Human-readable labelling derived from the RevenueCat package type.
+function metaFor(pkg: PurchasesPackage): PackageMeta {
+  switch (pkg.packageType) {
+    case "ANNUAL":
+      return { period: "per year", badge: "Best value", order: 0 };
+    case "MONTHLY":
+      return { period: "per month", order: 1 };
+    case "LIFETIME":
+      return { period: "one-time", badge: "Own it forever", order: 2 };
+    default:
+      return { period: "", order: 3 };
+  }
+}
+
+export const PaywallModal: React.FC<PaywallModalProps> = ({
+  source,
+  onClose,
+}) => {
+  const { getPackages, purchase, restore, claimLegacyOwnership } =
+    useEntitlement();
+  const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      trackEvent("paywall_open", { source: source ?? "unknown" });
+    } catch {}
+  }, [source]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const pkgs = await getPackages();
+      if (!cancelled) setPackages(pkgs);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getPackages]);
+
+  const sorted = useMemo(
+    () =>
+      (packages ?? [])
+        .slice()
+        .sort((a, b) => metaFor(a).order - metaFor(b).order),
+    [packages]
+  );
+
+  const handlePurchase = async (pkg: PurchasesPackage) => {
+    setBusy(pkg.identifier);
+    setMessage(null);
+    const result = await purchase(pkg);
+    setBusy(null);
+    if (result.success) {
+      try {
+        trackEvent("paywall_purchase_success", {
+          product: pkg.product.identifier,
+        });
+      } catch {}
+      onClose();
+    } else if (result.cancelled) {
+      // User backed out; no message needed.
+    } else {
+      setMessage(result.error ?? "Something went wrong. Please try again.");
+    }
+  };
+
+  const handleRestore = async () => {
+    setBusy("restore");
+    setMessage(null);
+    await restore();
+    setBusy(null);
+    setMessage("If you had a purchase, it's been restored.");
+  };
+
+  const handleLegacyClaim = async () => {
+    setBusy("legacy");
+    await claimLegacyOwnership();
+    setBusy(null);
+    try {
+      trackEvent("paywall_legacy_claim", {});
+    } catch {}
+    onClose();
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Unlock Shotcaller Pro"
+      onClick={onClose}
+      style={styles.overlay}
+    >
+      <div onClick={(e) => e.stopPropagation()} style={styles.sheet}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={styles.close}
+        >
+          ✕
+        </button>
+
+        <h2 style={styles.title}>Unlock Shotcaller Pro</h2>
+        <p style={styles.subtitle}>
+          Every fighting style, the technique editor, advanced training options,
+          and the full charm progression.
+        </p>
+
+        <div style={styles.list}>
+          {packages === null && <p style={styles.muted}>Loading plans…</p>}
+
+          {packages !== null && sorted.length === 0 && (
+            <p style={styles.muted}>
+              Plans aren't available right now. Please check your connection and
+              try again later.
+            </p>
+          )}
+
+          {sorted.map((pkg) => {
+            const meta = metaFor(pkg);
+            const loading = busy === pkg.identifier;
+            return (
+              <button
+                key={pkg.identifier}
+                type="button"
+                disabled={!!busy}
+                onClick={() => handlePurchase(pkg)}
+                style={{
+                  ...styles.plan,
+                  opacity: busy && !loading ? 0.5 : 1,
+                }}
+              >
+                <div style={{ textAlign: "left" }}>
+                  <div style={styles.planTitle}>{pkg.product.title}</div>
+                  <div style={styles.planPeriod}>
+                    {pkg.product.priceString} {meta.period}
+                  </div>
+                </div>
+                <div style={styles.planRight}>
+                  {meta.badge && <span style={styles.badge}>{meta.badge}</span>}
+                  <span>{loading ? "…" : "Get"}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {message && <p style={styles.message}>{message}</p>}
+
+        <p style={styles.finePrint}>
+          Subscriptions auto-renew unless cancelled at least 24 hours before the
+          period ends. Manage or cancel anytime in your App Store or Google Play
+          account settings.
+        </p>
+
+        <div style={styles.actions}>
+          <button
+            type="button"
+            disabled={!!busy}
+            onClick={handleRestore}
+            style={styles.textButton}
+          >
+            Restore Purchases
+          </button>
+          <button
+            type="button"
+            disabled={!!busy}
+            onClick={handleLegacyClaim}
+            style={styles.textButton}
+          >
+            I bought this before it went free
+          </button>
+        </div>
+
+        <div style={styles.legal}>
+          <a href={TERMS_URL} target="_blank" rel="noreferrer" style={styles.link}>
+            Terms of Use
+          </a>
+          <span aria-hidden="true">·</span>
+          <a
+            href={PRIVACY_URL}
+            target="_blank"
+            rel="noreferrer"
+            style={styles.link}
+          >
+            Privacy Policy
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const styles = {
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.7)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "1rem",
+    zIndex: 9999,
+    backdropFilter: "blur(4px)",
+  },
+  sheet: {
+    position: "relative",
+    width: "100%",
+    maxWidth: "26rem",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#1f2937",
+    borderRadius: "1.25rem",
+    padding: "1.75rem 1.5rem 1.5rem",
+    color: "white",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+  },
+  close: {
+    position: "absolute",
+    top: "0.75rem",
+    right: "0.875rem",
+    background: "transparent",
+    border: "none",
+    color: "rgba(255,255,255,0.6)",
+    fontSize: "1.1rem",
+    cursor: "pointer",
+    lineHeight: 1,
+  },
+  title: {
+    fontSize: "1.4rem",
+    fontWeight: 800,
+    margin: "0 0 0.5rem",
+    textAlign: "center",
+  },
+  subtitle: {
+    color: "#f9a8d4",
+    fontSize: "0.9rem",
+    textAlign: "center",
+    margin: "0 0 1.25rem",
+    lineHeight: 1.4,
+  },
+  list: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+  muted: {
+    color: "rgba(255,255,255,0.6)",
+    textAlign: "center",
+    fontSize: "0.9rem",
+    padding: "1rem 0",
+  },
+  plan: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0.875rem 1rem",
+    borderRadius: "0.875rem",
+    border: "2px solid rgba(255,255,255,0.15)",
+    background: "rgba(255,255,255,0.06)",
+    color: "white",
+    cursor: "pointer",
+    transition: "border 0.2s, background 0.2s",
+    width: "100%",
+  },
+  planTitle: { fontWeight: 700, fontSize: "1rem" },
+  planPeriod: { color: "#f9a8d4", fontSize: "0.85rem", marginTop: "0.15rem" },
+  planRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    fontWeight: 700,
+  },
+  badge: {
+    background: "#2563eb",
+    color: "white",
+    fontSize: "0.65rem",
+    fontWeight: 700,
+    padding: "0.2rem 0.45rem",
+    borderRadius: "0.5rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.03em",
+  },
+  message: {
+    color: "#fca5a5",
+    fontSize: "0.85rem",
+    textAlign: "center",
+    margin: "0.75rem 0 0",
+  },
+  finePrint: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: "0.7rem",
+    lineHeight: 1.4,
+    margin: "1rem 0 0",
+    textAlign: "center",
+  },
+  actions: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem",
+    marginTop: "0.75rem",
+    alignItems: "center",
+  },
+  textButton: {
+    background: "transparent",
+    border: "none",
+    color: "#93c5fd",
+    fontSize: "0.85rem",
+    cursor: "pointer",
+    padding: "0.35rem",
+  },
+  legal: {
+    display: "flex",
+    gap: "0.5rem",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: "0.75rem",
+    color: "rgba(255,255,255,0.4)",
+    fontSize: "0.75rem",
+  },
+  link: { color: "rgba(255,255,255,0.6)", textDecoration: "underline" },
+} satisfies Record<string, React.CSSProperties>;

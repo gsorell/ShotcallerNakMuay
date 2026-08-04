@@ -11,6 +11,7 @@ import {
   LOG_LEVEL,
   Purchases,
   type CustomerInfo,
+  type PurchasesPackage,
 } from "@revenuecat/purchases-capacitor";
 
 import type { EmphasisKey } from "@/types";
@@ -34,6 +35,12 @@ export type EntitlementStatus =
   | "free"
   | "unknown";
 
+export interface PurchaseResult {
+  success: boolean;
+  cancelled?: boolean;
+  error?: string;
+}
+
 interface EntitlementContextValue {
   status: EntitlementStatus;
   /** True when the user has Pro access by any route (legacy, sub, or trial). */
@@ -48,6 +55,10 @@ interface EntitlementContextValue {
   restore: () => Promise<void>;
   /** Honor-system "I bought this before it went free" grant (Phase 0). */
   claimLegacyOwnership: () => Promise<void>;
+  /** Packages from the current RevenueCat offering (empty if unavailable). */
+  getPackages: () => Promise<PurchasesPackage[]>;
+  /** Purchase a package; resolves entitlement state on success. */
+  purchase: (pkg: PurchasesPackage) => Promise<PurchaseResult>;
 }
 
 const EntitlementContext = createContext<EntitlementContextValue | null>(null);
@@ -124,6 +135,40 @@ export function EntitlementProvider({
     setStatus("legacy_lifetime");
   }, []);
 
+  const getPackages = useCallback(async (): Promise<PurchasesPackage[]> => {
+    if (!configuredRef.current) return [];
+    try {
+      const offerings = await Purchases.getOfferings();
+      return offerings.current?.availablePackages ?? [];
+    } catch (error) {
+      console.warn("[entitlement] getOfferings failed", error);
+      return [];
+    }
+  }, []);
+
+  const purchase = useCallback(
+    async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
+      if (!configuredRef.current) {
+        return { success: false, error: "Purchases are not available." };
+      }
+      try {
+        const { customerInfo } = await Purchases.purchasePackage({
+          aPackage: pkg,
+        });
+        await evaluate(customerInfo);
+        return {
+          success: !!customerInfo.entitlements.active[PRO_ENTITLEMENT_ID],
+        };
+      } catch (error) {
+        const err = error as { userCancelled?: boolean; message?: string };
+        if (err?.userCancelled) return { success: false, cancelled: true };
+        console.warn("[entitlement] purchase failed", error);
+        return { success: false, error: err?.message ?? "Purchase failed." };
+      }
+    },
+    [evaluate]
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -187,6 +232,8 @@ export function EntitlementProvider({
     refresh,
     restore,
     claimLegacyOwnership,
+    getPackages,
+    purchase,
   };
 
   return (

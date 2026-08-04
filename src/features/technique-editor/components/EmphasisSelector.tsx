@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import { useEntitlement } from "@/features/entitlement";
+import { usePaywall } from "@/features/paywall";
 import type { EmphasisKey, TechniquesShape } from "@/types";
 import { ImageWithFallback } from "../../shared";
 import { TechniqueQuickEdit } from "./TechniqueQuickEdit";
@@ -28,6 +30,8 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   onManageTechniques,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
+  const { isEmphasisUnlocked } = useEntitlement();
+  const { openPaywall } = usePaywall();
 
   const toggleExpanded = (key: string) =>
     setExpandedKeys((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -72,19 +76,30 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
             (style) => {
               const isSelected = selectedEmphases[style.key as EmphasisKey];
               const isExpanded = !!expandedKeys[style.key];
-              const canEdit = !TILES_WITHOUT_TECHNIQUES.has(style.key);
+              const locked = !isEmphasisUnlocked(style.key as EmphasisKey);
+              const canEdit = !TILES_WITHOUT_TECHNIQUES.has(style.key) && !locked;
+              const activate = () => {
+                if (locked) {
+                  openPaywall("style_tile");
+                } else {
+                  toggleEmphasis(style.key as EmphasisKey);
+                }
+              };
               return (
                 <div
                   key={style.key}
                   className="emphasis-tile"
                   role="button"
                   tabIndex={0}
-                  aria-pressed={isSelected}
-                  onClick={() => toggleEmphasis(style.key as EmphasisKey)}
+                  aria-pressed={locked ? undefined : isSelected}
+                  aria-label={
+                    locked ? `Unlock ${style.label} with Pro` : undefined
+                  }
+                  onClick={activate}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      toggleEmphasis(style.key as EmphasisKey);
+                      activate();
                     }
                   }}
                   style={{
@@ -106,6 +121,23 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       : "none",
                   }}
                 >
+                  {locked && (
+                    <span
+                      aria-hidden="true"
+                      title="Pro feature"
+                      style={{
+                        position: "absolute",
+                        top: "0.5rem",
+                        right: "0.5rem",
+                        fontSize: "0.9rem",
+                        lineHeight: 1,
+                        opacity: 0.85,
+                      }}
+                    >
+                      🔒
+                    </span>
+                  )}
+
                   {canEdit && (
                     <button
                       type="button"
@@ -153,7 +185,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       display: "flex",
                       alignItems: "center",
                       gap: "0.625rem",
-                      paddingRight: canEdit ? "2rem" : 0,
+                      paddingRight: canEdit || locked ? "2rem" : 0,
                     }}
                   >
                     <ImageWithFallback
