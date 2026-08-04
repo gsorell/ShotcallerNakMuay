@@ -99,30 +99,33 @@ jobs:
           sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/g" App.xcodeproj/project.pbxproj
           echo "Updated MARKETING_VERSION to $VERSION and build number to $BUILD_NUMBER"
 
-      - name: Prepare App Store Connect API key
+      - name: Set manual signing on the App target only
         run: |
-          mkdir -p ~/private_keys
-          echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
+          cd ios/App
+          # Configure manual distribution signing on the App target within
+          # App.xcodeproj. RevenueCat's resource bundle (RevenueCat_RevenueCat)
+          # lives in its own SPM package project, not App.xcodeproj, so it is
+          # left untouched — avoiding the "does not support provisioning
+          # profiles" error that a global xcodebuild signing override caused.
+          fastlane run update_code_signing_settings \
+            use_automatic_signing:false \
+            path:"App.xcodeproj" \
+            team_id:"${{ secrets.APPLE_TEAM_ID }}" \
+            code_sign_identity:"Apple Distribution" \
+            profile_name:"${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}"
 
       - name: Build iOS App
         run: |
           cd ios/App
-          # Automatic signing via App Store Connect API key. This only applies
-          # provisioning profiles to targets that need them and skips SPM
-          # resource bundles (e.g. RevenueCat_RevenueCat), which cannot take a
-          # profile and broke the previous global-manual-signing approach.
+          # No signing settings on the command line — they would apply globally
+          # to every target. Signing comes from the App target's project config
+          # set in the previous step.
           xcodebuild -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath $PWD/build/App.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
-            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
-            clean archive \
-            CODE_SIGN_STYLE="Automatic" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
+            clean archive
 
       - name: Export IPA
         run: |
@@ -139,7 +142,14 @@ jobs:
             <key>teamID</key>
             <string>${{ secrets.APPLE_TEAM_ID }}</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.shotcallernakmuay.app</key>
+              <string>${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}</string>
+            </dict>
             <key>uploadSymbols</key>
             <true/>
           </dict>
@@ -149,11 +159,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $PWD/build/App.xcarchive \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $PWD/build \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
-            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}"
+            -exportPath $PWD/build
 
       - name: Upload to TestFlight
         if: ${{ github.event.inputs.upload_to_testflight == 'true' }}
