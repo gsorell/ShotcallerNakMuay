@@ -30,7 +30,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   onManageTechniques,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
-  const { isEmphasisUnlocked } = useEntitlement();
+  const { isEmphasisUnlocked, isPro } = useEntitlement();
   const { openPaywall } = usePaywall();
 
   const toggleExpanded = (key: string) =>
@@ -77,7 +77,10 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
               const isSelected = selectedEmphases[style.key as EmphasisKey];
               const isExpanded = !!expandedKeys[style.key];
               const locked = !isEmphasisUnlocked(style.key as EmphasisKey);
-              const canEdit = !TILES_WITHOUT_TECHNIQUES.has(style.key) && !locked;
+              // Inline editing is a Pro feature; free users view via the full
+              // editor (read-only) instead.
+              const canEdit =
+                !TILES_WITHOUT_TECHNIQUES.has(style.key) && isPro;
               const activate = () => {
                 if (locked) {
                   openPaywall("style_tile");

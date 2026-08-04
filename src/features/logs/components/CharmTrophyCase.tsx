@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useEntitlement } from "@/features/entitlement";
+import { usePaywall } from "@/features/paywall";
 import { STREAK_MILESTONES } from "../constants/milestones";
 import {
   ACHIEVEMENT_CHARMS,
@@ -30,6 +32,8 @@ export default function CharmTrophyCase({
   longestStreak,
 }: CharmTrophyCaseProps) {
   const [active, setActive] = useState<TrophyItem | null>(null);
+  const { isPro } = useEntitlement();
+  const { openPaywall } = usePaywall();
   const peak = Math.max(currentStreak, longestStreak);
   const history = useMemo(() => readWorkoutHistory(), []);
 
@@ -71,6 +75,41 @@ export default function CharmTrophyCase({
 
   const items = [...streakItems, ...achievementItems, ...teaserItems];
   if (items.length === 0) return null;
+
+  // The charm ladder is a Pro feature. Free users see a locked teaser inviting
+  // them to unlock it, rather than the live trophy case.
+  if (!isPro) {
+    return (
+      <button
+        type="button"
+        onClick={() => openPaywall("charm_ladder")}
+        style={{
+          all: "unset",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "0.35rem",
+          cursor: "pointer",
+          padding: "1rem",
+          borderRadius: "0.75rem",
+          border: "1px dashed rgba(249,168,212,0.4)",
+          background: "rgba(255,255,255,0.04)",
+          textAlign: "center",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <span style={{ fontSize: "1.5rem" }}>🔒🏆</span>
+        <span style={{ color: "white", fontWeight: 700 }}>Charm Ladder</span>
+        <span
+          style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.8rem" }}
+        >
+          Earn charms for streaks and milestones. Unlock the trophy case with
+          Pro.
+        </span>
+      </button>
+    );
+  }
 
   return (
     <>

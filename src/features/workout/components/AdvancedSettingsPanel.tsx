@@ -1,5 +1,7 @@
 import React, { useCallback } from "react";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+import { useEntitlement } from "@/features/entitlement";
+import { usePaywall } from "@/features/paywall";
 import type { UnifiedVoice } from "@/utils/ttsService";
 import { ttsService } from "@/utils/ttsService";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
@@ -17,6 +19,8 @@ const TrainingOptions = ({
   trackEvent,
 }: Pick<AdvancedSettingsPanelProps, "trackEvent">) => {
   const { settings } = useWorkoutContext();
+  const { isPro } = useEntitlement();
+  const { openPaywall } = usePaywall();
   const {
     southpawMode,
     setSouthpawMode,
@@ -25,25 +29,38 @@ const TrainingOptions = ({
     readInOrder,
     setReadInOrder,
   } = settings;
-  // Logic extracted to a named handler
-  const handleSouthpawChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.checked;
-    setSouthpawMode(newValue);
+
+  // Training options are a Pro feature. Free users see the toggles (so they
+  // know what Pro offers) but flipping one opens the paywall instead.
+  const gate = (apply: (checked: boolean) => void) => {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!isPro) {
+        openPaywall("advanced_settings");
+        return;
+      }
+      apply(e.target.checked);
+    };
+  };
+
+  const handleSouthpawChange = gate((checked) => {
+    setSouthpawMode(checked);
     if (trackEvent) {
       try {
         trackEvent(AnalyticsEvents.SettingToggle, {
           setting_name: "southpaw_mode",
-          setting_value: newValue,
+          setting_value: checked,
         });
       } catch (error) {
         console.warn("Analytics tracking failed", error);
       }
     }
-  };
+  });
 
   return (
     <div style={{ marginBottom: "2rem" }}>
-      <h4 style={styles.sectionHeader}>Training Options</h4>
+      <h4 style={styles.sectionHeader}>
+        Training Options {!isPro && <span style={styles.proTag}>🔒 Pro</span>}
+      </h4>
       <div style={styles.optionsContainer}>
         <ToggleOption
           label="Southpaw Mode"
@@ -55,13 +72,13 @@ const TrainingOptions = ({
           label="Include Calisthenics"
           description="Adds bodyweight exercises like jumping jacks and high knees to your workout"
           checked={addCalisthenics}
-          onChange={(e: any) => setAddCalisthenics(e.target.checked)}
+          onChange={gate((checked) => setAddCalisthenics(checked))}
         />
         <ToggleOption
           label="Read Techniques in Order"
           description="Calls techniques sequentially instead of randomly for structured practice"
           checked={readInOrder}
-          onChange={(e: any) => setReadInOrder(e.target.checked)}
+          onChange={gate((checked) => setReadInOrder(checked))}
         />
       </div>
     </div>
@@ -271,6 +288,13 @@ const styles = {
     margin: "0 0 1rem 0",
     textTransform: "uppercase" as const,
     letterSpacing: "0.5px",
+  },
+  proTag: {
+    color: "#f9a8d4",
+    fontSize: "0.7rem",
+    fontWeight: 700,
+    marginLeft: "0.4rem",
+    letterSpacing: "0.03em",
   },
   optionsContainer: {
     display: "flex",
