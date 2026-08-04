@@ -99,18 +99,29 @@ jobs:
           sed -i '' "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/g" App.xcodeproj/project.pbxproj
           echo "Updated MARKETING_VERSION to $VERSION and build number to $BUILD_NUMBER"
 
+      - name: Prepare App Store Connect API key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY }}" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8
+
       - name: Build iOS App
         run: |
           cd ios/App
+          # Automatic signing via App Store Connect API key. This only applies
+          # provisioning profiles to targets that need them and skips SPM
+          # resource bundles (e.g. RevenueCat_RevenueCat), which cannot take a
+          # profile and broke the previous global-manual-signing approach.
           xcodebuild -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath $PWD/build/App.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
+            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" \
             clean archive \
-            CODE_SIGN_STYLE="Manual" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}" \
+            CODE_SIGN_STYLE="Automatic" \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
 
       - name: Export IPA
@@ -128,14 +139,7 @@ jobs:
             <key>teamID</key>
             <string>${{ secrets.APPLE_TEAM_ID }}</string>
             <key>signingStyle</key>
-            <string>manual</string>
-            <key>signingCertificate</key>
-            <string>Apple Distribution</string>
-            <key>provisioningProfiles</key>
-            <dict>
-              <key>com.shotcallernakmuay.app</key>
-              <string>${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}</string>
-            </dict>
+            <string>automatic</string>
             <key>uploadSymbols</key>
             <true/>
           </dict>
@@ -145,7 +149,11 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $PWD/build/App.xcarchive \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $PWD/build
+            -exportPath $PWD/build \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
+            -authenticationKeyID "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}"
 
       - name: Upload to TestFlight
         if: ${{ github.event.inputs.upload_to_testflight == 'true' }}
