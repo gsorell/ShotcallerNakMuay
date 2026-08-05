@@ -4,8 +4,8 @@ import type { PurchasesPackage } from "@revenuecat/purchases-capacitor";
 import { useEntitlement } from "@/features/entitlement";
 import { trackEvent } from "@/utils/analytics";
 
-const TERMS_URL = "https://shotcallernakmuay.com/terms.html";
-const PRIVACY_URL = "https://shotcallernakmuay.com/privacy-policy.html";
+const TERMS_URL = "https://shotcallernakmuay.netlify.app/terms.html";
+const PRIVACY_URL = "https://shotcallernakmuay.netlify.app/privacy-policy.html";
 
 interface PaywallModalProps {
   source?: string;
