@@ -174,10 +174,19 @@ export function EntitlementProvider({
     const init = async () => {
       const native = Capacitor.isNativePlatform();
 
-      // Phase 0: while the app is still paid, stamp every install as a legacy
-      // owner (all current users are paying owners). Guarded so a persisted
-      // flag isn't rewritten, and disabled in the later free release.
-      if (LEGACY_STAMP_ENABLED && native && !(await isLegacyOwner())) {
+      // Phase 0 (ANDROID ONLY): while the app is still paid, stamp every
+      // install as a legacy owner — all current Android users are paying
+      // owners, and Android has no retroactive ownership signal.
+      //
+      // iOS deliberately does NOT stamp: it grandfathers via
+      // originalApplicationVersion (in `evaluate`), which recognizes existing
+      // owners WITHOUT hiding the paywall from new installs — critical so the
+      // App Review team (a fresh install) can actually reach and test the IAPs.
+      if (
+        LEGACY_STAMP_ENABLED &&
+        Capacitor.getPlatform() === "android" &&
+        !(await isLegacyOwner())
+      ) {
         await markLegacyOwner();
       }
 

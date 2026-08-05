@@ -4,12 +4,20 @@ How to take the app from **paid** to **free + subscription (+ lifetime)** withou
 losing existing owners. Follow the phases in order. The store price flips are at
 the very end and, for Google, **irreversible**.
 
-## The one hard rule
+## The one hard rule (Android)
 
-**Phase 0 must ship to the stores while the app is still PAID.** That build
-stamps every current install as a legacy owner (grandfathering). If you flip a
-store to free before Phase 0 is adopted, those owners cannot be recovered on
-Android.
+**On Android, the Phase 0 build must ship while the app is still PAID.** That
+build stamps every current install as a legacy owner, because Android has no
+retroactive ownership signal — flip Google to free before Phase 0 is adopted and
+those owners cannot be recovered.
+
+**iOS is different — it does NOT stamp.** iOS grandfathers via
+`originalApplicationVersion` (retroactive, works forever), so it needs no
+separate paid-first build. Critically, this keeps the paywall **reachable for new
+installs**, including Apple's App Review team — a stamping build would auto-
+grandfather the reviewer and hide the paywall, getting the IAPs **rejected as
+untestable**. So the Apple IAPs must be submitted with a `RELEASE_PHASE = "free"`
+build, never a stamping one.
 
 ## The release switch (code)
 
@@ -26,33 +34,42 @@ The RevenueCat public SDK keys live in `src/features/entitlement/config.ts`
 
 ---
 
-## Phase 0 — ship while still PAID (grandfathering)
+## Phase 0 — ANDROID: ship while still PAID (grandfathering)
 
-Ship the subscription build with `RELEASE_PHASE = "paid"` to **production** on both
-stores, still priced as paid. This stamps all current owners as legacy.
+Ship the Android subscription build with `RELEASE_PHASE = "paid"` to the
+**Production** track, still priced as paid. This stamps all current Android owners
+as legacy. (The stamp is Android-only; the same `RELEASE_PHASE = "paid"` build is
+NOT used for the iOS submission — see Phase 2.)
 
 1. Merge the subscription branch to `main`.
-2. `RELEASE_PHASE = "paid"` (default). Bump versionCode / build number.
-3. **Android:** build a signed AAB, upload to the **Production** track, roll out.
-4. **iOS:** run the `Build iOS App` workflow, submit the build (+ the 3 IAPs) for
-   review with real paywall screenshots.
-5. **Wait for meaningful adoption** before the flips — the longer Phase 0 is live,
-   the more owners are stamped. (Android owners who never update in this window
-   fall back to Auto Backup restore + the honor-system button.)
+2. `RELEASE_PHASE = "paid"`. Bump versionCode.
+3. Build a signed AAB, upload to the Android **Production** track, roll out.
+4. **Wait for meaningful adoption** before flipping Google — the longer this is
+   live, the more owners are stamped. (Owners who never update fall back to Auto
+   Backup restore + the honor-system button.)
 
-## Phase 1 — onboarding (fast-follow, before the flip)
+## Phase 1 — onboarding (fast-follow, before the flips)
 
 Build/ship onboarding that explains free vs Pro. It only matters once free, so it
-rides just ahead of the flip. Not required for Phase 0.
+rides just ahead of the flips. Not required for Phase 0.
 
-## Phase 2 — flip Apple → Free
+## Phase 2 — iOS: submit subscription build + IAPs, then flip → Free
 
-1. Set `IOS_FREE_TRANSITION_BUILD` to the build number of the release you're about
-   to ship as the first free version, and set `RELEASE_PHASE = "free"`.
-2. Ship that iOS build (still paid at this point).
-3. In App Store Connect → Pricing → set price to **Free**.
-4. Validate: an existing owner who reinstalls is recognized via
-   `originalApplicationVersion` (in production, not just sandbox — see checklist).
+iOS needs no separate paid Phase 0. Ship one build that carries the IAPs and
+grandfathers via original version, then flip the price.
+
+1. Set `RELEASE_PHASE = "free"` and `IOS_FREE_TRANSITION_BUILD` to the
+   **CFBundleVersion (build number)** of the build you're about to submit (the CI
+   sets CFBundleVersion = the GitHub Actions run number, so use that run's
+   number). Existing owners' original build is below it → grandfathered; a fresh
+   install (incl. the reviewer) is not → paywall reachable.
+2. Run the `Build iOS App` workflow; the IAPs must have real paywall screenshots.
+3. In App Store Connect, submit the app version **with the 3 IAPs attached** for
+   review. Because `RELEASE_PHASE = "free"`, the reviewer's fresh install lands on
+   the free tier and can reach + test the paywall.
+4. On approval, **release the build and set the App Store price to Free together**
+   (Pricing → Free), so no new buyer pays for what is now free-tier content.
+5. Validate the returning-owner path in production (see checklist).
 
 ## Phase 3 — flip Google → Free (LAST, IRREVERSIBLE)
 
@@ -75,6 +92,8 @@ rides just ahead of the flip. Not required for Phase 0.
       is granted legacy access via original version.
 - [ ] **Honor-system button** ("I bought this before it went free") grants access.
 - [ ] Real iOS paywall screenshots replace the placeholders on all 3 products.
+- [ ] Apple IAPs submitted with a `RELEASE_PHASE = "free"` iOS build (paywall
+      reachable for the App Review team), NEVER a stamping (`"paid"`) build.
 - [ ] Privacy policy has a "Purchases & Subscriptions" section; store data-safety /
       privacy labels updated to declare purchase data.
 - [ ] `test/ios-paywall` throwaway branch deleted.
