@@ -1,0 +1,400 @@
+/* LearnSection.css — Pro "Learn the Techniques" library.
+   Follows the app's existing panel language: translucent dark cards on the
+   hero background, pink (#f9a8d4) accents, 0.75rem radii. */
+
+.learn {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 0.75rem 1.5rem;
+  color: #fff;
+}
+
+/* --- header ------------------------------------------------------------- */
+
+.learn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.learn-back {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.15) 0%,
+    rgba(236, 72, 153, 0.25) 100%
+  );
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.learn-back:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.25) 0%,
+    rgba(236, 72, 153, 0.35) 100%
+  );
+}
+
+.learn-pro-chip {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  background: rgba(236, 72, 153, 0.12);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+/* --- shared type -------------------------------------------------------- */
+
+.learn-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 0.35rem;
+  color: #fff;
+}
+
+.learn-subtitle {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* --- unlock banner (free users) ----------------------------------------- */
+
+.learn-unlock-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.18) 0%,
+    rgba(236, 72, 153, 0.28) 100%
+  );
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.learn-unlock-banner:hover {
+  border-color: rgba(236, 72, 153, 0.55);
+}
+
+.learn-unlock-banner-title {
+  font-weight: 700;
+  color: #f9a8d4;
+  font-size: 0.95rem;
+}
+
+.learn-unlock-banner-body {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.825rem;
+  line-height: 1.45;
+}
+
+/* --- category grid ------------------------------------------------------ */
+
+.learn-category-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.learn-category-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.learn-category-card:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Matches how EmphasisSelector renders the same artwork on the style tiles:
+   36px, rounded, object-fit cover — so a category card and a style tile read
+   as the same component family. */
+.learn-category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 1.5rem; /* emoji fallback */
+  line-height: 36px;
+  text-align: center;
+}
+
+.learn-list-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.learn-list-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 1.75rem; /* emoji fallback */
+  line-height: 40px;
+  text-align: center;
+}
+
+.learn-title--inline {
+  margin: 0;
+}
+
+.learn-category-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.learn-category-label {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.learn-category-blurb {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+.learn-category-count {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+
+/* --- technique list ----------------------------------------------------- */
+
+.learn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.learn-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+
+.learn-list-item:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.learn-list-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.learn-list-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.learn-list-number {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.35rem;
+  padding: 0.05rem 0.35rem;
+}
+
+.learn-list-thai {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+.learn-list-chevron {
+  flex-shrink: 0;
+  color: #f9a8d4;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* --- lesson detail ------------------------------------------------------ */
+
+.learn-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  min-height: 1rem;
+}
+
+.learn-detail-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.45rem;
+}
+
+.learn-detail-thai {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-style: italic;
+}
+
+.learn-detail-summary {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.learn-panel {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.learn-panel--mistakes {
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.learn-panel--drill {
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+.learn-panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.learn-panel--mistakes .learn-panel-title {
+  color: #fca5a5;
+}
+
+.learn-panel-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.learn-panel-list li {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.learn-panel--mistakes .learn-panel-list li::marker {
+  color: #fca5a5;
+}
+
+.learn-panel--drill .learn-panel-list li::marker,
+.learn-panel .learn-panel-list li::marker {
+  color: #f9a8d4;
+}
+
+/* --- drill ------------------------------------------------------------- */
+
+.learn-drill-hint {
+  margin: 0 0 0.6rem;
+  font-size: 0.825rem;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.45;
+}
+
+.learn-drill-styles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.learn-drill-btn {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.15) 0%,
+    rgba(236, 72, 153, 0.25) 100%
+  );
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.learn-drill-btn:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.25) 0%,
+    rgba(236, 72, 153, 0.35) 100%
+  );
+  border-color: rgba(236, 72, 153, 0.5);
+}

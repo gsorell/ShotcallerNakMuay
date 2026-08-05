@@ -20,6 +20,7 @@ import {
   useUserEngagement,
 } from "@/features/shared";
 
+import { LearnSection } from "@/features/learn";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -149,7 +150,12 @@ export default function App() {
   useNavigationGestures({
     onBack: () => {
       if (showOnboardingMsg) setShowOnboardingMsg(false);
-      else if (page === "editor" || page === "logs" || page === "completed")
+      else if (
+        page === "editor" ||
+        page === "logs" ||
+        page === "completed" ||
+        page === "learn"
+      )
         setPage("timer");
     },
     enabled: page !== "timer" || showOnboardingMsg,
@@ -193,6 +199,9 @@ export default function App() {
             onBack={() => setPage("timer")}
           />
         );
+
+      case "learn":
+        return <LearnSection onBack={() => setPage("timer")} />;
 
       case "completed":
         if (!lastWorkout) return null;

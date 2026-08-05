@@ -22,6 +22,7 @@ import {
   LEGACY_STAMP_ENABLED,
 } from "./releaseConfig";
 import { getRevenueCatApiKey } from "./config";
+import { isDevProOverrideActive } from "./devOverride";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
 
 // The full set of entitlement states the app can be in. `unknown` is the
@@ -79,6 +80,12 @@ export function EntitlementProvider({
   // applying the precedence: legacy flag → active entitlement → iOS original
   // version grandfathering → free.
   const evaluate = useCallback(async (customerInfo: CustomerInfo | null) => {
+    // Dev-only browser preview override (?pro=1). Compiled out of production.
+    if (isDevProOverrideActive()) {
+      setStatus("subscribed");
+      return;
+    }
+
     if (await isLegacyOwner()) {
       setStatus("legacy_lifetime");
       return;

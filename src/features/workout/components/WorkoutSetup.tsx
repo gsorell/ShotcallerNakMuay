@@ -79,6 +79,16 @@ export default function WorkoutSetup() {
         />
 
         <button
+          onClick={() => {
+            trackEvent("learn_open", { source: "setup" });
+            setPage("learn");
+          }}
+          className="workout-setup-advanced-toggle"
+        >
+          📖 Learn the Techniques
+        </button>
+
+        <button
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="workout-setup-advanced-toggle"
         >
