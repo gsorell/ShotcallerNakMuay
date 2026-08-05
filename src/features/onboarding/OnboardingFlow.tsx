@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import { OnboardingModal } from "@/features/shared";
+
 interface OnboardingFlowProps {
   /** Dismiss to the free app without opening the paywall ("Maybe later"). */
   onSkip: () => void;
@@ -7,84 +9,208 @@ interface OnboardingFlowProps {
   onUnlock: () => void;
 }
 
-interface Card {
-  emoji: string;
-  title: string;
-  body: React.ReactNode;
+interface Item {
+  iconPath: string;
+  label: string;
+  desc: string;
 }
 
-const CARDS: Card[] = [
+const CUSTOMIZE_ITEMS: { label: string; desc: string }[] = [
   {
-    emoji: "🥊",
-    title: "Your coach, in your ear",
-    body: (
-      <>
-        Nak Muay Shot Caller turns shadowboxing and bagwork into guided sessions
-        with <strong>spoken technique callouts</strong> and timed rounds — so you
-        can keep your hands up and train without looking at the screen.
-        <br />
-        <br />
-        <span style={{ opacity: 0.8 }}>
-          It assumes you already know the form for each strike; it won't teach or
-          correct technique. New to it? Learn the basics from a qualified coach
-          first.
-        </span>
-      </>
-    ),
+    label: "Edit any style",
+    desc: "Tweak the combos in any style — or build your own from scratch — in the Technique Editor.",
   },
   {
-    emoji: "🆓",
-    title: "Start free, right now",
-    body: (
-      <>
-        Jump in with <strong>Nak Muay Newb</strong> to learn the basic strikes,
-        <strong> Freestyle</strong> to call your own shots, or a plain{" "}
-        <strong>round Timer</strong>. No account, no cost.
-      </>
-    ),
+    label: "Dial in the session",
+    desc: "Set rounds, rest, difficulty, and callout speed to match your level.",
   },
   {
-    emoji: "🔓",
-    title: "Go Pro when you're ready",
-    body: (
-      <>
-        Unlock <strong>every fighting style</strong>, the{" "}
-        <strong>technique editor</strong> to build your own combos, advanced
-        training options, and the full <strong>charm progression</strong> that
-        tracks your streaks and milestones.
-      </>
-    ),
+    label: "Train your way",
+    desc: "Southpaw mirroring, calisthenics between rounds, and voice options.",
   },
 ];
+
+const PRO_ITEMS: Item[] = [
+  {
+    iconPath: "/assets/icon_mat.png",
+    label: "Every fighting style",
+    desc: "Mat, Tae, Khao, Sok, Femur, Boxing, and the whole roster.",
+  },
+  {
+    iconPath: "/assets/icon_edit.png",
+    label: "Technique Editor",
+    desc: "Build your own combos and custom styles.",
+  },
+  {
+    iconPath: "/assets/icon_trophy1.png",
+    label: "Charm progression",
+    desc: "Earn charms for streaks and milestones as you train.",
+  },
+];
+
+const HOWTO_STEPS = [
+  {
+    n: "1",
+    title: "Pick your style & rounds",
+    desc: "Choose one or more emphases, then set round length, rest, and difficulty.",
+  },
+  {
+    n: "2",
+    title: "Press start, hands up",
+    desc: "The app calls the strikes out loud — you react and flow, eyes off the screen.",
+  },
+  {
+    n: "3",
+    title: "The screen is just a backup",
+    desc: "Glance only if you miss a cue. The goal is to train without looking down.",
+  },
+];
+
+const TOTAL_STEPS = 5;
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onSkip,
   onUnlock,
 }) => {
   const [step, setStep] = useState(0);
-  const isLast = step === CARDS.length - 1;
-  const card = CARDS[step];
-  if (!card) return null;
+  const [showGlossary, setShowGlossary] = useState(false);
+  const isLast = step === TOTAL_STEPS - 1;
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Welcome" style={styles.overlay}>
-      <div style={styles.sheet}>
-        <button type="button" onClick={onSkip} style={styles.skip}>
+    <div role="dialog" aria-modal="true" aria-label="Welcome" style={styles.backdrop}>
+      <div style={styles.card}>
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((s) => s - 1)}
+            style={{ ...styles.navText, left: "1rem" }}
+          >
+            ‹ Back
+          </button>
+        ) : (
+          <span />
+        )}
+        <button
+          type="button"
+          onClick={onSkip}
+          style={{ ...styles.navText, right: "1rem" }}
+        >
           Skip
         </button>
 
-        <div style={styles.emoji}>{card.emoji}</div>
-        <h2 style={styles.title}>{card.title}</h2>
-        <p style={styles.body}>{card.body}</p>
+        <div style={styles.logoFrame}>
+          <img
+            src="/assets/Logo_Header_Banner_Smooth1.png"
+            alt="Nak Muay Shot Caller"
+            style={styles.banner}
+          />
+        </div>
+
+        {step === 0 && (
+          <>
+            <h2 style={styles.title}>Meet your new padholder</h2>
+            <p style={styles.body}>
+              Nak Muay Shot Caller turns shadowboxing, bagwork, and pad or
+              partner drills into guided sessions — <strong>spoken technique
+              callouts</strong> over timed rounds, so you can drill reaction and
+              flow anytime.
+            </p>
+            <p style={styles.note}>
+              It assumes you already know the form for each strike; it won't
+              teach or correct technique. New to it? Learn the basics from a
+              qualified coach first.
+            </p>
+          </>
+        )}
+
+        {step === 1 && (
+          <>
+            <h2 style={styles.title}>How it works</h2>
+            <div style={styles.list}>
+              {HOWTO_STEPS.map((s) => (
+                <div key={s.n} style={styles.row}>
+                  <span style={styles.numBadge}>{s.n}</span>
+                  <div style={{ minWidth: 0, textAlign: "left" }}>
+                    <div style={styles.rowLabel}>{s.title}</div>
+                    <div style={styles.rowDesc}>{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <h2 style={styles.title}>Speak the language</h2>
+            <p style={styles.body}>
+              Muay Thai combos use a <strong>number system</strong> — Jab = 1,
+              Cross = 2, hooks 3 &amp; 4, uppercuts 5 &amp; 6 — plus kicks,
+              knees, and elbows called by name.
+            </p>
+            <p style={styles.note}>
+              New to the numbers? A full glossary of every strike and defense is
+              built in.{" "}
+              <button
+                type="button"
+                onClick={() => setShowGlossary(true)}
+                style={styles.link}
+              >
+                Open the glossary
+              </button>
+            </p>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <h2 style={styles.title}>Make it your own</h2>
+            <ul style={styles.bullets}>
+              {CUSTOMIZE_ITEMS.map((it) => (
+                <li key={it.label} style={styles.bullet}>
+                  <strong style={styles.bulletLabel}>{it.label}.</strong>{" "}
+                  {it.desc}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <h2 style={styles.title}>Start free — or go Pro</h2>
+            <p style={{ ...styles.note, marginBottom: "0.9rem" }}>
+              Free forever: <strong style={{ color: "#f9a8d4" }}>Nak Muay
+              Newb</strong>, <strong style={{ color: "#f9a8d4" }}>Freestyle</strong>,
+              and the round <strong style={{ color: "#f9a8d4" }}>Timer</strong>.
+              Go Pro to unlock:
+            </p>
+            <div style={styles.list}>
+              {PRO_ITEMS.map((it) => (
+                <div key={it.label} style={styles.row}>
+                  <img
+                    src={it.iconPath}
+                    alt=""
+                    style={styles.rowIcon}
+                    aria-hidden="true"
+                  />
+                  <div style={{ minWidth: 0, textAlign: "left" }}>
+                    <div style={styles.rowLabel}>{it.label}</div>
+                    <div style={styles.rowDesc}>{it.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         <div style={styles.dots}>
-          {CARDS.map((_, i) => (
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <span
               key={i}
               style={{
                 ...styles.dot,
-                background:
-                  i === step ? "#f9a8d4" : "rgba(255,255,255,0.25)",
+                background: i === step ? "#ec4899" : "rgba(255,255,255,0.22)",
                 width: i === step ? 22 : 8,
               }}
             />
@@ -112,76 +238,167 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           </div>
         )}
       </div>
+
+      <OnboardingModal
+        open={showGlossary}
+        modalScrollPosition={0}
+        linkButtonStyle={{}}
+        setPage={() => {}}
+        onClose={() => setShowGlossary(false)}
+      />
     </div>
   );
 };
 
+// --- Type scale (kept deliberately small for a consistent look) ---
+//   title  1.25rem / 800    heading  0.9rem / 700 (row + bold labels)
+//   body   0.9rem  / 400    small    0.85rem / 400 (descriptions)
+//   button 0.95rem / 700
 const styles = {
-  overlay: {
+  backdrop: {
     position: "fixed",
     inset: 0,
-    background: "linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)",
+    background: "rgba(0,0,0,0.7)",
+    backdropFilter: "blur(4px)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "1.5rem",
-    zIndex: 10000,
+    zIndex: 9990,
+    padding: "1rem",
   },
-  sheet: {
+  card: {
     position: "relative",
     width: "100%",
-    maxWidth: "24rem",
-    background: "rgba(31, 41, 55, 0.85)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "1.25rem",
-    padding: "2.5rem 1.5rem 1.5rem",
+    maxWidth: "380px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#1a1a2e",
     color: "white",
+    borderRadius: "16px",
+    padding: "3.6rem 1.5rem 1.5rem",
+    boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
     textAlign: "center",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
   },
-  skip: {
+  navText: {
     position: "absolute",
-    top: "0.75rem",
-    right: "1rem",
+    top: "0.9rem",
     background: "transparent",
     border: "none",
-    color: "rgba(255,255,255,0.55)",
+    color: "#9ca3af",
     fontSize: "0.85rem",
+    fontWeight: 600,
+    cursor: "pointer",
+    padding: "0.25rem 0.4rem",
+  },
+  logoFrame: {
+    margin: "0 auto 1.4rem",
+    maxWidth: "290px",
+    padding: "10px",
+    borderRadius: "16px",
+    background: "rgba(249, 168, 212, 0.1)",
+    border: "1px solid rgba(255,255,255,0.06)",
+  },
+  banner: {
+    display: "block",
+    width: "100%",
+    height: "auto",
+    borderRadius: "10px",
+  },
+  title: {
+    fontSize: "1.25rem",
+    fontWeight: 800,
+    margin: "0 0 0.75rem",
+    color: "white",
+  },
+  body: {
+    fontSize: "0.9rem",
+    fontWeight: 400,
+    lineHeight: 1.5,
+    color: "#cbd5e1",
+    margin: "0 0 0.75rem",
+  },
+  note: {
+    fontSize: "0.9rem",
+    fontWeight: 400,
+    lineHeight: 1.5,
+    color: "#9ca3af",
+    margin: 0,
+  },
+  link: {
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    font: "inherit",
+    fontWeight: 600,
+    color: "#f9a8d4",
+    textDecoration: "underline",
     cursor: "pointer",
   },
-  emoji: { fontSize: "3rem", lineHeight: 1, marginBottom: "0.75rem" },
-  title: { fontSize: "1.4rem", fontWeight: 800, margin: "0 0 0.75rem" },
-  body: {
-    color: "#e5e7eb",
-    fontSize: "0.95rem",
-    lineHeight: 1.5,
-    margin: "0 0 1.5rem",
+  list: { display: "flex", flexDirection: "column", gap: "0.9rem" },
+  row: { display: "flex", alignItems: "center", gap: "0.8rem" },
+  rowIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 11,
+    objectFit: "cover",
+    flexShrink: 0,
   },
+  numBadge: {
+    width: 30,
+    height: 30,
+    flexShrink: 0,
+    borderRadius: 999,
+    background: "#ec4899",
+    color: "white",
+    fontWeight: 800,
+    fontSize: "0.9rem",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowLabel: { fontSize: "0.9rem", fontWeight: 700, color: "white" },
+  rowDesc: {
+    fontSize: "0.85rem",
+    lineHeight: 1.4,
+    color: "#9ca3af",
+    marginTop: "0.12rem",
+  },
+  bullets: {
+    textAlign: "left",
+    margin: 0,
+    padding: "0 0 0 1.1rem",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.7rem",
+  },
+  bullet: { fontSize: "0.9rem", lineHeight: 1.45, color: "#9ca3af" },
+  bulletLabel: { color: "white", fontWeight: 700 },
   dots: {
     display: "flex",
     gap: "0.4rem",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: "1.5rem",
+    margin: "1.4rem 0",
   },
   dot: { height: 8, borderRadius: 999, transition: "all 0.2s" },
-  actions: { display: "flex", flexDirection: "column", gap: "0.6rem" },
+  actions: { display: "flex", flexDirection: "column", gap: "0.55rem" },
   primary: {
-    padding: "0.9rem 1rem",
-    borderRadius: "0.875rem",
+    padding: "0.85rem 1rem",
+    borderRadius: "10px",
     border: "none",
-    background: "linear-gradient(90deg, #60a5fa 0%, #818cf8 100%)",
+    background: "#ec4899",
     color: "white",
     fontWeight: 700,
-    fontSize: "1rem",
+    fontSize: "0.95rem",
     cursor: "pointer",
   },
   secondary: {
-    padding: "0.6rem",
-    borderRadius: "0.875rem",
+    padding: "0.55rem",
+    borderRadius: "10px",
     border: "none",
     background: "transparent",
-    color: "#93c5fd",
+    color: "#9ca3af",
+    fontWeight: 600,
     fontSize: "0.9rem",
     cursor: "pointer",
   },
