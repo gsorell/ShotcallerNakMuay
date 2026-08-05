@@ -243,7 +243,7 @@ export const OnboardingModal: React.FC<{
           {/* Privacy Policy Link */}
           <div className="onboarding-privacy-section">
             <a
-              href="https://github.com/gsorell/ShotcallerNakMuay/blob/main/PRIVACY_POLICY.md"
+              href="https://shotcallernakmuay.com/privacy-policy.html"
               target="_blank"
               rel="noopener noreferrer"
               className="onboarding-privacy-link"
