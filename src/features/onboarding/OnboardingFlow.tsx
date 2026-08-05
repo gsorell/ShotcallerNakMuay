@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 
+import { TOTAL_LESSON_COUNT } from "@/features/learn";
 import { OnboardingModal } from "@/features/shared";
 
 interface OnboardingFlowProps {
@@ -35,6 +36,13 @@ const PRO_ITEMS: Item[] = [
     iconPath: "/assets/icon_mat.png",
     label: "Every fighting style",
     desc: "Mat, Tae, Khao, Sok, Femur, Boxing, and the whole roster.",
+  },
+  {
+    iconPath: "/assets/icon.muaytech.png",
+    label: "Learn the Techniques",
+    // Count comes from the library itself so this can't drift as lessons are
+    // added — see features/learn/data/techniqueLibrary.
+    desc: `How to throw all ${TOTAL_LESSON_COUNT} techniques the app calls out.`,
   },
   {
     iconPath: "/assets/icon_edit.png",
