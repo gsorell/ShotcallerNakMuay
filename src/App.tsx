@@ -39,6 +39,7 @@ import { fmtTime } from "@/utils/timeUtils";
 // CSS
 import "@/App.css";
 import "@/styles/difficulty.css";
+import "@/styles/setupActions.css";
 
 // Global state to persist modal scroll position across re-renders
 let modalScrollPosition = 0;

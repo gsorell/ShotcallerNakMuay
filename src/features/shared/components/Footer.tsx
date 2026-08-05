@@ -37,7 +37,6 @@ export const Footer = ({
         role="button"
         aria-label="Go to home"
       />
-      <span>Train smart, fight smarter</span>
       <button
         onClick={() => {
           trackEvent("learn_open", { source: "footer" });

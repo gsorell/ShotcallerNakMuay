@@ -78,15 +78,59 @@ export default function WorkoutSetup() {
           }}
         />
 
-        <button
-          onClick={() => {
-            trackEvent("learn_open", { source: "setup" });
-            setPage("learn");
-          }}
-          className="workout-setup-advanced-toggle"
-        >
-          📖 Learn the Techniques
-        </button>
+        {/* The two secondary destinations off the setup screen. They live here
+            rather than inside EmphasisSelector so they can share one row and
+            read as a matched pair beneath the style grid. */}
+        <div className="setup-action-row">
+          <button
+            onClick={() => {
+              trackEvent("learn_open", { source: "setup" });
+              setPage("learn");
+            }}
+            className="setup-action-btn"
+          >
+            <img
+              src="/assets/icon.muaytech.png"
+              alt=""
+              aria-hidden="true"
+              className="setup-action-btn-icon"
+            />
+            <span className="setup-action-btn-text">
+              <span className="setup-action-btn-title">
+                Learn the Techniques
+              </span>
+              <span className="setup-action-btn-desc">
+                How to throw every callout
+              </span>
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              try {
+                trackEvent("technique_editor_open", {
+                  source: "manage_button",
+                });
+              } catch {}
+              setEditorFocusKey(null);
+              setPage("editor");
+            }}
+            className="setup-action-btn"
+          >
+            <img
+              src="/assets/icon_edit.png"
+              alt=""
+              aria-hidden="true"
+              className="setup-action-btn-icon"
+            />
+            <span className="setup-action-btn-text">
+              <span className="setup-action-btn-title">Manage Techniques</span>
+              <span className="setup-action-btn-desc">
+                Edit sets or build your own
+              </span>
+            </span>
+          </button>
+        </div>
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
