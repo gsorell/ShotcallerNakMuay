@@ -5,7 +5,11 @@
   text-align: center;
   margin-top: 4rem;
   padding: 2rem;
-  padding-bottom: var(--footer-padding-bottom, 2rem);
+  /* Add the device's bottom safe-area inset (phone gesture/nav bar) so the
+     footer controls aren't overlapped by the system navigation. */
+  padding-bottom: calc(
+    var(--footer-padding-bottom, 2rem) + env(safe-area-inset-bottom, 0px)
+  );
   border-top: 1px solid rgba(255,255,255,0.1);
 }
 

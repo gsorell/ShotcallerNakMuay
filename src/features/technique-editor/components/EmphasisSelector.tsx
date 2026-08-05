@@ -315,49 +315,6 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
           </div>
         )}
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginTop: "0.5rem",
-            minHeight: "48px",
-            width: "100%",
-          }}
-        >
-          <button
-            onClick={() => onManageTechniques()}
-            style={{
-              padding: ".875rem 1.25rem",
-              borderRadius: "1rem",
-              border: "1px solid rgba(255,255,255,0.2)",
-              backgroundColor: "rgba(255,255,255,0.1)",
-              color: "#f9a8d4",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              fontWeight: 500,
-              fontSize: "0.95rem",
-              transition: "all 0.2s ease",
-              cursor: "pointer",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <img
-              src="/assets/icon_edit.png"
-              alt=""
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: 4,
-                objectFit: "cover",
-              }}
-              aria-hidden="true"
-            />
-            <span>Manage Techniques</span>
-          </button>
-        </div>
       </div>
     </section>
   );

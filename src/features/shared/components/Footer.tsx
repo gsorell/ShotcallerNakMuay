@@ -37,7 +37,15 @@ export const Footer = ({
         role="button"
         aria-label="Go to home"
       />
-      <span>Train smart, fight smarter</span>
+      <button
+        onClick={() => {
+          trackEvent("learn_open", { source: "footer" });
+          setPage("learn");
+        }}
+        className="app-footer-link"
+      >
+        Learn
+      </button>
       <button
         onClick={() => {
           trackEvent("workout_logs_open", { source: "footer" });
