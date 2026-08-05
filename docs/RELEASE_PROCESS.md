@@ -84,7 +84,7 @@ Listing copy/screenshots/icons are *not* part of every release. Update only when
 
 Default order when shipping all three surfaces together:
 
-1. **Merge to `main`** → Netlify auto-deploys PWA. Verify the site is healthy before continuing (smoke-test [shotcallernakmuay.com](https://shotcallernakmuay.com) or the configured Netlify URL).
+1. **Merge to `main`** → Netlify auto-deploys PWA. Verify the site is healthy before continuing (smoke-test [shotcallernakmuay.netlify.app](https://shotcallernakmuay.netlify.app)).
 2. **Trigger iOS workflow** (`Actions` → `Build iOS App` → Run workflow with `upload_to_testflight=true`). Wait for TestFlight processing (10–30 min), then submit for review in App Store Connect.
 3. **Build Android AAB locally** (`npx cap sync android && cd android && ./gradlew bundleRelease`) and upload to Play Console. Choose a track (Internal → Closed → Production) and a staged rollout percentage.
 
