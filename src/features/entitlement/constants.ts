@@ -37,17 +37,5 @@ export function isFreeEmphasis(key: EmphasisKey): boolean {
 // Google account even after the app becomes free.
 export const LEGACY_OWNER_KEY = "shotcaller_legacy_owner";
 
-// Phase 0 switch. The release shipped WHILE the app is still paid sets this
-// true, so every current install — all of whom are paying owners — gets
-// stamped as a legacy owner on launch. The later free release flips this to
-// false so brand-new free installs are NOT stamped; only the persisted (and
-// auto-backed-up) flag then grants legacy access.
-export const LEGACY_STAMP_ENABLED = true;
-
-// iOS grandfathering. RevenueCat exposes the original downloaded app version
-// (CFBundleVersion / build number). Any user whose original build is below the
-// first free release is a legacy owner. `null` = not yet configured (skips the
-// check and grants nothing, which is the safe default before the flip).
-// TODO(flip): set to the build number of the first free iOS release before
-// switching the App Store price to Free.
-export const IOS_FREE_TRANSITION_BUILD: number | null = null;
+// The paid→free release switch (LEGACY_STAMP_ENABLED, IOS_FREE_TRANSITION_BUILD,
+// RELEASE_PHASE) lives in ./releaseConfig — the single place to flip to free.

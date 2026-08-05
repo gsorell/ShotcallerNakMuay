@@ -16,12 +16,11 @@ import {
 
 import type { EmphasisKey } from "@/types";
 
+import { PRO_ENTITLEMENT_ID, isFreeEmphasis } from "./constants";
 import {
   IOS_FREE_TRANSITION_BUILD,
   LEGACY_STAMP_ENABLED,
-  PRO_ENTITLEMENT_ID,
-  isFreeEmphasis,
-} from "./constants";
+} from "./releaseConfig";
 import { getRevenueCatApiKey } from "./config";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
 
