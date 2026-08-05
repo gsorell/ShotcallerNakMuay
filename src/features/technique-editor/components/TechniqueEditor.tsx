@@ -4,6 +4,8 @@ import { trackEvent } from "@/utils/analytics";
 import { type TechniqueShape as UtilsTechniqueShape } from "@/utils/techniqueUtils";
 import { scrollContentToTop } from "@/utils/scroll";
 import React, { useRef, useState } from "react";
+import { useEntitlement } from "@/features/entitlement";
+import { usePaywall } from "@/features/paywall";
 import { useUIContext } from "../../shared";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
 import { getSortedGroups } from "../utils/groupSorting";
@@ -55,6 +57,23 @@ export default function TechniqueEditor({
   } = useTechniqueEditor({ techniques, setTechniques });
 
   const { editorFocusKey, setEditorFocusKey } = useUIContext();
+  const { isPro } = useEntitlement();
+  const { openPaywall } = usePaywall();
+
+  // "View free, edit locked": the editor renders normally so free users can
+  // browse every style and technique, but any mutating action opens the
+  // paywall instead of applying. `guard` wraps a handler with that gate.
+  const guard = React.useCallback(
+    <T extends unknown[]>(fn: (...args: T) => unknown) =>
+      (...args: T): void => {
+        if (!isPro) {
+          openPaywall("technique_editor");
+          return;
+        }
+        fn(...args);
+      },
+    [isPro, openPaywall]
+  );
 
   const [newGroupName, setNewGroupName] = useState("");
 
@@ -72,6 +91,10 @@ export default function TechniqueEditor({
 
   // --- MODIFIED: Add group and scroll to top ---
   const handleAddGroup = (key: string) => {
+    if (!isPro) {
+      openPaywall("technique_editor");
+      return;
+    }
     const result = addGroup(key);
     if (result.ok && result.key) {
       // Expand the newly created group so user can immediately start adding techniques
@@ -98,7 +121,11 @@ export default function TechniqueEditor({
   const handleImportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleImport(file);
+      if (!isPro) {
+        openPaywall("technique_editor");
+      } else {
+        handleImport(file);
+      }
     }
     e.target.value = "";
   };
@@ -140,13 +167,17 @@ export default function TechniqueEditor({
   // --- MODIFIED: Duplicate any group (core or user-created) and scroll to top ---
   const handleDuplicateGroup = React.useCallback(
     (key: string) => {
+      if (!isPro) {
+        openPaywall("technique_editor");
+        return;
+      }
       const result = duplicateGroup(key);
       if (result.ok && result.key) {
         setExpandedGroups((prev) => ({ ...prev, [result.key!]: true }));
         scrollToTop();
       }
     },
-    [duplicateGroup, setExpandedGroups, scrollToTop]
+    [duplicateGroup, setExpandedGroups, scrollToTop, isPro, openPaywall]
   );
 
   // Memoized callback factories to prevent re-renders
@@ -187,6 +218,31 @@ export default function TechniqueEditor({
         </p>
       </div>
 
+      {!isPro && (
+        <div
+          className="tech-editor-panel"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <span>
+            🔒 You're viewing in read-only mode. Editing techniques and creating
+            styles is a Pro feature.
+          </span>
+          <button
+            type="button"
+            onClick={() => openPaywall("technique_editor_banner")}
+            className="tech-editor-btn--create"
+          >
+            Unlock Pro
+          </button>
+        </div>
+      )}
+
       {/* --- Move Create New Emphasis block to the top --- */}
       <div className="add-emphasis-panel tech-editor-panel">
         <h3 className="tech-editor-panel-title">Create New Style</h3>
@@ -224,18 +280,30 @@ export default function TechniqueEditor({
             }
             expanded={expanded}
             toggleGroupExpanded={getToggleHandler(key)}
-            updateGroupLabel={(label) => updateGroupLabel(key, label)}
-            updateGroupDescription={(desc) => updateGroupDescription(key, desc)}
-            onChangeSingle={(idx, value) => updateSingle(key, idx, value)}
-            onToggleSingleFavorite={(idx) => toggleSingleFavorite(key, idx)}
-            onRemoveSingle={(idx) => removeSingle(key, idx)}
-            onAddSingle={() => addSingle(key)}
-            onChangeCombo={(idx, value) => updateCombo(key, idx, value)}
-            onToggleComboFavorite={(idx) => toggleComboFavorite(key, idx)}
-            onRemoveCombo={(idx) => removeCombo(key, idx)}
-            onAddCombo={() => addCombo(key)}
-            onDeleteGroup={() => deleteGroup(key)}
-            onResetGroup={() => resetGroupToDefault(key)}
+            updateGroupLabel={guard((label: string) =>
+              updateGroupLabel(key, label)
+            )}
+            updateGroupDescription={guard((desc: string) =>
+              updateGroupDescription(key, desc)
+            )}
+            onChangeSingle={guard((idx: number, value: unknown) =>
+              updateSingle(key, idx, value as never)
+            )}
+            onToggleSingleFavorite={guard((idx: number) =>
+              toggleSingleFavorite(key, idx)
+            )}
+            onRemoveSingle={guard((idx: number) => removeSingle(key, idx))}
+            onAddSingle={guard(() => addSingle(key))}
+            onChangeCombo={guard((idx: number, value: unknown) =>
+              updateCombo(key, idx, value as never)
+            )}
+            onToggleComboFavorite={guard((idx: number) =>
+              toggleComboFavorite(key, idx)
+            )}
+            onRemoveCombo={guard((idx: number) => removeCombo(key, idx))}
+            onAddCombo={guard(() => addCombo(key))}
+            onDeleteGroup={guard(() => deleteGroup(key))}
+            onResetGroup={guard(() => resetGroupToDefault(key))}
           />
         );
       })}
@@ -271,7 +339,10 @@ export default function TechniqueEditor({
           ones you have added. This action cannot be undone.
         </p>
         <div>
-          <button onClick={resetToDefault} className="tech-editor-btn--reset">
+          <button
+            onClick={guard(resetToDefault)}
+            className="tech-editor-btn--reset"
+          >
             Reset to Default Techniques
           </button>
         </div>

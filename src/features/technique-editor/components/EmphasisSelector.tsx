@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
+import { isFreeEmphasis, useEntitlement } from "@/features/entitlement";
+import { usePaywall } from "@/features/paywall";
 import type { EmphasisKey, TechniquesShape } from "@/types";
 import { ImageWithFallback } from "../../shared";
 import { TechniqueQuickEdit } from "./TechniqueQuickEdit";
@@ -28,9 +30,30 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   onManageTechniques,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
+  const { isEmphasisUnlocked, isPro } = useEntitlement();
+  const { openPaywall } = usePaywall();
 
   const toggleExpanded = (key: string) =>
     setExpandedKeys((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // For free users, float the unlocked styles to the top so the first thing
+  // they see is usable — Nak Muay Newb leads — instead of a wall of locked
+  // tiles. Pro users have everything unlocked, so they keep the original
+  // archetype-led order.
+  const orderedList = useMemo(() => {
+    if (isPro) return emphasisList;
+    const FREE_ORDER = ["newb", "freestyle", "timer_only"];
+    const rank = (key: string) => {
+      const i = FREE_ORDER.indexOf(key);
+      return i === -1 ? FREE_ORDER.length : i;
+    };
+    const free = emphasisList.filter((s) => isFreeEmphasis(s.key as EmphasisKey));
+    free.sort((a, b) => rank(a.key) - rank(b.key));
+    const locked = emphasisList.filter(
+      (s) => !isFreeEmphasis(s.key as EmphasisKey)
+    );
+    return [...free, ...locked];
+  }, [emphasisList, isPro]);
 
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
@@ -68,23 +91,37 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
             alignItems: "start",
           }}
         >
-          {(showAllEmphases ? emphasisList : emphasisList.slice(0, 9)).map(
+          {(showAllEmphases ? orderedList : orderedList.slice(0, 9)).map(
             (style) => {
               const isSelected = selectedEmphases[style.key as EmphasisKey];
               const isExpanded = !!expandedKeys[style.key];
-              const canEdit = !TILES_WITHOUT_TECHNIQUES.has(style.key);
+              const locked = !isEmphasisUnlocked(style.key as EmphasisKey);
+              // Inline editing is a Pro feature; free users view via the full
+              // editor (read-only) instead.
+              const canEdit =
+                !TILES_WITHOUT_TECHNIQUES.has(style.key) && isPro;
+              const activate = () => {
+                if (locked) {
+                  openPaywall("style_tile");
+                } else {
+                  toggleEmphasis(style.key as EmphasisKey);
+                }
+              };
               return (
                 <div
                   key={style.key}
                   className="emphasis-tile"
                   role="button"
                   tabIndex={0}
-                  aria-pressed={isSelected}
-                  onClick={() => toggleEmphasis(style.key as EmphasisKey)}
+                  aria-pressed={locked ? undefined : isSelected}
+                  aria-label={
+                    locked ? `Unlock ${style.label} with Pro` : undefined
+                  }
+                  onClick={activate}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      toggleEmphasis(style.key as EmphasisKey);
+                      activate();
                     }
                   }}
                   style={{
@@ -106,6 +143,23 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       : "none",
                   }}
                 >
+                  {locked && (
+                    <span
+                      aria-hidden="true"
+                      title="Pro feature"
+                      style={{
+                        position: "absolute",
+                        top: "0.5rem",
+                        right: "0.5rem",
+                        fontSize: "0.9rem",
+                        lineHeight: 1,
+                        opacity: 0.85,
+                      }}
+                    >
+                      🔒
+                    </span>
+                  )}
+
                   {canEdit && (
                     <button
                       type="button"
@@ -153,7 +207,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       display: "flex",
                       alignItems: "center",
                       gap: "0.625rem",
-                      paddingRight: canEdit ? "2rem" : 0,
+                      paddingRight: canEdit || locked ? "2rem" : 0,
                     }}
                   >
                     <ImageWithFallback
@@ -213,7 +267,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
           )}
         </div>
 
-        {emphasisList.length > 9 && (
+        {orderedList.length > 9 && (
           <div
             style={{
               display: "flex",

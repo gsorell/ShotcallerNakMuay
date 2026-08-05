@@ -6,6 +6,7 @@ import {
   shareWorkoutImage,
   type WorkoutStats,
 } from "@/utils/imageUtils";
+import { useEntitlement } from "@/features/entitlement";
 import { useHomeStats } from "../hooks/useHomeStats";
 import { claimNewMilestone } from "../utils/milestones";
 import { claimNewCharms, readWorkoutHistory } from "../utils/charms";
@@ -33,12 +34,16 @@ export default function WorkoutCompleted({
   const workoutSummaryRef = useRef<HTMLDivElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const stats_home = useHomeStats(0);
+  const { isPro } = useEntitlement();
   const [celebrationQueue, setCelebrationQueue] = useState<Celebration[]>([]);
   const claimedRef = useRef(false);
 
   useEffect(() => {
     if (claimedRef.current) return;
     if (!stats_home) return;
+    // Charms/streak celebrations are a Pro feature. Free users don't claim or
+    // celebrate; any accrued charms surface when they upgrade.
+    if (!isPro) return;
     claimedRef.current = true;
 
     const queue: Celebration[] = [];
@@ -60,7 +65,7 @@ export default function WorkoutCompleted({
     );
 
     if (queue.length > 0) setCelebrationQueue(queue);
-  }, [stats_home]);
+  }, [stats_home, isPro]);
 
   // Map internal difficulty values to display labels
   const getDifficultyLabel = (difficulty: string): string => {
