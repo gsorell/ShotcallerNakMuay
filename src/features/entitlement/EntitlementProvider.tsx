@@ -18,12 +18,18 @@ import type { EmphasisKey } from "@/types";
 
 import { PRO_ENTITLEMENT_ID, isFreeEmphasis } from "./constants";
 import {
+  ANDROID_FREE_TRANSITION_DATE,
   IOS_FREE_TRANSITION_BUILD,
   LEGACY_STAMP_ENABLED,
 } from "./releaseConfig";
 import { getRevenueCatApiKey } from "./config";
 import { isDevProOverrideActive } from "./devOverride";
+import {
+  getFirstInstallTime,
+  isGrandfatheredByInstallTime,
+} from "./installInfo";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
+import { readCachedStatus, writeCachedStatus } from "./statusCache";
 
 // The full set of entitlement states the app can be in. `unknown` is the
 // pre-resolution / offline state — callers should treat it as not-yet-Pro but
@@ -47,6 +53,14 @@ interface EntitlementContextValue {
   isPro: boolean;
   /** False until the first entitlement resolution completes. */
   ready: boolean;
+  /**
+   * True as soon as there is a trustworthy answer to render — either a real
+   * resolution, or the cached result of the last one. Gate entitlement-
+   * dependent UI on this rather than `ready`: `ready` waits on the network,
+   * and rendering "locked" in the meantime makes lock badges flash on every
+   * launch for users who actually have Pro.
+   */
+  hydrated: boolean;
   /** Whether a given fighting style is unlocked for this user. */
   isEmphasisUnlocked: (key: EmphasisKey) => boolean;
   /** Re-query the store for the latest entitlement state. */
@@ -72,9 +86,20 @@ export function EntitlementProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [status, setStatus] = useState<EntitlementStatus>("unknown");
+  // Seed from the last resolved status so the first paint is already right for
+  // returning users — see ./statusCache.
+  const cachedStatus = useRef(readCachedStatus()).current;
+  const [status, setStatusRaw] = useState<EntitlementStatus>(
+    cachedStatus ?? "unknown"
+  );
   const [ready, setReady] = useState(false);
   const configuredRef = useRef(false);
+
+  // Every status change also refreshes the cache.
+  const setStatus = useCallback((next: EntitlementStatus) => {
+    setStatusRaw(next);
+    writeCachedStatus(next);
+  }, []);
 
   // Resolve the entitlement state from (optionally) a RevenueCat CustomerInfo,
   // applying the precedence: legacy flag → active entitlement → iOS original
@@ -110,8 +135,25 @@ export function EntitlementProvider({
       }
     }
 
+    // Android equivalent: a device that installed the app before the price
+    // flip installed it while it still cost money, so that user paid. This
+    // catches owners whose phone auto-updated to the free build before they
+    // next opened the app, who therefore never got stamped.
+    if (
+      Capacitor.getPlatform() === "android" &&
+      ANDROID_FREE_TRANSITION_DATE != null
+    ) {
+      const firstInstall = await getFirstInstallTime();
+      // null means "unknown" — never treat a failed lookup as an old install.
+      if (isGrandfatheredByInstallTime(firstInstall, ANDROID_FREE_TRANSITION_DATE)) {
+        await markLegacyOwner();
+        setStatus("legacy_lifetime");
+        return;
+      }
+    }
+
     setStatus("free");
-  }, []);
+  }, [setStatus]);
 
   const refresh = useCallback(async () => {
     if (!configuredRef.current) {
@@ -139,7 +181,7 @@ export function EntitlementProvider({
   const claimLegacyOwnership = useCallback(async () => {
     await markLegacyOwner();
     setStatus("legacy_lifetime");
-  }, []);
+  }, [setStatus]);
 
   const getPackages = useCallback(async (): Promise<PurchasesPackage[]> => {
     if (!configuredRef.current) return [];
@@ -197,6 +239,16 @@ export function EntitlementProvider({
         await markLegacyOwner();
       }
 
+      // FAST PATH: legacy ownership is answerable from local storage alone —
+      // no network needed. Resolve it before configuring RevenueCat so a
+      // grandfathered owner is never rendered as locked while a network round
+      // trip completes. RevenueCat still initializes below (purchases and
+      // restores need it); it just no longer gates what these users see.
+      if (!cancelled && (await isLegacyOwner())) {
+        setStatus("legacy_lifetime");
+        setReady(true);
+      }
+
       const apiKey = native ? getRevenueCatApiKey() : null;
 
       // Web (PWA) or no key yet (pre-Task-6): skip RevenueCat, evaluate from
@@ -230,9 +282,12 @@ export function EntitlementProvider({
     return () => {
       cancelled = true;
     };
-  }, [evaluate]);
+  }, [evaluate, setStatus]);
 
   const isPro = PRO_STATUSES.has(status);
+  // Safe to render entitlement-dependent UI: either resolved for real, or
+  // seeded from the last resolution. Only a genuine first launch has neither.
+  const hydrated = cachedStatus !== null || ready;
 
   const isEmphasisUnlocked = useCallback(
     (key: EmphasisKey) => isFreeEmphasis(key) || isPro,
@@ -243,6 +298,7 @@ export function EntitlementProvider({
     status,
     isPro,
     ready,
+    hydrated,
     isEmphasisUnlocked,
     refresh,
     restore,

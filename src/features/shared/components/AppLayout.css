@@ -110,6 +110,33 @@
   box-sizing: border-box;
 }
 
+/* Placeholder shown only while the entitlement state is still unknown, which
+   after the first launch is never — the resolved status is cached and seeded
+   on start. Holds the grid's shape so nothing jumps when the real tiles land,
+   instead of rendering a locked/unlocked guess that then corrects itself. */
+.emphasis-tile--skeleton {
+  border-radius: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.04);
+  animation: emphasis-tile-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes emphasis-tile-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emphasis-tile--skeleton {
+    animation: none;
+  }
+}
+
 /* Bound the text to what the tile height reserves. Descriptions are written to
    fit in two lines, so this is a backstop against overflow at odd widths (and
    for long user-created titles), not the normal case. */

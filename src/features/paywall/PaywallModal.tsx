@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { PurchasesPackage } from "@revenuecat/purchases-capacitor";
 
-import { useEntitlement } from "@/features/entitlement";
+import { isLegacyClaimAvailable, useEntitlement } from "@/features/entitlement";
 import { trackEvent } from "@/utils/analytics";
+import { LegacyClaimSheet } from "./LegacyClaimSheet";
 
 const TERMS_URL = "https://shotcallernakmuay.netlify.app/terms.html";
 const PRIVACY_URL = "https://shotcallernakmuay.netlify.app/privacy-policy.html";
@@ -41,6 +42,9 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showLegacyClaim, setShowLegacyClaim] = useState(false);
+  // The manual claim closes some time after the free flip — see legacyClaim.
+  const legacyClaimOffered = useMemo(() => isLegacyClaimAvailable(), []);
 
   useEffect(() => {
     try {
@@ -94,13 +98,16 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     setMessage("If you had a purchase, it's been restored.");
   };
 
-  const handleLegacyClaim = async () => {
+  const handleLegacyClaim = async (orderId: string) => {
     setBusy("legacy");
     await claimLegacyOwnership();
     setBusy(null);
     try {
-      trackEvent("paywall_legacy_claim", {});
+      // Recorded so the real volume of manual claims is visible — both to spot
+      // abuse and to know whether the automatic grandfathering is working.
+      trackEvent("paywall_legacy_claim", { order_id: orderId, source });
     } catch {}
+    setShowLegacyClaim(false);
     onClose();
   };
 
@@ -187,8 +194,11 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           <button
             type="button"
             disabled={!!busy}
-            onClick={handleLegacyClaim}
-            style={styles.textButton}
+            onClick={() => setShowLegacyClaim(true)}
+            style={{
+              ...styles.textButton,
+              display: legacyClaimOffered ? undefined : "none",
+            }}
           >
             I bought this before it went free
           </button>
@@ -209,6 +219,14 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           </a>
         </div>
       </div>
+
+      {showLegacyClaim && (
+        <LegacyClaimSheet
+          busy={busy === "legacy"}
+          onConfirm={handleLegacyClaim}
+          onCancel={() => setShowLegacyClaim(false)}
+        />
+      )}
     </div>
   );
 };
