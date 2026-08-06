@@ -24,7 +24,10 @@ import {
 } from "./releaseConfig";
 import { getRevenueCatApiKey } from "./config";
 import { isDevProOverrideActive } from "./devOverride";
-import { getFirstInstallTime } from "./installInfo";
+import {
+  getFirstInstallTime,
+  isGrandfatheredByInstallTime,
+} from "./installInfo";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
 import { readCachedStatus, writeCachedStatus } from "./statusCache";
 
@@ -142,7 +145,7 @@ export function EntitlementProvider({
     ) {
       const firstInstall = await getFirstInstallTime();
       // null means "unknown" — never treat a failed lookup as an old install.
-      if (firstInstall != null && firstInstall < ANDROID_FREE_TRANSITION_DATE) {
+      if (isGrandfatheredByInstallTime(firstInstall, ANDROID_FREE_TRANSITION_DATE)) {
         await markLegacyOwner();
         setStatus("legacy_lifetime");
         return;
