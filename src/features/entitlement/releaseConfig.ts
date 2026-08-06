@@ -25,7 +25,16 @@ export const RELEASE_PHASE: ReleasePhase = "paid";
 // Derived: only stamp installs as legacy owners while the app is still paid.
 // (Also handy for local paywall testing — set RELEASE_PHASE to "free" to see
 // the free-tier + paywall flow on a native build instead of being stamped.)
-export const LEGACY_STAMP_ENABLED = RELEASE_PHASE === "paid";
+//
+// The cast is load-bearing, not decoration. TypeScript narrows a `const` with
+// a literal-union annotation down to the single literal it was assigned, so
+// the moment RELEASE_PHASE is set to "free" this comparison looks like a
+// provably-false test between "free" and "paid" and becomes a compile error
+// (TS2367). Since `npm run build` runs `tsc -b` first, that would break the
+// production build on the exact day of the price flip — the worst possible
+// moment. Widening back to ReleasePhase keeps both branches legitimate.
+export const LEGACY_STAMP_ENABLED =
+  (RELEASE_PHASE as ReleasePhase) === "paid";
 
 // iOS grandfathering. RevenueCat exposes each user's original downloaded app
 // version (CFBundleVersion / build number). Any user whose original build is
