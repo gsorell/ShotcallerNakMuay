@@ -10,5 +10,6 @@ public class MainActivity extends BridgeActivity {
 
         // Register custom plugins
         registerPlugin(AudioSessionPlugin.class);
+        registerPlugin(InstallInfoPlugin.class);
     }
 }

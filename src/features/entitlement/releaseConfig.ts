@@ -37,3 +37,33 @@ export const LEGACY_STAMP_ENABLED = RELEASE_PHASE === "paid";
 // flipping the App Store price to Free — otherwise iOS legacy owners who
 // reinstall won't be recognized. See the runbook.
 export const IOS_FREE_TRANSITION_BUILD: number | null = null;
+
+// Android grandfathering — the counterpart to the iOS check above.
+//
+// Play keeps no retroactive record of who bought a paid app, which is why the
+// migration stamps owners while the app is still paid. But that stamp requires
+// the user to OPEN the app before the flip, and a phone that auto-updates to
+// the free build first would never stamp — leaving a real buyer at a paywall.
+//
+// `firstInstallTime` (via the native InstallInfo plugin) survives updates, so
+// a device that installed the app before the flip installed it while it still
+// cost money. Those users are grandfathered silently, with no action required.
+//
+// ⚠️ MUST be set BEFORE flipping the Play price to Free, and must ship in a
+// build users actually have. `null` skips the check entirely (the safe default
+// while still paid — nothing to grandfather yet).
+//
+// Set it slightly AFTER the moment you flip, not before: letting a handful of
+// genuinely-free installs through is far cheaper than locking out someone who
+// paid minutes before the switch.
+export const ANDROID_FREE_TRANSITION_DATE: number | null = null;
+
+// How long the manual "I bought this before it went free" claim stays offered
+// after the Android flip, in days. Real owners surface quickly — mostly on
+// their first launch after the change — so leaving an unverifiable unlock in
+// the paywall forever is just a free-access button for everyone else.
+//
+// Counted from ANDROID_FREE_TRANSITION_DATE; the claim is always available
+// when that date is null (i.e. pre-flip, where the app is still paid and there
+// is nothing to steal).
+export const LEGACY_CLAIM_WINDOW_DAYS = 90;

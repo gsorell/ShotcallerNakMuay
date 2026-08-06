@@ -30,7 +30,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   onManageTechniques,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
-  const { isEmphasisUnlocked, isPro } = useEntitlement();
+  const { isEmphasisUnlocked, isPro, hydrated } = useEntitlement();
   const { openPaywall } = usePaywall();
 
   const toggleExpanded = (key: string) =>
@@ -91,7 +91,22 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
             alignItems: "start",
           }}
         >
-          {(showAllEmphases ? orderedList : orderedList.slice(0, 9)).map(
+          {/* Until entitlement is known, render placeholders rather than a
+              guess. Rendering "locked" first means a Pro user watches lock
+              badges appear and the grid reorder under them on every launch.
+              `hydrated` is seeded from the last resolution, so this only ever
+              shows on a genuine first launch. */}
+          {!hydrated &&
+            Array.from({ length: 9 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="emphasis-tile emphasis-tile--skeleton"
+                aria-hidden="true"
+              />
+            ))}
+
+          {hydrated &&
+            (showAllEmphases ? orderedList : orderedList.slice(0, 9)).map(
             (style) => {
               const isSelected = selectedEmphases[style.key as EmphasisKey];
               const isExpanded = !!expandedKeys[style.key];
