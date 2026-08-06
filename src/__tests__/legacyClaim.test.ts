@@ -12,16 +12,41 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// These assert behaviour on BOTH sides of the flip rather than pinning the
+// current config, so they keep testing something real once
+// ANDROID_FREE_TRANSITION_DATE is set for release instead of failing.
 describe("legacy claim window", () => {
-  it("is always open while the Android flip date is unset", () => {
-    // Pre-flip the app still costs money, so there is nothing to steal.
-    expect(ANDROID_FREE_TRANSITION_DATE).toBeNull();
-    expect(isLegacyClaimAvailable()).toBe(true);
-    expect(isLegacyClaimAvailable(Date.now() + 5000 * DAY_MS)).toBe(true);
+  it("stays open right up to the deadline, and closes after it", () => {
+    if (ANDROID_FREE_TRANSITION_DATE == null) {
+      // Pre-flip: the app still costs money, so there is nothing to steal and
+      // the claim never closes.
+      expect(isLegacyClaimAvailable(Date.now() + 5000 * DAY_MS)).toBe(true);
+      return;
+    }
+
+    const closesAt =
+      ANDROID_FREE_TRANSITION_DATE + LEGACY_CLAIM_WINDOW_DAYS * DAY_MS;
+    expect(isLegacyClaimAvailable(closesAt - 60_000)).toBe(true);
+    expect(isLegacyClaimAvailable(closesAt)).toBe(false);
+    expect(isLegacyClaimAvailable(closesAt + 60_000)).toBe(false);
   });
 
-  it("reports no deadline while the flip date is unset", () => {
-    expect(legacyClaimDaysRemaining()).toBeNull();
+  it("counts down the remaining days, and reports none once closed", () => {
+    if (ANDROID_FREE_TRANSITION_DATE == null) {
+      expect(legacyClaimDaysRemaining()).toBeNull();
+      return;
+    }
+
+    const closesAt =
+      ANDROID_FREE_TRANSITION_DATE + LEGACY_CLAIM_WINDOW_DAYS * DAY_MS;
+    expect(legacyClaimDaysRemaining(closesAt - 3 * DAY_MS)).toBe(3);
+    expect(legacyClaimDaysRemaining(closesAt + DAY_MS)).toBeNull();
+  });
+
+  it("opens the claim window at the flip, not before it", () => {
+    if (ANDROID_FREE_TRANSITION_DATE == null) return;
+    // A claim made the instant the app goes free must still be honoured.
+    expect(isLegacyClaimAvailable(ANDROID_FREE_TRANSITION_DATE)).toBe(true);
   });
 
   it("uses a window long enough for owners to surface", () => {

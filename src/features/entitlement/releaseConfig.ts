@@ -20,7 +20,7 @@
 //            Android-Auto-Backup'd) flag, or the iOS original-version check
 //            below. Use this value once you are about to flip prices to free.
 export type ReleasePhase = "paid" | "free";
-export const RELEASE_PHASE: ReleasePhase = "paid";
+export const RELEASE_PHASE: ReleasePhase = "free";
 
 // Derived: only stamp installs as legacy owners while the app is still paid.
 // (Also handy for local paywall testing — set RELEASE_PHASE to "free" to see
@@ -65,7 +65,10 @@ export const IOS_FREE_TRANSITION_BUILD: number | null = null;
 // Set it slightly AFTER the moment you flip, not before: letting a handful of
 // genuinely-free installs through is far cheaper than locking out someone who
 // paid minutes before the switch.
-export const ANDROID_FREE_TRANSITION_DATE: number | null = null;
+// 2026-08-09 23:59:00 ET (2026-08-10T03:59Z) — the deadline the Play price
+// flip must happen BEFORE. Anyone who installed while the app still cost money
+// is on the early side of this and is grandfathered automatically.
+export const ANDROID_FREE_TRANSITION_DATE: number | null = 1786334340000;
 
 // How long the manual "I bought this before it went free" claim stays offered
 // after the Android flip, in days. Real owners surface quickly — mostly on
