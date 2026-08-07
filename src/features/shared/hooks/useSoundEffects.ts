@@ -4,23 +4,128 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 // 1. iOS Safari autoplay blocking in setTimeout/setInterval
 // 2. iOS Now Playing widget appearing
 // 3. Android muted-unlock hack causing audible sound bleed
-export function useSoundEffects(_iosAudioSession: any) {
-  const mediaUnlockedRef = useRef(false);
 
+const SOUND_URLS = {
+  bell: "/big-bell-330719.mp3",
+  warning: "/interval.mp3",
+  clack: "/clapperboard.mp3",
+} as const;
+
+// Fetch the encoded bytes. This is a plain asset read — it touches no audio
+// hardware, so it is safe to run at mount, before any user gesture.
+const fetchEncoded = async (url: string): Promise<ArrayBuffer | null> => {
+  try {
+    const response = await fetch(url);
+    return await response.arrayBuffer();
+  } catch (error) {
+    console.warn(`[WebAudio] Failed to load ${url}:`, error);
+    return null;
+  }
+};
+
+// decodeAudioData detaches the ArrayBuffer, so each one may only be decoded
+// once. The readyRef guard in ensureMediaUnlocked is what enforces that.
+const decodeInto = async (
+  bytes: ArrayBuffer | null,
+  ctx: AudioContext
+): Promise<AudioBuffer | null> => {
+  if (!bytes) return null;
+  try {
+    return await ctx.decodeAudioData(bytes);
+  } catch (error) {
+    console.warn("[WebAudio] Failed to decode sound:", error);
+    return null;
+  }
+};
+
+export function useSoundEffects(_iosAudioSession: any) {
   // Web Audio API refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const bellBufferRef = useRef<AudioBuffer | null>(null);
   const warningBufferRef = useRef<AudioBuffer | null>(null);
   const clackBufferRef = useRef<AudioBuffer | null>(null);
 
-  // Simple Web Audio fallback chime (synthesized)
-  const webAudioChime = useCallback(() => {
-    try {
-      const AudioCtx =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
+  // Encoded bytes, prefetched at mount.
+  const encodedRef = useRef<Promise<(ArrayBuffer | null)[]> | null>(null);
+  // Resolves once the context exists and every buffer is decoded into it.
+  const readyRef = useRef<Promise<void> | null>(null);
 
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+  // Prefetch only. Deliberately does NOT construct an AudioContext.
+  //
+  // Capacitor's WebView sets mediaPlaybackRequiresUserGesture(false), so unlike
+  // a normal browser an AudioContext constructed here starts *running* instead
+  // of *suspended*. That opens the output stream at launch — which powers up the
+  // speaker path and produces an audible pop before the user has touched
+  // anything, then holds the device open for ~30s. Creation is deferred to
+  // ensureMediaUnlocked, which runs inside the workout-start gesture.
+  useEffect(() => {
+    if (!encodedRef.current) {
+      encodedRef.current = Promise.all([
+        fetchEncoded(SOUND_URLS.bell),
+        fetchEncoded(SOUND_URLS.warning),
+        fetchEncoded(SOUND_URLS.clack),
+      ]);
+    }
+
+    return () => {
+      try {
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+        readyRef.current = null;
+      } catch (error) {
+        console.warn("[AudioCleanup] Error during cleanup:", error);
+      }
+    };
+  }, []);
+
+  // Create the context and decode into it, once. Must be called from a user
+  // gesture — see the note above on why this cannot happen at mount.
+  const ensureMediaUnlocked = useCallback(async () => {
+    if (!readyRef.current) {
+      readyRef.current = (async () => {
+        const AudioCtx =
+          (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (!AudioCtx) return;
+
+        const ctx: AudioContext = new AudioCtx();
+        audioContextRef.current = ctx;
+
+        const encoded = await (encodedRef.current ?? Promise.resolve([]));
+        const [bell, warning, clack] = await Promise.all(
+          encoded.map((bytes) => decodeInto(bytes, ctx))
+        );
+
+        bellBufferRef.current = bell ?? null;
+        warningBufferRef.current = warning ?? null;
+        clackBufferRef.current = clack ?? null;
+      })().catch((error) => {
+        console.warn("[WebAudio] Web Audio API init failed:", error);
+      });
+    }
+
+    await readyRef.current;
+
+    // iOS still parks a freshly created context until a gesture resumes it.
+    try {
+      const ctx = audioContextRef.current;
+      if (ctx && ctx.state === "suspended") {
+        await ctx.resume();
+      }
+    } catch {
+      // Context resume failed
+    }
+  }, []);
+
+  // Simple Web Audio fallback chime (synthesized), used when a sound file
+  // failed to load. Reuses the shared context — constructing a throwaway one
+  // per call would open (and leak) a fresh output stream every time.
+  const webAudioChime = useCallback(() => {
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+
+    try {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -38,116 +143,71 @@ export function useSoundEffects(_iosAudioSession: any) {
     }
   }, []);
 
-  // Load audio file into Web Audio API buffer from local bundle
-  const loadAudioBuffer = useCallback(async (url: string, ctx: AudioContext): Promise<AudioBuffer | null> => {
-    try {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      return await ctx.decodeAudioData(arrayBuffer);
-    } catch (error) {
-      console.warn(`[WebAudio] Failed to load ${url}:`, error);
-      return null;
-    }
-  }, []);
-
   // Play audio using Web Audio API
-  const playWebAudioBuffer = useCallback(async (buffer: AudioBuffer | null, volume: number = 0.5) => {
-    if (!buffer || !audioContextRef.current) return;
+  const playWebAudioBuffer = useCallback(
+    async (buffer: AudioBuffer | null, volume: number = 0.5) => {
+      if (!buffer || !audioContextRef.current) return;
 
-    try {
-      const ctx = audioContextRef.current;
-
-      // Resume context if suspended (iOS requirement) - MUST await
-      if (ctx.state === "suspended") {
-        await ctx.resume();
-      }
-
-      const source = ctx.createBufferSource();
-      const gainNode = ctx.createGain();
-
-      source.buffer = buffer;
-      gainNode.gain.value = volume;
-
-      source.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      source.start(0);
-    } catch (error) {
-      console.warn("[WebAudio] Playback failed:", error);
-    }
-  }, []);
-
-  // Initialize Web Audio API and load all sound buffers
-  useEffect(() => {
-    const initAudio = async () => {
       try {
-        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx && !audioContextRef.current) {
-          const ctx = new AudioCtx();
-          audioContextRef.current = ctx;
+        const ctx = audioContextRef.current;
 
-          bellBufferRef.current = await loadAudioBuffer("/big-bell-330719.mp3", ctx);
-          warningBufferRef.current = await loadAudioBuffer("/interval.mp3", ctx);
-          clackBufferRef.current = await loadAudioBuffer("/clapperboard.mp3", ctx);
-
-
+        // Resume context if suspended (iOS requirement) - MUST await
+        if (ctx.state === "suspended") {
+          await ctx.resume();
         }
+
+        const source = ctx.createBufferSource();
+        const gainNode = ctx.createGain();
+
+        source.buffer = buffer;
+        gainNode.gain.value = volume;
+
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
       } catch (error) {
-        console.warn("[WebAudio] Web Audio API init failed:", error);
+        console.warn("[WebAudio] Playback failed:", error);
       }
-    };
+    },
+    []
+  );
 
-    initAudio();
-
-    return () => {
-      try {
-        if (audioContextRef.current) {
-          audioContextRef.current.close();
-          audioContextRef.current = null;
+  // Every sound routes through here so that a cue firing on a path that never
+  // unlocked still works — it just creates the context at that point instead,
+  // which is still long after launch.
+  const playBuffered = useCallback(
+    (
+      bufferRef: React.RefObject<AudioBuffer | null>,
+      volume: number,
+      fallbackToChime: boolean
+    ) => {
+      void (async () => {
+        await ensureMediaUnlocked();
+        if (bufferRef.current) {
+          await playWebAudioBuffer(bufferRef.current, volume);
+        } else if (fallbackToChime) {
+          webAudioChime();
         }
-      } catch (error) {
-        console.warn("[AudioCleanup] Error during cleanup:", error);
-      }
-    };
-  }, [loadAudioBuffer]);
+      })();
+    },
+    [ensureMediaUnlocked, playWebAudioBuffer, webAudioChime]
+  );
 
   // Bell sound
   const playBell = useCallback(() => {
-    if (bellBufferRef.current && audioContextRef.current) {
-      playWebAudioBuffer(bellBufferRef.current, 0.3);
-    } else {
-      webAudioChime();
-    }
-  }, [playWebAudioBuffer, webAudioChime]);
+    playBuffered(bellBufferRef, 0.3, true);
+  }, [playBuffered]);
 
-  // 10-second warning sound
+  // 10-second warning sound (no chime fallback — a substitute tone here would
+  // read as a different cue)
   const playWarningSound = useCallback(() => {
-    if (warningBufferRef.current && audioContextRef.current) {
-      playWebAudioBuffer(warningBufferRef.current, 0.2);
-    }
-  }, [playWebAudioBuffer]);
+    playBuffered(warningBufferRef, 0.2, false);
+  }, [playBuffered]);
 
   // Clapperboard clack for freestyle mode
   const playClack = useCallback(() => {
-    if (clackBufferRef.current && audioContextRef.current) {
-      playWebAudioBuffer(clackBufferRef.current, 0.3);
-    } else {
-      webAudioChime();
-    }
-  }, [playWebAudioBuffer, webAudioChime]);
-
-  // Unlock audio context on user gesture
-  const ensureMediaUnlocked = useCallback(async () => {
-    if (mediaUnlockedRef.current) return;
-    mediaUnlockedRef.current = true;
-
-    try {
-      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
-        await audioContextRef.current.resume();
-      }
-    } catch {
-      // Context resume failed
-    }
-  }, []);
+    playBuffered(clackBufferRef, 0.3, true);
+  }, [playBuffered]);
 
   return useMemo(
     () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked }),
