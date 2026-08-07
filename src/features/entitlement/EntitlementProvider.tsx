@@ -29,6 +29,7 @@ import {
   isGrandfatheredByInstallTime,
 } from "./installInfo";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
+import { isGrandfatheredByOriginalVersion } from "./originalVersion";
 import { readCachedStatus, writeCachedStatus } from "./statusCache";
 
 // The full set of entitlement states the app can be in. `unknown` is the
@@ -122,13 +123,13 @@ export function EntitlementProvider({
       return;
     }
 
-    if (
-      Capacitor.getPlatform() === "ios" &&
-      IOS_FREE_TRANSITION_BUILD != null &&
-      customerInfo?.originalApplicationVersion
-    ) {
-      const original = parseInt(customerInfo.originalApplicationVersion, 10);
-      if (!Number.isNaN(original) && original < IOS_FREE_TRANSITION_BUILD) {
+    if (Capacitor.getPlatform() === "ios") {
+      if (
+        isGrandfatheredByOriginalVersion(
+          customerInfo?.originalApplicationVersion,
+          IOS_FREE_TRANSITION_BUILD
+        )
+      ) {
         await markLegacyOwner();
         setStatus("legacy_lifetime");
         return;
