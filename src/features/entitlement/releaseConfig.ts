@@ -45,7 +45,16 @@ export const LEGACY_STAMP_ENABLED =
 // ⚠️ MUST be set to the build number of the first free iOS release BEFORE
 // flipping the App Store price to Free — otherwise iOS legacy owners who
 // reinstall won't be recognized. See the runbook.
-export const IOS_FREE_TRANSITION_BUILD: number | null = null;
+//
+// The CI sets CFBundleVersion from `github.run_number`, so this is the run
+// number of the build that gets submitted. Last completed run was #56, so the
+// next "Run workflow" produces #57. If any other run of that workflow happens
+// first, this value must be bumped to match before submitting.
+//
+// ⚠️ Sandbox returns "1.0" for the original version and App Review runs in
+// sandbox — see ./originalVersion for why that is handled explicitly rather
+// than compared numerically.
+export const IOS_FREE_TRANSITION_BUILD: number | null = 57;
 
 // Android grandfathering — the counterpart to the iOS check above.
 //
