@@ -283,10 +283,14 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     }
 
     // Track analytics
+    // GA4 event params only accept scalars — an array here is dropped on the
+    // way out, so send a joined string plus a count we can segment on.
+    const activeEmphases = Object.keys(settings.selectedEmphases).filter(
+      (k) => settings.selectedEmphases[k as EmphasisKey]
+    );
     trackEvent(AnalyticsEvents.WorkoutStart, {
-      selected_emphases: Object.keys(settings.selectedEmphases).filter(
-        (k) => settings.selectedEmphases[k as EmphasisKey]
-      ),
+      selected_emphases: activeEmphases.join(","),
+      emphasis_count: activeEmphases.length,
       difficulty: settings.difficulty,
       rounds: settings.roundsCount,
     });

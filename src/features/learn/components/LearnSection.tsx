@@ -87,7 +87,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
     (styleKey: string, slug: string) => {
       trackEvent("learn_drill_start", { slug, emphasis: styleKey });
       settings.clearAllEmphases();
-      settings.toggleEmphasis(styleKey as EmphasisKey);
+      settings.toggleEmphasis(styleKey as EmphasisKey, "learn_drill");
       setPage("timer");
       scrollContentToTop("auto");
     },

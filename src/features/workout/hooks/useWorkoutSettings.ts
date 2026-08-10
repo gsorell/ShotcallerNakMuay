@@ -1,6 +1,7 @@
 // src/hooks/useWorkoutSettings.ts
 import { useEffect, useRef, useState } from "react";
 import { type Difficulty, type EmphasisKey } from "@/types"; // Adjust path if needed
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { normalizeKey } from "@/utils/techniqueUtils"; // Adjust path if needed
 import {
   loadUserSettings,
@@ -109,18 +110,21 @@ export function useWorkoutSettings(
 
   // --- Actions ---
 
-  const toggleEmphasis = (k: EmphasisKey, trackEvent?: Function) => {
+  const toggleEmphasis = (k: EmphasisKey, source: string = "tile") => {
     setSelectedEmphases((prev) => {
       const isTurningOn = !prev[k];
 
-      // Optional analytics tracking
-      if (trackEvent) {
-        try {
-          trackEvent(isTurningOn ? "emphasis_select" : "emphasis_deselect", {
-            emphasis: k,
-          });
-        } catch (e) {}
-      }
+      // Tracked from inside the updater on purpose: callers may clear the
+      // emphases in the same tick (see the Learn drill hand-off), so `prev` is
+      // the only place the real before-state is visible.
+      try {
+        trackEvent(
+          isTurningOn
+            ? AnalyticsEvents.EmphasisSelect
+            : AnalyticsEvents.EmphasisDeselect,
+          { emphasis: k, source }
+        );
+      } catch (e) {}
 
       if (k === "timer_only" || k === "freestyle") {
         const allOff = {
