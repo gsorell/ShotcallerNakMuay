@@ -102,7 +102,9 @@ export default function ActiveSessionUI({
         <div className="active-session-controls-inner">
           <button
             onClick={onPause}
-            className={`active-session-control-btn ${paused ? 'btn-pause' : 'btn-pause'}`}
+            className={`active-session-control-btn ${
+              paused ? "btn-resume" : "btn-pause"
+            }`}
           >
             {paused ? (
               <svg

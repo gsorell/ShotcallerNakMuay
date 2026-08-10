@@ -86,27 +86,39 @@
    made the one irreversible control look like the primary action. */
 
 .btn-pause,
+.btn-resume,
 .btn-stop {
   color: #fff;
   justify-content: center;
+  /* Equal width so the pair reads as one control group, and so the layout does
+     not shift under the thumb when Pause becomes Resume mid-round. */
+  min-width: 8rem;
   transition: filter 0.2s ease, transform 0.15s ease;
 }
 
+/* Running — amber, as Amateur is in the difficulty scale. */
 .btn-pause {
   background-color: #f59e0b;
   border: 1px solid #fbbf24;
   box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
-  min-width: 7.5rem;
+}
+
+/* Paused — green, as Novice is. Resuming is the "go" action, and green is
+   already what this app means by go. */
+.btn-resume {
+  background-color: #22c55e;
+  border: 1px solid #4ade80;
+  box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
 }
 
 .btn-stop {
   background-color: #ef4444;
   border: 1px solid #f87171;
   box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
-  min-width: 6.25rem;
 }
 
 .btn-pause:hover,
+.btn-resume:hover,
 .btn-stop:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
