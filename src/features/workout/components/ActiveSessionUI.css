@@ -33,7 +33,9 @@
 .active-session-controls-inner {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  /* Generous on purpose: mistaking Stop for Pause is the costly error here,
+     and the tap happens while moving. */
+  gap: 1.5rem;
 }
 
 /* Base control button style */
@@ -53,35 +55,66 @@
 
 /* Session controls.
    ---------------------------------------------------------------------------
-   Pause carries the app's pink — it is the primary control while a round is
-   running, and pink is what "the main action here" looks like everywhere else
-   (the Start button, the Begin button on a guided level).
+   These are read at arm's length, mid-round, by someone moving, breathing hard
+   and possibly wearing gloves — a fraction of a second of attention. That makes
+   this a legibility and mis-tap problem, not a branding one.
 
-   Stop is destructive, so it reads as an outline rather than a fill. The old
-   pairing had it graduating from red into the brand pink, which made the one
-   irreversible control on the screen look like the primary one; the orange on
-   Pause was a hue the app uses nowhere else. */
+   Amber-pause / red-stop is the convention for exactly this context (Apple's
+   Workout app is the closest analogue) and traffic-light semantics are about as
+   universally understood as UI gets. The original pairing had it right; what
+   was wrong was the tone — a raw orange that appeared nowhere else in the app,
+   and a Stop that graduated into the brand pink.
 
-.btn-pause {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-  border: 1px solid rgba(236, 72, 153, 0.65);
+   Two corrections to the attempt after that, which made Pause pink and Stop a
+   ghost outline:
+     - Pink is this app's colour for everything (Start, Begin, links, accents).
+       Using it here carries no information; it just says "app".
+     - A ghost button is the wrong shape for Stop. Low-contrast outlines are the
+       hardest thing to hit accurately in motion, and ghosting says "secondary"
+       when the real message is "deliberate". Stop stays solid and obvious — it
+       is subordinate by size, not by being hard to see.
+
+   These reuse the difficulty selector's treatment exactly — flat fill, lighter
+   border of the same hue, colour-matched glow — because that is where this app
+   already states its semantic colour scale: Novice green, Amateur amber, Pro
+   red. Amber-pause and red-stop therefore sit inside an established palette
+   rather than importing a new one, and they carry the traffic-light meaning
+   that suits a control read at arm's length mid-round.
+
+   What was wrong before was the gradients, not the hues: Pause faded amber into
+   an orange used nowhere else, and Stop faded red into the brand pink, which
+   made the one irreversible control look like the primary action. */
+
+.btn-pause,
+.btn-stop {
+  color: #fff;
+  justify-content: center;
+  transition: filter 0.2s ease, transform 0.15s ease;
 }
 
-.btn-pause:hover {
-  filter: brightness(1.08);
+.btn-pause {
+  background-color: #f59e0b;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+  min-width: 7.5rem;
 }
 
 .btn-stop {
-  background: rgba(239, 68, 68, 0.16);
-  border: 1px solid rgba(239, 68, 68, 0.55);
-  color: #fca5a5;
-  box-shadow: none;
+  background-color: #ef4444;
+  border: 1px solid #f87171;
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+  min-width: 6.25rem;
 }
 
+.btn-pause:hover,
 .btn-stop:hover {
-  background: rgba(239, 68, 68, 0.26);
-  border-color: rgba(239, 68, 68, 0.8);
-  color: #fff;
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.active-session-control-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 /* Button text */

@@ -29,6 +29,11 @@ import { useEmphasisList, useTechniqueData } from "../../technique-editor";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
 import { useClackEngine } from "../hooks/useClackEngine";
 import { useWorkoutSettings } from "../hooks/useWorkoutSettings";
+import {
+  applySettings,
+  snapshotSettings,
+  type ParkedSettings,
+} from "../utils/borrowedSettings";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 
 // Context for workout-related state
@@ -144,6 +149,33 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   const roadmapRoundRef = useRef(1);
 
   /**
+   * The user's own session configuration, parked while a guided level borrows
+   * it. A level pins its own rounds, length, rest, cadence and ordering, and
+   * three of those (`roundsCount`, `roundMin`, `restMinutes`) are written
+   * straight through to localStorage — so without this, training one level
+   * would permanently replace someone's 5×3min setup with the level's 3×1min
+   * and leave "Read Techniques in Order" switched on behind them.
+   */
+  const parkedSettingsRef = useRef<ParkedSettings | null>(null);
+
+  const parkUserSettings = useCallback(() => {
+    // Never overwrite an existing snapshot: restarting or resuming a level
+    // mid-path would otherwise park the level's own pinned values as if they
+    // were the user's.
+    if (parkedSettingsRef.current) return;
+    parkedSettingsRef.current = snapshotSettings(settingsRef.current);
+  }, []);
+
+  /** Hand the user their own settings back once a guided level is over. */
+  const restoreUserSettings = useCallback(() => {
+    const parked = parkedSettingsRef.current;
+    if (!parked) return;
+    parkedSettingsRef.current = null;
+    applySettings(settingsRef.current, parked);
+    settingsRef.current.variedCadenceRef.current = false;
+  }, []);
+
+  /**
    * Point the callout engine at the pool for a given round of the active level.
    * Safe to call mid-session: the engine re-reads the pool ref on every callout,
    * and ordering now goes through a ref too, so nothing restarts the loop.
@@ -241,6 +273,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       });
       activeRoadmapRef.current = null;
       setActiveRoadmap(null);
+      restoreUserSettings();
     }
 
     // Trigger stats refresh
@@ -253,7 +286,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
     // Announce completion
     tts.speakSystem("Workout complete! Great job!", settingsRef.current.voiceSpeed);
-  }, [emphasisList, triggerStatsRefresh, tts]);
+  }, [emphasisList, triggerStatsRefresh, tts, restoreUserSettings]);
 
   // Timer
   const timer = useWorkoutTimer({
@@ -435,6 +468,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
       const replay = isLevelCleared(path.id, level.id);
 
+      // Borrow the user's configuration, don't consume it.
+      parkUserSettings();
+
       // A guided session has no emphasis; clear any leftover selection so the
       // setup screen isn't showing a style the session never used.
       settings.clearAllEmphases();
@@ -473,7 +509,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         scrollContentToTop();
       }, 150);
     },
-    [settings, calloutEngine, tts, sfx, timer, setPage]
+    [settings, calloutEngine, tts, sfx, timer, setPage, parkUserSettings]
   );
 
   const pauseSession = useCallback(() => {
@@ -523,6 +559,8 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     if (active) {
       activeRoadmapRef.current = null;
       setActiveRoadmap(null);
+      // Quitting a level hands the settings back just the same as finishing it.
+      restoreUserSettings();
     }
     triggerStatsRefresh();
     timer.stopTimer();
@@ -552,6 +590,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         }
         tts.ensureTTSUnlocked();
 
+        parkUserSettings();
         settings.clearAllEmphases();
         settings.setAddCalisthenics(false);
         settings.setRoundsCount(level.session.roundsCount);
@@ -624,7 +663,16 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         scrollContentToTop();
       }, 150);
     },
-    [settings, calloutEngine, setPage, getTechniquePool, sfx, tts, timer]
+    [
+      settings,
+      calloutEngine,
+      setPage,
+      getTechniquePool,
+      sfx,
+      tts,
+      timer,
+      parkUserSettings,
+    ]
   );
 
   const viewCompletionScreen = useCallback(
