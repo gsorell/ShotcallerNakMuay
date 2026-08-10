@@ -20,6 +20,7 @@ import {
 } from "../data/paths";
 import { artworkForLevel } from "../artwork";
 import {
+  formatRest,
   roundDescription,
   roundKind,
   roundTitle,
@@ -396,7 +397,7 @@ function LevelDetail({
             <span className="roadmap-panel-title">The session</span>
             <span className="roadmap-session-meta">
               {level.session.roundsCount} rounds · {level.session.roundMin} min
-              each · {level.session.restMinutes} min rest
+              each · {formatRest(level.session.restMinutes)}
             </span>
           </summary>
           <ol className="roadmap-rounds">

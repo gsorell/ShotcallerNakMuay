@@ -2,6 +2,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TechniqueWithStyle } from "@/types";
 import { mirrorTechnique } from "@/utils/textUtils";
 
+/** Callouts per minute at each difficulty. */
+const CADENCE_PER_MIN = { easy: 20, medium: 26, hard: 42 } as const;
+
+/**
+ * The slowest a callout may ever be scheduled on a varied-cadence round.
+ *
+ * Varied cadence rests in proportion to what was called, which is right for
+ * rhythm but means a long combination — or a held beat landing on top of one —
+ * can open a gap wider than the novice pace. Dead air reads as the app having
+ * stopped, especially in a one-minute guided round. Novice is the floor of the
+ * app's own scale, so nothing should ever be slower than it.
+ */
+const SLOWEST_INTERVAL_MS = Math.round(60000 / CADENCE_PER_MIN.easy);
+
 type SpeakWithDurationFn = (
   text: string,
   speed: number,
@@ -84,10 +98,10 @@ export function useCalloutEngine({
       // Calculate delays based on difficulty
       const cadencePerMin =
         settings.difficulty === "easy"
-          ? 20
+          ? CADENCE_PER_MIN.easy
           : settings.difficulty === "hard"
-          ? 42
-          : 26;
+          ? CADENCE_PER_MIN.hard
+          : CADENCE_PER_MIN.medium;
       const baseDelayMs = Math.round(60000 / cadencePerMin);
       const minDelayMultiplier = settings.difficulty === "hard" ? 0.35 : 0.5;
       const minDelayMs = Math.round(baseDelayMs * minDelayMultiplier);
@@ -205,10 +219,12 @@ export function useCalloutEngine({
               const workRest = baseDelayMs * 0.6;
               const wobble = 1 + (Math.random() - 0.5) * 0.24; // ±12%
               let gap = workRest * wobble;
-              if (Math.random() < 0.16) gap += 500 + Math.random() * 500;
-              nextDelayMs = Math.max(
-                minDelayMs,
-                actualDurationMs + bufferTime + gap
+              // A smaller held beat than before, because the ceiling below now
+              // absorbs most of it anyway.
+              if (Math.random() < 0.16) gap += 250 + Math.random() * 350;
+              nextDelayMs = Math.min(
+                SLOWEST_INTERVAL_MS,
+                Math.max(minDelayMs, actualDurationMs + bufferTime + gap)
               );
             }
 

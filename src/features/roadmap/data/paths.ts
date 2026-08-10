@@ -70,27 +70,30 @@ export interface RoadmapPath {
 // One-minute rounds throughout. This is a lesson, not a conditioning session:
 // the intro round drills two or three new movements, and stretching that over
 // two minutes turns deliberate practice into standing around. Three rounds plus
-// rest lands a level at about five minutes, which is short enough to repeat and
+// rest lands a level at about four minutes, which is short enough to repeat and
 // short enough to come back to tomorrow. Real workouts are what graduating into
 // Nak Muay Newb is for.
+//
+// Rest is thirty seconds: long enough to read what the next round asks for,
+// short enough that a low-volume lesson does not turn into standing about.
 const EARLY: RoadmapSessionConfig = {
   roundsCount: 3,
   roundMin: 1,
-  restMinutes: 1,
+  restMinutes: 0.5,
   difficulty: "easy",
 };
 
 const MID: RoadmapSessionConfig = {
   roundsCount: 3,
   roundMin: 1,
-  restMinutes: 1,
+  restMinutes: 0.5,
   difficulty: "easy",
 };
 
 const LATE: RoadmapSessionConfig = {
   roundsCount: 3,
   roundMin: 1,
-  restMinutes: 1,
+  restMinutes: 0.5,
   difficulty: "medium",
 };
 

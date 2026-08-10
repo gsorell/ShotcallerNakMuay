@@ -178,6 +178,15 @@ export function roundDescription(
   }
 }
 
+/**
+ * Rest read the way a person would say it. Guided levels rest for half a
+ * minute, and "0.5 min rest" is not something anyone says out loud.
+ */
+export function formatRest(restMinutes: number): string {
+  const seconds = Math.round(restMinutes * 60);
+  return seconds < 60 ? `${seconds} sec rest` : `${restMinutes} min rest`;
+}
+
 /** Compact one-liner for the collapsed session summary. */
 export function roundHeadline(round: number): string {
   switch (roundKind(round)) {

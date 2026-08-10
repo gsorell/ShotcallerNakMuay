@@ -18,6 +18,7 @@ import {
   getLevel,
 } from "@/features/roadmap/data/paths";
 import {
+  formatRest,
   isSequentialRound,
   poolForRound,
   roadmapLogLabel,
@@ -251,6 +252,23 @@ describe("screen shows both name and number", () => {
     expect(pool).toContain("Left Check");
     expect(pool).toContain("Jab");
     expect(pool).toContain("1");
+  });
+});
+
+describe("rest between rounds", () => {
+  it("says half a minute the way a person would", () => {
+    expect(formatRest(0.5)).toBe("30 sec rest");
+    expect(formatRest(1)).toBe("1 min rest");
+    expect(formatRest(2)).toBe("2 min rest");
+  });
+
+  it("rests long enough for the warnings to still fire", () => {
+    // The timer announces "10 seconds" and rings at 5 — a rest shorter than
+    // that would skip its own cues.
+    for (const l of FOUNDATIONS.levels) {
+      const seconds = Math.round(l.session.restMinutes * 60);
+      expect(seconds, `L${l.id}`).toBeGreaterThan(10);
+    }
   });
 });
 

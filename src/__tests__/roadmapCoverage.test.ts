@@ -88,7 +88,9 @@ describe("roadmap structure", () => {
         const where = `${path.id} L${level.id}`;
         expect(level.session.roundsCount, where).toBeGreaterThanOrEqual(1);
         expect(level.session.roundMin, where).toBeGreaterThanOrEqual(1);
-        expect(level.session.restMinutes, where).toBeGreaterThanOrEqual(1);
+        // 0.25 is the floor `loadUserSettings` clamps to — anything under it
+        // would be silently rewritten, so a level could not actually ship it.
+        expect(level.session.restMinutes, where).toBeGreaterThanOrEqual(0.25);
         // A guided beginner path should never open on the fastest cadence.
         expect(level.session.difficulty, where).not.toBe("hard");
       }
