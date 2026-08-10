@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import type { PurchasesPackage } from "@revenuecat/purchases-capacitor";
 
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/constants/storeLinks";
 import { isLegacyClaimAvailable, useEntitlement } from "@/features/entitlement";
 import { trackEvent } from "@/utils/analytics";
 import { LegacyClaimSheet } from "./LegacyClaimSheet";
@@ -45,6 +47,11 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   const [showLegacyClaim, setShowLegacyClaim] = useState(false);
   // The manual claim closes some time after the free flip — see legacyClaim.
   const legacyClaimOffered = useMemo(() => isLegacyClaimAvailable(), []);
+  // In the browser there is no store to buy from, and there never will be —
+  // RevenueCat is never configured, so plans cannot load, `purchase` refuses,
+  // and `restore` is a no-op. Rather than surface that as a transient error,
+  // the web build sends people to the app that can actually sell them Pro.
+  const isWeb = !Capacitor.isNativePlatform();
 
   useEffect(() => {
     try {
@@ -135,6 +142,38 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           and the full charm progression.
         </p>
 
+        {isWeb && (
+          <>
+            <p style={styles.webNote}>
+              Pro is unlocked in the mobile app. Grab it below, and your styles,
+              lessons, and charms come with you.
+            </p>
+            <div style={styles.list}>
+              <a
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.storeButton}
+              >
+                Download for iPhone &amp; iPad
+              </a>
+              <a
+                href={PLAY_STORE_URL}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.storeButton}
+              >
+                Download for Android
+              </a>
+            </div>
+            <p style={styles.finePrint}>
+              You can keep training free in this browser — the round timer,
+              Freestyle, and Nak Muay Newb all work here.
+            </p>
+          </>
+        )}
+
+        {!isWeb && (
         <div style={styles.list}>
           {packages === null && <p style={styles.muted}>Loading plans…</p>}
 
@@ -173,24 +212,33 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             );
           })}
         </div>
+        )}
 
         {message && <p style={styles.message}>{message}</p>}
 
-        <p style={styles.finePrint}>
-          Subscriptions auto-renew unless cancelled at least 24 hours before the
-          period ends. Manage or cancel anytime in your App Store or Google Play
-          account settings.
-        </p>
+        {/* Auto-renew terms only apply to a store subscription, which cannot
+            be started from the browser. */}
+        {!isWeb && (
+          <p style={styles.finePrint}>
+            Subscriptions auto-renew unless cancelled at least 24 hours before
+            the period ends. Manage or cancel anytime in your App Store or
+            Google Play account settings.
+          </p>
+        )}
 
         <div style={styles.actions}>
-          <button
-            type="button"
-            disabled={!!busy}
-            onClick={handleRestore}
-            style={styles.textButton}
-          >
-            Restore Purchases
-          </button>
+          {/* `restore` returns early when RevenueCat was never configured, so
+              on the web this button would claim success having done nothing. */}
+          {!isWeb && (
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={handleRestore}
+              style={styles.textButton}
+            >
+              Restore Purchases
+            </button>
+          )}
           <button
             type="button"
             disabled={!!busy}
@@ -280,6 +328,29 @@ const styles = {
     lineHeight: 1.4,
   },
   list: { display: "flex", flexDirection: "column", gap: "0.75rem" },
+  webNote: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: "0.9rem",
+    lineHeight: 1.5,
+    textAlign: "center",
+    margin: "0 0 1.1rem",
+  },
+  storeButton: {
+    display: "block",
+    padding: "0.875rem 1rem",
+    borderRadius: "0.875rem",
+    border: "2px solid rgba(255,255,255,0.15)",
+    background: "rgba(255,255,255,0.06)",
+    color: "white",
+    fontWeight: 700,
+    fontSize: "0.95rem",
+    textAlign: "center",
+    textDecoration: "none",
+    width: "100%",
+    // <a> defaults to content-box, unlike the <button> the plan rows use, so
+    // without this the padding and border push it past the sheet.
+    boxSizing: "border-box",
+  },
   muted: {
     color: "rgba(255,255,255,0.6)",
     textAlign: "center",

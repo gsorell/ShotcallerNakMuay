@@ -21,6 +21,7 @@ import {
 } from "@/features/shared";
 
 import { LearnSection } from "@/features/learn";
+import { hasOnboarded } from "@/features/onboarding";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -118,6 +119,12 @@ export default function App() {
   useEffect(() => {
     // Don't show if already running as native app
     if (Capacitor.isNativePlatform()) return;
+
+    // A first-time web visitor is still in the onboarding flow, which fires at
+    // roughly the same moment — don't stack this on top of it. The engagement
+    // tick re-runs this every 5s, so the prompt appears shortly after
+    // onboarding is finished or skipped.
+    if (!hasOnboarded()) return;
 
     // Don't show if user already dismissed this session
     if (hasUserDismissedPrompt.current) return;
