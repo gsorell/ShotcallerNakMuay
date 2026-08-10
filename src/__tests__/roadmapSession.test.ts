@@ -19,6 +19,13 @@ import {
   roundKind,
 } from "@/features/roadmap/session";
 import {
+  drawnCombos,
+  isWithinVocabulary,
+  taughtSlugs,
+  tokenizeCombo,
+} from "@/features/roadmap/vocabulary";
+import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
+import {
   hasGraduated,
   isLevelCleared,
   isLevelUnlocked,
@@ -91,14 +98,14 @@ describe("per-round pools", () => {
   it("calls this level's combos in the combination round", () => {
     const l4 = level(4);
     const pool = poolForRound(FOUNDATIONS, l4, 3).map((t) => t.text);
-    expect(pool).toEqual(combosForLevel(FOUNDATIONS, l4));
+    expect(pool).toEqual(expect.arrayContaining(combosForLevel(FOUNDATIONS, l4)));
   });
 
   it("keeps drilling combos if a level ever runs more than three rounds", () => {
     const l4 = level(4);
     expect(roundKind(4)).toBe("combos");
     expect(poolForRound(FOUNDATIONS, l4, 9).map((t) => t.text)).toEqual(
-      combosForLevel(FOUNDATIONS, l4)
+      poolForRound(FOUNDATIONS, l4, 3).map((t) => t.text)
     );
   });
 
@@ -122,6 +129,122 @@ describe("per-round pools", () => {
   it("tags every callout so southpaw mirroring can treat them normally", () => {
     const pool = poolForRound(FOUNDATIONS, level(1), 1);
     expect(pool.every((t) => t.style === "roadmap")).toBe(true);
+  });
+});
+
+describe("combinations drawn from the app", () => {
+  it("splits a combination into its techniques", () => {
+    expect(tokenizeCombo("1 2 3")).toEqual(["1", "2", "3"]);
+    expect(tokenizeCombo("1 2, Right Body Kick")).toEqual([
+      "1",
+      "2",
+      "Right Body Kick",
+    ]);
+    // A named segment stays whole — "3 to the Body" is one technique, and
+    // splitting it would leave a bare "3" meaning the wrong punch.
+    expect(tokenizeCombo("1 2, 3 to the Body")).toEqual([
+      "1",
+      "2",
+      "3 to the Body",
+    ]);
+  });
+
+  it("only draws combinations the level has fully taught", () => {
+    // This is the invariant the whole feature rests on: nothing arrives uncued.
+    for (const l of FOUNDATIONS.levels) {
+      const taught = taughtSlugs(FOUNDATIONS, l.id);
+      for (const combo of drawnCombos(FOUNDATIONS, l.id)) {
+        for (const token of tokenizeCombo(combo)) {
+          const entry = getEntryForCallout(token);
+          expect(
+            entry && taught.has(entry.slug),
+            `L${l.id} draws "${combo}" but "${token}" has not been taught`
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("rejects anything with a technique the level has not reached", () => {
+    // Level 2 knows the four hands and nothing else.
+    expect(isWithinVocabulary("1 2 3", FOUNDATIONS, 2)).toBe(true);
+    expect(isWithinVocabulary("1 2, Low Kick", FOUNDATIONS, 2)).toBe(false);
+    expect(isWithinVocabulary("1 2 5 2", FOUNDATIONS, 2)).toBe(false);
+    // ...and the uppercuts arrive at level 10.
+    expect(isWithinVocabulary("1 2 5 2", FOUNDATIONS, 10)).toBe(true);
+  });
+
+  it("fails closed on tokens it cannot resolve", () => {
+    // "Step-in" and "Clinch" are not techniques the path ever teaches, so a
+    // combination containing them must never be drawn, at any level.
+    expect(
+      isWithinVocabulary("1 2, Clinch, Double Knees", FOUNDATIONS, 11)
+    ).toBe(false);
+    expect(isWithinVocabulary("", FOUNDATIONS, 10)).toBe(false);
+  });
+
+  it("finds the common permutations that were missing", () => {
+    // The complaint that prompted this: level 2 drilled three hand-written
+    // combos and never produced any of these, though the app already had them.
+    const drawn = drawnCombos(FOUNDATIONS, 2);
+    for (const wanted of ["2 3", "1 1", "3 4", "2 3 2", "3 3 3", "1 2 3 2"]) {
+      expect(drawn, wanted).toContain(wanted);
+    }
+  });
+
+  it("gives the combination round real variety at every level", () => {
+    for (const l of FOUNDATIONS.levels) {
+      const pool = poolForRound(FOUNDATIONS, l, 3);
+      expect(pool.length, `L${l.id} combination round`).toBeGreaterThanOrEqual(
+        8
+      );
+    }
+  });
+
+  it("mixes single shots into the combination round", () => {
+    const pool = poolForRound(FOUNDATIONS, level(4), 3).map((t) => t.text);
+    expect(pool).toContain("Low Kick");
+    expect(pool).toContain("Jab");
+  });
+
+  it("still guarantees the level's own combinations are drilled", () => {
+    for (const l of FOUNDATIONS.levels) {
+      const pool = poolForRound(FOUNDATIONS, l, 3).map((t) =>
+        t.text.toLowerCase()
+      );
+      for (const combo of combosForLevel(FOUNDATIONS, l)) {
+        expect(pool, `L${l.id}: ${combo}`).toContain(combo.toLowerCase());
+      }
+    }
+  });
+});
+
+describe("screen shows both name and number", () => {
+  it("pairs a spoken number with its name on screen", () => {
+    const pool = poolForRound(FOUNDATIONS, level(1), 2);
+    const spokenNumber = pool.find((t) => t.text === "1");
+    expect(spokenNumber?.display).toBe("1 · Jab");
+  });
+
+  it("pairs a spoken name with its number on screen", () => {
+    const pool = poolForRound(FOUNDATIONS, level(1), 2);
+    const spokenName = pool.find((t) => t.text === "Jab");
+    expect(spokenName?.display).toBe("1 · Jab");
+  });
+
+  it("leaves techniques with no number showing just their name", () => {
+    const pool = poolForRound(FOUNDATIONS, level(4), 2);
+    const kick = pool.find((t) => t.text === "Low Kick");
+    expect(kick?.display).toBeUndefined();
+  });
+
+  it("keeps calling names, not only numbers", () => {
+    // Over half the curriculum has no number. A student drilled only on
+    // numbers would freeze the first time a round calls "Left Check".
+    const pool = poolForRound(FOUNDATIONS, level(5), 2).map((t) => t.text);
+    expect(pool).toContain("Left Check");
+    expect(pool).toContain("Jab");
+    expect(pool).toContain("1");
   });
 });
 

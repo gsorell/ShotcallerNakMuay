@@ -24,6 +24,7 @@ import {
   type RoadmapLevel,
   type RoadmapPath,
 } from "./data/paths";
+import { drawnCombos } from "./vocabulary";
 
 /**
  * Style tag attached to every roadmap callout. It only reaches
@@ -47,6 +48,31 @@ export function isSequentialRound(round: number): boolean {
 
 const tag = (texts: string[]): TechniqueWithStyle[] =>
   texts.map((text) => ({ text, style: ROADMAP_STYLE_KEY }));
+
+/**
+ * Pair a single technique with its number for the screen, whichever of the two
+ * is being spoken. The voice keeps calling both forms — over half the
+ * curriculum (kicks, knees, elbows, checks, slips) has no number at all, so a
+ * student who only ever heard numbers would freeze the first time a round
+ * calls "Left Check" — but a glance at the screen always shows both.
+ */
+function tagWithReference(technique: string): TechniqueWithStyle {
+  const alias = numericAlias(technique);
+  if (!alias) return { text: technique, style: ROADMAP_STYLE_KEY };
+  return {
+    text: technique,
+    style: ROADMAP_STYLE_KEY,
+    display: `${alias} · ${technique}`,
+  };
+}
+
+function tagAlias(alias: string, technique: string): TechniqueWithStyle {
+  return {
+    text: alias,
+    style: ROADMAP_STYLE_KEY,
+    display: `${alias} · ${technique}`,
+  };
+}
 
 /**
  * The number a technique is also called by, where it has one — taken from the
@@ -75,15 +101,44 @@ export function poolForRound(
       // actually calls a round — "jab" and "one" have to mean the same thing
       // by reflex before the combination round starts calling "1 2".
       const singles = cumulativeSingles(path, level.id);
-      const withAliases = [...singles];
+      const pool: TechniqueWithStyle[] = [];
       for (const single of singles) {
+        pool.push(tagWithReference(single));
         const alias = numericAlias(single);
-        if (alias) withAliases.push(alias);
+        if (alias) pool.push(tagAlias(alias, single));
       }
-      return tag(withAliases);
+      return pool;
     }
-    case "combos":
-      return tag(combosForLevel(path, level));
+    case "combos": {
+      // The level's own combinations guarantee the new technique gets worked.
+      // Everything else is drawn from the app's nineteen style groups and
+      // filtered to what this level has taught, which is where the variety
+      // comes from — "2 3", "1 1", "3 3 3", "1 2 3 2" and the rest are already
+      // written, they were just never being read.
+      //
+      // Single shots go in too: a real round is not an unbroken run of
+      // combinations, and mixing them keeps the student reading each call
+      // rather than settling into a pattern.
+      const seen = new Set<string>();
+      const pool: TechniqueWithStyle[] = [];
+      const add = (text: string, entry: TechniqueWithStyle) => {
+        const key = text.trim().toLowerCase().replace(/\s+/g, " ");
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        pool.push(entry);
+      };
+
+      for (const combo of combosForLevel(path, level)) {
+        add(combo, { text: combo, style: ROADMAP_STYLE_KEY });
+      }
+      for (const combo of drawnCombos(path, level.id)) {
+        add(combo, { text: combo, style: ROADMAP_STYLE_KEY });
+      }
+      for (const single of cumulativeSingles(path, level.id)) {
+        add(single, tagWithReference(single));
+      }
+      return pool;
+    }
   }
 }
 
@@ -118,8 +173,8 @@ export function roundDescription(
       return "Everything you know so far, shuffled — and now called by number as well as by name.";
     case "combos":
       return level.id >= path.numbersFromLevel
-        ? "Full combinations, called by number — the way the rest of the app talks."
-        : "Short combinations, still called by name.";
+        ? "Combinations and single shots, mixed and called by number — the way the rest of the app talks."
+        : "Short combinations and single shots, still called by name.";
   }
 }
 
@@ -131,7 +186,7 @@ export function roundHeadline(round: number): string {
     case "integrate":
       return "Everything so far, names and numbers";
     case "combos":
-      return "Combinations";
+      return "Combinations and singles";
   }
 }
 

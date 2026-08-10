@@ -151,7 +151,22 @@ export function useCalloutEngine({
           return;
         }
 
-        setCurrentCallout(finalPhrase);
+        // The screen can carry more than the voice does — the guided path shows
+        // "1 · Jab" while calling just one of the two.
+        let displayPhrase = finalPhrase;
+        if (selectedTechnique.display) {
+          try {
+            displayPhrase = settings.southpawModeRef.current
+              ? mirrorTechnique(
+                  selectedTechnique.display,
+                  selectedTechnique.style
+                )
+              : selectedTechnique.display;
+          } catch {
+            displayPhrase = selectedTechnique.display;
+          }
+        }
+        setCurrentCallout(displayPhrase);
 
         // Speak
         speakWithDuration(
@@ -176,16 +191,25 @@ export function useCalloutEngine({
               Math.min(responsiveDelayMs, timingCap)
             );
 
-            // Varied cadence: stretch or compress the gap, and now and then
-            // hold a beat, so a small pool stops sounding like a metronome.
-            // The cap is deliberately not applied here — clamping every gap to
-            // it is what flattens the rhythm out in the first place.
+            // Phrasing, not noise. An earlier attempt multiplied the gap by a
+            // wide uniform random factor, which read as broken rather than
+            // human — uncorrelated gaps have no musical logic, and it threw
+            // away the duration-responsive timing that was already right.
+            //
+            // Instead: rest after a call in proportion to how much it asked
+            // for (speech duration tracks combination length), plus a small
+            // wobble, plus the occasional held beat to reset stance. The cap
+            // is skipped deliberately — clamping every gap to it is what
+            // flattens a four-punch combination into the same space as a jab.
             if (settings.variedCadenceRef?.current) {
-              nextDelayMs *= 0.7 + Math.random() * 0.95;
-              if (Math.random() < 0.18) {
-                nextDelayMs += 350 + Math.random() * 850;
-              }
-              nextDelayMs = Math.max(minDelayMs, nextDelayMs);
+              const workRest = baseDelayMs * 0.6;
+              const wobble = 1 + (Math.random() - 0.5) * 0.24; // ±12%
+              let gap = workRest * wobble;
+              if (Math.random() < 0.16) gap += 500 + Math.random() * 500;
+              nextDelayMs = Math.max(
+                minDelayMs,
+                actualDurationMs + bufferTime + gap
+              );
             }
 
             scheduleNext(nextDelayMs);
