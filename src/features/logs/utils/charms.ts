@@ -23,6 +23,16 @@ export function readWorkoutHistory(): WorkoutLogLite[] {
         ? Number(p.roundsCompleted)
         : 0,
       difficulty: typeof p?.difficulty === "string" ? p.difficulty : undefined,
+      status: typeof p?.status === "string" ? p.status : undefined,
+      // Guided-path sessions carry the level they cleared; the path charms and
+      // the "distinct styles" count both key off it.
+      roadmap:
+        p?.roadmap && typeof p.roadmap.pathId === "string"
+          ? {
+              pathId: String(p.roadmap.pathId),
+              levelId: Number(p.roadmap.levelId),
+            }
+          : undefined,
     }));
   } catch {
     return [];

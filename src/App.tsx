@@ -22,6 +22,7 @@ import {
 
 import { LearnSection } from "@/features/learn";
 import { hasOnboarded } from "@/features/onboarding";
+import { RoadmapSection } from "@/features/roadmap";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -162,7 +163,8 @@ export default function App() {
         page === "editor" ||
         page === "logs" ||
         page === "completed" ||
-        page === "learn"
+        page === "learn" ||
+        page === "roadmap"
       )
         setPage("timer");
     },
@@ -210,6 +212,9 @@ export default function App() {
 
       case "learn":
         return <LearnSection onBack={() => setPage("timer")} />;
+
+      case "roadmap":
+        return <RoadmapSection onBack={() => setPage("timer")} />;
 
       case "completed":
         if (!lastWorkout) return null;

@@ -17,7 +17,13 @@ export type EmphasisKey =
 
 export type Difficulty = "easy" | "medium" | "hard";
 
-export type Page = "timer" | "editor" | "logs" | "completed" | "learn";
+export type Page =
+  | "timer"
+  | "editor"
+  | "logs"
+  | "completed"
+  | "learn"
+  | "roadmap";
 
 // Type for techniques with source style information
 export type TechniqueWithStyle = {

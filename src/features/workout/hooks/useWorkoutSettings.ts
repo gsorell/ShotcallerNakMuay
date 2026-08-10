@@ -1,5 +1,5 @@
 // src/hooks/useWorkoutSettings.ts
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Difficulty, type EmphasisKey } from "@/types"; // Adjust path if needed
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { normalizeKey } from "@/utils/techniqueUtils"; // Adjust path if needed
@@ -43,8 +43,20 @@ export function useWorkoutSettings(
   });
 
   const [addCalisthenics, setAddCalisthenics] = useState(false);
-  const [readInOrder, setReadInOrder] = useState(false);
+  const [readInOrder, setReadInOrderState] = useState(false);
   const [southpawMode, setSouthpawMode] = useState(loadSouthpaw);
+
+  // The callout loop reads this through a ref rather than the state value: it
+  // used to sit in `startTechniqueCallouts`'s dependency array, which meant
+  // flipping it tore down and restarted the loop mid-round. The ref is updated
+  // synchronously with the state so a caller can change ordering between rounds
+  // (the roadmap does exactly this) without interrupting callouts.
+  const readInOrderRef = useRef(readInOrder);
+  const setReadInOrder = useCallback((value: boolean) => {
+    const next = Boolean(value);
+    readInOrderRef.current = next;
+    setReadInOrderState(next);
+  }, []);
 
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [roundsCount, setRoundsCount] = useState(persistedSettings.roundsCount);
@@ -174,6 +186,7 @@ export function useWorkoutSettings(
     setAddCalisthenics,
     readInOrder,
     setReadInOrder,
+    readInOrderRef,
     southpawMode,
     setSouthpawMode,
     southpawModeRef,

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 
 import { TOTAL_LESSON_COUNT } from "@/features/learn";
+import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
 import { OnboardingModal } from "@/features/shared";
+
+// Derived from the path itself so the pitch can't drift as levels are added.
+const FOUNDATIONS_LEVEL_COUNT = coreLevels(FOUNDATIONS).length;
 
 interface OnboardingFlowProps {
   /** Dismiss to the free app without opening the paywall ("Maybe later"). */
@@ -36,6 +40,12 @@ const CUSTOMIZE_ITEMS: { label: string; desc: string }[] = [
 ];
 
 const PRO_ITEMS: Item[] = [
+  {
+    iconPath: "/assets/icon_newb.png",
+    label: "The Start Here path",
+    // Level 1 is free on purpose — say so rather than overselling the lock.
+    desc: `${FOUNDATIONS_LEVEL_COUNT} guided levels that teach the strikes a few at a time. First level free.`,
+  },
   {
     iconPath: "/assets/icon_mat.png",
     label: "Every fighting style",

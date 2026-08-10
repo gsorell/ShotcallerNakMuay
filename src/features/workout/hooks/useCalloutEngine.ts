@@ -113,9 +113,11 @@ export function useCalloutEngine({
           return;
         }
 
-        // Select Technique
+        // Select Technique. Ordering is read through a ref so a caller can
+        // switch between sequential and random at a round boundary without
+        // restarting the callout loop — see useWorkoutSettings.
         let selectedTechnique: TechniqueWithStyle;
-        if (settings.readInOrder) {
+        if (settings.readInOrderRef.current) {
           selectedTechnique = pool[orderedIndexRef.current % pool.length]!;
           orderedIndexRef.current += 1;
         } else {
@@ -172,7 +174,7 @@ export function useCalloutEngine({
     },
     [
       settings.difficulty,
-      settings.readInOrder,
+      settings.readInOrderRef,
       settings.southpawModeRef,
       settings.voiceSpeedRef,
       stopTechniqueCallouts,

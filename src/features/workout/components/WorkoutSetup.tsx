@@ -1,4 +1,7 @@
-import { trackEvent } from "@/utils/analytics";
+// Direct import, not the roadmap barrel — the barrel exports RoadmapSection,
+// which imports this feature back.
+import { StartHereBanner } from "@/features/roadmap/components/StartHereBanner";
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import React from "react";
 import { ImageWithFallback, useUIContext } from "../../shared";
 import { EmphasisSelector } from "../../technique-editor";
@@ -59,6 +62,8 @@ export default function WorkoutSetup() {
       </div>
 
       <div className="workout-setup-container">
+        <StartHereBanner />
+
         <EmphasisSelector
           emphasisList={emphasisList}
           selectedEmphases={selectedEmphases}
@@ -82,6 +87,27 @@ export default function WorkoutSetup() {
             rather than inside EmphasisSelector so they can share one row and
             read as a matched pair beneath the style grid. */}
         <div className="setup-action-row">
+          <button
+            onClick={() => {
+              trackEvent(AnalyticsEvents.RoadmapOpen, { source: "setup" });
+              setPage("roadmap");
+            }}
+            className="setup-action-btn"
+          >
+            <img
+              src="/assets/icon_newb.png"
+              alt=""
+              aria-hidden="true"
+              className="setup-action-btn-icon"
+            />
+            <span className="setup-action-btn-text">
+              <span className="setup-action-btn-title">Start Here</span>
+              <span className="setup-action-btn-desc">
+                A guided path, one layer at a time
+              </span>
+            </span>
+          </button>
+
           <button
             onClick={() => {
               trackEvent("learn_open", { source: "setup" });
