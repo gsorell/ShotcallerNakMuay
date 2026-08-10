@@ -6,7 +6,11 @@ import { OnboardingModal } from "@/features/shared";
 interface OnboardingFlowProps {
   /** Dismiss to the free app without opening the paywall ("Maybe later"). */
   onSkip: () => void;
-  /** Dismiss and open the paywall (the paywall-forward primary action). */
+  /**
+   * Dismiss and open the paywall (the paywall-forward primary action). Safe on
+   * every platform: the paywall itself explains the browser has no purchase
+   * path and links to the apps.
+   */
   onUnlock: () => void;
 }
 
