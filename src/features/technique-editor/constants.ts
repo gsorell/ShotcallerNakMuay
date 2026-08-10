@@ -22,26 +22,40 @@ export const GROUP_THUMBNAILS: Record<string, string> = {
   counters: "/assets/icon.counters.png",
 };
 
-// Home page order (excluding user and calisthenics)
+/**
+ * The canonical style order — the single list the home screen grid and the
+ * Manage Techniques page both read, so the two can never disagree about where
+ * a style sits. There used to be a second copy of this inside `useEmphasisList`
+ * and the two had drifted: different order, and this one still listed
+ * `muay_tech`, which was removed from the app.
+ *
+ * Nak Muay Newb leads: it is the beginner's door, and the first tile a new user
+ * sees should be the one they can actually use. `timer_only` and `freestyle`
+ * trail because they are modes, not fighting styles — the home screen renders
+ * those two separately at the end (see LEADING_KEYS / TRAILING_KEYS).
+ */
 export const CORE_ORDER = [
-  "timer_only",
   "newb",
-  "two_piece",
-  "boxing",
+  // --- above the fold ---
+  "meat_potatoes",
   "mat",
   "tae",
   "khao",
   "sok",
   "femur",
-  "southpaw",
-  "muay_tech",
-  "meat_potatoes",
   "buakaw",
-  "low_kick_legends",
-  "elbow_arsenal",
-  "ko_setups",
-  "tricky_traps",
-  "feints_and_fakeouts",
   "dutch_kickboxing",
+  // --- below the fold ---
+  "two_piece",
   "counters",
+  "low_kick_legends",
+  "boxing",
+  "ko_setups",
+  "elbow_arsenal",
+  "feints_and_fakeouts",
+  "tricky_traps",
+  "southpaw",
+  // --- modes, rendered last ---
+  "timer_only",
+  "freestyle",
 ];

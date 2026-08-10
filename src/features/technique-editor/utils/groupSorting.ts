@@ -27,6 +27,9 @@ export function getSortedGroups(
       k !== "timer_only"
   );
 
-  // Final sorted group list for the Technique Manager (NO timer_only)
-  return [...userGroups, ...coreGroups, ...otherCoreGroups];
+  // Same order as the home-screen grid: shipped styles in CORE_ORDER, then the
+  // user's own groups. This page used to lead with the user's groups, which
+  // meant hunting for Muay Mat in a different place depending on which screen
+  // you were on.
+  return [...coreGroups, ...otherCoreGroups, ...userGroups];
 }
