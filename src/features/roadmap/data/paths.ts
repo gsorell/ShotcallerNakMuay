@@ -108,7 +108,7 @@ export const FOUNDATIONS: RoadmapPath = {
       combosNamed: ["Jab, Cross", "Jab, Jab, Cross", "Jab, Cross, Jab"],
       combosNumbered: ["1 2", "1 1 2", "1 2 1"],
       languageNote:
-        "Muay Thai counts its punches. Your jab is 1 and your cross is 2 — the second round calls both the name and the number for the same punch, so listen for them meaning the same thing. From the next level on the combinations are called by number alone.",
+        "Muay Thai counts its punches: the jab is 1, the cross is 2. Round 2 calls both the name and the number for the same punch — listen for them meaning the same thing.",
       free: true,
       session: EARLY,
     },
@@ -125,7 +125,7 @@ export const FOUNDATIONS: RoadmapPath = {
       ],
       combosNumbered: ["1 2 3", "3 2", "1 2 3 2"],
       languageNote:
-        "Two more numbers: 3 is your left hook, 4 your right. Combinations are called by number from here on — 1 2 3 is jab, cross, left hook. That is how the rest of the app speaks, and the full glossary is in the header menu whenever you need it.",
+        "Two more numbers: 3 is your left hook, 4 your right. Combinations are called by number from here — 1 2 3 is jab, cross, left hook.",
       session: EARLY,
     },
     {
@@ -312,7 +312,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "2 3, Low Kick, Head Kick",
       ],
       languageNote:
-        "Two numbers left: 5 is your left uppercut, 6 your right. That completes the hand numbering — every punch the app calls out now has a number you know.",
+        "Two numbers left: 5 is your left uppercut, 6 your right. That completes the hand numbering — every punch the app calls now has a number you know.",
       session: LATE,
     },
     {

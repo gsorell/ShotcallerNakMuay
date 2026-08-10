@@ -293,6 +293,10 @@ function LevelDetail({
   const path = FOUNDATIONS;
   const combos = combosForLevel(path, level);
   const known = cumulativeSingles(path, level.id).length;
+  const rounds = Array.from(
+    { length: level.session.roundsCount },
+    (_, i) => i + 1
+  );
 
   // Every introduced callout resolves to a written lesson — roadmapCoverage
   // fails the build otherwise — so these cards need no content of their own.
@@ -333,16 +337,23 @@ function LevelDetail({
               {entry && (
                 <>
                   <p className="roadmap-card-summary">{entry.summary}</p>
-                  <ul className="roadmap-card-list">
-                    {entry.keyPoints.slice(0, 3).map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                  {entry.mistakes[0] && (
-                    <p className="roadmap-card-mistake">
-                      <strong>Watch out:</strong> {entry.mistakes[0]}
-                    </p>
-                  )}
+                  {/* The coaching detail is the bulk of the text on this
+                      screen, and it is reference material — needed once, while
+                      learning the movement, not every time the level is
+                      opened. Folded away so the page stays scannable. */}
+                  <details className="roadmap-more">
+                    <summary>How to throw it</summary>
+                    <ul className="roadmap-card-list">
+                      {entry.keyPoints.slice(0, 3).map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                    {entry.mistakes[0] && (
+                      <p className="roadmap-card-mistake">
+                        <strong>Watch out:</strong> {entry.mistakes[0]}
+                      </p>
+                    )}
+                  </details>
                 </>
               )}
             </div>
@@ -358,15 +369,21 @@ function LevelDetail({
       )}
 
       <section className="roadmap-panel">
-        <h2 className="roadmap-panel-title">The session</h2>
-        <ol className="roadmap-rounds">
-          {Array.from({ length: level.session.roundsCount }, (_, i) => i + 1).map(
-            (round) => (
+        <details className="roadmap-more roadmap-more--session">
+          <summary>
+            <span className="roadmap-panel-title">The session</span>
+            <span className="roadmap-session-meta">
+              {level.session.roundsCount} rounds · {level.session.roundMin} min
+              each · {level.session.restMinutes} min rest
+            </span>
+          </summary>
+          <ol className="roadmap-rounds">
+            {rounds.map((round) => (
               <li className="roadmap-round" key={round}>
                 <span className="roadmap-round-n">Round {round}</span>
                 <span className="roadmap-round-title">{roundTitle(round)}</span>
                 <span className="roadmap-round-desc">
-                  {roundDescription(round)}
+                  {roundDescription(path, level, round)}
                 </span>
                 {roundKind(round) === "integrate" && (
                   <span className="roadmap-round-meta">
@@ -379,14 +396,9 @@ function LevelDetail({
                   </span>
                 )}
               </li>
-            )
-          )}
-        </ol>
-        <p className="roadmap-session-meta">
-          {level.session.roundsCount} rounds ·{" "}
-          {level.session.roundMin} min each · {level.session.restMinutes} min
-          rest
-        </p>
+            ))}
+          </ol>
+        </details>
       </section>
 
       <button className="roadmap-start" onClick={onStart}>

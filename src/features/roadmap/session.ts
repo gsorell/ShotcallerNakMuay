@@ -99,14 +99,39 @@ export function roundTitle(round: number): string {
   }
 }
 
-export function roundDescription(round: number): string {
+/**
+ * What this round will actually ask of you, in one line.
+ *
+ * Level-aware because the rounds genuinely differ between levels: the
+ * combination round speaks names early on and numbers later, and saying
+ * otherwise on the rest screen would set the student up to freeze.
+ */
+export function roundDescription(
+  path: RoadmapPath,
+  level: RoadmapLevel,
+  round: number
+): string {
   switch (roundKind(round)) {
     case "intro":
-      return "The new techniques on their own, called in order and by name. Take the time to find the shape of each one.";
+      return "Just the new techniques, in order and by name. Find the shape of each one.";
     case "integrate":
-      return "The new techniques mixed into everything you already know, in random order. This is the first round that trains reaction.";
+      return "Everything you know so far, shuffled — and now called by number as well as by name.";
     case "combos":
-      return "This level's combinations, strung together. From here you are hearing exactly what the rest of the app sounds like.";
+      return level.id >= path.numbersFromLevel
+        ? "Full combinations, called by number — the way the rest of the app talks."
+        : "Short combinations, still called by name.";
+  }
+}
+
+/** Compact one-liner for the collapsed session summary. */
+export function roundHeadline(round: number): string {
+  switch (roundKind(round)) {
+    case "intro":
+      return "New techniques, in order";
+    case "integrate":
+      return "Everything so far, names and numbers";
+    case "combos":
+      return "Combinations";
   }
 }
 

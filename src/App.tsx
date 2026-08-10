@@ -85,21 +85,25 @@ export default function App() {
     restartSession,
     isInterruptedByCall,
     isFreestyle,
-    activeRoadmapLevel,
+    activeRoadmap,
   } = useWorkoutContext();
 
   // During rest on a guided level, tell the student what the next round asks
   // for. `currentRound` is still the round that just ended — the timer only
   // increments it when rest runs out — so the next one is +1.
   const upNext =
-    activeRoadmapLevel && timer.isResting
+    activeRoadmap && timer.isResting
       ? (() => {
           const next = timer.currentRound + 1;
           if (next > settings.roundsCount) return null;
           return {
             round: next,
             title: roundTitle(next),
-            description: roundDescription(next),
+            description: roundDescription(
+              activeRoadmap.path,
+              activeRoadmap.level,
+              next
+            ),
           };
         })()
       : null;

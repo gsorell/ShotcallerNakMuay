@@ -64,7 +64,7 @@ interface WorkoutContextValue {
 
   // Guided path
   /** The level currently being drilled, or null for a normal session. */
-  activeRoadmapLevel: RoadmapLevel | null;
+  activeRoadmap: { path: RoadmapPath; level: RoadmapLevel } | null;
   startRoadmapLevel: (path: RoadmapPath, level: RoadmapLevel) => void;
 
   // Actions
@@ -130,8 +130,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   // --- Guided path state ---
   // The ref is what the timer callbacks read (they must not re-create on every
   // level change); the state copy is only there for the UI.
-  const [activeRoadmapLevel, setActiveRoadmapLevel] =
-    useState<RoadmapLevel | null>(null);
+  const [activeRoadmap, setActiveRoadmap] = useState<{
+    path: RoadmapPath;
+    level: RoadmapLevel;
+  } | null>(null);
   const activeRoadmapRef = useRef<{
     path: RoadmapPath;
     level: RoadmapLevel;
@@ -238,7 +240,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         replay: !firstClear,
       });
       activeRoadmapRef.current = null;
-      setActiveRoadmapLevel(null);
+      setActiveRoadmap(null);
     }
 
     // Trigger stats refresh
@@ -447,7 +449,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       settings.variedCadenceRef.current = true;
 
       activeRoadmapRef.current = { path, level };
-      setActiveRoadmapLevel(level);
+      setActiveRoadmap({ path, level });
       roadmapRoundRef.current = 1;
 
       trackEvent(AnalyticsEvents.RoadmapLevelStart, {
@@ -520,7 +522,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     );
     if (active) {
       activeRoadmapRef.current = null;
-      setActiveRoadmapLevel(null);
+      setActiveRoadmap(null);
     }
     triggerStatsRefresh();
     timer.stopTimer();
@@ -561,7 +563,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         settings.setReadInOrder(isSequentialRound(resumeRound));
         settings.variedCadenceRef.current = true;
         activeRoadmapRef.current = { path, level };
-        setActiveRoadmapLevel(level);
+        setActiveRoadmap({ path, level });
         roadmapRoundRef.current = resumeRound;
         calloutEngine.shotsCalledOutRef.current = logEntry.shotsCalledOut || 0;
         setPage("timer");
@@ -697,7 +699,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     status,
     isInterruptedByCall,
     clearCallInterruption,
-    activeRoadmapLevel,
+    activeRoadmap,
     startRoadmapLevel,
     getTechniquePool,
     hasSelectedEmphasis,

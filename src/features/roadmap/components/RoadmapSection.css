@@ -506,6 +506,67 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* --- disclosure ("show more") --------------------------------------------
+   Native <details>, so it works without JS, is keyboard-operable, and is
+   announced correctly by screen readers. Used anywhere a block of reference
+   text would otherwise dominate the screen. */
+
+.roadmap-more > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f9a8d4;
+  padding: 0.15rem 0;
+}
+
+.roadmap-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.roadmap-more > summary::after {
+  content: "⌄";
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.roadmap-more[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.roadmap-more > summary:hover {
+  color: #fff;
+}
+
+.roadmap-more > summary:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.roadmap-more[open] > summary {
+  margin-bottom: 0.55rem;
+}
+
+/* The session block puts its own heading inside the summary, so the label
+   should sit left and the "3 rounds · 2 min each" meta beside it. */
+.roadmap-more--session > summary {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.roadmap-more--session > summary .roadmap-panel-title {
+  margin: 0;
+}
+
+.roadmap-more--session > summary::after {
+  margin-left: auto;
+}
+
 .roadmap-card-summary {
   margin: 0 0 0.5rem;
   font-size: 0.86rem;
