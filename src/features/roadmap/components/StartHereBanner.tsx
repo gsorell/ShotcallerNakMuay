@@ -4,14 +4,8 @@ import { useUIContext } from "@/features/shared";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
 
-import { FOUNDATIONS, coreLevels, cumulativeSingles, totalTechniqueCount } from "../data/paths";
-import {
-  dismissBanner,
-  hasGraduated,
-  isBannerDismissed,
-  nextLevelId,
-  readPathProgress,
-} from "../storage";
+import { FOUNDATIONS } from "../data/paths";
+import { dismissBanner, isBannerDismissed, pathSummary } from "../storage";
 import "./RoadmapSection.css";
 
 /**
@@ -33,18 +27,10 @@ export function StartHereBanner() {
   const { setPage, statsRefreshTrigger } = useUIContext();
   const [dismissed, setDismissed] = useState(() => isBannerDismissed());
 
-  const state = useMemo(
-    () => {
-      const progress = readPathProgress(FOUNDATIONS.id);
-      const lastCore = coreLevels(FOUNDATIONS).slice(-1)[0]?.id ?? 0;
-      const cleared = Math.min(progress.highestCleared, lastCore);
-      return {
-        started: progress.highestCleared > 0,
-        next: nextLevelId(FOUNDATIONS),
-        graduated: hasGraduated(FOUNDATIONS),
-        known: cleared > 0 ? cumulativeSingles(FOUNDATIONS, cleared).length : 0,
-      };
-    },
+  // Recomputed whenever a workout completes — that is what the stats trigger
+  // signals — so the card is showing the level you are actually on.
+  const summary = useMemo(
+    () => pathSummary(FOUNDATIONS),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [statsRefreshTrigger]
   );
@@ -61,14 +47,10 @@ export function StartHereBanner() {
     setDismissed(true);
   }, []);
 
-  if (dismissed || state.graduated) return null;
+  if (dismissed || summary.graduated) return null;
 
-  const level = FOUNDATIONS.levels.find((l) => l.id === state.next);
+  const level = FOUNDATIONS.levels.find((l) => l.id === summary.nextLevelId);
   if (!level) return null;
-
-  const total = totalTechniqueCount(FOUNDATIONS);
-  const totalLevels = coreLevels(FOUNDATIONS).length;
-  const pct = Math.round((state.known / total) * 100);
 
   return (
     <section className="starthere" aria-label="Start Here guided path">
@@ -84,31 +66,34 @@ export function StartHereBanner() {
 
       <button type="button" className="starthere-body" onClick={open}>
         <span className="starthere-eyebrow">
-          {state.started ? "Start Here · in progress" : "New to Muay Thai?"}
+          {summary.started
+            ? `Start Here · level ${level.id} of ${summary.totalLevels}`
+            : "New to Muay Thai?"}
         </span>
 
         <span className="starthere-headline">
-          {state.started
-            ? `Level ${level.id} · ${level.title}`
+          {summary.started
+            ? `${level.bonus ? "Bonus" : "Level " + level.id} · ${level.title.replace(/^Bonus: /, "")}`
             : "Start Here — a guided path"}
         </span>
 
         <span className="starthere-sub">
-          {state.started
-            ? `${state.known} of ${total} callouts learned`
+          {summary.started
+            ? `${summary.known} of ${summary.total} callouts learned`
             : "Ten levels that teach the strikes a few at a time. First level free."}
         </span>
 
-        {state.started && (
+        {summary.started && (
           <span className="starthere-track" aria-hidden="true">
-            <span className="starthere-fill" style={{ width: `${pct}%` }} />
+            <span
+              className="starthere-fill"
+              style={{ width: `${summary.percent}%` }}
+            />
           </span>
         )}
 
         <span className="starthere-action">
-          {state.started
-            ? `Continue · level ${level.id} of ${totalLevels}`
-            : "Begin level 1"}
+          {summary.started ? "Continue" : "Begin level 1"}
           <span aria-hidden="true"> →</span>
         </span>
       </button>

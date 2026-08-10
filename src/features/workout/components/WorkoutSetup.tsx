@@ -31,10 +31,6 @@ export default function WorkoutSetup() {
   const { selectedEmphases, toggleEmphasis } = settings;
   return (
     <div>
-      {/* Pinned above everything else — the on-ramp has to be the first thing a
-          beginner sees, before the wall of styles that sent them here. */}
-      <StartHereBanner />
-
       {/* Compact Favorite Style & Streak - Combined Button */}
       <div className="workout-setup-stats-container">
         {stats && (
@@ -74,6 +70,9 @@ export default function WorkoutSetup() {
           setTechniques={persistTechniques}
           showAllEmphases={showAllEmphases}
           setShowAllEmphases={setShowAllEmphases}
+          // Sits with the styles rather than above them: it answers the
+          // question the grid poses, so it belongs in the same space.
+          leadSlot={<StartHereBanner />}
           onManageTechniques={(groupKey?: string) => {
             try {
               trackEvent("technique_editor_open", {

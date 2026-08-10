@@ -15,7 +15,12 @@ import {
   ROADMAP_STORAGE_KEY,
 } from "@/constants/storage";
 
-import type { RoadmapPath } from "./data/paths";
+import {
+  coreLevels,
+  cumulativeSingles,
+  totalTechniqueCount,
+  type RoadmapPath,
+} from "./data/paths";
 
 const PROGRESS_VERSION = 1;
 
@@ -143,6 +148,55 @@ export function markLevelCleared(pathId: string, levelId: number): boolean {
   progress.paths[pathId] = path;
   writeProgress(progress);
   return !existing;
+}
+
+// --- progress summary -------------------------------------------------------
+
+/** Everything the home card and the ladder need to describe where you are. */
+export interface PathSummary {
+  /** At least one level cleared. */
+  started: boolean;
+  /** Every core level cleared. */
+  graduated: boolean;
+  /** The level to point the user at next. */
+  nextLevelId: number;
+  /** Core levels cleared, capped at the core count. */
+  levelsCleared: number;
+  totalLevels: number;
+  /** Techniques the user now answers to. */
+  known: number;
+  total: number;
+  /** `known` as a whole percent, for the progress bar. */
+  percent: number;
+}
+
+/**
+ * One place the progress arithmetic lives, so the card on the home screen and
+ * the ladder can never tell the user two different stories.
+ *
+ * `known` is capped at the last core level on purpose: the bonus elbows are
+ * not part of the Nak Muay Newb vocabulary being measured, so clearing them
+ * must not push the count past its own total.
+ */
+export function pathSummary(path: RoadmapPath): PathSummary {
+  const progress = readPathProgress(path.id);
+  const core = coreLevels(path);
+  const lastCore = core[core.length - 1]?.id ?? 0;
+  const levelsCleared = Math.min(progress.highestCleared, lastCore);
+  const known =
+    levelsCleared > 0 ? cumulativeSingles(path, levelsCleared).length : 0;
+  const total = totalTechniqueCount(path);
+
+  return {
+    started: progress.highestCleared > 0,
+    graduated: hasGraduated(path),
+    nextLevelId: nextLevelId(path),
+    levelsCleared,
+    totalLevels: core.length,
+    known,
+    total,
+    percent: total > 0 ? Math.round((known / total) * 100) : 0,
+  };
 }
 
 // --- setup-screen banner ----------------------------------------------------

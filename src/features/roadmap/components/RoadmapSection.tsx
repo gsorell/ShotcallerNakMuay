@@ -22,14 +22,12 @@ import {
   roundTitle,
 } from "../session";
 import {
-  clearedCount,
-  hasGraduated,
   isBannerDismissed,
   isLevelCleared,
   isLevelUnlocked,
-  nextLevelId,
-  readPathProgress,
+  pathSummary,
   restoreBanner,
+  type PathSummary,
 } from "../storage";
 import "./RoadmapSection.css";
 
@@ -54,13 +52,8 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
 
   // Progress is re-read whenever a workout completes, which is what the stats
   // trigger already signals — the ladder must repaint after clearing a level.
-  const progress = useMemo(
-    () => ({
-      pathProgress: readPathProgress(path.id),
-      next: nextLevelId(path),
-      cleared: clearedCount(path.id),
-      graduated: hasGraduated(path),
-    }),
+  const summary = useMemo(
+    () => pathSummary(path),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [path, statsRefreshTrigger, view]
   );
@@ -122,9 +115,7 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
       {view.mode === "ladder" && (
         <Ladder
           isPro={isPro}
-          taught={taughtCount(progress.pathProgress.highestCleared)}
-          nextLevelId={progress.next}
-          graduated={progress.graduated}
+          summary={summary}
           stateFor={stateFor}
           onOpenLevel={openLevel}
           onUnlock={() => openPaywall("roadmap_header")}
@@ -142,41 +133,23 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
   );
 }
 
-/**
- * Techniques known after clearing everything up to and including `levelId`.
- * Capped at the last core level: the bonus elbows are not part of the Nak Muay
- * Newb vocabulary the progress bar measures, so clearing them must not push the
- * count past its own total.
- */
-function taughtCount(levelId: number): number {
-  const core = coreLevels(FOUNDATIONS);
-  const lastCore = core[core.length - 1]?.id ?? 0;
-  const capped = Math.min(levelId, lastCore);
-  if (capped < 1) return 0;
-  return cumulativeSingles(FOUNDATIONS, capped).length;
-}
-
 // ------------------------------------------------------------------ ladder --
 
 function Ladder({
   isPro,
-  taught,
-  nextLevelId: next,
-  graduated,
+  summary,
   stateFor,
   onOpenLevel,
   onUnlock,
 }: {
   isPro: boolean;
-  taught: number;
-  nextLevelId: number;
-  graduated: boolean;
+  summary: PathSummary;
   stateFor: (level: RoadmapLevel) => LevelState;
   onOpenLevel: (level: RoadmapLevel) => void;
   onUnlock: () => void;
 }) {
   const path = FOUNDATIONS;
-  const total = totalTechniqueCount(path);
+  const { known: taught, total, graduated, nextLevelId: next } = summary;
   const core = coreLevels(path);
 
   return (
@@ -198,7 +171,7 @@ function Ladder({
         <div className="roadmap-progress-track">
           <span
             className="roadmap-progress-fill"
-            style={{ width: `${Math.round((taught / total) * 100)}%` }}
+            style={{ width: `${summary.percent}%` }}
           />
         </div>
       </div>

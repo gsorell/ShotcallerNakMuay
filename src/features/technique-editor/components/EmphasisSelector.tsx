@@ -15,6 +15,13 @@ interface EmphasisSelectorProps {
   showAllEmphases: boolean;
   setShowAllEmphases: React.Dispatch<React.SetStateAction<boolean>>;
   onManageTechniques: (groupKey?: string) => void;
+  /**
+   * Rendered full-width directly above the tiles, inside the grid's own
+   * column. Used for the "Start Here" card, which belongs in the same space as
+   * the styles — it is the answer to "which of these do I pick?" — while
+   * keeping its own look so it doesn't read as a selectable style.
+   */
+  leadSlot?: React.ReactNode;
 }
 
 const TILES_WITHOUT_TECHNIQUES = new Set(["timer_only", "freestyle"]);
@@ -28,6 +35,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   showAllEmphases,
   setShowAllEmphases,
   onManageTechniques,
+  leadSlot,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
   const { isEmphasisUnlocked, isPro, hydrated } = useEntitlement();
@@ -80,6 +88,8 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
           margin: "0 auto",
         }}
       >
+        {leadSlot}
+
         <div
           className="emphasis-grid"
           style={{

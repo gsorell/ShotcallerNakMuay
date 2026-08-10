@@ -24,6 +24,7 @@ import {
   isLevelUnlocked,
   markLevelCleared,
   nextLevelId,
+  pathSummary,
 } from "@/features/roadmap/storage";
 
 // The app runs in a browser; the test runner does not. A tiny in-memory stand-in
@@ -181,6 +182,54 @@ describe("progress store", () => {
       .forEach((l) => markLevelCleared(FOUNDATIONS.id, l.id));
     expect(hasGraduated(FOUNDATIONS)).toBe(true);
     expect(isLevelCleared(FOUNDATIONS.id, 11)).toBe(false);
+  });
+
+  it("summarises an untouched path as not started", () => {
+    const s = pathSummary(FOUNDATIONS);
+    expect(s.started).toBe(false);
+    expect(s.nextLevelId).toBe(1);
+    expect(s.levelsCleared).toBe(0);
+    expect(s.known).toBe(0);
+    expect(s.percent).toBe(0);
+    expect(s.totalLevels).toBe(10);
+    expect(s.total).toBe(32);
+  });
+
+  it("tracks the vocabulary as levels are cleared", () => {
+    // This is what the home card reads — it must move with real progress.
+    markLevelCleared(FOUNDATIONS.id, 1);
+    let s = pathSummary(FOUNDATIONS);
+    expect(s.started).toBe(true);
+    expect(s.nextLevelId).toBe(2);
+    expect(s.known).toBe(2); // jab, cross
+    expect(s.percent).toBe(6);
+
+    markLevelCleared(FOUNDATIONS.id, 2);
+    markLevelCleared(FOUNDATIONS.id, 3);
+    s = pathSummary(FOUNDATIONS);
+    expect(s.nextLevelId).toBe(4);
+    expect(s.levelsCleared).toBe(3);
+    expect(s.known).toBe(6); // + both hooks, both teeps
+  });
+
+  it("reads 32 of 32 at graduation without the bonus overflowing it", () => {
+    FOUNDATIONS.levels
+      .filter((l) => !l.bonus)
+      .forEach((l) => markLevelCleared(FOUNDATIONS.id, l.id));
+    expect(pathSummary(FOUNDATIONS)).toMatchObject({
+      graduated: true,
+      known: 32,
+      total: 32,
+      percent: 100,
+      levelsCleared: 10,
+    });
+
+    // Clearing the bonus elbows must not push the count past its own total.
+    markLevelCleared(FOUNDATIONS.id, 11);
+    const s = pathSummary(FOUNDATIONS);
+    expect(s.known).toBe(32);
+    expect(s.percent).toBe(100);
+    expect(s.levelsCleared).toBe(10);
   });
 
   it("survives a corrupt progress value", () => {
