@@ -23,9 +23,9 @@
 
 .starthere-body {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.3rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.8rem;
   width: 100%;
   box-sizing: border-box;
   padding: 0.9rem 2.6rem 0.9rem 1rem;
@@ -49,6 +49,30 @@
 .starthere-body:focus-visible {
   outline: none;
   border-color: #60a5fa;
+}
+
+/* The picture is the one the next level wears on the ladder, so the card, the
+   rung and the level screen all show the same thing. */
+.starthere-art {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.7rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 1.6rem; /* emoji fallback */
+  line-height: 2.75rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.starthere-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .starthere-eyebrow {
@@ -335,35 +359,77 @@
   border-color: rgba(236, 72, 153, 0.35);
 }
 
+/* A locked rung is still meant to be read — showing what is coming is half of
+   why the ladder is browsable at all. So no blanket opacity, which washed the
+   artwork out along with everything else; only the text is muted, and the
+   picture stays as vivid as it is on the Learn screen. */
 .roadmap-rung:disabled {
   cursor: default;
-  opacity: 0.45;
+}
+
+.roadmap-rung:disabled .roadmap-rung-title {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.roadmap-rung:disabled .roadmap-rung-teaches {
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .roadmap-rung-badge {
-  width: 2.2rem;
-  height: 2.2rem;
+  position: relative;
+  width: 2.6rem;
+  height: 2.6rem;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roadmap-rung-art {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.6rem;
+  object-fit: cover;
+  display: inline-block;
+  font-size: 1.5rem; /* emoji fallback */
+  line-height: 2.6rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.roadmap-rung--current .roadmap-rung-art,
+.roadmap-rung--next .roadmap-rung-art {
+  border-color: rgba(236, 72, 153, 0.75);
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.28);
+}
+
+/* State marker, tucked into the corner of the artwork rather than replacing
+   it — the level number already appears in the title, so the badge is free to
+   carry the picture. */
+.roadmap-rung-state {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.25rem;
+  width: 1.15rem;
+  height: 1.15rem;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.65rem;
   font-weight: 800;
-  font-size: 0.95rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.75);
+  line-height: 1;
+  border: 1px solid rgba(0, 0, 0, 0.45);
 }
 
-.roadmap-rung--current .roadmap-rung-badge,
-.roadmap-rung--next .roadmap-rung-badge {
-  background: #ec4899;
-  color: #fff;
+.roadmap-rung-state--done {
+  background: #34d399;
+  color: #05261b;
 }
 
-.roadmap-rung--cleared .roadmap-rung-badge {
-  background: rgba(52, 211, 153, 0.2);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.45);
+.roadmap-rung-state--locked {
+  background: #1b1830;
+  font-size: 0.6rem;
 }
 
 .roadmap-rung--next {
@@ -413,6 +479,34 @@
 }
 
 /* --- level detail ------------------------------------------------------- */
+
+.roadmap-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.roadmap-detail-art {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 1.75rem; /* emoji fallback */
+  line-height: 3rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.roadmap-detail-headtext {
+  min-width: 0;
+}
+
+.roadmap-title--inline {
+  margin: 0;
+}
 
 .roadmap-detail-eyebrow {
   display: flex;

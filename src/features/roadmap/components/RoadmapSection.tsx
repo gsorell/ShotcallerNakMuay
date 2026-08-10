@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useEntitlement } from "@/features/entitlement";
 import { getEntryForCallout } from "@/features/learn";
 import { usePaywall } from "@/features/paywall";
-import { useUIContext } from "@/features/shared";
+import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
@@ -16,6 +16,7 @@ import {
   totalTechniqueCount,
   type RoadmapLevel,
 } from "../data/paths";
+import { artworkForLevel } from "../artwork";
 import {
   roundDescription,
   roundKind,
@@ -214,13 +215,22 @@ function Ladder({
                 }
               >
                 <span className="roadmap-rung-badge" aria-hidden="true">
-                  {state === "cleared"
-                    ? "✓"
-                    : state === "locked"
-                    ? "🔒"
-                    : state === "pro"
-                    ? "🔒"
-                    : level.id}
+                  <ImageWithFallback
+                    srcPath={artworkForLevel(level).iconPath}
+                    alt=""
+                    emoji={artworkForLevel(level).icon}
+                    className="roadmap-rung-art"
+                  />
+                  {state === "cleared" && (
+                    <span className="roadmap-rung-state roadmap-rung-state--done">
+                      ✓
+                    </span>
+                  )}
+                  {(state === "locked" || state === "pro") && (
+                    <span className="roadmap-rung-state roadmap-rung-state--locked">
+                      🔒
+                    </span>
+                  )}
                 </span>
                 <span className="roadmap-rung-text">
                   <span className="roadmap-rung-title">
@@ -307,15 +317,25 @@ function LevelDetail({
 
   return (
     <article className="roadmap-detail">
-      <p className="roadmap-detail-eyebrow">
-        {level.bonus
-          ? "Bonus level"
-          : `Level ${level.id} of ${coreLevels(path).length}`}
-        {cleared && <span className="roadmap-detail-cleared">Cleared</span>}
-      </p>
-      <h1 className="roadmap-title">
-        {level.title.replace(/^Bonus: /, "")}
-      </h1>
+      <div className="roadmap-detail-head">
+        <ImageWithFallback
+          srcPath={artworkForLevel(level).iconPath}
+          alt=""
+          emoji={artworkForLevel(level).icon}
+          className="roadmap-detail-art"
+        />
+        <div className="roadmap-detail-headtext">
+          <p className="roadmap-detail-eyebrow">
+            {level.bonus
+              ? "Bonus level"
+              : `Level ${level.id} of ${coreLevels(path).length}`}
+            {cleared && <span className="roadmap-detail-cleared">Cleared</span>}
+          </p>
+          <h1 className="roadmap-title roadmap-title--inline">
+            {level.title.replace(/^Bonus: /, "")}
+          </h1>
+        </div>
+      </div>
       <p className="roadmap-subtitle">{level.blurb}</p>
 
       <section className="roadmap-panel">

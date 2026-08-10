@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { useUIContext } from "@/features/shared";
+import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
 
+import { artworkForLevel } from "../artwork";
 import { FOUNDATIONS } from "../data/paths";
 import { dismissBanner, isBannerDismissed, pathSummary } from "../storage";
 import "./RoadmapSection.css";
@@ -65,6 +66,13 @@ export function StartHereBanner() {
       </button>
 
       <button type="button" className="starthere-body" onClick={open}>
+        <ImageWithFallback
+          srcPath={artworkForLevel(level).iconPath}
+          alt=""
+          emoji={artworkForLevel(level).icon}
+          className="starthere-art"
+        />
+        <span className="starthere-text">
         <span className="starthere-eyebrow">
           {summary.started
             ? `Start Here · level ${level.id} of ${summary.totalLevels}`
@@ -95,6 +103,7 @@ export function StartHereBanner() {
         <span className="starthere-action">
           {summary.started ? "Continue" : "Begin level 1"}
           <span aria-hidden="true"> →</span>
+        </span>
         </span>
       </button>
     </section>

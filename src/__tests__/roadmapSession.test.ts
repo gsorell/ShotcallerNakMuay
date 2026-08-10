@@ -1,4 +1,9 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
+
+import { CATEGORY_META } from "@/features/learn/data/techniqueLibrary";
+import { artworkForLevel, categoryForLevel } from "@/features/roadmap/artwork";
 
 // Imported from the module rather than the feature barrel: the barrel also
 // pulls in the log components, which reach for `document` at import time.
@@ -245,6 +250,37 @@ describe("screen shows both name and number", () => {
     expect(pool).toContain("Left Check");
     expect(pool).toContain("Jab");
     expect(pool).toContain("1");
+  });
+});
+
+describe("level artwork", () => {
+  it("gives every level a picture that exists on disk", () => {
+    // ImageWithFallback degrades silently to the emoji if a file 404s, so a
+    // renamed asset would only ever show up as a visual regression.
+    for (const l of FOUNDATIONS.levels) {
+      const art = artworkForLevel(l);
+      const file = resolve(__dirname, "../../public", art.iconPath.slice(1));
+      expect(existsSync(file), `L${l.id} → ${art.iconPath}`).toBe(true);
+      expect(art.icon, `L${l.id} needs an emoji fallback`).toBeTruthy();
+    }
+  });
+
+  it("picks the category the level actually teaches", () => {
+    expect(categoryForLevel(level(1))).toBe("punches"); // jab, cross
+    expect(categoryForLevel(level(3))).toBe("kicks"); // teeps
+    expect(categoryForLevel(level(4))).toBe("kicks"); // round kicks
+    expect(categoryForLevel(level(8))).toBe("knees");
+    expect(categoryForLevel(level(11))).toBe("elbows");
+  });
+
+  it("breaks a tie toward the technique the level leads with", () => {
+    // Level 10 is three punches and two kicks — the punches lead and win.
+    expect(categoryForLevel(level(10))).toBe("punches");
+  });
+
+  it("reuses the Learn section's own artwork rather than a second mapping", () => {
+    const learnKicks = CATEGORY_META.find((m) => m.key === "kicks")!;
+    expect(artworkForLevel(level(4)).iconPath).toBe(learnKicks.iconPath);
   });
 });
 
