@@ -24,7 +24,30 @@ import "./RoadmapSection.css";
  * roadmap screen can bring it back, and the action-row card below the style
  * grid is always there regardless.
  */
-export function StartHereBanner() {
+interface StartHereBannerProps {
+  /**
+   * Where tapping it goes. Defaults to the roadmap page; the Learn section
+   * passes its own handler so the ladder opens as a view inside that page and
+   * Back returns there rather than dropping the user on the timer.
+   */
+  onOpen?: () => void;
+  /** Offer the ✕. The home screen does; inside Learn there is nothing to hide from. */
+  dismissible?: boolean;
+  /**
+   * Disappear once the path is finished. True on the home screen, where a
+   * graduate has no more use for it — but false inside Learn, where replaying
+   * a level is a normal thing to come looking for.
+   */
+  hideWhenGraduated?: boolean;
+  source?: string;
+}
+
+export function StartHereBanner({
+  onOpen,
+  dismissible = true,
+  hideWhenGraduated = true,
+  source = "setup_banner",
+}: StartHereBannerProps = {}) {
   const { setPage, statsRefreshTrigger } = useUIContext();
   const [dismissed, setDismissed] = useState(() => isBannerDismissed());
 
@@ -37,10 +60,14 @@ export function StartHereBanner() {
   );
 
   const open = useCallback(() => {
-    trackEvent(AnalyticsEvents.RoadmapOpen, { source: "setup_banner" });
+    trackEvent(AnalyticsEvents.RoadmapOpen, { source });
+    if (onOpen) {
+      onOpen();
+      return;
+    }
     setPage("roadmap");
     scrollContentToTop();
-  }, [setPage]);
+  }, [setPage, onOpen, source]);
 
   const hide = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,22 +75,25 @@ export function StartHereBanner() {
     setDismissed(true);
   }, []);
 
-  if (dismissed || summary.graduated) return null;
+  if (dismissible && dismissed) return null;
+  if (hideWhenGraduated && summary.graduated) return null;
 
   const level = FOUNDATIONS.levels.find((l) => l.id === summary.nextLevelId);
   if (!level) return null;
 
   return (
     <section className="starthere" aria-label="Start Here guided path">
-      <button
-        type="button"
-        className="starthere-dismiss"
-        onClick={hide}
-        aria-label="Hide Start Here from the home screen"
-        title="Hide from home screen"
-      >
-        ✕
-      </button>
+      {dismissible && (
+        <button
+          type="button"
+          className="starthere-dismiss"
+          onClick={hide}
+          aria-label="Hide Start Here from the home screen"
+          title="Hide from home screen"
+        >
+          ✕
+        </button>
+      )}
 
       <button type="button" className="starthere-body" onClick={open}>
         <ImageWithFallback
@@ -73,37 +103,45 @@ export function StartHereBanner() {
           className="starthere-art"
         />
         <span className="starthere-text">
-        <span className="starthere-eyebrow">
-          {summary.started
-            ? `Start Here · level ${level.id} of ${summary.totalLevels}`
-            : "New to Muay Thai?"}
-        </span>
-
-        <span className="starthere-headline">
-          {summary.started
-            ? `${level.bonus ? "Bonus" : "Level " + level.id} · ${level.title.replace(/^Bonus: /, "")}`
-            : "Start Here — a guided path"}
-        </span>
-
-        <span className="starthere-sub">
-          {summary.started
-            ? `${summary.known} of ${summary.total} callouts learned`
-            : "Ten levels that teach the strikes a few at a time. First level free."}
-        </span>
-
-        {summary.started && (
-          <span className="starthere-track" aria-hidden="true">
-            <span
-              className="starthere-fill"
-              style={{ width: `${summary.percent}%` }}
-            />
+          <span className="starthere-eyebrow">
+            {summary.graduated
+              ? "Start Here · complete"
+              : summary.started
+              ? `Start Here · level ${level.id} of ${summary.totalLevels}`
+              : "New to Muay Thai?"}
           </span>
-        )}
 
-        <span className="starthere-action">
-          {summary.started ? "Continue" : "Begin level 1"}
-          <span aria-hidden="true"> →</span>
-        </span>
+          <span className="starthere-headline">
+            {summary.graduated
+              ? "You finished the path"
+              : summary.started
+              ? `${level.bonus ? "Bonus" : "Level " + level.id} · ${level.title.replace(/^Bonus: /, "")}`
+              : "Start Here — a guided path"}
+          </span>
+
+          <span className="starthere-sub">
+            {summary.started
+              ? `${summary.known} of ${summary.total} callouts learned`
+              : "Ten levels that teach the strikes a few at a time. First level free."}
+          </span>
+
+          {summary.started && (
+            <span className="starthere-track" aria-hidden="true">
+              <span
+                className="starthere-fill"
+                style={{ width: `${summary.percent}%` }}
+              />
+            </span>
+          )}
+
+          <span className="starthere-action">
+            {summary.graduated
+              ? "Replay any level"
+              : summary.started
+              ? "Continue"
+              : "Begin level 1"}
+            <span aria-hidden="true"> →</span>
+          </span>
         </span>
       </button>
     </section>

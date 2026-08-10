@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { useEntitlement } from "@/features/entitlement";
-import { getEntryForCallout } from "@/features/learn";
+// The data module, not the Learn barrel: LearnSection hosts this component, and
+// going through the barrel would make the two features a circular import.
+import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
 import { usePaywall } from "@/features/paywall";
 import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";

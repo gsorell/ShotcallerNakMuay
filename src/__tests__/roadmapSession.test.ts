@@ -26,6 +26,7 @@ import {
 import {
   drawnCombos,
   isWithinVocabulary,
+  levelTeaching,
   taughtSlugs,
   tokenizeCombo,
 } from "@/features/roadmap/vocabulary";
@@ -250,6 +251,29 @@ describe("screen shows both name and number", () => {
     expect(pool).toContain("Left Check");
     expect(pool).toContain("Jab");
     expect(pool).toContain("1");
+  });
+});
+
+describe("lesson to level cross-link", () => {
+  it("points a lesson at the level that introduces it", () => {
+    expect(levelTeaching(FOUNDATIONS, "jab")?.id).toBe(1);
+    expect(levelTeaching(FOUNDATIONS, "teep")?.id).toBe(3);
+    expect(levelTeaching(FOUNDATIONS, "straight-knee")?.id).toBe(8);
+    expect(levelTeaching(FOUNDATIONS, "horizontal-elbow")?.id).toBe(11);
+  });
+
+  it("says nothing for techniques the path never teaches", () => {
+    // Spinning elbows are Muay Sok's business, not the beginner path's.
+    expect(levelTeaching(FOUNDATIONS, "spinning-elbow")).toBeUndefined();
+  });
+
+  it("agrees with the level that actually introduces the technique", () => {
+    for (const l of FOUNDATIONS.levels) {
+      for (const technique of l.introduces) {
+        const slug = getEntryForCallout(technique)!.slug;
+        expect(levelTeaching(FOUNDATIONS, slug)?.id, technique).toBe(l.id);
+      }
+    }
   });
 });
 

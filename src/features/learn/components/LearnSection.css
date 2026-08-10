@@ -398,3 +398,48 @@
   );
   border-color: rgba(236, 72, 153, 0.5);
 }
+
+/* --- merged section: guided path + library ------------------------------- */
+
+.learn-section-heading {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 1.75rem 0 0.35rem;
+}
+
+/* Link from a lesson back to the level that teaches it — the cross-reference
+   that makes the path and the library read as one section rather than two
+   things that happen to share a page. */
+.learn-path-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  background: rgba(236, 72, 153, 0.1);
+  color: #fff;
+  cursor: pointer;
+}
+
+.learn-path-link:hover {
+  border-color: rgba(236, 72, 153, 0.6);
+  background: rgba(236, 72, 153, 0.16);
+}
+
+.learn-path-link-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.learn-path-link-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+}

@@ -22,7 +22,11 @@ import {
   normalizeCallout,
 } from "@/features/learn/data/techniqueIndex";
 
-import { cumulativeSingles, type RoadmapPath } from "./data/paths";
+import {
+  cumulativeSingles,
+  type RoadmapLevel,
+  type RoadmapPath,
+} from "./data/paths";
 
 /**
  * Split a combination string into the individual techniques it calls.
@@ -68,6 +72,22 @@ export function isWithinVocabulary(
     const entry = getEntryForCallout(token);
     return entry ? taught.has(entry.slug) : false;
   });
+}
+
+/**
+ * The level that introduces a given lesson, if any path teaches it. Lets a
+ * Learn lesson point back at where it sits in the curriculum — the link that
+ * makes the two halves of the Learn section one thing rather than two.
+ */
+export function levelTeaching(
+  path: RoadmapPath,
+  slug: string
+): RoadmapLevel | undefined {
+  return path.levels.find((level) =>
+    level.introduces.some(
+      (technique) => getEntryForCallout(technique)?.slug === slug
+    )
+  );
 }
 
 /** Every distinct combination string the app ships, across all style groups. */

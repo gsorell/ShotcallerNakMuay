@@ -1,7 +1,7 @@
 // Direct import, not the roadmap barrel — the barrel exports RoadmapSection,
 // which imports this feature back.
 import { StartHereBanner } from "@/features/roadmap/components/StartHereBanner";
-import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+import { trackEvent } from "@/utils/analytics";
 import React from "react";
 import { ImageWithFallback, useUIContext } from "../../shared";
 import { EmphasisSelector } from "../../technique-editor";
@@ -88,27 +88,11 @@ export default function WorkoutSetup() {
             rather than inside EmphasisSelector so they can share one row and
             read as a matched pair beneath the style grid. */}
         <div className="setup-action-row">
-          <button
-            onClick={() => {
-              trackEvent(AnalyticsEvents.RoadmapOpen, { source: "setup" });
-              setPage("roadmap");
-            }}
-            className="setup-action-btn"
-          >
-            <img
-              src="/assets/icon_newb.png"
-              alt=""
-              aria-hidden="true"
-              className="setup-action-btn-icon"
-            />
-            <span className="setup-action-btn-text">
-              <span className="setup-action-btn-title">Start Here</span>
-              <span className="setup-action-btn-desc">
-                A guided path, one layer at a time
-              </span>
-            </span>
-          </button>
-
+          {/* One learning destination, not two. The guided path and the
+              technique library are the same material — a curriculum over it and
+              a reference into it — so they share a page, and this row keeps to
+              the two things that are genuinely different: learning, and
+              editing what gets called out. */}
           <button
             onClick={() => {
               trackEvent("learn_open", { source: "setup" });
@@ -123,11 +107,9 @@ export default function WorkoutSetup() {
               className="setup-action-btn-icon"
             />
             <span className="setup-action-btn-text">
-              <span className="setup-action-btn-title">
-                Learn the Techniques
-              </span>
+              <span className="setup-action-btn-title">Learn</span>
               <span className="setup-action-btn-desc">
-                How to throw every callout
+                Guided path, and every technique explained
               </span>
             </span>
           </button>
