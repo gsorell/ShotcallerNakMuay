@@ -23,6 +23,8 @@ interface ActiveSessionUIProps {
   selectedEmphases: Record<EmphasisKey, boolean>;
   emphasisList: any[];
   isInterruptedByCall?: boolean;
+  /** What the next round holds — shown during rest on a guided level. */
+  upNext?: { round: number; title: string; description: string } | null;
 }
 
 export default function ActiveSessionUI({
@@ -43,6 +45,7 @@ export default function ActiveSessionUI({
   selectedEmphases,
   emphasisList,
   isInterruptedByCall = false,
+  upNext = null,
 }: ActiveSessionUIProps) {
   if (!running && !isPreRound) return null;
 
@@ -74,6 +77,16 @@ export default function ActiveSessionUI({
             Tap Resume to continue your workout
           </div>
         </div>
+      )}
+
+      {isResting && upNext && (
+        <section className="active-session-upnext" aria-live="polite">
+          <div className="active-session-upnext-label">
+            Up next · Round {upNext.round}
+          </div>
+          <div className="active-session-upnext-title">{upNext.title}</div>
+          <p className="active-session-upnext-desc">{upNext.description}</p>
+        </section>
       )}
 
       {running && !paused && !isResting && currentCallout && (

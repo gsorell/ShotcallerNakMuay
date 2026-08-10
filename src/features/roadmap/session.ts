@@ -14,6 +14,9 @@
 // ===========================================================================
 
 import type { TechniqueWithStyle } from "@/types";
+// The index module, not the learn barrel — the barrel exports LearnSection,
+// which imports the workout feature and would make this a circular import.
+import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
 
 import {
   combosForLevel,
@@ -45,6 +48,20 @@ export function isSequentialRound(round: number): boolean {
 const tag = (texts: string[]): TechniqueWithStyle[] =>
   texts.map((text) => ({ text, style: ROADMAP_STYLE_KEY }));
 
+/**
+ * The number a technique is also called by, where it has one — taken from the
+ * lesson library so there is no second copy of the numbering to drift.
+ *
+ * Multi-number shorthands are rejected: "1 1" is a double jab, a combination
+ * rather than another name for the jab, and calling it as a single would be
+ * telling the student to throw the wrong thing.
+ */
+function numericAlias(technique: string): string | undefined {
+  const numbering = getEntryForCallout(technique)?.numbering;
+  if (!numbering || /\s/.test(numbering)) return undefined;
+  return numbering;
+}
+
 export function poolForRound(
   path: RoadmapPath,
   level: RoadmapLevel,
@@ -53,8 +70,18 @@ export function poolForRound(
   switch (roundKind(round)) {
     case "intro":
       return tag(level.introduces);
-    case "integrate":
-      return tag(cumulativeSingles(path, level.id));
+    case "integrate": {
+      // Both names and numbers for the same technique, which is how a coach
+      // actually calls a round — "jab" and "one" have to mean the same thing
+      // by reflex before the combination round starts calling "1 2".
+      const singles = cumulativeSingles(path, level.id);
+      const withAliases = [...singles];
+      for (const single of singles) {
+        const alias = numericAlias(single);
+        if (alias) withAliases.push(alias);
+      }
+      return tag(withAliases);
+    }
     case "combos":
       return tag(combosForLevel(path, level));
   }

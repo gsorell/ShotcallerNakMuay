@@ -162,3 +162,13 @@ export function dismissBanner(): void {
     /* ignore */
   }
 }
+
+/** Put the card back on the home screen — offered on the roadmap screen so
+ *  hiding it is never a one-way door. */
+export function restoreBanner(): void {
+  try {
+    localStorage.removeItem(ROADMAP_BANNER_DISMISSED_KEY);
+  } catch {
+    /* ignore */
+  }
+}

@@ -38,6 +38,7 @@ export {
   nextLevelId,
   readPathProgress,
   readProgress,
+  restoreBanner,
   type LevelProgress,
   type PathProgress,
   type RoadmapProgress,

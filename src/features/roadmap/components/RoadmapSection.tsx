@@ -24,10 +24,12 @@ import {
 import {
   clearedCount,
   hasGraduated,
+  isBannerDismissed,
   isLevelCleared,
   isLevelUnlocked,
   nextLevelId,
   readPathProgress,
+  restoreBanner,
 } from "../storage";
 import "./RoadmapSection.css";
 
@@ -265,7 +267,42 @@ function Ladder({
           );
         })}
       </ol>
+
+      <RestoreCardToggle />
     </>
+  );
+}
+
+/**
+ * Hiding the home-screen card is permanent, so this is the way back. Only
+ * shown when it is actually hidden — otherwise it is a control for a state
+ * you are already in.
+ */
+function RestoreCardToggle() {
+  const [hidden, setHidden] = useState(() => isBannerDismissed());
+  const [justRestored, setJustRestored] = useState(false);
+
+  // Stay mounted after restoring so the confirmation is actually seen —
+  // otherwise the control vanishes the instant it succeeds.
+  if (!hidden && !justRestored) return null;
+
+  return (
+    <button
+      type="button"
+      className="roadmap-restore"
+      disabled={justRestored}
+      onClick={() => {
+        restoreBanner();
+        setHidden(false);
+        setJustRestored(true);
+      }}
+    >
+      {justRestored ? (
+        <span className="roadmap-restore-done">✓ Back on your home screen</span>
+      ) : (
+        <span>↩ Show Start Here on my home screen again</span>
+      )}
+    </button>
   );
 }
 

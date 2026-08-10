@@ -31,6 +31,10 @@ export default function WorkoutSetup() {
   const { selectedEmphases, toggleEmphasis } = settings;
   return (
     <div>
+      {/* Pinned above everything else — the on-ramp has to be the first thing a
+          beginner sees, before the wall of styles that sent them here. */}
+      <StartHereBanner />
+
       {/* Compact Favorite Style & Streak - Combined Button */}
       <div className="workout-setup-stats-container">
         {stats && (
@@ -62,8 +66,6 @@ export default function WorkoutSetup() {
       </div>
 
       <div className="workout-setup-container">
-        <StartHereBanner />
-
         <EmphasisSelector
           emphasisList={emphasisList}
           selectedEmphases={selectedEmphases}

@@ -164,3 +164,40 @@
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
 }
+/* --- "Up next" panel (guided levels, shown during rest) ------------------
+   The rest screen is otherwise a bare countdown. On a guided level it is the
+   one moment the student has both attention and time, so it explains what the
+   next round is going to ask of them before the bell removes the choice. */
+
+.active-session-upnext {
+  max-width: 26rem;
+  margin: 1rem auto 0;
+  padding: 0.9rem 1.1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  background: rgba(236, 72, 153, 0.12);
+  text-align: center;
+}
+
+.active-session-upnext-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+  margin-bottom: 0.3rem;
+}
+
+.active-session-upnext-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.active-session-upnext-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}

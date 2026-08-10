@@ -33,6 +33,14 @@ export function useCalloutEngine({
   const currentPoolRef = useRef<TechniqueWithStyle[]>([]);
   const ttsGuardRef = useRef(false);
 
+  // Watchdog state. The scheduling loop is a chain: each callout schedules the
+  // next one from its `onend`. That makes a single lost `onend` fatal — the
+  // chain simply stops while the round timer keeps counting down, which is what
+  // a backgrounded PWA does when the OS tears down speech mid-utterance.
+  const lastCalloutAtRef = useRef<number>(0);
+  const baseDelayRef = useRef<number>(2500);
+  const startCalloutsRef = useRef<((delay?: number) => void) | null>(null);
+
   // Helper refs to avoid dependency cycles in the timeout loop
   const runningRef = useRef(timer.running);
   const pausedRef = useRef(timer.paused);
@@ -83,6 +91,7 @@ export function useCalloutEngine({
       const baseDelayMs = Math.round(60000 / cadencePerMin);
       const minDelayMultiplier = settings.difficulty === "hard" ? 0.35 : 0.5;
       const minDelayMs = Math.round(baseDelayMs * minDelayMultiplier);
+      baseDelayRef.current = baseDelayMs;
 
       const scheduleNext = (delay: number) => {
         if (calloutRef.current) {
@@ -125,6 +134,7 @@ export function useCalloutEngine({
         }
 
         shotsCalledOutRef.current += 1;
+        lastCalloutAtRef.current = Date.now();
 
         // Determine Text
         let finalPhrase = "";
@@ -161,10 +171,23 @@ export function useCalloutEngine({
             );
             const responsiveDelayMs = actualDurationMs + bufferTime + jitter;
             const timingCap = isPro ? baseDelayMs * 0.85 : baseDelayMs * 1.1;
-            const nextDelayMs = Math.max(
+            let nextDelayMs = Math.max(
               minDelayMs,
               Math.min(responsiveDelayMs, timingCap)
             );
+
+            // Varied cadence: stretch or compress the gap, and now and then
+            // hold a beat, so a small pool stops sounding like a metronome.
+            // The cap is deliberately not applied here — clamping every gap to
+            // it is what flattens the rhythm out in the first place.
+            if (settings.variedCadenceRef?.current) {
+              nextDelayMs *= 0.7 + Math.random() * 0.95;
+              if (Math.random() < 0.18) {
+                nextDelayMs += 350 + Math.random() * 850;
+              }
+              nextDelayMs = Math.max(minDelayMs, nextDelayMs);
+            }
+
             scheduleNext(nextDelayMs);
           }
         );
@@ -175,6 +198,7 @@ export function useCalloutEngine({
     [
       settings.difficulty,
       settings.readInOrderRef,
+      settings.variedCadenceRef,
       settings.southpawModeRef,
       settings.voiceSpeedRef,
       stopTechniqueCallouts,
@@ -182,9 +206,51 @@ export function useCalloutEngine({
     ]
   );
 
+  // Keep a stable handle for the watchdog, which must not re-subscribe every
+  // time the callback identity changes.
+  useEffect(() => {
+    startCalloutsRef.current = startTechniqueCallouts;
+  }, [startTechniqueCallouts]);
+
+  /**
+   * Restart the chain if callouts have gone quiet while the round is still
+   * live. Without this a single dropped `onend` — a backgrounded tab, an OS
+   * that kills speech, an interrupted utterance — leaves the timer running
+   * against silence until the user notices and pauses/resumes by hand.
+   */
+  useEffect(() => {
+    if (!timer.running || timer.paused || timer.isResting || timer.isPreRound) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      if (
+        ttsGuardRef.current ||
+        !runningRef.current ||
+        pausedRef.current ||
+        isRestingRef.current ||
+        !currentPoolRef.current.length
+      ) {
+        return;
+      }
+      const silentFor = Date.now() - lastCalloutAtRef.current;
+      // Generous: three times the expected gap, floor of six seconds, so a
+      // long utterance or a held beat never trips it.
+      const limit = Math.max(6000, baseDelayRef.current * 3);
+      if (silentFor <= limit) return;
+
+      try {
+        window.speechSynthesis.resume();
+      } catch {}
+      lastCalloutAtRef.current = Date.now();
+      startCalloutsRef.current?.(0);
+    }, 2000);
+    return () => window.clearInterval(id);
+  }, [timer.running, timer.paused, timer.isResting, timer.isPreRound]);
+
   // Auto-start effect
   useEffect(() => {
     if (!timer.running || timer.paused || timer.isResting) return;
+    lastCalloutAtRef.current = Date.now();
     startTechniqueCallouts(800);
     return () => {
       stopTechniqueCallouts();
@@ -213,6 +279,19 @@ export function useCalloutEngine({
             window.speechSynthesis.pause();
           } catch {}
         }
+        return;
+      }
+
+      // Coming back into view. speechSynthesis is paused per-engine, not
+      // per-utterance, so a pause that is never undone silences every later
+      // round: the next callout is spoken into a paused engine, its `onend`
+      // never fires, and the loop — which schedules the next callout from that
+      // callback — stops dead while the clock keeps running. Resuming here is
+      // what keeps the session alive after a tab switch or screen blank.
+      if (!isHidden && typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.resume();
+        } catch {}
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);

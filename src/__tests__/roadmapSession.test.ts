@@ -48,12 +48,43 @@ describe("per-round pools", () => {
   });
 
   it("mixes in everything learned so far in the integration round", () => {
-    const l4 = level(4);
-    const pool = poolForRound(FOUNDATIONS, l4, 2).map((t) => t.text);
-    expect(pool).toEqual(cumulativeSingles(FOUNDATIONS, 4));
+    const pool = poolForRound(FOUNDATIONS, level(4), 2).map((t) => t.text);
+    for (const single of cumulativeSingles(FOUNDATIONS, 4)) {
+      expect(pool, single).toContain(single);
+    }
     // The point of the path: level 4 still calls the jab from level 1.
     expect(pool).toContain("Jab");
     expect(pool).toContain("Low Kick");
+  });
+
+  it("calls the numbers alongside the names in the integration round", () => {
+    // The whole app speaks in numbers, so hearing "jab" and "1" mean the same
+    // thing has to happen before the combination round starts calling "1 2".
+    const pool = poolForRound(FOUNDATIONS, level(1), 2).map((t) => t.text);
+    expect(pool).toEqual(expect.arrayContaining(["Jab", "Cross", "1", "2"]));
+
+    const l2 = poolForRound(FOUNDATIONS, level(2), 2).map((t) => t.text);
+    expect(l2).toEqual(expect.arrayContaining(["3", "4"]));
+  });
+
+  it("never calls a multi-number shorthand as if it were one technique", () => {
+    // "1 1" is a double jab — a combination, not another name for the jab.
+    for (const l of FOUNDATIONS.levels) {
+      const pool = poolForRound(FOUNDATIONS, l, 2).map((t) => t.text);
+      expect(
+        pool.filter((t) => /^\d+(\s+\d+)+$/.test(t)),
+        `L${l.id}`
+      ).toEqual([]);
+    }
+  });
+
+  it("gives no number to techniques that do not have one", () => {
+    // Body punches have their own lesson with no numbering — aliasing them to
+    // the head-level number would call for the wrong punch entirely.
+    const pool = poolForRound(FOUNDATIONS, level(9), 2).map((t) => t.text);
+    expect(pool).toContain("Jab to the Body");
+    const numbers = pool.filter((t) => /^\d+$/.test(t));
+    expect(numbers.sort()).toEqual(["1", "2", "3", "4"]);
   });
 
   it("calls this level's combos in the combination round", () => {

@@ -58,6 +58,14 @@ export function useWorkoutSettings(
     setReadInOrderState(next);
   }, []);
 
+  // Loosens the gap between callouts into something closer to a real pad round
+  // — same average pace, but uneven, with the occasional held beat. A tight
+  // metronome is fine when the pool is 30 techniques deep and unpredictable on
+  // its own; with a guided level's two or three, it turns into a drum machine.
+  // Ref-only (never state) so it can be set at session start without
+  // re-creating the callout callback.
+  const variedCadenceRef = useRef(false);
+
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [roundsCount, setRoundsCount] = useState(persistedSettings.roundsCount);
   const [roundMin, setRoundMin] = useState(persistedSettings.roundMin);
@@ -187,6 +195,7 @@ export function useWorkoutSettings(
     readInOrder,
     setReadInOrder,
     readInOrderRef,
+    variedCadenceRef,
     southpawMode,
     setSouthpawMode,
     southpawModeRef,

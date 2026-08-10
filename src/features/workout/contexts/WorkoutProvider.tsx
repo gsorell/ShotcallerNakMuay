@@ -366,6 +366,8 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   const startSession = useCallback(async () => {
     if (!hasSelectedEmphasis) return;
+    // Normal sessions keep the steady cadence; only guided levels loosen it.
+    settings.variedCadenceRef.current = false;
     const pool = getTechniquePool();
     const noTechniqueMode =
       (settings.selectedEmphases.timer_only || settings.selectedEmphases.freestyle) &&
@@ -440,6 +442,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       settings.setRestMinutes(level.session.restMinutes);
       settings.setDifficulty(level.session.difficulty);
       settings.setReadInOrder(isSequentialRound(1));
+      // A guided pool is small by design, so an even cadence reads as a drum
+      // machine. Loosen it into something closer to a real pad round.
+      settings.variedCadenceRef.current = true;
 
       activeRoadmapRef.current = { path, level };
       setActiveRoadmapLevel(level);
@@ -554,6 +559,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
         const resumeRound = (logEntry.roundsCompleted || 0) + 1;
         settings.setReadInOrder(isSequentialRound(resumeRound));
+        settings.variedCadenceRef.current = true;
         activeRoadmapRef.current = { path, level };
         setActiveRoadmapLevel(level);
         roadmapRoundRef.current = resumeRound;

@@ -67,8 +67,9 @@ export interface RoadmapPath {
   graduatesTo: EmphasisKey;
 }
 
-// Two-minute rounds while the vocabulary is small and the movements are new;
-// three once there is enough material that a short round feels clipped.
+// Two-minute rounds throughout. Three felt long in practice even at the later
+// levels: a guided round is deliberately low-volume, so the same clock that
+// suits a full style workout leaves a beginner standing around.
 const EARLY: RoadmapSessionConfig = {
   roundsCount: 3,
   roundMin: 2,
@@ -78,14 +79,14 @@ const EARLY: RoadmapSessionConfig = {
 
 const MID: RoadmapSessionConfig = {
   roundsCount: 3,
-  roundMin: 3,
+  roundMin: 2,
   restMinutes: 1,
   difficulty: "easy",
 };
 
 const LATE: RoadmapSessionConfig = {
   roundsCount: 3,
-  roundMin: 3,
+  roundMin: 2,
   restMinutes: 1,
   difficulty: "medium",
 };
@@ -95,7 +96,7 @@ export const FOUNDATIONS: RoadmapPath = {
   title: "Start Here",
   subtitle:
     "Ten levels from your first jab to every callout Nak Muay Newb can throw.",
-  numbersFromLevel: 3,
+  numbersFromLevel: 2,
   graduatesTo: "newb",
   levels: [
     {
@@ -106,6 +107,8 @@ export const FOUNDATIONS: RoadmapPath = {
       introduces: ["Jab", "Cross"],
       combosNamed: ["Jab, Cross", "Jab, Jab, Cross", "Jab, Cross, Jab"],
       combosNumbered: ["1 2", "1 1 2", "1 2 1"],
+      languageNote:
+        "Muay Thai counts its punches. Your jab is 1 and your cross is 2 — the second round calls both the name and the number for the same punch, so listen for them meaning the same thing. From the next level on the combinations are called by number alone.",
       free: true,
       session: EARLY,
     },
@@ -122,7 +125,7 @@ export const FOUNDATIONS: RoadmapPath = {
       ],
       combosNumbered: ["1 2 3", "3 2", "1 2 3 2"],
       languageNote:
-        "From the next level on, punches are called by number: 1 is the jab, 2 the cross, 3 your left hook, 4 your right. That is how the rest of the app speaks — the full glossary is in the header menu whenever you need it.",
+        "Two more numbers: 3 is your left hook, 4 your right. Combinations are called by number from here on — 1 2 3 is jab, cross, left hook. That is how the rest of the app speaks, and the full glossary is in the header menu whenever you need it.",
       session: EARLY,
     },
     {
