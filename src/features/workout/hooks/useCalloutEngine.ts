@@ -1,20 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TechniqueWithStyle } from "@/types";
 import { mirrorTechnique } from "@/utils/textUtils";
-
-/** Callouts per minute at each difficulty. */
-const CADENCE_PER_MIN = { easy: 20, medium: 26, hard: 42 } as const;
-
-/**
- * The slowest a callout may ever be scheduled on a varied-cadence round.
- *
- * Varied cadence rests in proportion to what was called, which is right for
- * rhythm but means a long combination — or a held beat landing on top of one —
- * can open a gap wider than the novice pace. Dead air reads as the app having
- * stopped, especially in a one-minute guided round. Novice is the floor of the
- * app's own scale, so nothing should ever be slower than it.
- */
-const SLOWEST_INTERVAL_MS = Math.round(60000 / CADENCE_PER_MIN.easy);
+import {
+  CADENCE_PER_MIN,
+  SLOWEST_INTERVAL_MS,
+  rampedIntervalMs,
+} from "../utils/cadence";
 
 type SpeakWithDurationFn = (
   text: string,
@@ -53,6 +44,10 @@ export function useCalloutEngine({
   // a backgrounded PWA does when the OS tears down speech mid-utterance.
   const lastCalloutAtRef = useRef<number>(0);
   const baseDelayRef = useRef<number>(2500);
+  // When the current round's callouts began, so a varied-cadence round can tell
+  // how far through it is and pick up pace accordingly. Set per round rather
+  // than per session; each round runs its own arc.
+  const roundStartedAtRef = useRef<number>(0);
   const startCalloutsRef = useRef<((delay?: number) => void) | null>(null);
 
   // Helper refs to avoid dependency cycles in the timeout loop
@@ -216,7 +211,16 @@ export function useCalloutEngine({
             // is skipped deliberately — clamping every gap to it is what
             // flattens a four-punch combination into the same space as a jab.
             if (settings.variedCadenceRef?.current) {
-              const workRest = baseDelayMs * 0.6;
+              // The round picks up pace as it goes: novice at the bell,
+              // near amateur by the end. See utils/cadence.
+              const roundMs = Math.max(
+                1,
+                Math.round((settings.roundMin || 1) * 60000)
+              );
+              const elapsed = Date.now() - roundStartedAtRef.current;
+              const rampedBase = rampedIntervalMs(elapsed / roundMs);
+
+              const workRest = rampedBase * 0.6;
               const wobble = 1 + (Math.random() - 0.5) * 0.24; // ±12%
               let gap = workRest * wobble;
               // A smaller held beat than before, because the ceiling below now
@@ -291,6 +295,10 @@ export function useCalloutEngine({
   useEffect(() => {
     if (!timer.running || timer.paused || timer.isResting) return;
     lastCalloutAtRef.current = Date.now();
+    // Restarts the pace ramp. This also fires on resuming from a pause, which
+    // means coming back eases you in again rather than dropping you at whatever
+    // speed the round had reached — the kinder of the two behaviours.
+    roundStartedAtRef.current = Date.now();
     startTechniqueCallouts(800);
     return () => {
       stopTechniqueCallouts();

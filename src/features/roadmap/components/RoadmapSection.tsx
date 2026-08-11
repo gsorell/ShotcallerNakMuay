@@ -423,6 +423,10 @@ function LevelDetail({
               </li>
             ))}
           </ol>
+          <p className="roadmap-session-meta">
+            Every round starts at novice pace and builds towards amateur by the
+            bell.
+          </p>
         </details>
       </section>
 
