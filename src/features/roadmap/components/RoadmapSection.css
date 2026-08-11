@@ -54,14 +54,16 @@
 /* The picture is the one the next level wears on the ladder, so the card, the
    rung and the level screen all show the same thing. */
 .starthere-art {
-  width: 2.75rem;
-  height: 2.75rem;
+  /* Matches the style tiles it sits above on the home screen — the card is the
+     first thing in that list, so a smaller picture would read as a lesser one. */
+  width: 3.5rem;
+  height: 3.5rem;
   border-radius: 0.7rem;
   object-fit: cover;
   flex-shrink: 0;
   display: inline-block;
-  font-size: 1.6rem; /* emoji fallback */
-  line-height: 2.75rem;
+  font-size: 2rem; /* emoji fallback */
+  line-height: 3.5rem;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
 }

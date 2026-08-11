@@ -139,17 +139,17 @@
 }
 
 /* Matches how EmphasisSelector renders the same artwork on the style tiles:
-   36px, rounded, object-fit cover — so a category card and a style tile read
-   as the same component family. */
+   56px, rounded, object-fit cover — so a category card and a style tile read
+   as the same component family. Keep the two in step. */
 .learn-category-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
   display: inline-block;
-  font-size: 1.5rem; /* emoji fallback */
-  line-height: 36px;
+  font-size: 2.125rem; /* emoji fallback */
+  line-height: 56px;
   text-align: center;
 }
 

@@ -240,12 +240,21 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                       alt={style.label}
                       emoji={style.emoji}
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 8,
+                        // The tile is a fixed 6.25rem tall and its text rarely
+                        // fills that, so the art can be this big for free — no
+                        // tile grows, and the line-work in the style icons is
+                        // actually readable rather than a smudge.
+                        width: 56,
+                        height: 56,
+                        borderRadius: 10,
                         objectFit: "cover",
                         display: "inline-block",
                         flexShrink: 0,
+                        // Only ever seen if the art 404s, but the box is big
+                        // enough now that the default emoji size looks lost.
+                        fontSize: 34,
+                        lineHeight: "56px",
+                        textAlign: "center",
                       }}
                     />
                     <div style={{ minWidth: 0, flex: 1 }}>

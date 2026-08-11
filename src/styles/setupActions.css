@@ -3,7 +3,7 @@
    These are the two secondary destinations off the setup screen. They sit
    directly beneath the style grid and deliberately reuse the emphasis tiles'
    visual language — same 1rem radius, same 2px translucent white border, same
-   10% white fill, same 36px rounded icon — so the screen reads as one system
+   10% white fill, same 56px rounded icon — so the screen reads as one system
    instead of a grid plus two unrelated buttons.
 
    They are NOT tiles, though: single row, shorter than `.emphasis-tile`'s
@@ -51,9 +51,9 @@
 }
 
 .setup-action-btn-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
   object-fit: cover;
   flex-shrink: 0;
 }
