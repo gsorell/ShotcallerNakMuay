@@ -10,7 +10,7 @@ import {
   type RoadmapPath,
 } from "@/features/roadmap/data/paths";
 import {
-  isSequentialRound,
+  walksPoolInOrder,
   poolForRound,
   roadmapLogLabel,
 } from "@/features/roadmap/session";
@@ -190,7 +190,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       round
     );
     engine.orderedIndexRef.current = 0;
-    settingsRef.current.setReadInOrder(isSequentialRound(round));
+    settingsRef.current.setReadInOrder(walksPoolInOrder(round));
   }, []);
 
   // Timer handlers
@@ -479,7 +479,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       settings.setRoundMin(level.session.roundMin);
       settings.setRestMinutes(level.session.restMinutes);
       settings.setDifficulty(level.session.difficulty);
-      settings.setReadInOrder(isSequentialRound(1));
+      settings.setReadInOrder(walksPoolInOrder(1));
       // A guided pool is small by design, so an even cadence reads as a drum
       // machine. Loosen it into something closer to a real pad round.
       settings.variedCadenceRef.current = true;
@@ -599,7 +599,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         settings.setDifficulty(level.session.difficulty);
 
         const resumeRound = (logEntry.roundsCompleted || 0) + 1;
-        settings.setReadInOrder(isSequentialRound(resumeRound));
+        settings.setReadInOrder(walksPoolInOrder(resumeRound));
         settings.variedCadenceRef.current = true;
         activeRoadmapRef.current = { path, level };
         setActiveRoadmap({ path, level });

@@ -19,7 +19,7 @@ import {
 } from "@/features/roadmap/data/paths";
 import {
   formatRest,
-  isSequentialRound,
+  walksPoolInOrder,
   poolForRound,
   poolPreview,
   roadmapLogLabel,
@@ -61,7 +61,38 @@ describe("per-round pools", () => {
   it("drills only the new techniques in the introduction round", () => {
     const l4 = level(4);
     const pool = poolForRound(FOUNDATIONS, l4, 1).map((t) => t.text);
-    expect(pool).toEqual(l4.introduces);
+    expect(new Set(pool)).toEqual(new Set(l4.introduces));
+  });
+
+  it("gives every new technique an equal share of the introduction round", () => {
+    // Dealt in complete shuffled blocks, so this is exact rather than merely
+    // likely. Pure random could spend level 10's introduction round calling one
+    // of its five new techniques twice and another eight times.
+    for (const l of FOUNDATIONS.levels) {
+      const pool = poolForRound(FOUNDATIONS, l, 1).map((t) => t.text);
+      const counts = l.introduces.map(
+        (t) => pool.filter((x) => x === t).length
+      );
+      expect(new Set(counts).size, `L${l.id}: ${counts.join(",")}`).toBe(1);
+      expect(counts[0]!, `L${l.id}`).toBeGreaterThan(1);
+    }
+  });
+
+  it("does not call the introduction round in a fixed rotation", () => {
+    // Two techniques in strict rotation is perfectly predictable, and a callout
+    // you can predict is one you stop listening to.
+    const l1 = level(1);
+    const runs = Array.from({ length: 12 }, () =>
+      poolForRound(FOUNDATIONS, l1, 1)
+        .map((t) => t.text)
+        .join(",")
+    );
+    expect(new Set(runs).size).toBeGreaterThan(1);
+
+    const strictRotation = Array.from({ length: 30 }, (_, i) =>
+      l1.introduces[i % l1.introduces.length]
+    ).join(",");
+    expect(runs.every((r) => r === strictRotation)).toBe(false);
   });
 
   it("mixes in everything learned so far in the integration round", () => {
@@ -119,9 +150,9 @@ describe("per-round pools", () => {
   });
 
   it("orders only the introduction round", () => {
-    expect(isSequentialRound(1)).toBe(true);
-    expect(isSequentialRound(2)).toBe(false);
-    expect(isSequentialRound(3)).toBe(false);
+    expect(walksPoolInOrder(1)).toBe(true);
+    expect(walksPoolInOrder(2)).toBe(false);
+    expect(walksPoolInOrder(3)).toBe(false);
   });
 
   it("never hands the engine an empty pool", () => {

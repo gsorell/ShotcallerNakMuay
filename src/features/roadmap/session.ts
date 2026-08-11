@@ -35,14 +35,55 @@ export const ROADMAP_STYLE_KEY = "roadmap";
 
 export type RoadmapRoundKind = "intro" | "integrate" | "combos";
 
+/**
+ * Roughly how many callouts a one-minute round gets through, with headroom.
+ * The introduction bag is built to this length so a round never runs off the
+ * end of it and starts repeating the same shuffle.
+ */
+const INTRO_BAG_LENGTH = 30;
+
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+/**
+ * The new techniques, shuffled — but shuffled in complete blocks, so each one
+ * still gets an even share of a very short round.
+ *
+ * Strict rotation over two techniques is perfectly predictable, and a callout
+ * you can predict is one you stop listening to. Pure random fixes that and
+ * breaks something else: level 10 introduces five techniques inside about
+ * twenty callouts, and pure random could spend that round calling one of them
+ * twice and another eight times — in the round whose whole job is introducing
+ * them. Dealing complete shuffled blocks gives unpredictable order and even
+ * coverage at the same time.
+ */
+function shuffledBag(items: string[], length: number): string[] {
+  if (items.length === 0) return [];
+  const bag: string[] = [];
+  while (bag.length < length) bag.push(...shuffle(items));
+  return bag;
+}
+
 export function roundKind(round: number): RoadmapRoundKind {
   if (round <= 1) return "intro";
   if (round === 2) return "integrate";
   return "combos";
 }
 
-/** The introduction round walks the new techniques in a predictable order. */
-export function isSequentialRound(round: number): boolean {
+/**
+ * Whether this round walks its pool front to back rather than picking at
+ * random. Only the introduction round does — and precisely *because* its pool
+ * is a pre-shuffled bag of complete blocks. Walking it in order is what keeps
+ * every new technique evenly covered; random-picking the same bag would undo
+ * the balance it exists to provide.
+ */
+export function walksPoolInOrder(round: number): boolean {
   return roundKind(round) === "intro";
 }
 
@@ -95,7 +136,7 @@ export function poolForRound(
 ): TechniqueWithStyle[] {
   switch (roundKind(round)) {
     case "intro":
-      return tag(level.introduces);
+      return tag(shuffledBag(level.introduces, INTRO_BAG_LENGTH));
     case "integrate": {
       // Both names and numbers for the same technique, which is how a coach
       // actually calls a round — "jab" and "one" have to mean the same thing
@@ -168,7 +209,7 @@ export function roundDescription(
 ): string {
   switch (roundKind(round)) {
     case "intro":
-      return "Just the new techniques, in order and by name. Find the shape of each one.";
+      return "Just the new techniques, on their own and by name, in no fixed order. Find the shape of each one.";
     case "integrate":
       return "Everything you know so far, shuffled — and now called by number as well as by name.";
     case "combos":
@@ -207,7 +248,7 @@ export function formatRest(restMinutes: number): string {
 export function roundHeadline(round: number): string {
   switch (roundKind(round)) {
     case "intro":
-      return "New techniques, in order";
+      return "New techniques only";
     case "integrate":
       return "Everything so far, names and numbers";
     case "combos":

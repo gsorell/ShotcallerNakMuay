@@ -18,7 +18,7 @@ export {
 export {
   ROADMAP_LABEL_PREFIX,
   ROADMAP_STYLE_KEY,
-  isSequentialRound,
+  walksPoolInOrder,
   poolForRound,
   roadmapLogLabel,
   roundDescription,
