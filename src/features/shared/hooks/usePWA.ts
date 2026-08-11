@@ -157,28 +157,31 @@ export function usePWA(): PWAHook {
         if (daysSinceDismissal < 7) return false; // Don't show again for a week
       }
 
-      // Engagement-based criteria
+      // Engagement criteria. These are OR'd, so each one has to be worth
+      // interrupting somebody over on its own.
+      //
+      // There used to be a fourth — "on the site for at least 2 seconds" —
+      // which, being OR'd with the rest, meant every visitor qualified almost
+      // immediately. A first-time visitor finished the onboarding and got the
+      // install modal two seconds later: two interruptions before they had
+      // pressed start once. The prompt also converts far better after someone
+      // has felt the app work than before, so the weak criterion was costing
+      // installs as well as goodwill.
       const criteria = {
-        // Returning user (2+ visits)
+        // Came back — the strongest signal available without a workout.
         returningUser: userStats.visitCount >= 2,
 
-        // Engaged user (spent 2+ minutes exploring)
+        // Stayed and explored rather than bouncing.
         timeEngaged: userStats.timeOnSite >= 120,
 
-        // Completed at least one workout
+        // Actually trained. The best moment to ask.
         completedWorkout: userStats.completedWorkouts > 0,
-
-        // Been on site for at least 2 seconds this session
-        currentSessionEngagement: userStats.timeOnSite >= 2,
       };
 
-      // Show prompt if user meets any of the engagement criteria
-      // CHANGED: Remove dependency on isInstallable - show instructions even without beforeinstallprompt
       return (
         criteria.returningUser ||
         criteria.timeEngaged ||
-        criteria.completedWorkout ||
-        criteria.currentSessionEngagement
+        criteria.completedWorkout
       );
     },
     [state.isInstalled]

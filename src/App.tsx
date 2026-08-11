@@ -21,7 +21,7 @@ import {
 } from "@/features/shared";
 
 import { LearnSection } from "@/features/learn";
-import { hasOnboarded } from "@/features/onboarding";
+import { hasOnboarded, useOnboardingState } from "@/features/onboarding";
 import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
 import { roundDescription, roundTitle } from "@/features/roadmap/session";
 import { TechniqueEditor } from "@/features/technique-editor";
@@ -125,6 +125,7 @@ export default function App() {
 
   // --- 3a. PWA / App Install Prompt ---
   const { shouldShowPrompt, dismissPrompt } = usePWA();
+  const onboarding = useOnboardingState();
 
   // --- 4. UI Refs ---
   const isEditorRef = useRef(false);
@@ -143,10 +144,11 @@ export default function App() {
     // Don't show if already running as native app
     if (Capacitor.isNativePlatform()) return;
 
-    // A first-time web visitor is still in the onboarding flow, which fires at
-    // roughly the same moment — don't stack this on top of it. The engagement
-    // tick re-runs this every 5s, so the prompt appears shortly after
-    // onboarding is finished or skipped.
+    // Never stack this on the onboarding, and never chase it the moment the
+    // onboarding closes. A first-time visitor should get one thing to read,
+    // not two — the install ask now lives on the onboarding's own last step,
+    // and this prompt is for people who come back.
+    if (onboarding.isShowing || onboarding.finishedThisSession) return;
     if (!hasOnboarded()) return;
 
     // Don't show if user already dismissed this session
@@ -156,7 +158,7 @@ export default function App() {
     if (shouldShowPrompt(userEngagement) && !showPWAPrompt) {
       setShowPWAPrompt(true);
     }
-  }, [userEngagement, shouldShowPrompt, showPWAPrompt, setShowPWAPrompt]);
+  }, [userEngagement, shouldShowPrompt, showPWAPrompt, setShowPWAPrompt, onboarding]);
 
   const {
     voices: unifiedVoices,
