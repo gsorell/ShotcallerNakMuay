@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -14,13 +15,20 @@ import { hasOnboarded, markOnboarded } from "./storage";
 interface OnboardingState {
   /** Onboarding is on screen right now. */
   isShowing: boolean;
-  /** Onboarding was finished or skipped during this page load. */
+  /**
+   * The *first-run* onboarding was finished or skipped during this page load.
+   * Only the automatic showing counts — someone re-reading it from Help has
+   * not just been introduced to the app.
+   */
   finishedThisSession: boolean;
+  /** Show it again on demand. This is what Help does. */
+  openOnboarding: () => void;
 }
 
 const OnboardingContext = createContext<OnboardingState>({
   isShowing: false,
   finishedThisSession: false,
+  openOnboarding: () => {},
 });
 
 /**
@@ -38,6 +46,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const { isPro, ready } = useEntitlement();
   const { openPaywall } = usePaywall();
   const [show, setShow] = useState(false);
+  const [finishedThisSession, setFinishedThisSession] = useState(false);
+  // Whether the current showing is the automatic first-run one, as opposed to
+  // someone re-reading it from Help.
+  const autoShownRef = useRef(false);
 
   useEffect(() => {
     // Wait until entitlement resolves so a grandfathered/subscribed owner is
@@ -47,16 +59,24 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     const isDev = import.meta.env.DEV;
     if (isPro) return;
     if (!isDev && hasOnboarded()) return;
+    autoShownRef.current = true;
     setShow(true);
   }, [ready, isPro]);
 
-  const [finishedThisSession, setFinishedThisSession] = useState(false);
+  /** Re-open on demand. Help uses this — there was previously no way back in. */
+  const openOnboarding = useCallback(() => {
+    autoShownRef.current = false;
+    setShow(true);
+  }, []);
 
   const finish = useCallback(
     (openPaywallAfter: boolean) => {
       markOnboarded();
       setShow(false);
-      setFinishedThisSession(true);
+      // Only a genuine first run should suppress the install prompt for the
+      // rest of the session; re-reading Help should not.
+      if (autoShownRef.current) setFinishedThisSession(true);
+      autoShownRef.current = false;
       if (openPaywallAfter) openPaywall("onboarding");
     },
     [openPaywall]
@@ -64,7 +84,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <OnboardingContext.Provider
-      value={{ isShowing: show, finishedThisSession }}
+      value={{ isShowing: show, finishedThisSession, openOnboarding }}
     >
       {children}
       {show && (

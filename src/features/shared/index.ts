@@ -3,7 +3,7 @@ export { Footer } from './components/Footer';
 export { default as Header } from './components/Header';
 export { HeroBackground } from './components/HeroBackground';
 export { ImageWithFallback } from './components/ImageWithFallback';
-export { OnboardingModal } from './components/OnboardingModal';
+export { GlossaryModal } from './components/GlossaryModal';
 export { default as PWAInstallPrompt } from './components/PWAInstallPrompt';
 export { default as PWAStatus } from './components/PWAStatus';
 export { TTSProvider, useTTSContext } from './contexts/TTSProvider';

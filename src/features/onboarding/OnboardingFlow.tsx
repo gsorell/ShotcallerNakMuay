@@ -5,7 +5,7 @@ import { APP_STORE_URL, PLAY_STORE_URL } from "@/constants/storeLinks";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { TOTAL_LESSON_COUNT } from "@/features/learn";
 import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
-import { OnboardingModal } from "@/features/shared";
+import { GlossaryModal } from "@/features/shared";
 
 // Derived from the path itself so the pitch can't drift as levels are added.
 const FOUNDATIONS_LEVEL_COUNT = coreLevels(FOUNDATIONS).length;
@@ -299,11 +299,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         )}
       </div>
 
-      <OnboardingModal
+      <GlossaryModal
         open={showGlossary}
-        modalScrollPosition={0}
-        linkButtonStyle={{}}
-        setPage={() => {}}
         onClose={() => setShowGlossary(false)}
       />
     </div>

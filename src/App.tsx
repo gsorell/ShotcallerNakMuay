@@ -10,7 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { WorkoutCompleted, WorkoutLogs, seedAwardedCharmsOnce } from "@/features/logs";
 import {
   AppLayout,
-  OnboardingModal,
+  GlossaryModal,
   PWAInstallPrompt,
   useNavigationGestures,
   usePWA,
@@ -43,9 +43,6 @@ import { fmtTime } from "@/utils/timeUtils";
 import "@/App.css";
 import "@/styles/difficulty.css";
 import "@/styles/setupActions.css";
-
-// Global state to persist modal scroll position across re-renders
-let modalScrollPosition = 0;
 
 export default function App() {
   // --- 1. Init & Global Config ---
@@ -117,8 +114,8 @@ export default function App() {
     setShowAdvanced,
     showAllEmphases,
     setShowAllEmphases,
-    showOnboardingMsg,
-    setShowOnboardingMsg,
+    showGlossary,
+    setShowGlossary,
     showPWAPrompt,
     setShowPWAPrompt,
   } = useUIContext();
@@ -182,7 +179,7 @@ export default function App() {
 
   useNavigationGestures({
     onBack: () => {
-      if (showOnboardingMsg) setShowOnboardingMsg(false);
+      if (showGlossary) setShowGlossary(false);
       else if (
         page === "editor" ||
         page === "logs" ||
@@ -192,7 +189,7 @@ export default function App() {
       )
         setPage("timer");
     },
-    enabled: page !== "timer" || showOnboardingMsg,
+    enabled: page !== "timer" || showGlossary,
     debugLog: false,
   });
 
@@ -307,18 +304,19 @@ export default function App() {
         onDismissPermanently={handleDismissPWAPromptPermanently}
       />
 
-      <OnboardingModal
-        open={showOnboardingMsg}
-        modalScrollPosition={modalScrollPosition}
-        linkButtonStyle={linkButtonStyle}
-        setPage={setPage}
-        onClose={() => setShowOnboardingMsg(false)}
+      <GlossaryModal
+        open={showGlossary}
+        onClose={() => setShowGlossary(false)}
+        onOpenLearn={() => {
+          setShowGlossary(false);
+          setPage("learn");
+        }}
       />
 
       <AppLayout
         isActive={isActive}
         page={page}
-        onHelp={() => setShowOnboardingMsg(true)}
+        onHelp={onboarding.openOnboarding}
         onLogoClick={() => {
           setPage("timer");
           scrollContentToTop();
@@ -326,7 +324,6 @@ export default function App() {
         hasSelectedEmphasis={hasSelectedEmphasis}
         linkButtonStyle={linkButtonStyle}
         setPage={setPage}
-        setShowOnboardingMsg={setShowOnboardingMsg}
         bottomBar={
           page === "timer" && !isActive && hasSelectedEmphasis ? (
             <StickyStartControls

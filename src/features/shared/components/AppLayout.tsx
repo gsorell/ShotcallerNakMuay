@@ -17,7 +17,6 @@ interface AppLayoutProps {
   hasSelectedEmphasis: boolean;
   linkButtonStyle: React.CSSProperties;
   setPage: (p: Page) => void;
-  setShowOnboardingMsg: (show: boolean) => void;
   // In-flow bottom bar (e.g. the Start controls). Kept out of the scroll
   // region so the scrollbar stays within the main content only.
   bottomBar?: React.ReactNode;
@@ -32,7 +31,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   hasSelectedEmphasis,
   linkButtonStyle,
   setPage,
-  setShowOnboardingMsg,
   bottomBar,
 }) => {
   // The content region scrolls (not the document), so reset it to the top on
@@ -55,7 +53,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           hasSelectedEmphasis={hasSelectedEmphasis}
           linkButtonStyle={linkButtonStyle}
           setPage={setPage}
-          setShowOnboardingMsg={setShowOnboardingMsg}
+          onHelp={onHelp}
         />
       </div>
 

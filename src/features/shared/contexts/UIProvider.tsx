@@ -8,8 +8,8 @@ interface UIContextValue {
   setPage: (page: Page) => void;
 
   // Modals
-  showOnboardingMsg: boolean;
-  setShowOnboardingMsg: (show: boolean) => void;
+  showGlossary: boolean;
+  setShowGlossary: (show: boolean) => void;
   showPWAPrompt: boolean;
   setShowPWAPrompt: (show: boolean) => void;
   showAdvanced: boolean;
@@ -57,7 +57,7 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   const [page, setPage] = useState<Page>("timer");
 
   // Modals
-  const [showOnboardingMsg, setShowOnboardingMsg] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
   const [showPWAPrompt, setShowPWAPrompt] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showAllEmphases, setShowAllEmphases] = useState(false);
@@ -82,8 +82,8 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   const value: UIContextValue = {
     page,
     setPage,
-    showOnboardingMsg,
-    setShowOnboardingMsg,
+    showGlossary,
+    setShowGlossary,
     showPWAPrompt,
     setShowPWAPrompt,
     showAdvanced,
