@@ -28,6 +28,14 @@ interface UIContextValue {
   // Deep-link target for the technique editor (group key to expand & scroll to)
   editorFocusKey: string | null;
   setEditorFocusKey: (key: string | null) => void;
+
+  /**
+   * Deep-link target for the roadmap (level id to open straight to). Set when
+   * something outside the roadmap needs to drop the user on a specific level —
+   * quitting a guided round, for instance. Cleared by the roadmap once used.
+   */
+  roadmapFocusLevel: number | null;
+  setRoadmapFocusLevel: (levelId: number | null) => void;
 }
 
 const UIContext = createContext<UIContextValue | null>(null);
@@ -66,6 +74,11 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   // Deep-link target for the technique editor
   const [editorFocusKey, setEditorFocusKey] = useState<string | null>(null);
 
+  // Deep-link target for the roadmap
+  const [roadmapFocusLevel, setRoadmapFocusLevel] = useState<number | null>(
+    null
+  );
+
   const value: UIContextValue = {
     page,
     setPage,
@@ -83,6 +96,8 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     triggerStatsRefresh,
     editorFocusKey,
     setEditorFocusKey,
+    roadmapFocusLevel,
+    setRoadmapFocusLevel,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useEntitlement } from "@/features/entitlement";
 // The data module, not the Learn barrel: LearnSection hosts this component, and
@@ -48,10 +48,23 @@ type LevelState = "cleared" | "current" | "locked" | "pro";
 export function RoadmapSection({ onBack }: RoadmapSectionProps) {
   const { isPro } = useEntitlement();
   const { openPaywall } = usePaywall();
-  const { statsRefreshTrigger } = useUIContext();
+  const { statsRefreshTrigger, roadmapFocusLevel, setRoadmapFocusLevel } =
+    useUIContext();
   const { startRoadmapLevel } = useWorkoutContext();
 
-  const [view, setView] = useState<View>({ mode: "ladder" });
+  // Opening straight to a level rather than the ladder — quitting a guided
+  // round sends you back to the level you were on, not to the top of the path.
+  // Read once, on mount, and cleared immediately so returning to the ladder
+  // later does not bounce you into the level again.
+  const [view, setView] = useState<View>(() =>
+    roadmapFocusLevel
+      ? { mode: "level", levelId: roadmapFocusLevel }
+      : { mode: "ladder" }
+  );
+
+  useEffect(() => {
+    if (roadmapFocusLevel !== null) setRoadmapFocusLevel(null);
+  }, [roadmapFocusLevel, setRoadmapFocusLevel]);
 
   const path = FOUNDATIONS;
 

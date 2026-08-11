@@ -117,7 +117,8 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   children,
 }) => {
   // Contexts
-  const { setPage, setLastWorkout, triggerStatsRefresh, statsRefreshTrigger } = useUIContext();
+  const { setPage, setLastWorkout, triggerStatsRefresh, statsRefreshTrigger, setRoadmapFocusLevel } =
+    useUIContext();
 
   // Data hooks
   const { techniques, persistTechniques, techniquesRef, techniqueIndexRef } =
@@ -566,6 +567,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       setActiveRoadmap(null);
       // Quitting a level hands the settings back just the same as finishing it.
       restoreUserSettings();
+      // ...and puts you back on the level you just quit, rather than the home
+      // screen. You stopped in the middle of a lesson; the lesson is where the
+      // way back in is.
+      setRoadmapFocusLevel(active.level.id);
+      setPage("roadmap");
     }
     triggerStatsRefresh();
     timer.stopTimer();
@@ -578,6 +584,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     timer,
     emphasisList,
     triggerStatsRefresh,
+    restoreUserSettings,
+    setRoadmapFocusLevel,
+    setPage,
   ]);
 
   const resumeWorkout = useCallback(
