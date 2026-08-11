@@ -3,7 +3,6 @@ import { useCallback } from "react";
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
 import { useUIContext } from "@/features/shared";
-import { useWorkoutContext } from "@/features/workout";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
 
@@ -29,21 +28,28 @@ interface NextLevelPromptProps {
 export function NextLevelPrompt({ completed }: NextLevelPromptProps) {
   const { isPro } = useEntitlement();
   const { openPaywall } = usePaywall();
-  const { setPage } = useUIContext();
-  const { startRoadmapLevel } = useWorkoutContext();
+  const { setPage, setRoadmapFocusLevel } = useUIContext();
 
   const path = getPath(completed.pathId);
   const next = getLevel(completed.pathId, completed.levelId + 1);
   const locked = Boolean(next && !isPro && !next.free);
 
+  // Opens the next level's start screen — it does NOT begin the session. Every
+  // level introduces techniques you have not thrown yet, and its start screen is
+  // where they are named and explained; dropping someone straight into a timer
+  // calling "Long Guard" at them is the one thing the guided path exists to
+  // avoid. Starting is then the same deliberate tap it is everywhere else.
   const go = useCallback(() => {
     if (!path || !next) return;
     if (locked) {
       openPaywall("roadmap_next_level");
       return;
     }
-    startRoadmapLevel(path, next);
-  }, [path, next, locked, openPaywall, startRoadmapLevel]);
+    trackEvent(AnalyticsEvents.RoadmapOpen, { source: "next_level_prompt" });
+    setRoadmapFocusLevel(next.id);
+    setPage("roadmap");
+    scrollContentToTop();
+  }, [path, next, locked, openPaywall, setRoadmapFocusLevel, setPage]);
 
   const openLadder = useCallback(() => {
     trackEvent(AnalyticsEvents.RoadmapOpen, { source: "workout_complete" });
