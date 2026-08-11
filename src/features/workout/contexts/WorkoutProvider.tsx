@@ -204,6 +204,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // the session (level 1 for a fresh start, mid-level for a resume), so this
     // applies it rather than assuming round 1.
     if (activeRoadmapRef.current) applyRoadmapRound(roadmapRoundRef.current);
+    // A genuine round boundary — start the pace ramp over. Pausing does not
+    // come through here, which is what lets a resume pick the ramp back up
+    // where it was rather than at the beginning.
+    calloutEngineRef.current?.resetRoundPace?.();
     sfx.playBell();
   }, [sfx, applyRoadmapRound]);
 
@@ -233,6 +237,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       roadmapRoundRef.current += 1;
       applyRoadmapRound(roadmapRoundRef.current);
     }
+    calloutEngineRef.current?.resetRoundPace?.();
     // Round starting - big bell
     sfx.playBell();
   }, [sfx, applyRoadmapRound]);

@@ -6,6 +6,13 @@ import {
   SLOWEST_INTERVAL_MS,
   rampedIntervalMs,
 } from "../utils/cadence";
+import {
+  bankSegment,
+  createRoundStopwatch,
+  elapsedMs,
+  resetRound,
+  startSegment,
+} from "../utils/roundStopwatch";
 
 type SpeakWithDurationFn = (
   text: string,
@@ -44,10 +51,9 @@ export function useCalloutEngine({
   // a backgrounded PWA does when the OS tears down speech mid-utterance.
   const lastCalloutAtRef = useRef<number>(0);
   const baseDelayRef = useRef<number>(2500);
-  // When the current round's callouts began, so a varied-cadence round can tell
-  // how far through it is and pick up pace accordingly. Set per round rather
-  // than per session; each round runs its own arc.
-  const roundStartedAtRef = useRef<number>(0);
+  // Work done in the current round, excluding time spent paused — this is what
+  // the pace ramp reads. Reset per round, so each round runs its own arc.
+  const stopwatchRef = useRef(createRoundStopwatch());
   const startCalloutsRef = useRef<((delay?: number) => void) | null>(null);
 
   // Helper refs to avoid dependency cycles in the timeout loop
@@ -217,8 +223,8 @@ export function useCalloutEngine({
                 1,
                 Math.round((settings.roundMin || 1) * 60000)
               );
-              const elapsed = Date.now() - roundStartedAtRef.current;
-              const rampedBase = rampedIntervalMs(elapsed / roundMs);
+              const worked = elapsedMs(stopwatchRef.current, Date.now());
+              const rampedBase = rampedIntervalMs(worked / roundMs);
 
               const workRest = rampedBase * 0.6;
               const wobble = 1 + (Math.random() - 0.5) * 0.24; // ±12%
@@ -293,12 +299,15 @@ export function useCalloutEngine({
 
   // Auto-start effect
   useEffect(() => {
-    if (!timer.running || timer.paused || timer.isResting) return;
+    if (!timer.running || timer.paused || timer.isResting) {
+      // Stopping for any reason — pause, rest, end of round. Bank the work so
+      // far so that resuming picks the ramp up where it left off instead of
+      // restarting it or jumping to whatever the clock says.
+      bankSegment(stopwatchRef.current, Date.now());
+      return;
+    }
     lastCalloutAtRef.current = Date.now();
-    // Restarts the pace ramp. This also fires on resuming from a pause, which
-    // means coming back eases you in again rather than dropping you at whatever
-    // speed the round had reached — the kinder of the two behaviours.
-    roundStartedAtRef.current = Date.now();
+    startSegment(stopwatchRef.current, Date.now());
     startTechniqueCallouts(800);
     return () => {
       stopTechniqueCallouts();
@@ -347,9 +356,15 @@ export function useCalloutEngine({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [timer.running, timer.paused, timer.isResting, timer.isPreRound]);
 
+  /** Start the pace ramp over. Called at a genuine round boundary, not a resume. */
+  const resetRoundPace = useCallback(() => {
+    resetRound(stopwatchRef.current, Date.now());
+  }, []);
+
   return {
     currentCallout,
     setCurrentCallout,
+    resetRoundPace,
     startTechniqueCallouts,
     stopTechniqueCallouts,
     stopAllNarration,
