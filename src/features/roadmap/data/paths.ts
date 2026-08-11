@@ -40,10 +40,16 @@ export interface RoadmapLevel {
    * these drive both the pre-session cards and the introduction round.
    */
   introduces: string[];
-  /** Combos in the app's number shorthand — played from `numbersFromLevel` on. */
-  combosNumbered: string[];
-  /** The same combos spelled out by name — played before `numbersFromLevel`. */
-  combosNamed: string[];
+  /**
+   * This level's combinations, in the app's number shorthand.
+   *
+   * Always numbers, from level 1. Spelling a combination out —
+   * "Jab, Cross, Left Hook" — is slower to hear and slower to act on than
+   * "1 2 3", which is the entire reason the numbering exists. Round 2 spends a
+   * full round pairing every name with its number so that this round can be
+   * read at speed.
+   */
+  combos: string[];
   /**
    * Extra teaching note on the pre-session card, used where a level extends the
    * number language rather than just adding techniques.
@@ -61,8 +67,6 @@ export interface RoadmapPath {
   title: string;
   subtitle: string;
   levels: RoadmapLevel[];
-  /** The first level whose combo round speaks numbers instead of names. */
-  numbersFromLevel: number;
   /** The style the path hands the user at graduation. */
   graduatesTo: EmphasisKey;
 }
@@ -102,7 +106,6 @@ export const FOUNDATIONS: RoadmapPath = {
   title: "Start Here",
   subtitle:
     "Ten levels from your first jab to every callout Nak Muay Newb can throw.",
-  numbersFromLevel: 2,
   graduatesTo: "newb",
   levels: [
     {
@@ -111,10 +114,9 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "Guard, stance, and the two punches every combination in the app is built on. This is where 1 and 2 stop being noise.",
       introduces: ["Jab", "Cross"],
-      combosNamed: ["Jab, Cross", "Jab, Jab, Cross", "Jab, Cross, Jab"],
-      combosNumbered: ["1 2", "1 1 2", "1 2 1"],
+      combos: ["1 2", "1 1 2", "1 2 1"],
       languageNote:
-        "Muay Thai counts its punches: the jab is 1, the cross is 2. Round 2 calls both the name and the number for the same punch — listen for them meaning the same thing.",
+        "Muay Thai counts its punches: the jab is 1, the cross is 2. Round 2 calls both the name and the number for the same punch — listen for them meaning the same thing — and round 3 uses the numbers alone, because they are far quicker to act on inside a combination.",
       free: true,
       session: EARLY,
     },
@@ -124,14 +126,9 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "Turning the hips into a punch for the first time. Your lead hook is the shot that catches what the straights miss.",
       introduces: ["Left Hook", "Right Hook"],
-      combosNamed: [
-        "Jab, Cross, Left Hook",
-        "Left Hook, Cross",
-        "Jab, Cross, Left Hook, Cross",
-      ],
-      combosNumbered: ["1 2 3", "3 2", "1 2 3 2"],
+      combos: ["1 2 3", "3 2", "1 2 3 2"],
       languageNote:
-        "Two more numbers: 3 is your left hook, 4 your right. Combinations are called by number from here — 1 2 3 is jab, cross, left hook.",
+        "Two more numbers: 3 is your left hook, 4 your right. So 1 2 3 is jab, cross, left hook — one syllable each, which is why combinations are called this way.",
       session: EARLY,
     },
     {
@@ -140,13 +137,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "The teep before any round kick: it is the safest thing your leg can do, and it teaches the range every kick after this depends on.",
       introduces: ["Left Teep", "Right Teep"],
-      combosNamed: [
-        "Jab, Left Teep",
-        "Right Teep, Cross",
-        "Jab, Cross, Left Teep",
-        "Left Teep, Jab, Cross",
-      ],
-      combosNumbered: [
+      combos: [
         "1, Left Teep",
         "Right Teep, 2",
         "1 2, Left Teep",
@@ -160,13 +151,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "The signature technique of the sport — shin, turnover, and the switch. Three heights of the same mechanic, drilled together.",
       introduces: ["Low Kick", "Body Kick", "Switch Kick"],
-      combosNamed: [
-        "Jab, Cross, Body Kick",
-        "Cross, Left Hook, Low Kick",
-        "Jab, Cross, Switch Kick",
-        "Jab, Cross, Left Hook, Low Kick",
-      ],
-      combosNumbered: [
+      combos: [
         "1 2, Body Kick",
         "2 3, Low Kick",
         "1 2, Switch Kick",
@@ -180,14 +165,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "Straight after kicks on purpose: the moment you can kick, you can be kicked. Checking is not an advanced idea, it is the price of throwing.",
       introduces: ["Left Check", "Right Check", "High Guard Block", "Long Guard"],
-      combosNamed: [
-        "Left Check, Jab, Cross",
-        "Right Check, Cross, Left Hook",
-        "High Guard Block, Cross, Low Kick",
-        "Long Guard, Cross, Left Hook",
-        "Right Check, Low Kick",
-      ],
-      combosNumbered: [
+      combos: [
         "Left Check, 1 2",
         "Right Check, 2 3",
         "High Guard Block, 2, Low Kick",
@@ -202,14 +180,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "A block stops the shot; movement means it was never there. These are also the openings the counter styles are built on.",
       introduces: ["Slip Left", "Slip Right", "Duck", "Lean Back"],
-      combosNamed: [
-        "Jab, Slip Right, Cross",
-        "Slip Left, Cross, Left Hook",
-        "Duck, Left Hook, Cross",
-        "Lean Back, Cross, Low Kick",
-        "Jab, Cross, Slip Right, Cross",
-      ],
-      combosNumbered: [
+      combos: [
         "1, Slip Right, 2",
         "Slip Left, 2 3",
         "Duck, 3 2",
@@ -224,14 +195,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "Evasion that ends somewhere useful. Pivots are the first idea in the path that is neither strike nor shield — this is ring craft.",
       introduces: ["Roll Left", "Roll Right", "Pivot Left", "Pivot Right"],
-      combosNamed: [
-        "Jab, Cross, Roll Right, Cross, Left Hook",
-        "Cross, Left Hook, Roll Left, Left Hook, Cross",
-        "Jab, Cross, Left Hook, Pivot Left",
-        "Left Teep, Pivot Right, Cross",
-        "Slip Left, Cross, Pivot Left",
-      ],
-      combosNumbered: [
+      combos: [
         "1 2, Roll Right, 2 3",
         "2 3, Roll Left, 3 2",
         "1 2 3, Pivot Left",
@@ -246,13 +210,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "Khao — the weapon that makes this Muay Thai and not kickboxing. Held until you can close the distance without getting hit on the way in.",
       introduces: ["Left Knee", "Right Knee"],
-      combosNamed: [
-        "Jab, Right Knee",
-        "Cross, Left Knee",
-        "Jab, Cross, Right Knee",
-        "Long Guard, Right Knee, Left Knee",
-      ],
-      combosNumbered: [
+      combos: [
         "1, Right Knee",
         "2, Left Knee",
         "1 2, Right Knee",
@@ -271,14 +229,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Left Hook to the Body",
         "Right Hook to the Body",
       ],
-      combosNamed: [
-        "Jab, Cross to the Body",
-        "Jab, Cross, Left Hook to the Body",
-        "Jab to the Body, Cross, Left Hook",
-        "Jab, Cross, Left Hook to the Body, Left Hook",
-        "Cross, Left Hook, Right Hook to the Body",
-      ],
-      combosNumbered: [
+      combos: [
         "1, 2 to the Body",
         "1 2, 3 to the Body",
         "1 to the Body, 2 3",
@@ -301,15 +252,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Inside Leg Kick",
         "Head Kick",
       ],
-      combosNamed: [
-        "Jab, Cross, Left Uppercut, Cross",
-        "Slip Right, Right Uppercut, Left Hook",
-        "Overhand, Low Kick",
-        "Inside Leg Kick, Cross, Left Hook",
-        "Jab, Cross, Head Kick",
-        "Cross, Left Hook, Low Kick, Head Kick",
-      ],
-      combosNumbered: [
+      combos: [
         "1 2 5 2",
         "Slip Right, 6 3",
         "Overhand, Low Kick",
@@ -327,13 +270,7 @@ export const FOUNDATIONS: RoadmapPath = {
       blurb:
         "Past the finish line. Sok is the shortest, sharpest weapon in the art, and the reason Muay Thai cuts — a taste of what Muay Sok drills in full.",
       introduces: ["Left Elbow", "Right Elbow", "Up Elbow"],
-      combosNamed: [
-        "Jab, Cross, Right Elbow",
-        "Left Hook, Right Elbow",
-        "Cross, Up Elbow",
-        "Jab, Cross, Left Elbow, Right Elbow",
-      ],
-      combosNumbered: [
+      combos: [
         "1 2, Right Elbow",
         "3, Right Elbow",
         "2, Up Elbow",
@@ -380,16 +317,6 @@ export function cumulativeSingles(
     for (const technique of level.introduces) seen.add(technique);
   }
   return [...seen];
-}
-
-/** The combo list this level plays, honouring the names-to-numbers hand-off. */
-export function combosForLevel(
-  path: RoadmapPath,
-  level: RoadmapLevel
-): string[] {
-  return level.id >= path.numbersFromLevel
-    ? level.combosNumbered
-    : level.combosNamed;
 }
 
 /** How many techniques the path teaches in total, for progress display. */

@@ -1,10 +1,10 @@
 export { RoadmapSection } from "./components/RoadmapSection";
 export { StartHereBanner } from "./components/StartHereBanner";
+export { NextLevelPrompt } from "./components/NextLevelPrompt";
 
 export {
   FOUNDATIONS,
   ROADMAP_PATHS,
-  combosForLevel,
   coreLevels,
   cumulativeSingles,
   getLevel,

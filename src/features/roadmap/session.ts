@@ -19,7 +19,6 @@ import type { TechniqueWithStyle } from "@/types";
 import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
 
 import {
-  combosForLevel,
   cumulativeSingles,
   type RoadmapLevel,
   type RoadmapPath,
@@ -169,7 +168,7 @@ export function poolForRound(
         pool.push(entry);
       };
 
-      for (const combo of combosForLevel(path, level)) {
+      for (const combo of level.combos) {
         add(combo, { text: combo, style: ROADMAP_STYLE_KEY });
       }
       for (const combo of drawnCombos(path, level.id)) {
@@ -217,9 +216,7 @@ export function roundDescription(
       // combinations come out of the app's own style groups and are written in
       // numbers, while single shots are always called by name. Saying "by name"
       // or "by number" alone would set the student up to freeze on the other.
-      return level.id >= path.numbersFromLevel
-        ? "Combinations by number, single shots by name — the way the rest of the app talks."
-        : "Short combinations and single shots — mostly by name, with the numbers you just learned mixed in.";
+      return "Combinations by number, single shots by name — the way the rest of the app talks.";
   }
 }
 
@@ -231,8 +228,12 @@ export function roundDescription(
  */
 export function poolPreview(pool: string[], count = 3): string[] {
   if (pool.length <= count) return pool;
-  const step = Math.floor(pool.length / count);
-  return Array.from({ length: count }, (_, i) => pool[i * step]!);
+  // Spans the whole pool, last item included. Stepping by length/count stops
+  // short of the end, which is exactly where the single shots sit — so the
+  // preview would show nothing but combinations and imply the round is nothing
+  // but combinations.
+  const step = (pool.length - 1) / (count - 1);
+  return Array.from({ length: count }, (_, i) => pool[Math.round(i * step)]!);
 }
 
 /**

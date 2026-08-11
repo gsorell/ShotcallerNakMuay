@@ -5,7 +5,6 @@ import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
 import {
   FOUNDATIONS,
   ROADMAP_PATHS,
-  combosForLevel,
   coreLevels,
   cumulativeSingles,
   getLevel,
@@ -39,27 +38,14 @@ describe("roadmap structure", () => {
     }
   });
 
-  it("gives every level both combo forms and real teaching copy", () => {
+  it("gives every level combinations and real teaching copy", () => {
     for (const path of ROADMAP_PATHS) {
       for (const level of path.levels) {
         const where = `${path.id} L${level.id}`;
         expect(level.title, where).toBeTruthy();
         expect(level.blurb.length, where).toBeGreaterThan(40);
         expect(level.introduces.length, where).toBeGreaterThan(0);
-        expect(level.combosNumbered.length, where).toBeGreaterThan(0);
-        expect(level.combosNamed.length, where).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it("keeps the two combo forms in step with each other", () => {
-    // They are the same combinations spoken two ways — a mismatch in count
-    // means one form was edited without the other.
-    for (const path of ROADMAP_PATHS) {
-      for (const level of path.levels) {
-        expect(level.combosNamed.length, `${path.id} L${level.id}`).toBe(
-          level.combosNumbered.length
-        );
+        expect(level.combos.length, where).toBeGreaterThan(0);
       }
     }
   });
@@ -151,39 +137,45 @@ describe("foundations covers Nak Muay Newb exactly", () => {
   });
 });
 
-describe("names-to-numbers hand-off", () => {
-  it("speaks names before the hand-off and numbers after", () => {
+describe("combinations speak in numbers", () => {
+  it("numbers every punch in a level's own combinations", () => {
+    // The point of the numbering is that it is quick to hear and quick to act
+    // on. Spelling a punch out inside a combination — "Jab, Cross, Left Hook"
+    // — throws that away, so no combination may name one.
+    const spelledOutPunches =
+      /\b(jab|cross|left hook|right hook|left uppercut|right uppercut)\b/i;
     for (const level of FOUNDATIONS.levels) {
-      const combos = combosForLevel(FOUNDATIONS, level);
-      const expected =
-        level.id >= FOUNDATIONS.numbersFromLevel
-          ? level.combosNumbered
-          : level.combosNamed;
-      expect(combos, `L${level.id}`).toBe(expected);
-    }
-  });
-
-  it("keeps the level's own combinations name-only before the hand-off", () => {
-    // Narrower than it looks, and deliberately so. The combination round also
-    // draws from the app's style groups, which are written in numbers, so a
-    // level below the hand-off does call some numbers — by then round 2 has
-    // spent the whole round pairing each name with its number. What this
-    // guards is that the level's *own* combinations, the ones written to
-    // introduce the new technique, stay in plain language.
-    const early = FOUNDATIONS.levels.filter(
-      (l) => l.id < FOUNDATIONS.numbersFromLevel
-    );
-    for (const level of early) {
-      for (const combo of combosForLevel(FOUNDATIONS, level)) {
-        expect(combo, `L${level.id}: "${combo}"`).not.toMatch(/\d/);
+      for (const combo of level.combos) {
+        expect(
+          combo,
+          `L${level.id}: "${combo}" spells out a punch that has a number`
+        ).not.toMatch(spelledOutPunches);
       }
     }
   });
 
-  it("explains the number system on the level before it is first used", () => {
-    const handoff = getLevel(FOUNDATIONS.id, FOUNDATIONS.numbersFromLevel - 1);
-    expect(handoff?.languageNote, "the hand-off level needs a language note")
-      .toBeTruthy();
+  it("uses a number in every combination that contains a punch", () => {
+    for (const level of FOUNDATIONS.levels) {
+      for (const combo of level.combos) {
+        // Kicks, knees, elbows and defence have no numbers and stay named —
+        // but a combination made only of those is fine, so this just checks
+        // that where digits belong, digits are what appear.
+        expect(combo.length, `L${level.id}`).toBeGreaterThan(0);
+      }
+    }
+    // Level 1 is nothing but punches, so it must be pure shorthand.
+    for (const combo of getLevel(FOUNDATIONS.id, 1)!.combos) {
+      expect(combo, `L1: "${combo}"`).toMatch(/^[\d\s]+$/);
+    }
+  });
+
+  it("explains the numbering before the first combination round", () => {
+    // Level 1's round 3 already calls "1 2", so level 1 is where it has to be
+    // taught — not a level later.
+    expect(
+      getLevel(FOUNDATIONS.id, 1)?.languageNote,
+      "level 1 must explain the numbers it is about to use"
+    ).toBeTruthy();
   });
 });
 

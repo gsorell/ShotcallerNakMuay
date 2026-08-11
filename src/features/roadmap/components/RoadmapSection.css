@@ -815,3 +815,112 @@
   color: rgba(255, 255, 255, 0.55);
   line-height: 1.45;
 }
+
+/* --- next level, on the workout-complete screen -------------------------- */
+
+.nextlevel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 26rem;
+  width: 100%;
+  margin: 0 auto 1.25rem;
+}
+
+.nextlevel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid rgba(236, 72, 153, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.22) 0%,
+    rgba(236, 72, 153, 0.34) 100%
+  );
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.nextlevel:hover {
+  border-color: rgba(236, 72, 153, 0.85);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.nextlevel:focus-visible {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+.nextlevel--done {
+  margin-bottom: 1.25rem;
+}
+
+.nextlevel-art {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.65rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 1.5rem;
+  line-height: 2.6rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.nextlevel-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.nextlevel-eyebrow {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.nextlevel-title {
+  font-weight: 800;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.nextlevel-sub {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.nextlevel-go {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.nextlevel-secondary {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem;
+}
+
+.nextlevel-secondary:hover {
+  color: #fff;
+}

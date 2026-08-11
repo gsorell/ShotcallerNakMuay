@@ -22,7 +22,7 @@ import {
 
 import { LearnSection } from "@/features/learn";
 import { hasOnboarded } from "@/features/onboarding";
-import { RoadmapSection } from "@/features/roadmap";
+import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
 import { roundDescription, roundTitle } from "@/features/roadmap/session";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
@@ -246,6 +246,11 @@ export default function App() {
             onRestart={() => restartSession(lastWorkout)}
             onReset={() => setPage("timer")}
             onViewLog={() => setPage("logs")}
+            primaryAction={
+              lastWorkout.roadmap ? (
+                <NextLevelPrompt completed={lastWorkout.roadmap} />
+              ) : null
+            }
           />
         );
 
