@@ -172,10 +172,26 @@ export function roundDescription(
     case "integrate":
       return "Everything you know so far, shuffled — and now called by number as well as by name.";
     case "combos":
+      // Both forms are genuinely in this round at every level: the drawn
+      // combinations come out of the app's own style groups and are written in
+      // numbers, while single shots are always called by name. Saying "by name"
+      // or "by number" alone would set the student up to freeze on the other.
       return level.id >= path.numbersFromLevel
-        ? "Combinations and single shots, mixed and called by number — the way the rest of the app talks."
-        : "Short combinations and single shots, still called by name.";
+        ? "Combinations by number, single shots by name — the way the rest of the app talks."
+        : "Short combinations and single shots — mostly by name, with the numbers you just learned mixed in.";
   }
+}
+
+/**
+ * A few entries from a round, spread across the pool rather than taken off the
+ * front. The level's own combinations are added first, so showing the first
+ * three would only ever show those — and at level 1 that hides the fact that
+ * numbers are called at all.
+ */
+export function poolPreview(pool: string[], count = 3): string[] {
+  if (pool.length <= count) return pool;
+  const step = Math.floor(pool.length / count);
+  return Array.from({ length: count }, (_, i) => pool[i * step]!);
 }
 
 /**

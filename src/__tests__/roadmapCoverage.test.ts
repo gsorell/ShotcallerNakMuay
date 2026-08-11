@@ -163,8 +163,13 @@ describe("names-to-numbers hand-off", () => {
     }
   });
 
-  it("never speaks a number before the level that teaches numbers", () => {
-    // A beginner cannot act on "1 2" until level 2's card explains it.
+  it("keeps the level's own combinations name-only before the hand-off", () => {
+    // Narrower than it looks, and deliberately so. The combination round also
+    // draws from the app's style groups, which are written in numbers, so a
+    // level below the hand-off does call some numbers — by then round 2 has
+    // spent the whole round pairing each name with its number. What this
+    // guards is that the level's *own* combinations, the ones written to
+    // introduce the new technique, stay in plain language.
     const early = FOUNDATIONS.levels.filter(
       (l) => l.id < FOUNDATIONS.numbersFromLevel
     );

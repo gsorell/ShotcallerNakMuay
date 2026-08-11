@@ -21,7 +21,9 @@ import {
   formatRest,
   isSequentialRound,
   poolForRound,
+  poolPreview,
   roadmapLogLabel,
+  roundDescription,
   roundKind,
 } from "@/features/roadmap/session";
 import {
@@ -252,6 +254,47 @@ describe("screen shows both name and number", () => {
     expect(pool).toContain("Left Check");
     expect(pool).toContain("Jab");
     expect(pool).toContain("1");
+  });
+});
+
+describe("round descriptions match what is actually called", () => {
+  const hasNumberCall = (pool: string[]) => pool.some((t) => /\d/.test(t));
+  const hasNameCall = (pool: string[]) => pool.some((t) => /[a-z]/i.test(t));
+
+  it("promises numbers in the combination round only where they occur", () => {
+    for (const l of FOUNDATIONS.levels) {
+      const pool = poolForRound(FOUNDATIONS, l, 3).map((t) => t.text);
+      const said = roundDescription(FOUNDATIONS, l, 3).toLowerCase();
+      if (said.includes("number")) {
+        expect(hasNumberCall(pool), `L${l.id} promises numbers`).toBe(true);
+      }
+      if (said.includes("name")) {
+        expect(hasNameCall(pool), `L${l.id} promises names`).toBe(true);
+      }
+    }
+  });
+
+  it("never tells a level it is name-only when numbers are called", () => {
+    // The bug this replaces: round 3 said "still called by name" at level 1
+    // while a third of the pool was "1 1", "1 2", "1 1 2", "2 2 2".
+    for (const l of FOUNDATIONS.levels) {
+      const pool = poolForRound(FOUNDATIONS, l, 3).map((t) => t.text);
+      if (!hasNumberCall(pool)) continue;
+      expect(
+        roundDescription(FOUNDATIONS, l, 3).toLowerCase(),
+        `L${l.id} calls numbers but the description does not say so`
+      ).toContain("number");
+    }
+  });
+
+  it("previews a round from across its pool, not just off the front", () => {
+    // Level 1's own combinations are all name-only and sort first, so a
+    // preview taken from the front would hide the numbers entirely.
+    const pool = poolForRound(FOUNDATIONS, level(1), 3).map((t) => t.text);
+    const preview = poolPreview(pool);
+    expect(preview.length).toBe(3);
+    expect(hasNumberCall(preview), preview.join(" | ")).toBe(true);
+    expect(hasNameCall(preview), preview.join(" | ")).toBe(true);
   });
 });
 

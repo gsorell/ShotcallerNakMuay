@@ -12,7 +12,6 @@ import { scrollContentToTop } from "@/utils/scroll";
 
 import {
   FOUNDATIONS,
-  combosForLevel,
   coreLevels,
   cumulativeSingles,
   totalTechniqueCount,
@@ -21,6 +20,8 @@ import {
 import { artworkForLevel } from "../artwork";
 import {
   formatRest,
+  poolForRound,
+  poolPreview,
   roundDescription,
   roundKind,
   roundTitle,
@@ -304,7 +305,6 @@ function LevelDetail({
   onStart: () => void;
 }) {
   const path = FOUNDATIONS;
-  const combos = combosForLevel(path, level);
   const known = cumulativeSingles(path, level.id).length;
   const rounds = Array.from(
     { length: level.session.roundsCount },
@@ -415,7 +415,9 @@ function LevelDetail({
                 )}
                 {roundKind(round) === "combos" && (
                   <span className="roadmap-round-meta">
-                    {combos.slice(0, 3).join(" · ")}
+                    {poolPreview(
+                      poolForRound(path, level, round).map((t) => t.text)
+                    ).join(" · ")}
                   </span>
                 )}
               </li>
