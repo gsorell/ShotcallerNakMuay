@@ -344,9 +344,15 @@ function LevelDetail({
       <section className="roadmap-panel">
         <h2 className="roadmap-panel-title">New this level</h2>
         <div className="roadmap-cards">
+          {/* Every card is closed by default and opens to the whole lesson.
+              All of this is reference material — read once while learning the
+              movement, not on every visit — so what the screen owes you at a
+              glance is the list of what is new, not an essay per technique.
+              The card itself is the control, rather than a small link inside
+              it: a bigger target, and the list reads as one accordion. */}
           {lessons.map(({ technique, entry }) => (
-            <div className="roadmap-card" key={technique}>
-              <div className="roadmap-card-head">
+            <details className="roadmap-card" key={technique}>
+              <summary className="roadmap-card-head">
                 <span className="roadmap-card-name">
                   {entry?.name ?? technique}
                 </span>
@@ -356,30 +362,23 @@ function LevelDetail({
                 {entry?.thai && (
                   <span className="roadmap-card-thai">{entry.thai}</span>
                 )}
-              </div>
+              </summary>
               {entry && (
-                <>
+                <div className="roadmap-card-body">
                   <p className="roadmap-card-summary">{entry.summary}</p>
-                  {/* The coaching detail is the bulk of the text on this
-                      screen, and it is reference material — needed once, while
-                      learning the movement, not every time the level is
-                      opened. Folded away so the page stays scannable. */}
-                  <details className="roadmap-more">
-                    <summary>How to throw it</summary>
-                    <ul className="roadmap-card-list">
-                      {entry.keyPoints.slice(0, 3).map((point) => (
-                        <li key={point}>{point}</li>
-                      ))}
-                    </ul>
-                    {entry.mistakes[0] && (
-                      <p className="roadmap-card-mistake">
-                        <strong>Watch out:</strong> {entry.mistakes[0]}
-                      </p>
-                    )}
-                  </details>
-                </>
+                  <ul className="roadmap-card-list">
+                    {entry.keyPoints.slice(0, 3).map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                  {entry.mistakes[0] && (
+                    <p className="roadmap-card-mistake">
+                      <strong>Watch out:</strong> {entry.mistakes[0]}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
+            </details>
           ))}
         </div>
       </section>
