@@ -340,6 +340,7 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Left Kick",
       "Right Kick",
       "Left Body Kick",
+      "Right Body Kick",
     ],
   },
   {
@@ -380,7 +381,10 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Throwing it as a lone, predictable strike so it gets checked onto your own shin.",
       "Dropping the head forward as you kick, into the path of a counter hook.",
     ],
-    matches: ["Low Kick", "Right Low Kick"],
+    // Left and right both listed so the mapping survives southpaw mirroring:
+    // a southpaw hears "Left Low Kick" for a combination written as "Right Low
+    // Kick", and a callout that resolves to no lesson is a dead end.
+    matches: ["Low Kick", "Right Low Kick", "Left Low Kick"],
   },
   {
     slug: "inside-low-kick",

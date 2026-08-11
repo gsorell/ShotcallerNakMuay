@@ -313,10 +313,26 @@ function LevelDetail({
 
   // Every introduced callout resolves to a written lesson — roadmapCoverage
   // fails the build otherwise — so these cards need no content of their own.
-  const lessons = level.introduces.map((technique) => ({
-    technique,
-    entry: getEntryForCallout(technique),
-  }));
+  //
+  // Grouped by lesson, because several callouts share one. "Left Teep" and
+  // "Right Teep" are both the teep, and all four body punches are one lesson —
+  // listing them per callout printed the same card twice on most levels and
+  // four times on level 9. The callouts are named on the card instead, which is
+  // the part that actually differs.
+  const lessons = useMemo(() => {
+    const byLesson = new Map<
+      string,
+      { entry: ReturnType<typeof getEntryForCallout>; callouts: string[] }
+    >();
+    for (const technique of level.introduces) {
+      const entry = getEntryForCallout(technique);
+      const key = entry?.slug ?? technique;
+      const existing = byLesson.get(key);
+      if (existing) existing.callouts.push(technique);
+      else byLesson.set(key, { entry, callouts: [technique] });
+    }
+    return [...byLesson.values()];
+  }, [level]);
 
   return (
     <article className="roadmap-detail">
@@ -350,11 +366,11 @@ function LevelDetail({
               glance is the list of what is new, not an essay per technique.
               The card itself is the control, rather than a small link inside
               it: a bigger target, and the list reads as one accordion. */}
-          {lessons.map(({ technique, entry }) => (
-            <details className="roadmap-card" key={technique}>
+          {lessons.map(({ callouts, entry }) => (
+            <details className="roadmap-card" key={callouts[0]}>
               <summary className="roadmap-card-head">
                 <span className="roadmap-card-name">
-                  {entry?.name ?? technique}
+                  {entry?.name ?? callouts[0]}
                 </span>
                 {entry?.numbering && (
                   <span className="roadmap-card-number">{entry.numbering}</span>
@@ -365,6 +381,11 @@ function LevelDetail({
               </summary>
               {entry && (
                 <div className="roadmap-card-body">
+                  {callouts.length > 1 && (
+                    <p className="roadmap-card-callouts">
+                      Called as {callouts.join(" · ")}
+                    </p>
+                  )}
                   <p className="roadmap-card-summary">{entry.summary}</p>
                   <ul className="roadmap-card-list">
                     {entry.keyPoints.slice(0, 3).map((point) => (

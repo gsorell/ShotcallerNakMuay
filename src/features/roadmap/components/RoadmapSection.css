@@ -698,6 +698,13 @@
   margin-left: auto;
 }
 
+.roadmap-card-callouts {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f9a8d4;
+}
+
 .roadmap-card-summary {
   margin: 0 0 0.5rem;
   font-size: 0.86rem;

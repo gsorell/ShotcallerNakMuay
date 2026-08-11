@@ -34,6 +34,7 @@ import {
   tokenizeCombo,
 } from "@/features/roadmap/vocabulary";
 import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
+import { mirrorTechnique } from "@/utils/textUtils";
 import {
   hasGraduated,
   isLevelCleared,
@@ -342,6 +343,67 @@ describe("rest between rounds", () => {
     for (const l of FOUNDATIONS.levels) {
       const seconds = Math.round(l.session.restMinutes * 60);
       expect(seconds, `L${l.id}`).toBeGreaterThan(10);
+    }
+  });
+});
+
+describe("southpaw", () => {
+  // A southpaw turns southpaw mode on in Advanced Settings and then starts a
+  // level. Every callout is mirrored on the way out, so the question is whether
+  // mirroring can ever produce something the level has not taught.
+  const mirroredSlug = (text: string) =>
+    getEntryForCallout(mirrorTechnique(text, "roadmap"))?.slug;
+
+  it("mirrors every introduced technique into something already taught", () => {
+    for (const l of FOUNDATIONS.levels) {
+      const taught = taughtSlugs(FOUNDATIONS, l.id);
+      for (const technique of l.introduces) {
+        expect(
+          mirroredSlug(technique),
+          `L${l.id}: "${technique}" mirrors to something untaught`
+        ).toBeDefined();
+        expect(taught.has(mirroredSlug(technique)!), technique).toBe(true);
+      }
+    }
+  });
+
+  it("mirrors every drawn combination within the same vocabulary", () => {
+    for (const l of FOUNDATIONS.levels) {
+      const taught = taughtSlugs(FOUNDATIONS, l.id);
+      for (const combo of drawnCombos(FOUNDATIONS, l.id)) {
+        const mirrored = mirrorTechnique(combo, "roadmap");
+        for (const token of tokenizeCombo(mirrored)) {
+          const entry = getEntryForCallout(token);
+          expect(
+            entry && taught.has(entry.slug),
+            `L${l.id}: "${combo}" mirrors to "${mirrored}", and "${token}" is untaught`
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("leaves the numbers alone, because they are stance-relative", () => {
+    // 3 is the lead hook whichever way you stand, so mirroring must not touch
+    // it — while the name beside it on screen does flip.
+    expect(mirrorTechnique("1 2 3", "roadmap")).toBe("1 2 3");
+    expect(mirrorTechnique("3 · Left Hook", "roadmap")).toBe("3 · Right Hook");
+  });
+
+  it("always shows what it just said", () => {
+    // Note this asserts containment, not that the name and number resolve to
+    // the same lesson — they deliberately do not for a southpaw. The numbers
+    // are stance-relative (3 is the lead hook whichever way you stand) while
+    // the lesson names are written from orthodox, so a mirrored "3 · Right
+    // Hook" is correct even though "3" indexes the lead-hook lesson and "Right
+    // Hook" indexes the rear-hook one.
+    for (const l of FOUNDATIONS.levels) {
+      for (const item of poolForRound(FOUNDATIONS, l, 2)) {
+        if (!item.display) continue;
+        const spoken = mirrorTechnique(item.text, item.style);
+        const shown = mirrorTechnique(item.display, item.style);
+        expect(shown, `${item.text} -> ${item.display}`).toContain(spoken);
+      }
     }
   });
 });
