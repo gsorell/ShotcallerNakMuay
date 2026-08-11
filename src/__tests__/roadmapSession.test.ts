@@ -457,9 +457,23 @@ describe("level artwork", () => {
     expect(categoryForLevel(level(10))).toBe("punches");
   });
 
-  it("reuses the Learn section's own artwork rather than a second mapping", () => {
+  it("prefers the level's own art over the category picture", () => {
     const learnKicks = CATEGORY_META.find((m) => m.key === "kicks")!;
-    expect(artworkForLevel(level(4)).iconPath).toBe(learnKicks.iconPath);
+    const art = artworkForLevel(level(4));
+    expect(art.iconPath).toBe("/assets/icon_round_kick.png");
+    expect(art.iconPath).not.toBe(learnKicks.iconPath);
+  });
+
+  it("falls back to the Learn category art where a level has none of its own", () => {
+    // The teep level ships no bespoke picture, so it borrows Muay Tae.
+    const learnKicks = CATEGORY_META.find((m) => m.key === "kicks")!;
+    expect(level(3).art).toBeUndefined();
+    expect(artworkForLevel(level(3)).iconPath).toBe(learnKicks.iconPath);
+  });
+
+  it("keeps the category emoji as the 404 fallback even with bespoke art", () => {
+    const learnKicks = CATEGORY_META.find((m) => m.key === "kicks")!;
+    expect(artworkForLevel(level(4)).icon).toBe(learnKicks.icon);
   });
 });
 

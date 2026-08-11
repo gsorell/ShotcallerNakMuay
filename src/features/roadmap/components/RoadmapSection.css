@@ -487,17 +487,22 @@
   margin-bottom: 0.35rem;
 }
 
+/* Deliberately bigger than the ladder badge. On the ladder the picture is an
+   identifier you scan past; here it is the one image on the page, and each
+   level's art is drawn for the technique that level teaches — so it is worth
+   looking at. Sized to stand roughly as tall as the eyebrow plus a two-line
+   title, which is what most levels have. */
 .roadmap-detail-art {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.7rem;
+  width: 5.25rem;
+  height: 5.25rem;
+  border-radius: 0.85rem;
   object-fit: cover;
   flex-shrink: 0;
   display: inline-block;
-  font-size: 1.75rem; /* emoji fallback */
-  line-height: 3rem;
+  font-size: 3rem; /* emoji fallback */
+  line-height: 5.25rem;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .roadmap-detail-headtext {

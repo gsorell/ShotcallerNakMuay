@@ -55,6 +55,13 @@ export interface RoadmapLevel {
    * number language rather than just adding techniques.
    */
   languageNote?: string;
+  /**
+   * Bespoke art for this rung, drawn for the specific technique it teaches.
+   * Omit and the level falls back to the Learn artwork for its category — the
+   * teep and elbow levels still do, so a category picture is the floor, never a
+   * missing image.
+   */
+  art?: string;
   /** Playable without Pro. Exactly one core level carries this. */
   free?: boolean;
   /** Sits past graduation — excluded from the `newb` coverage invariant. */
@@ -115,6 +122,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Guard, stance, and the two punches every combination in the app is built on. This is where 1 and 2 stop being noise.",
       introduces: ["Jab", "Cross"],
       combos: ["1 2", "1 1 2", "1 2 1"],
+      art: "/assets/icon_stance.png",
       languageNote:
         "Muay Thai counts its punches: the jab is 1, the cross is 2. Round 2 calls both the name and the number for the same punch — listen for them meaning the same thing — and round 3 uses the numbers alone, because they are far quicker to act on inside a combination.",
       free: true,
@@ -127,6 +135,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Turning the hips into a punch for the first time. Your lead hook is the shot that catches what the straights miss.",
       introduces: ["Left Hook", "Right Hook"],
       combos: ["1 2 3", "3 2", "1 2 3 2"],
+      art: "/assets/icon_left_hook.png",
       languageNote:
         "Two more numbers: 3 is your left hook, 4 your right. So 1 2 3 is jab, cross, left hook — one syllable each, which is why combinations are called this way.",
       session: EARLY,
@@ -157,6 +166,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "1 2, Switch Kick",
         "1 2 3, Low Kick",
       ],
+      art: "/assets/icon_round_kick.png",
       session: EARLY,
     },
     {
@@ -172,6 +182,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Long Guard, 2 3",
         "Right Check, Low Kick",
       ],
+      art: "/assets/icon_check.png",
       session: MID,
     },
     {
@@ -187,6 +198,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Lean Back, 2, Low Kick",
         "1 2, Slip Right, 2",
       ],
+      art: "/assets/icon_slip.png",
       session: LATE,
     },
     {
@@ -202,6 +214,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "Left Teep, Pivot Right, 2",
         "Slip Left, 2, Pivot Left",
       ],
+      art: "/assets/icon_pivot.png",
       session: LATE,
     },
     {
@@ -216,6 +229,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "1 2, Right Knee",
         "Long Guard, Right Knee, Left Knee",
       ],
+      art: "/assets/icon_knee.png",
       session: LATE,
     },
     {
@@ -236,6 +250,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "1 2, 3 to the Body, 3 to the Head",
         "2 3, 4 to the Body",
       ],
+      art: "/assets/icon_body_shot.png",
       languageNote:
         "The numbers pick up a suffix here. \"3 to the body\" is your left hook downstairs, \"3 to the head\" the same punch upstairs — same number, different floor.",
       session: LATE,
@@ -260,6 +275,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "1 2, Head Kick",
         "2 3, Low Kick, Head Kick",
       ],
+      art: "/assets/icon_uppercut.png",
       languageNote:
         "Two numbers left: 5 is your left uppercut, 6 your right. That completes the hand numbering — every punch the app calls now has a number you know.",
       session: LATE,

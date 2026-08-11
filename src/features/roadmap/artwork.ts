@@ -1,12 +1,20 @@
 // ===========================================================================
 // Artwork for a roadmap level.
 // ---------------------------------------------------------------------------
-// Derived rather than assigned: a level's picture is the one the Learn section
-// already uses for whichever category most of its new techniques belong to. So
-// the hooks level wears the boxing glove, the teep and round-kick levels wear
-// the Muay Tae art, the elbow level wears Muay Sok — with no second mapping to
-// keep in sync, and no way for a curriculum change to leave a level pointing
-// at the wrong picture.
+// Two tiers, and the order matters.
+//
+// Most levels now carry `art`: a picture drawn for the one technique that level
+// teaches, so the ladder reads as a curriculum — a stance, a hook, a check, a
+// knee — rather than ten rungs sharing four category pictures.
+//
+// Levels without one fall back to the derived category art: the picture the
+// Learn section already uses for whichever category most of the level's new
+// techniques belong to. That keeps the floor safe — a level added tomorrow gets
+// a sensible image with no art commissioned and no missing file — and it is
+// still what the teep and elbow levels use today.
+//
+// The emoji fallback always comes from the category, since it is a last resort
+// for a 404 and only ever needs to be roughly right.
 // ===========================================================================
 
 import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
@@ -58,5 +66,6 @@ export function categoryForLevel(level: RoadmapLevel): TechniqueCategory {
 
 export function artworkForLevel(level: RoadmapLevel): CategoryMeta {
   const category = categoryForLevel(level);
-  return CATEGORY_META.find((m) => m.key === category) ?? FALLBACK;
+  const meta = CATEGORY_META.find((m) => m.key === category) ?? FALLBACK;
+  return level.art ? { ...meta, iconPath: level.art } : meta;
 }
