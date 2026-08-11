@@ -331,6 +331,11 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
     ],
     matches: [
       "Body Kick",
+      // Kept although nothing shipped calls it any more: "Middle Kick" was the
+      // name in the callout data until it was renamed to the conventional
+      // "Body Kick". Users who had customised a group keep their own copy of
+      // the old string, and a saved technique that resolves to no lesson is a
+      // dead end in the Learn section. Cheap to keep, so keep it.
       "Middle Kick",
       "Left Kick",
       "Right Kick",

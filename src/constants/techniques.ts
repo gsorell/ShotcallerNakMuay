@@ -33,7 +33,7 @@ export const INITIAL_TECHNIQUES: Record<
       "Inside Leg Kick",
       "Switch Kick",
       "Low Kick",
-      "Middle Kick",
+      "Body Kick",
       "Head Kick",
       "Left Knee",
       "Right Knee",

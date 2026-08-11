@@ -60,7 +60,7 @@ chin-exposing weapons last, because they punish bad fundamentals hardest.
 | 1 | Stance & the Two Numbers | Jab, Cross | 2 | Free |
 | 2 | The Hooks | Left Hook, Right Hook | 4 | Pro |
 | 3 | Owning the Distance | Left Teep, Right Teep | 6 | Pro |
-| 4 | The Round Kick | Low Kick, Middle Kick, Switch Kick | 9 | Pro |
+| 4 | The Round Kick | Low Kick, Body Kick, Switch Kick | 9 | Pro |
 | 5 | Don't Get Hit | Left Check, Right Check, High Guard Block, Long Guard | 13 | Pro |
 | 6 | Move Your Head | Slip Left, Slip Right, Duck, Lean Back | 17 | Pro |
 | 7 | Roll & Angle | Roll Left, Roll Right, Pivot Left, Pivot Right | 21 | Pro |
@@ -94,7 +94,7 @@ the named form; Levels 3+ play the numbered form.
 | 1 | `1 2` · `1 1 2` · `1 2 1` | `Jab, Cross` · `Jab, Jab, Cross` · `Jab, Cross, Jab` |
 | 2 | `1 2 3` · `3 2` · `1 2 3 2` | `Jab, Cross, Left Hook` · `Left Hook, Cross` · `Jab, Cross, Left Hook, Cross` |
 | 3 | `1, Left Teep` · `Right Teep, 2` · `1 2, Left Teep` · `Left Teep, 1 2` | (authored, unused) |
-| 4 | `1 2, Middle Kick` · `2 3, Low Kick` · `1 2, Switch Kick` · `1 2 3, Low Kick` | (authored, unused) |
+| 4 | `1 2, Body Kick` · `2 3, Low Kick` · `1 2, Switch Kick` · `1 2 3, Low Kick` | (authored, unused) |
 | 5 | `Left Check, 1 2` · `Right Check, 2 3` · `High Guard Block, 2, Low Kick` · `Long Guard, 2 3` · `Right Check, Low Kick` | (authored, unused) |
 | 6 | `1, Slip Right, 2` · `Slip Left, 2 3` · `Duck, 3 2` · `Lean Back, 2, Low Kick` · `1 2, Slip Right, 2` | (authored, unused) |
 | 7 | `1 2, Roll Right, 2 3` · `2 3, Roll Left, 3 2` · `1 2 3, Pivot Left` · `Left Teep, Pivot Right, 2` · `Slip Left, 2, Pivot Left` | (authored, unused) |

@@ -159,15 +159,15 @@ export const FOUNDATIONS: RoadmapPath = {
       title: "The Round Kick",
       blurb:
         "The signature technique of the sport — shin, turnover, and the switch. Three heights of the same mechanic, drilled together.",
-      introduces: ["Low Kick", "Middle Kick", "Switch Kick"],
+      introduces: ["Low Kick", "Body Kick", "Switch Kick"],
       combosNamed: [
-        "Jab, Cross, Middle Kick",
+        "Jab, Cross, Body Kick",
         "Cross, Left Hook, Low Kick",
         "Jab, Cross, Switch Kick",
         "Jab, Cross, Left Hook, Low Kick",
       ],
       combosNumbered: [
-        "1 2, Middle Kick",
+        "1 2, Body Kick",
         "2 3, Low Kick",
         "1 2, Switch Kick",
         "1 2 3, Low Kick",
