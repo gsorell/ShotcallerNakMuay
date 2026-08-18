@@ -255,6 +255,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   const handleWorkoutComplete = useCallback(() => {
     if (!calloutEngineRef.current || !timerRef.current) return;
 
+    // The audio keepalive is deliberately left running — see useSoundEffects.
+    // Releasing it here cost a pop at every session end and another ~30s later.
+
     const active = activeRoadmapRef.current;
 
     // Save workout log and show completion screen
@@ -435,6 +438,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // CRITICAL: TTS unlock must be synchronous - no await before it!
     tts.ensureTTSUnlocked();
     await sfx.ensureMediaUnlocked();
+    // Hold the output path open until the session ends, so the bell at each
+    // round boundary is not powering the speaker back up from standby.
+    void sfx.startKeepAlive();
 
     // Init Engine
     if (settings.readInOrder) {
@@ -507,6 +513,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       // hand-off `resumeWorkout` uses.
       setTimeout(async () => {
         await sfx.ensureMediaUnlocked();
+        void sfx.startKeepAlive();
         calloutEngine.currentPoolRef.current = poolForRound(path, level, 1);
         calloutEngine.orderedIndexRef.current = 0;
         calloutEngine.shotsCalledOutRef.current = 0;
@@ -623,6 +630,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
         setTimeout(async () => {
           await sfx.ensureMediaUnlocked();
+          void sfx.startKeepAlive();
           calloutEngine.currentPoolRef.current = poolForRound(
             path,
             level,
@@ -662,6 +670,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         // CRITICAL: TTS unlock must be synchronous - no await before it!
         tts.ensureTTSUnlocked();
         await sfx.ensureMediaUnlocked();
+        void sfx.startKeepAlive();
 
         if (logEntry.settings?.readInOrder) {
           calloutEngine.currentPoolRef.current = pool;
