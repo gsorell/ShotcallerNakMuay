@@ -1,0 +1,168 @@
+# Technique shot list — visual reference for the learning module
+
+## What this is for
+
+The Learn lesson cards (and the roadmap level cards that reuse them) have room for a
+small visual beside the body copy — see the accordion body in
+`src/features/roadmap/components/RoadmapSection.tsx`. The plan is to fill that slot
+with a short looping sprite of the technique being thrown.
+
+The output is a **neon silhouette**, not a photograph. The slot is roughly 150px on
+desktop and smaller on a phone, so photographic detail is wasted at that size, and a
+silhouette matches the app's existing icon art. That makes the shoot forgiving: you do
+not need good lighting, a nice gym, or a photogenic model. You need a plain background
+and correct form.
+
+Everything below is keyed to the lesson `slug` in
+`src/features/learn/data/techniqueLibrary.ts`. One visual per lesson — **not** per
+callout, because the cards already group callouts by lesson.
+
+- 63 lessons in the library
+- **25** of them are taught by the Start Here roadmap → Tier 1, shoot these first
+- 38 remain → Tier 2, and some of those should probably never get one (see below)
+
+## Why we film rather than generate
+
+Image generators do not know Muay Thai. They produce plausible-and-wrong: a flat rear
+foot on a cross, a "check" that is really a knee, a round kick landing on the instep.
+This app's glossary already carries a note about having shipped a technique description
+that was wrong for half the stances it supports, and it tells users to learn form from a
+qualified coach. Filling the learning module with hallucinated technique cuts against
+that directly.
+
+Generation is still useful for the *treatment* — glow, background, upscaling a
+silhouette already pulled from real footage. Just not for deciding where the limbs go.
+
+## Shooting spec
+
+**The one thing that matters most:** fixed tripod, no zoom, no camera movement, and
+identical framing across every take. A coherent set beats any individual shot. Mark the
+tripod position and the fighter's starting spot on the floor with tape and do not move
+either until the whole tier is shot.
+
+| | |
+|---|---|
+| Background | Plain, evenly lit, strongly contrasting with the fighter. A blank wall is ideal. |
+| Wardrobe | Solid colours that do not blend into the wall. Plain shorts and bare shins read far better in silhouette than baggy gear. |
+| Framing | Full body with headroom, **including for punches** — the lessons repeatedly teach that power starts at the feet, so the feet must be in frame. |
+| Frame rate | 60fps if the phone offers it. More frames to choose from during extraction. |
+| Reps | Three clean reps per technique, with a pause between. Best one gets picked in the edit. |
+| Slate | Say the technique name out loud before each set. The audio marks the takes so they can be split automatically. |
+| Stance | Shoot orthodox throughout. The app is stance-neutral in its wording, so the card copy stays correct either way, and mirrored variants can be flipped in CSS rather than shot twice. |
+
+**Output format:** one sprite sheet per lesson, 6 frames laid out horizontally, lossless
+WebP, at `public/assets/technique/<slug>.webp`. Six frames covers load → travel → land →
+recover for a strike, and a fixed count keeps the CSS `steps()` animation uniform. Not
+GIF: 256 colours band badly across the neon gradients, at 5–10× the file size.
+
+Lossless is not a preference here. ffmpeg's *lossy* WebP encoder writes a bare `VP8 `
+chunk, which has no way to store an alpha channel — the encode reports success and every
+silhouette arrives on an opaque black box. Only the lossless `VP8L` path carries alpha.
+Flat-coloured silhouettes compress well losslessly anyway, so it costs very little.
+
+Budget is roughly 1MB for all 25, against an app that already ships audio.
+
+## Processing
+
+`scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
+— it keys the background, recolours the silhouette, adds the glow, tiles the frames and
+encodes the sheet in one pass per technique.
+
+```
+node scripts/technique-sprites.mjs --init          # stub manifest, all 25 slugs
+node scripts/technique-sprites.mjs                 # build everything with footage
+node scripts/technique-sprites.mjs --only jab --frames
+```
+
+Fill in `file`, `start` and `duration` per shot in `raw/shots.json` as you cut takes.
+Entries whose footage does not exist yet are skipped rather than failing the run, so the
+manifest can be complete long before the shoot is.
+
+The one setting that needs a human eye is `cutoff` — the luma above which a pixel counts
+as wall. Default is 0.72, which suits a white-ish wall; raise it if the fighter is being
+eaten, lower it if the wall is surviving. `--frames` writes the six frames as PNGs
+instead of a sheet, which is how you find the number for a given clip. Per-shot `crop`
+(as `"w:h:x:y"`) tightens framing without a reshoot, and `flip: true` mirrors a take.
+
+## Tier 1 — the 25 roadmap lessons
+
+Shoot in this order; it follows the curriculum, so a partial shoot still ships whole
+levels.
+
+| # | Slug | Technique | Thai | Angle | Note |
+|---|---|---|---|---|---|
+| 1 | `jab` | Jab (1) | Mat Na | Lead-side 3/4 | Show the retraction, not just the extension |
+| 2 | `cross` | Cross (2) | Mat Trong | Rear-side 3/4 | Rear heel pivot must be visible — it is the lesson's main point |
+| 3 | `lead-hook` | Left Hook (3) | — | Front 3/4 | The arc reads best slightly off-front |
+| 4 | `rear-hook` | Right Hook (4) | — | Front 3/4 | Same framing as lead hook so the pair matches |
+| 5 | `teep` | Teep | Theep | Side | Covers *Left Teep* and *Right Teep* — one shot only |
+| 6 | `low-kick` | Low Kick | Tae Kha | Side | Full body; the step-out is half the technique |
+| 7 | `roundhouse-kick` | Roundhouse Kick | Tae Wiang | Side | Called as *Body Kick* in the app |
+| 8 | `switch-kick` | Switch Kick | — | Side | Needs the switch itself, so start further back in the rep |
+| 9 | `check` | Check | Bang | Side | Covers *Left Check* and *Right Check* |
+| 10 | `high-guard` | High Guard Block | — | Front | Static hold — a still frame may serve better than a loop |
+| 11 | `long-guard` | Long Guard | — | Front 3/4 | Static hold |
+| 12 | `slip` | Slip | — | Front | Covers *Slip Left* and *Slip Right*; front view is the only one where head movement reads |
+| 13 | `duck` | Duck | — | Front | Front view for the same reason |
+| 14 | `lean-back` | Lean Back | — | Side | The one head movement that needs a side view |
+| 15 | `roll` | Roll | — | Front | Covers *Roll Left* and *Roll Right* |
+| 16 | `pivot` | Pivot | — | Front, slightly elevated | Covers *Pivot Left* and *Pivot Right*; elevate so foot placement reads |
+| 17 | `straight-knee` | Straight Knee | Khao Trong | Side | Covers *Left Knee* and *Right Knee* |
+| 18 | `body-punching` | Punching to the Body | — | 3/4 | **Covers four callouts** — see open decisions |
+| 19 | `lead-uppercut` | Left Uppercut (5) | — | Side | Side view shows the rise; front view flattens it |
+| 20 | `rear-uppercut` | Right Uppercut (6) | — | Side | Match the lead uppercut framing |
+| 21 | `overhand` | Overhand | — | Front 3/4 | The looping path over the guard is the whole point |
+| 22 | `inside-low-kick` | Inside Low Kick | — | Front 3/4 | Called as *Inside Leg Kick* |
+| 23 | `head-kick` | Head Kick | Tae Kor | Side | Full body, plenty of headroom |
+| 24 | `horizontal-elbow` | Horizontal Elbow | Sok Tud | Front 3/4 | Bonus level; covers *Left Elbow* and *Right Elbow* |
+| 25 | `up-elbow` | Up Elbow | Sok Ngat | Side | Bonus level |
+
+Seven of these cover mirrored callout pairs and one covers four punches, so 25 shots
+answer all 35 roadmap callouts.
+
+## Tier 2 — the remaining 38 Learn lessons
+
+Not needed to ship the roadmap. Grouped by how easy they are to shoot rather than by
+category, because that is what decides the running order of a second session.
+
+**Easy, same setup, no partner (5)** — conditioning, and honestly the fastest wins in the
+whole list:
+`burpee`, `jumpsquats`, `jumping-jacks`, `high-knees`, `punch-burnouts`
+
+**Straightforward solo strikes (12)** — same protocol as Tier 1:
+`double-jab`, `question-mark-kick`, `spinning-back-kick`, `spinning-heel-kick`,
+`speed-kicks`, `step-in-knee`, `flying-knee`, `jump-switch-knee`, `axe-elbow`,
+`spinning-elbow`, `step-in-elbow`, `step-off-elbow`
+
+Note the spinning techniques need more floor space and a wider framing than the Tier 1
+setup — shoot them as a group, after re-marking the tape.
+
+**Needs a partner or a bag (8)** — a defensive technique with nothing coming at it is
+just a pose:
+`parry`, `catch`, `check-and-return`, `angle-off-hook`, `slip-and-counter`, `clinch`,
+`sweep`, `hand-trap`
+
+**Probably should not get a sprite at all (13)** — the feints:
+`jab-feint`, `body-jab-feint`, `shoulder-feint`, `step-feint`, `switch-step-feint`,
+`low-kick-feint`, `teep-feint`, `body-kick-feint`, `limp-feint`, `retreat-feint`,
+`lazy-teep`, `guard-bait`, `pattern-break`
+
+A feint is defined by the reaction it draws, not by the movement itself. Filmed solo,
+`shoulder-feint` and `jab-feint` are indistinguishable from a twitch. These either need
+two people in frame, or they are the category where a schematic diagram beats footage.
+Worth deciding before booking a partner for the Tier 2 shoot.
+
+## Open decisions
+
+1. **`body-punching` covers four callouts** — *Jab / Cross / Left Hook / Right Hook to
+   the Body*. One sprite has to represent all four. Options: shoot the lead hook to the
+   body as the representative, shoot a four-punch body sequence as the loop, or split the
+   lesson into separate entries in the library. Cheapest is the representative shot.
+2. **Static holds** (`high-guard`, `long-guard`) have no motion to loop. A single frame
+   in the same treatment is probably better than a 6-frame sprite of someone standing
+   still.
+3. **Mobile layout.** At phone width, a 150px visual beside the text leaves roughly a
+   190px copy column, which reads badly. Below ~600px the visual should go full width
+   above the bullets rather than floating beside them.
+4. **Who throws.** The form in these is the app teaching form. Worth using a coach rather
+   than shooting it solo.
