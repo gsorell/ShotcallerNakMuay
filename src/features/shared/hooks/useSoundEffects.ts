@@ -38,12 +38,26 @@ const decodeInto = async (
   }
 };
 
+// The session keepalive runs a tone the speaker cannot reproduce audibly, at a
+// gain far below anything a listener resolves. Its only job is to keep frames
+// flowing so the output path never reaches standby.
+const KEEPALIVE_FREQUENCY = 20000; // 20kHz — at/above the limit of human hearing
+const KEEPALIVE_GAIN = 0.0005; // ~ -66 dBFS
+const KEEPALIVE_FADE = 0.15; // ramp in/out, so the keepalive cannot itself pop
+
 export function useSoundEffects(_iosAudioSession: any) {
   // Web Audio API refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const bellBufferRef = useRef<AudioBuffer | null>(null);
   const warningBufferRef = useRef<AudioBuffer | null>(null);
   const clackBufferRef = useRef<AudioBuffer | null>(null);
+
+  // Keepalive nodes. Created on the first workout start and left running for
+  // the life of the hook — the context close on unmount is what tears them down.
+  const keepAliveRef = useRef<{
+    osc: OscillatorNode;
+    gain: GainNode;
+  } | null>(null);
 
   // Encoded bytes, prefetched at mount.
   const encodedRef = useRef<Promise<(ArrayBuffer | null)[]> | null>(null);
@@ -54,17 +68,25 @@ export function useSoundEffects(_iosAudioSession: any) {
   //
   // Capacitor's WebView sets mediaPlaybackRequiresUserGesture(false), so unlike
   // a normal browser an AudioContext constructed here starts *running* instead
-  // of *suspended*. That opens the output stream at launch — which powers up the
-  // speaker path and produces an audible pop before the user has touched
-  // anything, then holds the device open for ~30s. Creation is deferred to
+  // of *suspended*, opening the output path during launch. That is audible over
+  // other apps' audio, and the owner compared it directly against opening at
+  // workout start and preferred the latter. Creation is therefore deferred to
   // ensureMediaUnlocked, which runs inside the workout-start gesture.
+  //
+  // decodeAudioData detaches the ArrayBuffers, so these can only be decoded
+  // once. That is fine while one context lives for the whole app run; if the
+  // context is ever torn down and rebuilt mid-life, this has to run again.
+  const prefetch = useCallback(() => {
+    encodedRef.current = Promise.all([
+      fetchEncoded(SOUND_URLS.bell),
+      fetchEncoded(SOUND_URLS.warning),
+      fetchEncoded(SOUND_URLS.clack),
+    ]);
+  }, []);
+
   useEffect(() => {
     if (!encodedRef.current) {
-      encodedRef.current = Promise.all([
-        fetchEncoded(SOUND_URLS.bell),
-        fetchEncoded(SOUND_URLS.warning),
-        fetchEncoded(SOUND_URLS.clack),
-      ]);
+      prefetch();
     }
 
     return () => {
@@ -78,10 +100,11 @@ export function useSoundEffects(_iosAudioSession: any) {
         console.warn("[AudioCleanup] Error during cleanup:", error);
       }
     };
-  }, []);
+  }, [prefetch]);
 
-  // Create the context and decode into it, once. Must be called from a user
-  // gesture — see the note above on why this cannot happen at mount.
+  // Create the context and decode into it, once. Must be called from the
+  // workout-start gesture — see the note on prefetch for why this cannot happen
+  // at mount.
   const ensureMediaUnlocked = useCallback(async () => {
     if (!readyRef.current) {
       readyRef.current = (async () => {
@@ -209,8 +232,61 @@ export function useSoundEffects(_iosAudioSession: any) {
     playBuffered(clackBufferRef, 0.3, true);
   }, [playBuffered]);
 
+  // Hold the output path open from the first workout until the app goes away.
+  //
+  // The bell is the only thing this app renders through Web Audio, so between
+  // one bell and the next the graph goes silent for a whole round. The HAL puts
+  // the mmap output into standby a few seconds after frames stop arriving, and
+  // the next bell has to power that path back up — which is audible as a pop,
+  // and is audible *through* whatever the user has playing from another app.
+  // Measured on a Pixel 9 Pro XL: one standby/start pair per round boundary.
+  //
+  // Keeping an inaudible source connected means frames never stop, so the path
+  // never reaches standby and never has to be reopened.
+  //
+  // Started on the first workout start and deliberately NEVER stopped. Every
+  // open and close of this path is audible over other apps' audio, so the goal
+  // is the fewest possible transitions, not the shortest possible residency:
+  // exactly one open, when the user first presses go, and one close when the app
+  // is destroyed.
+  //
+  // Two other shapes were tried on device and rejected. Stopping it at the end
+  // of a session bought a pop at every session end, plus another ~30s later when
+  // Chromium released the idle stream into the silence afterwards. Opening it at
+  // mount instead moved the single remaining pop to app launch, which the owner
+  // compared directly against this and liked less.
+  //
+  // The cost of holding it is battery — the audio path stays powered from the
+  // first workout until the app is destroyed — and that was an accepted trade.
+  const startKeepAlive = useCallback(async () => {
+    await ensureMediaUnlocked();
+    const ctx = audioContextRef.current;
+    if (!ctx || keepAliveRef.current) return;
+
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(KEEPALIVE_FREQUENCY, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(
+        KEEPALIVE_GAIN,
+        ctx.currentTime + KEEPALIVE_FADE
+      );
+
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+
+      keepAliveRef.current = { osc, gain };
+    } catch (error) {
+      console.warn("[WebAudio] Keepalive failed to start:", error);
+    }
+  }, [ensureMediaUnlocked]);
+
   return useMemo(
-    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked }),
-    [playBell, playWarningSound, playClack, ensureMediaUnlocked]
+    () => ({ playBell, playWarningSound, playClack, ensureMediaUnlocked, startKeepAlive }),
+    [playBell, playWarningSound, playClack, ensureMediaUnlocked, startKeepAlive]
   );
 }
