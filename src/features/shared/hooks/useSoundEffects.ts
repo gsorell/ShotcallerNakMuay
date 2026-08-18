@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 // All sounds use Web Audio API to avoid:
@@ -258,7 +259,18 @@ export function useSoundEffects(_iosAudioSession: any) {
   //
   // The cost of holding it is battery — the audio path stays powered from the
   // first workout until the app is destroyed — and that was an accepted trade.
+  //
+  // ANDROID ONLY, deliberately. The pop is a property of the AAudio MMAP output
+  // path and was measured only there. Everywhere else this is pure cost:
+  //   - web/PWA: a never-stopped source makes the browser report the tab as
+  //     playing audio for as long as it stays open, long after a workout ends.
+  //     Observed on the deployed site and it looks like the app is misbehaving.
+  //   - iOS: unproven, and this file exists partly to keep the Now Playing
+  //     widget away (see the header) — a permanently running source is exactly
+  //     the sort of thing that would summon it.
   const startKeepAlive = useCallback(async () => {
+    if (Capacitor.getPlatform() !== "android") return;
+
     await ensureMediaUnlocked();
     const ctx = audioContextRef.current;
     if (!ctx || keepAliveRef.current) return;
