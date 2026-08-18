@@ -1,8 +1,31 @@
+/**
+ * One technique in a style's list.
+ *
+ * A bare string is the common case, weighted 1. The object form exists to call
+ * something *more often* than everything else without writing it out several
+ * times — repeated entries used to be the only way to express that, and they
+ * did not work: the pool builder deduplicated by text, so every copy after the
+ * first was silently discarded.
+ */
+export type TechniqueEntry =
+  | string
+  | {
+      text: string;
+      /** Relative frequency. 2 means "called about twice as often". */
+      weight?: number;
+      /** Starred in the editor; weighted up unless `weight` says otherwise. */
+      favorite?: boolean;
+    };
+
+/** The callout string for an entry, whichever form it takes. */
+export const techniqueText = (entry: TechniqueEntry): string =>
+  typeof entry === "string" ? entry : entry?.text ?? "";
+
 export const INITIAL_TECHNIQUES: Record<
   string,
   {
-    singles: string[];
-    combos: string[];
+    singles: TechniqueEntry[];
+    combos: TechniqueEntry[];
     exclusive?: boolean;
     label?: string;
     title?: string;
@@ -33,7 +56,7 @@ export const INITIAL_TECHNIQUES: Record<
       "Inside Leg Kick",
       "Switch Kick",
       "Low Kick",
-      "Middle Kick",
+      "Body Kick",
       "Head Kick",
       "Left Knee",
       "Right Knee",
@@ -156,14 +179,13 @@ export const INITIAL_TECHNIQUES: Record<
       "Right Teep",
       "Left Knee",
       "Right Knee",
-      "Left Check",
+      // A kicker's round is mostly checking. Weighted rather than listed three
+      // times, which is what this used to be — and which never took effect.
+      { text: "Left Check", weight: 3 },
+      { text: "Right Check", weight: 2 },
       "Head Kick",
-      "Right Check",
       "Left Kick",
       "Right Kick",
-      "Left Check",
-      "Right Check",
-      "Left Check",
       "Left Elbow",
       "Right Elbow",
     ],
@@ -200,8 +222,9 @@ export const INITIAL_TECHNIQUES: Record<
       "Right Teep",
       "Left Knee",
       "Right Knee",
-      "Left Check",
-      "Right Check",
+      // The technician's defining habit — checked twice as often as the rest.
+      { text: "Left Check", weight: 2 },
+      { text: "Right Check", weight: 2 },
       "Flying Knee",
       "Left Kick",
       "Right Kick",
@@ -212,8 +235,6 @@ export const INITIAL_TECHNIQUES: Record<
       "Question Mark Kick",
       "Sweep Left",
       "Sweep Right",
-      "Left Check",
-      "Right Check",
     ],
     combos: [
       "Right Check, Right Low Kick",

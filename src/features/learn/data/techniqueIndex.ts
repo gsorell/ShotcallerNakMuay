@@ -7,7 +7,7 @@
 // test fails if someone adds a technique to a style without a lesson for it.
 // ===========================================================================
 
-import { INITIAL_TECHNIQUES } from "@/constants/techniques";
+import { INITIAL_TECHNIQUES, techniqueText } from "@/constants/techniques";
 import { BASE_EMPHASIS_CONFIG } from "@/emphasisConfig";
 
 import {
@@ -97,7 +97,7 @@ const STYLES_BY_SLUG: Map<string, StyleRef[]> = (() => {
     // "Right Teep" both map to `teep`) — only list the style once.
     const slugs = new Set<string>();
     for (const single of style.singles ?? []) {
-      const slug = CALLOUT_TO_SLUG.get(normalizeCallout(single));
+      const slug = CALLOUT_TO_SLUG.get(normalizeCallout(techniqueText(single)));
       if (slug) slugs.add(slug);
     }
 
@@ -129,7 +129,7 @@ export function isCalisthenicsOnly(slug: string): boolean {
 
   const wanted = new Set(entry.matches.map(normalizeCallout));
   const pool = INITIAL_TECHNIQUES["calisthenics"]?.singles ?? [];
-  return pool.some((single) => wanted.has(normalizeCallout(single)));
+  return pool.some((single) => wanted.has(normalizeCallout(techniqueText(single))));
 }
 
 // --- coverage guard --------------------------------------------------------
@@ -143,8 +143,9 @@ export function findUncoveredCallouts(): string[] {
 
   for (const style of Object.values(INITIAL_TECHNIQUES)) {
     for (const single of style.singles ?? []) {
-      if (!CALLOUT_TO_SLUG.has(normalizeCallout(single))) {
-        uncovered.add(single);
+      const text = techniqueText(single);
+      if (!CALLOUT_TO_SLUG.has(normalizeCallout(text))) {
+        uncovered.add(text);
       }
     }
   }
@@ -161,7 +162,7 @@ export function findOrphanedEntries(): string[] {
   const used = new Set<string>();
   for (const style of Object.values(INITIAL_TECHNIQUES)) {
     for (const single of style.singles ?? []) {
-      const slug = CALLOUT_TO_SLUG.get(normalizeCallout(single));
+      const slug = CALLOUT_TO_SLUG.get(normalizeCallout(techniqueText(single)));
       if (slug) used.add(slug);
     }
   }

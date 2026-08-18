@@ -1,0 +1,933 @@
+/* RoadmapSection.css — the Pro "Start Here" guided path.
+   Shares the Learn section's panel language: translucent dark cards on the hero
+   background, pink (#f9a8d4) accents, 0.75rem radii. */
+
+.roadmap {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 0.75rem 1.5rem;
+  color: #fff;
+}
+
+/* --- setup-screen "continue" card ---------------------------------------
+   Reads as part of the app, not an advert for it: the same translucent panel
+   language as the style tiles, a single pink accent rail, and progress on the
+   face of it. See the component for why this is a continue card. */
+
+.starthere {
+  position: relative;
+  max-width: 60rem;
+  width: 100%;
+  margin: 0 auto 1rem;
+}
+
+.starthere-body {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.9rem 2.6rem 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-left: 3px solid #ec4899;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.starthere-body:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-left-color: #ec4899;
+  background-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.starthere-body:focus-visible {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+/* The picture is the one the next level wears on the ladder, so the card, the
+   rung and the level screen all show the same thing. */
+.starthere-art {
+  /* Matches the style tiles it sits above on the home screen — the card is the
+     first thing in that list, so a smaller picture would read as a lesser one. */
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.7rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 2rem; /* emoji fallback */
+  line-height: 3.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.starthere-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.starthere-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.starthere-headline {
+  font-weight: 700;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.starthere-sub {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.starthere-track {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin: 0.4rem 0 0.15rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.starthere-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.5), #ec4899);
+  transition: width 0.4s ease;
+}
+
+.starthere-action {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #f9a8d4;
+}
+
+.starthere-dismiss {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  z-index: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.35rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.starthere-dismiss:hover {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* --- restore toggle on the roadmap screen ------------------------------- */
+
+.roadmap-restore {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.83rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.roadmap-restore:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+  color: #fff;
+}
+
+.roadmap-restore-done {
+  color: #34d399;
+  font-weight: 700;
+}
+
+/* --- header ------------------------------------------------------------- */
+
+.roadmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.roadmap-back {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.15) 0%,
+    rgba(236, 72, 153, 0.25) 100%
+  );
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.roadmap-back:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.25) 0%,
+    rgba(236, 72, 153, 0.35) 100%
+  );
+}
+
+.roadmap-pro-chip {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  background: rgba(236, 72, 153, 0.12);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+/* --- shared type -------------------------------------------------------- */
+
+.roadmap-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 0.35rem;
+  color: #fff;
+}
+
+.roadmap-subtitle {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* --- vocabulary progress ------------------------------------------------ */
+
+.roadmap-progress {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.roadmap-progress-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.roadmap-progress-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.roadmap-progress-count {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #f9a8d4;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.roadmap-progress-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.roadmap-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.5), #ec4899);
+  transition: width 0.4s ease;
+}
+
+/* --- unlock banner (free users) ----------------------------------------- */
+
+.roadmap-unlock-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.18) 0%,
+    rgba(236, 72, 153, 0.28) 100%
+  );
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  color: #fff;
+}
+
+.roadmap-unlock-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.roadmap-unlock-body {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.45;
+}
+
+/* --- the ladder --------------------------------------------------------- */
+
+.roadmap-ladder {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.roadmap-graduation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0.75rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  border-top: 1px dashed rgba(236, 72, 153, 0.35);
+  padding-top: 0.75rem;
+}
+
+.roadmap-graduation span {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.roadmap-rung {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.roadmap-rung:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(236, 72, 153, 0.35);
+}
+
+/* A locked rung is still meant to be read — showing what is coming is half of
+   why the ladder is browsable at all. So no blanket opacity, which washed the
+   artwork out along with everything else; only the text is muted, and the
+   picture stays as vivid as it is on the Learn screen. */
+.roadmap-rung:disabled {
+  cursor: default;
+}
+
+.roadmap-rung:disabled .roadmap-rung-title {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.roadmap-rung:disabled .roadmap-rung-teaches {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.roadmap-rung-badge {
+  position: relative;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roadmap-rung-art {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.6rem;
+  object-fit: cover;
+  display: inline-block;
+  font-size: 1.5rem; /* emoji fallback */
+  line-height: 2.6rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.roadmap-rung--current .roadmap-rung-art,
+.roadmap-rung--next .roadmap-rung-art {
+  border-color: rgba(236, 72, 153, 0.75);
+  box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.28);
+}
+
+/* State marker, tucked into the corner of the artwork rather than replacing
+   it — the level number already appears in the title, so the badge is free to
+   carry the picture. */
+.roadmap-rung-state {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.25rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+.roadmap-rung-state--done {
+  background: #34d399;
+  color: #05261b;
+}
+
+.roadmap-rung-state--locked {
+  background: #1b1830;
+  font-size: 0.6rem;
+}
+
+.roadmap-rung--next {
+  border-color: rgba(236, 72, 153, 0.5);
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.roadmap-rung-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.roadmap-rung-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.roadmap-rung-next {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ec4899;
+  background: rgba(236, 72, 153, 0.16);
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.roadmap-rung-teaches {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+.roadmap-rung-chevron {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* --- level detail ------------------------------------------------------- */
+
+.roadmap-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Deliberately bigger than the ladder badge. On the ladder the picture is an
+   identifier you scan past; here it is the one image on the page, and each
+   level's art is drawn for the technique that level teaches — so it is worth
+   looking at. Sized to stand roughly as tall as the eyebrow plus a two-line
+   title, which is what most levels have. */
+.roadmap-detail-art {
+  width: 5.25rem;
+  height: 5.25rem;
+  border-radius: 0.85rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 3rem; /* emoji fallback */
+  line-height: 5.25rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.roadmap-detail-headtext {
+  min-width: 0;
+}
+
+.roadmap-title--inline {
+  margin: 0;
+}
+
+.roadmap-detail-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.roadmap-detail-cleared {
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  background: rgba(52, 211, 153, 0.14);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  letter-spacing: 0.06em;
+}
+
+.roadmap-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.roadmap-panel--note {
+  border-color: rgba(236, 72, 153, 0.35);
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.roadmap-panel-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+  margin: 0 0 0.7rem;
+}
+
+.roadmap-note {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* technique cards */
+
+.roadmap-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.roadmap-card {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.9rem;
+}
+
+.roadmap-card[open] {
+  border-color: rgba(236, 72, 153, 0.35);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* The whole row is the control. */
+.roadmap-card > summary {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.roadmap-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.roadmap-card > summary::after {
+  content: "⌄";
+  margin-left: auto;
+  align-self: center;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: #f9a8d4;
+  transition: transform 0.2s ease;
+}
+
+.roadmap-card[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.roadmap-card > summary:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.roadmap-card-body {
+  padding-top: 0.6rem;
+  margin-top: 0.55rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.roadmap-card-name {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.roadmap-card-number {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #ec4899;
+  background: rgba(236, 72, 153, 0.15);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.roadmap-card-thai {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* --- disclosure ("show more") --------------------------------------------
+   Native <details>, so it works without JS, is keyboard-operable, and is
+   announced correctly by screen readers. Used anywhere a block of reference
+   text would otherwise dominate the screen. */
+
+.roadmap-more > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f9a8d4;
+  padding: 0.15rem 0;
+}
+
+.roadmap-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.roadmap-more > summary::after {
+  content: "⌄";
+  font-size: 0.9rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.roadmap-more[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.roadmap-more > summary:hover {
+  color: #fff;
+}
+
+.roadmap-more > summary:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.roadmap-more[open] > summary {
+  margin-bottom: 0.55rem;
+}
+
+/* The session block puts its own heading inside the summary, so the label
+   should sit left and the "3 rounds · 2 min each" meta beside it. */
+.roadmap-more--session > summary {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.roadmap-more--session > summary .roadmap-panel-title {
+  margin: 0;
+}
+
+.roadmap-more--session > summary::after {
+  margin-left: auto;
+}
+
+.roadmap-card-callouts {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f9a8d4;
+}
+
+.roadmap-card-summary {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.roadmap-card-list {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.roadmap-card-list li::marker {
+  color: #f9a8d4;
+}
+
+.roadmap-card-mistake {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.roadmap-card-mistake strong {
+  color: #fca5a5;
+}
+
+/* rounds */
+
+.roadmap-rounds {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.roadmap-round {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-left: 2px solid rgba(236, 72, 153, 0.5);
+  padding-left: 0.75rem;
+}
+
+.roadmap-round-n {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.roadmap-round-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.roadmap-round-desc {
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.roadmap-round-meta {
+  font-size: 0.78rem;
+  color: #f9a8d4;
+  margin-top: 0.15rem;
+}
+
+.roadmap-session-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* start */
+
+.roadmap-start {
+  display: block;
+  width: 100%;
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.95rem 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.roadmap-start:hover {
+  filter: brightness(1.08);
+}
+
+.roadmap-start-hint {
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.45;
+}
+
+/* --- next level, on the workout-complete screen -------------------------- */
+
+.nextlevel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 26rem;
+  width: 100%;
+  margin: 0 auto 1.25rem;
+}
+
+.nextlevel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid rgba(236, 72, 153, 0.5);
+  background: linear-gradient(
+    135deg,
+    rgba(236, 72, 153, 0.22) 0%,
+    rgba(236, 72, 153, 0.34) 100%
+  );
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.nextlevel:hover {
+  border-color: rgba(236, 72, 153, 0.85);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.nextlevel:focus-visible {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+.nextlevel--done {
+  margin-bottom: 1.25rem;
+}
+
+.nextlevel-art {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.65rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: inline-block;
+  font-size: 1.5rem;
+  line-height: 2.6rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.nextlevel-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.nextlevel-eyebrow {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.nextlevel-title {
+  font-weight: 800;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.nextlevel-sub {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.nextlevel-go {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.nextlevel-secondary {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.35rem;
+}
+
+.nextlevel-secondary:hover {
+  color: #fff;
+}

@@ -12,6 +12,11 @@ export const CHARMS_STORAGE_KEY = "shotcaller_charms";
 // One-time flag: set after existing users' already-earned charms are seeded
 // as "awarded" so they don't get a backlog of celebrations on next workout.
 export const CHARMS_SEEDED_FLAG = "shotcaller_charms_seeded";
+// Guided-path progress: which "Start Here" levels have been cleared.
+export const ROADMAP_STORAGE_KEY = "shotcaller_roadmap_progress";
+// Set once the user dismisses the "Start Here" banner on the setup screen, so
+// a returning fighter who doesn't want the path isn't nagged by it forever.
+export const ROADMAP_BANNER_DISMISSED_KEY = "shotcaller_roadmap_banner_hidden";
 
 // User settings persistence
 export const USER_SETTINGS_STORAGE_KEY = "shotcaller_user_settings";

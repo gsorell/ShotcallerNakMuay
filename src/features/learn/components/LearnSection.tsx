@@ -2,6 +2,12 @@ import { useCallback, useMemo, useState } from "react";
 
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
+// Direct component imports rather than the roadmap barrel: the barrel pulls in
+// modules that import this feature back.
+import { RoadmapSection } from "@/features/roadmap/components/RoadmapSection";
+import { StartHereBanner } from "@/features/roadmap/components/StartHereBanner";
+import { FOUNDATIONS } from "@/features/roadmap/data/paths";
+import { levelTeaching } from "@/features/roadmap/vocabulary";
 import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
 import { trackEvent } from "@/utils/analytics";
@@ -25,7 +31,9 @@ import "./LearnSection.css";
 type View =
   | { mode: "categories" }
   | { mode: "list"; category: TechniqueCategory }
-  | { mode: "detail"; slug: string };
+  | { mode: "detail"; slug: string }
+  /** The guided path, hosted here rather than on its own page — see below. */
+  | { mode: "path" };
 
 interface LearnSectionProps {
   /** Leave the Learn section entirely (back to the timer). */
@@ -94,6 +102,21 @@ export function LearnSection({ onBack }: LearnSectionProps) {
     [settings, setPage]
   );
 
+  // The guided path renders its own header and back button, so this page steps
+  // out of the way entirely rather than stacking two of each.
+  if (view.mode === "path") {
+    return (
+      <div className="learn">
+        <RoadmapSection
+          onBack={() => {
+            setView({ mode: "categories" });
+            scrollContentToTop("auto");
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="learn">
       <div className="learn-header">
@@ -107,6 +130,10 @@ export function LearnSection({ onBack }: LearnSectionProps) {
         <CategoryList
           isPro={isPro}
           onOpenCategory={openCategory}
+          onOpenPath={() => {
+            setView({ mode: "path" });
+            scrollContentToTop("auto");
+          }}
           onUnlock={() => openPaywall("learn_header")}
         />
       )}
@@ -120,7 +147,14 @@ export function LearnSection({ onBack }: LearnSectionProps) {
       )}
 
       {view.mode === "detail" && (
-        <LessonDetail slug={view.slug} onDrill={drillStyle} />
+        <LessonDetail
+          slug={view.slug}
+          onDrill={drillStyle}
+          onOpenPath={() => {
+            setView({ mode: "path" });
+            scrollContentToTop("auto");
+          }}
+        />
       )}
     </div>
   );
@@ -131,15 +165,35 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 function CategoryList({
   isPro,
   onOpenCategory,
+  onOpenPath,
   onUnlock,
 }: {
   isPro: boolean;
   onOpenCategory: (c: TechniqueCategory) => void;
+  onOpenPath: () => void;
   onUnlock: () => void;
 }) {
   return (
     <>
-      <h1 className="learn-title">Learn the Techniques</h1>
+      <h1 className="learn-title">Learn</h1>
+      <p className="learn-subtitle">
+        A guided path if you are starting out, and every technique the app calls
+        out if you just need to look something up.
+      </p>
+
+      {/* The path leads, because someone who does not know where to begin is
+          the person least able to pick a category. It stays a card rather than
+          the full ladder so the library underneath is still one scroll away —
+          looking a technique up is a different errand from working through a
+          curriculum, and it has to stay fast. */}
+      <StartHereBanner
+        onOpen={onOpenPath}
+        dismissible={false}
+        hideWhenGraduated={false}
+        source="learn"
+      />
+
+      <h2 className="learn-section-heading">Browse every technique</h2>
       <p className="learn-subtitle">
         {TOTAL_LESSON_COUNT} techniques the app calls out — what each one is,
         how to throw it, and what people get wrong.
@@ -250,12 +304,15 @@ function TechniqueList({
 function LessonDetail({
   slug,
   onDrill,
+  onOpenPath,
 }: {
   slug: string;
   onDrill: (styleKey: string, slug: string) => void;
+  onOpenPath: () => void;
 }) {
   const entry = getEntry(slug);
   const styles = useMemo(() => getStylesForEntry(slug), [slug]);
+  const level = useMemo(() => levelTeaching(FOUNDATIONS, slug), [slug]);
 
   if (!entry) return <p className="learn-subtitle">Lesson not found.</p>;
 
@@ -270,6 +327,18 @@ function LessonDetail({
       </p>
 
       <p className="learn-detail-summary">{entry.summary}</p>
+
+      {level && (
+        <button className="learn-path-link" onClick={onOpenPath}>
+          <span className="learn-path-link-label">
+            Taught at {level.bonus ? "the bonus level" : `level ${level.id}`} of
+            Start Here
+          </span>
+          <span className="learn-path-link-title">
+            {level.title.replace(/^Bonus: /, "")} ›
+          </span>
+        </button>
+      )}
 
       <section className="learn-panel">
         <h2 className="learn-panel-title">Key points</h2>

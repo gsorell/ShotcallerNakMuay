@@ -1,0 +1,180 @@
+/* GlossaryModal.css — free quick reference for the callout vocabulary.
+   Follows the app's panel language: dark translucent card, pink accents. */
+
+.glossary-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9995;
+  padding: 1rem;
+}
+
+.glossary-content {
+  position: relative;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: #1a1a2e;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.glossary-header {
+  position: sticky;
+  top: -1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #1a1a2e;
+  padding: 0.35rem 0 0.7rem;
+  margin: -0.35rem 0 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1;
+}
+
+.glossary-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.glossary-close {
+  background: rgba(236, 72, 153, 0.15);
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  color: #f9a8d4;
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.85rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.glossary-close:hover {
+  background: rgba(236, 72, 153, 0.28);
+  color: #fff;
+}
+
+.glossary-note {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.glossary-note strong {
+  color: #fbbf24;
+}
+
+.glossary-section {
+  margin-bottom: 1.25rem;
+}
+
+.glossary-section h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+.glossary-sub {
+  margin: 0 0 0.6rem;
+  font-size: 0.83rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.glossary-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.7rem;
+}
+
+.glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.glossary-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: top;
+}
+
+.glossary-table tr:last-child td {
+  border-bottom: none;
+}
+
+.glossary-num {
+  width: 2rem;
+  font-weight: 800;
+  color: #ec4899;
+  font-variant-numeric: tabular-nums;
+}
+
+.glossary-term {
+  white-space: nowrap;
+  font-weight: 700;
+  color: #fff;
+}
+
+.glossary-thai {
+  display: block;
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.glossary-desc {
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.45;
+}
+
+.glossary-more {
+  display: block;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f9a8d4;
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.glossary-more:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.glossary-footer {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.glossary-privacy {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+.glossary-privacy:hover {
+  color: #f9a8d4;
+}

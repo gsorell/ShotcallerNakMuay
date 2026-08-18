@@ -19,9 +19,17 @@ export interface WorkoutLogLite {
   emphases: string[];
   roundsCompleted: number;
   difficulty?: string;
+  status?: string;
+  /** Present only on guided-path sessions — see features/roadmap. */
+  roadmap?: { pathId: string; levelId: number };
 }
 
-export type CharmCategory = "explorer" | "volume" | "warrior" | "ritual";
+export type CharmCategory =
+  | "explorer"
+  | "volume"
+  | "warrior"
+  | "ritual"
+  | "path";
 
 export interface Charm extends CharmVisual {
   id: string;
@@ -48,12 +56,40 @@ function localDay(timestamp: string): string {
 
 function distinctStyles(logs: WorkoutLogLite[]): Set<string> {
   const styles = new Set<string>();
-  logs.forEach((l) =>
+  logs.forEach((l) => {
+    // A guided-path session labels itself "Start Here · Level N". Those are
+    // levels, not fighting styles — counting them would let a beginner earn
+    // "Jack of All Trades" without ever picking a style.
+    if (l.roadmap) return;
     l.emphases.forEach((e) => {
       if (e && !NON_STYLE_LABELS.has(e)) styles.add(e);
-    })
-  );
+    });
+  });
   return styles;
+}
+
+/**
+ * Distinct roadmap levels cleared, across all paths. Being a Set is what makes
+ * replays free: training Level 4 five times still counts once, so a charm can
+ * never be farmed by repeating the easiest level.
+ */
+function clearedLevels(logs: WorkoutLogLite[]): Set<string> {
+  const cleared = new Set<string>();
+  logs.forEach((l) => {
+    // Quitting halfway is not clearing it.
+    if (l.roadmap && l.status === "completed") {
+      cleared.add(`${l.roadmap.pathId}:${l.roadmap.levelId}`);
+    }
+  });
+  return cleared;
+}
+
+function hasClearedLevel(
+  logs: WorkoutLogLite[],
+  pathId: string,
+  levelId: number
+): boolean {
+  return clearedLevels(logs).has(`${pathId}:${levelId}`);
 }
 
 /** Highest number of rounds completed within a single local calendar day. */
@@ -65,6 +101,9 @@ function maxRoundsInADay(logs: WorkoutLogLite[]): number {
   });
   return Object.values(byDay).reduce((max, v) => Math.max(max, v), 0);
 }
+
+const FOUNDATIONS_ID = "foundations";
+const FOUNDATIONS_CORE_LEVELS = 10;
 
 // --- Catalog -----------------------------------------------------------------
 
@@ -162,6 +201,86 @@ export const ACHIEVEMENT_CHARMS: Charm[] = [
       ).length;
       return { current: have, target: 3 };
     },
+  },
+
+  // --- Guided path ----------------------------------------------------------
+  // Level ids are written literally rather than derived from the path data, so
+  // the catalog stays a flat list of predicates. `roadmapCoverage.test.ts`
+  // checks them against FOUNDATIONS, so a curriculum change that orphans one
+  // fails loudly instead of quietly making a charm unearnable.
+  {
+    id: "first_step",
+    category: "path",
+    name: "First Step",
+    thaiName: "ก้าวแรก",
+    emoji: "👣",
+    description:
+      "You cleared the first level of the path. Two punches, and the numbers behind them.",
+    accentColor: "#f9a8d4",
+    glowColor: "rgba(249, 168, 212, 0.55)",
+    isEarned: (logs) => hasClearedLevel(logs, FOUNDATIONS_ID, 1),
+    progress: (logs) => ({
+      current: hasClearedLevel(logs, FOUNDATIONS_ID, 1) ? 1 : 0,
+      target: 1,
+    }),
+  },
+  {
+    id: "half_the_alphabet",
+    category: "path",
+    name: "Half the Alphabet",
+    thaiName: "ครึ่งทาง",
+    emoji: "📖",
+    description:
+      "Five levels cleared. You answer to most of what the app can shout at you.",
+    accentColor: "#60a5fa",
+    glowColor: "rgba(96, 165, 250, 0.55)",
+    isEarned: (logs) => clearedLevels(logs).size >= 5,
+    progress: (logs) => ({
+      current: Math.min(clearedLevels(logs).size, 5),
+      target: 5,
+    }),
+  },
+  {
+    id: "graduate",
+    category: "path",
+    name: "Graduate",
+    thaiName: "จบหลักสูตร",
+    emoji: "🎓",
+    description:
+      "Every level of the path cleared. Nak Muay Newb has nothing left to surprise you with.",
+    accentColor: "#facc15",
+    glowColor: "rgba(250, 204, 21, 0.6)",
+    isEarned: (logs) => {
+      const cleared = clearedLevels(logs);
+      for (let id = 1; id <= FOUNDATIONS_CORE_LEVELS; id += 1) {
+        if (!cleared.has(`${FOUNDATIONS_ID}:${id}`)) return false;
+      }
+      return true;
+    },
+    progress: (logs) => {
+      const cleared = clearedLevels(logs);
+      let have = 0;
+      for (let id = 1; id <= FOUNDATIONS_CORE_LEVELS; id += 1) {
+        if (cleared.has(`${FOUNDATIONS_ID}:${id}`)) have += 1;
+      }
+      return { current: have, target: FOUNDATIONS_CORE_LEVELS };
+    },
+  },
+  {
+    id: "sharp_edges",
+    category: "path",
+    name: "Sharp Edges",
+    thaiName: "ศอกคม",
+    emoji: "🔪",
+    description:
+      "You went past the finish line for the elbows. Muay Sok is waiting for you.",
+    accentColor: "#f87171",
+    glowColor: "rgba(248, 113, 113, 0.55)",
+    isEarned: (logs) => hasClearedLevel(logs, FOUNDATIONS_ID, 11),
+    progress: (logs) => ({
+      current: hasClearedLevel(logs, FOUNDATIONS_ID, 11) ? 1 : 0,
+      target: 1,
+    }),
   },
 ];
 

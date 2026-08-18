@@ -29,7 +29,7 @@ export const BASE_EMPHASIS_CONFIG: {
     label: "Muay Khao",
     icon: "🙏",
     desc: "Close-range clinch work and knee combinations",
-    iconPath: "/assets/icon_khao.png",
+    iconPath: "/assets/icon_knee.png",
   },
   mat: {
     label: "Muay Mat",
@@ -90,7 +90,7 @@ export const BASE_EMPHASIS_CONFIG: {
     label: "Low Kick Legends",
     icon: "🦵",
     desc: "Devastating low kicks and classic Dutch-style combinations",
-    iconPath: "/assets/icon_lowkicklegends.png",
+    iconPath: "/assets/icon_low_kick.png",
   },
   elbow_arsenal: {
     label: "Elbow Arsenal",

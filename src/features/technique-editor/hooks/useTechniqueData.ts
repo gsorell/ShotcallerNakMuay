@@ -8,7 +8,11 @@ import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import type { TechniquesShape } from "@/types";
 import { normalizeKey } from "@/utils/techniqueUtils";
 
-const TECHNIQUES_VERSION = "v37";
+// v38 — "Middle Kick" renamed to the conventional "Body Kick" in Nak Muay Newb.
+// The bump is what carries a shipped-content change to existing installs:
+// untouched groups take the new copy, customised ones keep the user's version
+// (and the old string still resolves to its lesson — see techniqueLibrary).
+const TECHNIQUES_VERSION = "v38";
 
 type GroupMap = Record<string, any>;
 

@@ -5,7 +5,7 @@ import CharmTrophyCase from "./CharmTrophyCase";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
 const EMPHASIS_ICONS: Record<string, string> = {
-  khao: "/assets/icon_khao.png",
+  khao: "/assets/icon_knee.png",
   mat: "/assets/icon_mat.png",
   tae: "/assets/icon_tae.png",
   femur: "/assets/icon_femur.png",

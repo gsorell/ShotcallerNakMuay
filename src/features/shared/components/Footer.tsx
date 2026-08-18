@@ -7,7 +7,8 @@ export type FooterProps = {
   hasSelectedEmphasis: boolean;
   linkButtonStyle: any;
   setPage: any;
-  setShowOnboardingMsg: any;
+  /** Same handler the header uses — Help re-opens the intro. */
+  onHelp: () => void;
 };
 
 export const Footer = ({
@@ -15,7 +16,7 @@ export const Footer = ({
   hasSelectedEmphasis,
   linkButtonStyle,
   setPage,
-  setShowOnboardingMsg,
+  onHelp,
 }: FooterProps) => (
   <footer className="app-footer">
     <div className="app-footer-content">
@@ -56,7 +57,7 @@ export const Footer = ({
         Workout Logs
       </button>
       <button
-        onClick={() => setShowOnboardingMsg(true)}
+        onClick={onHelp}
         className="app-footer-link"
       >
         Help

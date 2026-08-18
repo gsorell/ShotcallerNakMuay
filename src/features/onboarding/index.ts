@@ -1,2 +1,2 @@
-export { OnboardingProvider } from "./OnboardingProvider";
+export { OnboardingProvider, useOnboardingState } from "./OnboardingProvider";
 export { hasOnboarded } from "./storage";

@@ -33,7 +33,9 @@
 .active-session-controls-inner {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  /* Generous on purpose: mistaking Stop for Pause is the costly error here,
+     and the tap happens while moving. */
+  gap: 1.5rem;
 }
 
 /* Base control button style */
@@ -51,16 +53,80 @@
   box-shadow: 0 6px 18px rgba(0,0,0,0.18);
 }
 
-/* Pause button style */
-.btn-pause {
-  background: linear-gradient(180deg, #f59e0b 0%, #f97316 100%);
-  border: 1px solid #f97316;
+/* Session controls.
+   ---------------------------------------------------------------------------
+   These are read at arm's length, mid-round, by someone moving, breathing hard
+   and possibly wearing gloves — a fraction of a second of attention. That makes
+   this a legibility and mis-tap problem, not a branding one.
+
+   Amber-pause / red-stop is the convention for exactly this context (Apple's
+   Workout app is the closest analogue) and traffic-light semantics are about as
+   universally understood as UI gets. The original pairing had it right; what
+   was wrong was the tone — a raw orange that appeared nowhere else in the app,
+   and a Stop that graduated into the brand pink.
+
+   Two corrections to the attempt after that, which made Pause pink and Stop a
+   ghost outline:
+     - Pink is this app's colour for everything (Start, Begin, links, accents).
+       Using it here carries no information; it just says "app".
+     - A ghost button is the wrong shape for Stop. Low-contrast outlines are the
+       hardest thing to hit accurately in motion, and ghosting says "secondary"
+       when the real message is "deliberate". Stop stays solid and obvious — it
+       is subordinate by size, not by being hard to see.
+
+   These reuse the difficulty selector's treatment exactly — flat fill, lighter
+   border of the same hue, colour-matched glow — because that is where this app
+   already states its semantic colour scale: Novice green, Amateur amber, Pro
+   red. Amber-pause and red-stop therefore sit inside an established palette
+   rather than importing a new one, and they carry the traffic-light meaning
+   that suits a control read at arm's length mid-round.
+
+   What was wrong before was the gradients, not the hues: Pause faded amber into
+   an orange used nowhere else, and Stop faded red into the brand pink, which
+   made the one irreversible control look like the primary action. */
+
+.btn-pause,
+.btn-resume,
+.btn-stop {
+  color: #fff;
+  justify-content: center;
+  /* Equal width so the pair reads as one control group, and so the layout does
+     not shift under the thumb when Pause becomes Resume mid-round. */
+  min-width: 8rem;
+  transition: filter 0.2s ease, transform 0.15s ease;
 }
 
-/* Stop button style */
+/* Running — amber, as Amateur is in the difficulty scale. */
+.btn-pause {
+  background-color: #f59e0b;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+}
+
+/* Paused — green, as Novice is. Resuming is the "go" action, and green is
+   already what this app means by go. */
+.btn-resume {
+  background-color: #22c55e;
+  border: 1px solid #4ade80;
+  box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
+}
+
 .btn-stop {
-  background: linear-gradient(180deg, #ef4444 0%, #ec4899 100%);
-  border: 1px solid #ec4899;
+  background-color: #ef4444;
+  border: 1px solid #f87171;
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-pause:hover,
+.btn-resume:hover,
+.btn-stop:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.active-session-control-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 /* Button text */
@@ -163,4 +229,41 @@
 .call-interruption-hint {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.7);
+}
+/* --- "Up next" panel (guided levels, shown during rest) ------------------
+   The rest screen is otherwise a bare countdown. On a guided level it is the
+   one moment the student has both attention and time, so it explains what the
+   next round is going to ask of them before the bell removes the choice. */
+
+.active-session-upnext {
+  max-width: 26rem;
+  margin: 1rem auto 0;
+  padding: 0.9rem 1.1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(236, 72, 153, 0.35);
+  background: rgba(236, 72, 153, 0.12);
+  text-align: center;
+}
+
+.active-session-upnext-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+  margin-bottom: 0.3rem;
+}
+
+.active-session-upnext-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.active-session-upnext-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
 }

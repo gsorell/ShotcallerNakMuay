@@ -24,6 +24,12 @@ export const AnalyticsEvents = {
   WorkoutLogsOpen: "workout_logs_open",
   CustomGroupCreated: "custom_group_created",
 
+  // Guided path ("Start Here") events
+  RoadmapOpen: "roadmap_open",
+  RoadmapLevelStart: "roadmap_level_start",
+  RoadmapLevelComplete: "roadmap_level_complete",
+  RoadmapGraduate: "roadmap_graduate",
+
   // PWA events
   PWAInstallPrompt: "pwa_install_prompt",
   PWAInstallAccept: "pwa_install_accept",

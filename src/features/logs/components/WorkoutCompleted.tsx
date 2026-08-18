@@ -1,5 +1,5 @@
 import html2canvas from "html2canvas";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   captureAndDownloadElement,
   generateWorkoutFilename,
@@ -23,6 +23,12 @@ interface WorkoutCompletedProps {
   onRestart: () => void;
   onReset: () => void;
   onViewLog: () => void;
+  /**
+   * Rendered above the icon row. The guided path puts its "next level" button
+   * here; passed in as a slot so this component stays unaware of the roadmap —
+   * importing it directly would make logs and roadmap a circular import.
+   */
+  primaryAction?: React.ReactNode;
 }
 
 export default function WorkoutCompleted({
@@ -30,6 +36,7 @@ export default function WorkoutCompleted({
   onRestart,
   onReset,
   onViewLog,
+  primaryAction,
 }: WorkoutCompletedProps) {
   const workoutSummaryRef = useRef<HTMLDivElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -338,6 +345,8 @@ export default function WorkoutCompleted({
           </span>
         </div>
       </div>
+
+      {primaryAction}
 
       {/* Action Buttons - Outside capture area */}
       <div

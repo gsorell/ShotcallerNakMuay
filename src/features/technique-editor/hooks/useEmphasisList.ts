@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import { BASE_EMPHASIS_CONFIG } from "@/emphasisConfig";
 import { type TechniquesShape } from "@/types";
+import { CORE_ORDER } from "../constants";
 
 export function useEmphasisList(techniques: TechniquesShape) {
   return useMemo(() => {
@@ -10,36 +11,6 @@ export function useEmphasisList(techniques: TechniquesShape) {
       (k) => k !== "calisthenics"
     );
 
-    // Core group keys in preferred order. The first 9 are above the fold
-    // (before the "More" toggle) and lead with the Muay Thai archetypes that
-    // define the app's identity. Trailing tiles (timer_only/freestyle/newb)
-    // are rendered separately at the end via TRAILING_KEYS.
-    const CORE_ORDER: string[] = [
-      // --- Above the fold (top 9) ---
-      "meat_potatoes",
-      "mat",
-      "tae",
-      "khao",
-      "sok",
-      "femur",
-      "buakaw",
-      "dutch_kickboxing",
-      "two_piece",
-      // --- Below the fold ---
-      "counters",
-      "low_kick_legends",
-      "boxing",
-      "ko_setups",
-      "elbow_arsenal",
-      "feints_and_fakeouts",
-      "tricky_traps",
-      "southpaw",
-      // --- Trailing (filtered out and rendered separately) ---
-      "timer_only",
-      "freestyle",
-      "newb",
-    ];
-
     interface EmphasisConfig {
       label?: string;
       iconPath?: string;
@@ -47,9 +18,15 @@ export function useEmphasisList(techniques: TechniquesShape) {
       desc?: string;
     }
 
-    // Special tiles that always appear regardless of technique data,
-    // rendered at the end of the list.
-    const TRAILING_KEYS = ["timer_only", "freestyle", "newb"];
+    // Tiles that always appear regardless of the saved technique data, so a
+    // user who deleted or renamed a group still has a usable starting point.
+    //
+    // Nak Muay Newb leads the grid rather than trailing it: it is the style a
+    // beginner is meant to pick, so burying it under nine advanced archetypes
+    // was working against the whole point of it.
+    const LEADING_KEYS = ["newb"];
+    const TRAILING_KEYS = ["timer_only", "freestyle"];
+    const SPECIAL_KEYS = [...LEADING_KEYS, ...TRAILING_KEYS];
 
     const buildSpecialTile = (key: string) => {
       const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
@@ -80,10 +57,11 @@ export function useEmphasisList(techniques: TechniquesShape) {
       };
     };
 
+    const leadingTiles = LEADING_KEYS.map(buildSpecialTile);
     const trailingTiles = TRAILING_KEYS.map(buildSpecialTile);
 
     const coreGroups = CORE_ORDER.filter(
-      (key) => !TRAILING_KEYS.includes(key) && techniqueKeys.includes(key)
+      (key) => !SPECIAL_KEYS.includes(key) && techniqueKeys.includes(key)
     ).map((key) => {
       const config = (BASE_EMPHASIS_CONFIG[key] || {}) as EmphasisConfig;
       const technique = techniques[key];
@@ -137,6 +115,6 @@ export function useEmphasisList(techniques: TechniquesShape) {
         };
       });
 
-    return [...coreGroups, ...userGroups, ...trailingTiles];
+    return [...leadingTiles, ...coreGroups, ...userGroups, ...trailingTiles];
   }, [techniques]);
 }

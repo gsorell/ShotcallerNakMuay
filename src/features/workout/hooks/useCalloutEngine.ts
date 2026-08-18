@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TechniqueWithStyle } from "@/types";
 import { mirrorTechnique } from "@/utils/textUtils";
+import {
+  CADENCE_PER_MIN,
+  SLOWEST_INTERVAL_MS,
+  rampedIntervalMs,
+} from "../utils/cadence";
+import {
+  bankSegment,
+  createRoundStopwatch,
+  elapsedMs,
+  resetRound,
+  startSegment,
+} from "../utils/roundStopwatch";
 
 type SpeakWithDurationFn = (
   text: string,
@@ -32,6 +44,17 @@ export function useCalloutEngine({
   const orderedIndexRef = useRef<number>(0);
   const currentPoolRef = useRef<TechniqueWithStyle[]>([]);
   const ttsGuardRef = useRef(false);
+
+  // Watchdog state. The scheduling loop is a chain: each callout schedules the
+  // next one from its `onend`. That makes a single lost `onend` fatal — the
+  // chain simply stops while the round timer keeps counting down, which is what
+  // a backgrounded PWA does when the OS tears down speech mid-utterance.
+  const lastCalloutAtRef = useRef<number>(0);
+  const baseDelayRef = useRef<number>(2500);
+  // Work done in the current round, excluding time spent paused — this is what
+  // the pace ramp reads. Reset per round, so each round runs its own arc.
+  const stopwatchRef = useRef(createRoundStopwatch());
+  const startCalloutsRef = useRef<((delay?: number) => void) | null>(null);
 
   // Helper refs to avoid dependency cycles in the timeout loop
   const runningRef = useRef(timer.running);
@@ -76,13 +99,14 @@ export function useCalloutEngine({
       // Calculate delays based on difficulty
       const cadencePerMin =
         settings.difficulty === "easy"
-          ? 20
+          ? CADENCE_PER_MIN.easy
           : settings.difficulty === "hard"
-          ? 42
-          : 26;
+          ? CADENCE_PER_MIN.hard
+          : CADENCE_PER_MIN.medium;
       const baseDelayMs = Math.round(60000 / cadencePerMin);
       const minDelayMultiplier = settings.difficulty === "hard" ? 0.35 : 0.5;
       const minDelayMs = Math.round(baseDelayMs * minDelayMultiplier);
+      baseDelayRef.current = baseDelayMs;
 
       const scheduleNext = (delay: number) => {
         if (calloutRef.current) {
@@ -113,9 +137,11 @@ export function useCalloutEngine({
           return;
         }
 
-        // Select Technique
+        // Select Technique. Ordering is read through a ref so a caller can
+        // switch between sequential and random at a round boundary without
+        // restarting the callout loop — see useWorkoutSettings.
         let selectedTechnique: TechniqueWithStyle;
-        if (settings.readInOrder) {
+        if (settings.readInOrderRef.current) {
           selectedTechnique = pool[orderedIndexRef.current % pool.length]!;
           orderedIndexRef.current += 1;
         } else {
@@ -123,6 +149,7 @@ export function useCalloutEngine({
         }
 
         shotsCalledOutRef.current += 1;
+        lastCalloutAtRef.current = Date.now();
 
         // Determine Text
         let finalPhrase = "";
@@ -139,7 +166,22 @@ export function useCalloutEngine({
           return;
         }
 
-        setCurrentCallout(finalPhrase);
+        // The screen can carry more than the voice does — the guided path shows
+        // "1 · Jab" while calling just one of the two.
+        let displayPhrase = finalPhrase;
+        if (selectedTechnique.display) {
+          try {
+            displayPhrase = settings.southpawModeRef.current
+              ? mirrorTechnique(
+                  selectedTechnique.display,
+                  selectedTechnique.style
+                )
+              : selectedTechnique.display;
+          } catch {
+            displayPhrase = selectedTechnique.display;
+          }
+        }
+        setCurrentCallout(displayPhrase);
 
         // Speak
         speakWithDuration(
@@ -159,10 +201,43 @@ export function useCalloutEngine({
             );
             const responsiveDelayMs = actualDurationMs + bufferTime + jitter;
             const timingCap = isPro ? baseDelayMs * 0.85 : baseDelayMs * 1.1;
-            const nextDelayMs = Math.max(
+            let nextDelayMs = Math.max(
               minDelayMs,
               Math.min(responsiveDelayMs, timingCap)
             );
+
+            // Phrasing, not noise. An earlier attempt multiplied the gap by a
+            // wide uniform random factor, which read as broken rather than
+            // human — uncorrelated gaps have no musical logic, and it threw
+            // away the duration-responsive timing that was already right.
+            //
+            // Instead: rest after a call in proportion to how much it asked
+            // for (speech duration tracks combination length), plus a small
+            // wobble, plus the occasional held beat to reset stance. The cap
+            // is skipped deliberately — clamping every gap to it is what
+            // flattens a four-punch combination into the same space as a jab.
+            if (settings.variedCadenceRef?.current) {
+              // The round picks up pace as it goes: novice at the bell,
+              // near amateur by the end. See utils/cadence.
+              const roundMs = Math.max(
+                1,
+                Math.round((settings.roundMin || 1) * 60000)
+              );
+              const worked = elapsedMs(stopwatchRef.current, Date.now());
+              const rampedBase = rampedIntervalMs(worked / roundMs);
+
+              const workRest = rampedBase * 0.6;
+              const wobble = 1 + (Math.random() - 0.5) * 0.24; // ±12%
+              let gap = workRest * wobble;
+              // A smaller held beat than before, because the ceiling below now
+              // absorbs most of it anyway.
+              if (Math.random() < 0.16) gap += 250 + Math.random() * 350;
+              nextDelayMs = Math.min(
+                SLOWEST_INTERVAL_MS,
+                Math.max(minDelayMs, actualDurationMs + bufferTime + gap)
+              );
+            }
+
             scheduleNext(nextDelayMs);
           }
         );
@@ -172,7 +247,8 @@ export function useCalloutEngine({
     },
     [
       settings.difficulty,
-      settings.readInOrder,
+      settings.readInOrderRef,
+      settings.variedCadenceRef,
       settings.southpawModeRef,
       settings.voiceSpeedRef,
       stopTechniqueCallouts,
@@ -180,9 +256,58 @@ export function useCalloutEngine({
     ]
   );
 
+  // Keep a stable handle for the watchdog, which must not re-subscribe every
+  // time the callback identity changes.
+  useEffect(() => {
+    startCalloutsRef.current = startTechniqueCallouts;
+  }, [startTechniqueCallouts]);
+
+  /**
+   * Restart the chain if callouts have gone quiet while the round is still
+   * live. Without this a single dropped `onend` — a backgrounded tab, an OS
+   * that kills speech, an interrupted utterance — leaves the timer running
+   * against silence until the user notices and pauses/resumes by hand.
+   */
+  useEffect(() => {
+    if (!timer.running || timer.paused || timer.isResting || timer.isPreRound) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      if (
+        ttsGuardRef.current ||
+        !runningRef.current ||
+        pausedRef.current ||
+        isRestingRef.current ||
+        !currentPoolRef.current.length
+      ) {
+        return;
+      }
+      const silentFor = Date.now() - lastCalloutAtRef.current;
+      // Generous: three times the expected gap, floor of six seconds, so a
+      // long utterance or a held beat never trips it.
+      const limit = Math.max(6000, baseDelayRef.current * 3);
+      if (silentFor <= limit) return;
+
+      try {
+        window.speechSynthesis.resume();
+      } catch {}
+      lastCalloutAtRef.current = Date.now();
+      startCalloutsRef.current?.(0);
+    }, 2000);
+    return () => window.clearInterval(id);
+  }, [timer.running, timer.paused, timer.isResting, timer.isPreRound]);
+
   // Auto-start effect
   useEffect(() => {
-    if (!timer.running || timer.paused || timer.isResting) return;
+    if (!timer.running || timer.paused || timer.isResting) {
+      // Stopping for any reason — pause, rest, end of round. Bank the work so
+      // far so that resuming picks the ramp up where it left off instead of
+      // restarting it or jumping to whatever the clock says.
+      bankSegment(stopwatchRef.current, Date.now());
+      return;
+    }
+    lastCalloutAtRef.current = Date.now();
+    startSegment(stopwatchRef.current, Date.now());
     startTechniqueCallouts(800);
     return () => {
       stopTechniqueCallouts();
@@ -211,6 +336,19 @@ export function useCalloutEngine({
             window.speechSynthesis.pause();
           } catch {}
         }
+        return;
+      }
+
+      // Coming back into view. speechSynthesis is paused per-engine, not
+      // per-utterance, so a pause that is never undone silences every later
+      // round: the next callout is spoken into a paused engine, its `onend`
+      // never fires, and the loop — which schedules the next callout from that
+      // callback — stops dead while the clock keeps running. Resuming here is
+      // what keeps the session alive after a tab switch or screen blank.
+      if (!isHidden && typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.resume();
+        } catch {}
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -218,9 +356,15 @@ export function useCalloutEngine({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [timer.running, timer.paused, timer.isResting, timer.isPreRound]);
 
+  /** Start the pace ramp over. Called at a genuine round boundary, not a resume. */
+  const resetRoundPace = useCallback(() => {
+    resetRound(stopwatchRef.current, Date.now());
+  }, []);
+
   return {
     currentCallout,
     setCurrentCallout,
+    resetRoundPace,
     startTechniqueCallouts,
     stopTechniqueCallouts,
     stopAllNarration,

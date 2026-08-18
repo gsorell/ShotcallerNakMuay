@@ -1,3 +1,4 @@
+import { type TechniqueEntry } from "@/constants/techniques";
 import {
   type EmphasisKey,
   type TechniquesShape,
@@ -7,8 +8,8 @@ import {
 export type TechniqueShape = {
   label: string;
   title?: string;
-  singles?: (string | { text: string; favorite?: boolean })[];
-  combos?: (string | { text: string; favorite?: boolean })[];
+  singles?: TechniqueEntry[];
+  combos?: TechniqueEntry[];
   techniques?: Record<string, any>;
   description?: string;
 };
@@ -39,20 +40,37 @@ export function normalizeTechniques(
 
 export function normalizeArray(
   arr: any[] | undefined
-): { text: string; favorite?: boolean }[] {
+): { text: string; favorite?: boolean; weight?: number }[] {
   if (!arr) return [];
   return arr.map((item) =>
     typeof item === "string"
       ? { text: item }
-      : { text: item.text ?? "", favorite: !!item.favorite }
+      : {
+          text: item.text ?? "",
+          favorite: !!item.favorite,
+          // Carried through so editing a list does not quietly flatten a
+          // weighting the style depends on.
+          ...(typeof item.weight === "number" ? { weight: item.weight } : {}),
+        }
   );
 }
 
 export function denormalizeArray(
-  arr: { text: string; favorite?: boolean }[]
-): (string | { text: string; favorite?: boolean })[] {
-  if (arr.every((item) => !item.favorite)) return arr.map((item) => item.text);
-  return arr;
+  arr: { text: string; favorite?: boolean; weight?: number }[]
+): TechniqueEntry[] {
+  // Collapse back to plain strings only when there is nothing else to keep.
+  if (arr.every((item) => !item.favorite && item.weight === undefined)) {
+    return arr.map((item) => item.text);
+  }
+  return arr.map((item) =>
+    item.favorite || item.weight !== undefined
+      ? {
+          text: item.text,
+          ...(item.favorite ? { favorite: true } : {}),
+          ...(item.weight !== undefined ? { weight: item.weight } : {}),
+        }
+      : item.text
+  );
 }
 
 // Normalize keys for stable lookups: lowercase, convert runs of non-alphanum to underscore, trim underscores.
@@ -61,6 +79,26 @@ export const normalizeKey = (k: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+
+type WeightedTechnique = TechniqueWithStyle & { weight: number };
+
+/** A starred technique is called about twice as often, unless it says otherwise. */
+const FAVORITE_WEIGHT = 2;
+/**
+ * Ceiling on any single entry. A typo (`weight: 500`) would otherwise flood the
+ * pool so completely that nothing else is ever called.
+ */
+const MAX_WEIGHT = 6;
+
+export function entryWeight(entry: unknown): number {
+  if (typeof entry === "string" || !entry) return 1;
+  const raw = (entry as { weight?: unknown }).weight;
+  const explicit = typeof raw === "number" ? raw : Number(raw);
+  if (Number.isFinite(explicit) && explicit >= 1) {
+    return Math.min(MAX_WEIGHT, Math.round(explicit));
+  }
+  return (entry as { favorite?: boolean }).favorite ? FAVORITE_WEIGHT : 1;
+}
 
 export const generateTechniquePool = (
   techniques: TechniquesShape,
@@ -75,7 +113,7 @@ export const generateTechniquePool = (
     .map(([k]) => k);
 
   const keysToUse = enabled.length > 0 ? enabled : ["newb"];
-  const pool: TechniqueWithStyle[] = [];
+  const pool: WeightedTechnique[] = [];
 
   const resolveStyle = (k: string) => {
     if (!techniques) return undefined;
@@ -102,12 +140,12 @@ export const generateTechniquePool = (
 
   const extractStrings = (
     node: any,
-    out: TechniqueWithStyle[],
+    out: WeightedTechnique[],
     styleKey: string
   ) => {
     if (!node) return;
     if (typeof node === "string") {
-      out.push({ text: node, style: styleKey });
+      out.push({ text: node, style: styleKey, weight: 1 });
       return;
     }
     if (Array.isArray(node)) {
@@ -115,26 +153,11 @@ export const generateTechniquePool = (
       return;
     }
     if (typeof node === "object") {
-      if (node.singles) {
-        for (const single of node.singles) {
-          if (typeof single === "string") {
-            out.push({ text: single, style: styleKey });
-          } else if (single && typeof single.text === "string") {
-            out.push({ text: single.text, style: styleKey });
-            if (single.favorite && Math.random() < 0.35)
-              out.push({ text: single.text, style: styleKey });
-          }
-        }
-      }
-      if (node.combos) {
-        for (const combo of node.combos) {
-          if (typeof combo === "string") {
-            out.push({ text: combo, style: styleKey });
-          } else if (combo && typeof combo.text === "string") {
-            out.push({ text: combo.text, style: styleKey });
-            if (combo.favorite && Math.random() < 0.35)
-              out.push({ text: combo.text, style: styleKey });
-          }
+      for (const field of ["singles", "combos"] as const) {
+        for (const entry of node[field] ?? []) {
+          const text = typeof entry === "string" ? entry : entry?.text;
+          if (typeof text !== "string") continue;
+          out.push({ text, style: styleKey, weight: entryWeight(entry) });
         }
       }
       if (node.breakdown) extractStrings(node.breakdown, out, styleKey);
@@ -152,15 +175,30 @@ export const generateTechniquePool = (
     if (cal) extractStrings(cal, pool, "calisthenics");
   }
 
-  // Deduplication logic
-  const cleanedMap = new Map<string, TechniqueWithStyle>();
+  // Collapse duplicates, adding their weights together rather than throwing
+  // the extras away. Writing a technique out three times used to have no
+  // effect at all — the old dedupe kept the first and dropped the rest — so
+  // the obvious way to say "call this more often" quietly did nothing.
+  const byText = new Map<string, WeightedTechnique>();
   for (const item of pool) {
-    if (item && item.text && typeof item.text === "string") {
-      const cleanText = item.text.trim();
-      if (cleanText && !cleanedMap.has(cleanText)) {
-        cleanedMap.set(cleanText, { text: cleanText, style: item.style });
-      }
+    if (!item || typeof item.text !== "string") continue;
+    const text = item.text.trim();
+    if (!text) continue;
+    const existing = byText.get(text);
+    if (existing) existing.weight += item.weight;
+    else byText.set(text, { ...item, text });
+  }
+
+  // Expanded in passes rather than by repeating each entry back to back: a
+  // pool read in order should still call everything once before it starts
+  // repeating the weighted ones, not say "Left Check" three times running.
+  const unique = [...byText.values()];
+  const heaviest = unique.reduce((max, t) => Math.max(max, t.weight), 1);
+  const out: TechniqueWithStyle[] = [];
+  for (let pass = 0; pass < heaviest; pass += 1) {
+    for (const item of unique) {
+      if (item.weight > pass) out.push({ text: item.text, style: item.style });
     }
   }
-  return Array.from(cleanedMap.values());
+  return out;
 };

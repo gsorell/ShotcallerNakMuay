@@ -10,7 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { WorkoutCompleted, WorkoutLogs, seedAwardedCharmsOnce } from "@/features/logs";
 import {
   AppLayout,
-  OnboardingModal,
+  GlossaryModal,
   PWAInstallPrompt,
   useNavigationGestures,
   usePWA,
@@ -21,7 +21,9 @@ import {
 } from "@/features/shared";
 
 import { LearnSection } from "@/features/learn";
-import { hasOnboarded } from "@/features/onboarding";
+import { hasOnboarded, useOnboardingState } from "@/features/onboarding";
+import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
+import { roundDescription, roundTitle } from "@/features/roadmap/session";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -41,9 +43,6 @@ import { fmtTime } from "@/utils/timeUtils";
 import "@/App.css";
 import "@/styles/difficulty.css";
 import "@/styles/setupActions.css";
-
-// Global state to persist modal scroll position across re-renders
-let modalScrollPosition = 0;
 
 export default function App() {
   // --- 1. Init & Global Config ---
@@ -83,7 +82,28 @@ export default function App() {
     restartSession,
     isInterruptedByCall,
     isFreestyle,
+    activeRoadmap,
   } = useWorkoutContext();
+
+  // During rest on a guided level, tell the student what the next round asks
+  // for. `currentRound` is still the round that just ended — the timer only
+  // increments it when rest runs out — so the next one is +1.
+  const upNext =
+    activeRoadmap && timer.isResting
+      ? (() => {
+          const next = timer.currentRound + 1;
+          if (next > settings.roundsCount) return null;
+          return {
+            round: next,
+            title: roundTitle(next),
+            description: roundDescription(
+              activeRoadmap.path,
+              activeRoadmap.level,
+              next
+            ),
+          };
+        })()
+      : null;
 
   // --- 3. UI State ---
   const {
@@ -94,14 +114,15 @@ export default function App() {
     setShowAdvanced,
     showAllEmphases,
     setShowAllEmphases,
-    showOnboardingMsg,
-    setShowOnboardingMsg,
+    showGlossary,
+    setShowGlossary,
     showPWAPrompt,
     setShowPWAPrompt,
   } = useUIContext();
 
   // --- 3a. PWA / App Install Prompt ---
   const { shouldShowPrompt, dismissPrompt } = usePWA();
+  const onboarding = useOnboardingState();
 
   // --- 4. UI Refs ---
   const isEditorRef = useRef(false);
@@ -120,10 +141,11 @@ export default function App() {
     // Don't show if already running as native app
     if (Capacitor.isNativePlatform()) return;
 
-    // A first-time web visitor is still in the onboarding flow, which fires at
-    // roughly the same moment — don't stack this on top of it. The engagement
-    // tick re-runs this every 5s, so the prompt appears shortly after
-    // onboarding is finished or skipped.
+    // Never stack this on the onboarding, and never chase it the moment the
+    // onboarding closes. A first-time visitor should get one thing to read,
+    // not two — the install ask now lives on the onboarding's own last step,
+    // and this prompt is for people who come back.
+    if (onboarding.isShowing || onboarding.finishedThisSession) return;
     if (!hasOnboarded()) return;
 
     // Don't show if user already dismissed this session
@@ -133,7 +155,7 @@ export default function App() {
     if (shouldShowPrompt(userEngagement) && !showPWAPrompt) {
       setShowPWAPrompt(true);
     }
-  }, [userEngagement, shouldShowPrompt, showPWAPrompt, setShowPWAPrompt]);
+  }, [userEngagement, shouldShowPrompt, showPWAPrompt, setShowPWAPrompt, onboarding]);
 
   const {
     voices: unifiedVoices,
@@ -157,16 +179,17 @@ export default function App() {
 
   useNavigationGestures({
     onBack: () => {
-      if (showOnboardingMsg) setShowOnboardingMsg(false);
+      if (showGlossary) setShowGlossary(false);
       else if (
         page === "editor" ||
         page === "logs" ||
         page === "completed" ||
-        page === "learn"
+        page === "learn" ||
+        page === "roadmap"
       )
         setPage("timer");
     },
-    enabled: page !== "timer" || showOnboardingMsg,
+    enabled: page !== "timer" || showGlossary,
     debugLog: false,
   });
 
@@ -211,6 +234,9 @@ export default function App() {
       case "learn":
         return <LearnSection onBack={() => setPage("timer")} />;
 
+      case "roadmap":
+        return <RoadmapSection onBack={() => setPage("timer")} />;
+
       case "completed":
         if (!lastWorkout) return null;
         return (
@@ -219,6 +245,11 @@ export default function App() {
             onRestart={() => restartSession(lastWorkout)}
             onReset={() => setPage("timer")}
             onViewLog={() => setPage("logs")}
+            primaryAction={
+              lastWorkout.roadmap ? (
+                <NextLevelPrompt completed={lastWorkout.roadmap} />
+              ) : null
+            }
           />
         );
 
@@ -244,6 +275,7 @@ export default function App() {
                 selectedEmphases={settings.selectedEmphases}
                 emphasisList={emphasisList}
                 isInterruptedByCall={isInterruptedByCall}
+                upNext={upNext}
               />
             </SessionTransitionWrapper>
 
@@ -272,18 +304,19 @@ export default function App() {
         onDismissPermanently={handleDismissPWAPromptPermanently}
       />
 
-      <OnboardingModal
-        open={showOnboardingMsg}
-        modalScrollPosition={modalScrollPosition}
-        linkButtonStyle={linkButtonStyle}
-        setPage={setPage}
-        onClose={() => setShowOnboardingMsg(false)}
+      <GlossaryModal
+        open={showGlossary}
+        onClose={() => setShowGlossary(false)}
+        onOpenLearn={() => {
+          setShowGlossary(false);
+          setPage("learn");
+        }}
       />
 
       <AppLayout
         isActive={isActive}
         page={page}
-        onHelp={() => setShowOnboardingMsg(true)}
+        onHelp={onboarding.openOnboarding}
         onLogoClick={() => {
           setPage("timer");
           scrollContentToTop();
@@ -291,7 +324,6 @@ export default function App() {
         hasSelectedEmphasis={hasSelectedEmphasis}
         linkButtonStyle={linkButtonStyle}
         setPage={setPage}
-        setShowOnboardingMsg={setShowOnboardingMsg}
         bottomBar={
           page === "timer" && !isActive && hasSelectedEmphasis ? (
             <StickyStartControls

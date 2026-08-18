@@ -1,7 +1,14 @@
+import { Capacitor } from "@capacitor/core";
 import React, { useState } from "react";
 
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/constants/storeLinks";
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { TOTAL_LESSON_COUNT } from "@/features/learn";
-import { OnboardingModal } from "@/features/shared";
+import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
+import { GlossaryModal } from "@/features/shared";
+
+// Derived from the path itself so the pitch can't drift as levels are added.
+const FOUNDATIONS_LEVEL_COUNT = coreLevels(FOUNDATIONS).length;
 
 interface OnboardingFlowProps {
   /** Dismiss to the free app without opening the paywall ("Maybe later"). */
@@ -36,6 +43,12 @@ const CUSTOMIZE_ITEMS: { label: string; desc: string }[] = [
 ];
 
 const PRO_ITEMS: Item[] = [
+  {
+    iconPath: "/assets/icon_newb.png",
+    label: "The Start Here path",
+    // Level 1 is free on purpose — say so rather than overselling the lock.
+    desc: `${FOUNDATIONS_LEVEL_COUNT} guided levels that teach the strikes a few at a time. First level free.`,
+  },
   {
     iconPath: "/assets/icon_mat.png",
     label: "Every fighting style",
@@ -87,6 +100,15 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [step, setStep] = useState(0);
   const [showGlossary, setShowGlossary] = useState(false);
   const isLast = step === TOTAL_STEPS - 1;
+
+  const isWeb = !Capacitor.isNativePlatform();
+  const openStore = () => {
+    const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
+    const url = /iPad|iPhone|iPod/.test(ua) ? APP_STORE_URL : PLAY_STORE_URL;
+    trackEvent(AnalyticsEvents.PWAInstallAccept, { source: "onboarding" });
+    window.open(url, "_blank");
+    onSkip();
+  };
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Welcome" style={styles.backdrop}>
@@ -190,12 +212,16 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
         {step === 4 && (
           <>
-            <h2 style={styles.title}>Start free — or go Pro</h2>
+            <h2 style={styles.title}>
+              {isWeb ? "Everything is in the app" : "Start free — or go Pro"}
+            </h2>
             <p style={{ ...styles.note, marginBottom: "0.9rem" }}>
               Free forever: <strong style={{ color: "#f9a8d4" }}>Nak Muay
               Newb</strong>, <strong style={{ color: "#f9a8d4" }}>Freestyle</strong>,
-              and the round <strong style={{ color: "#f9a8d4" }}>Timer</strong>.
-              Go Pro to unlock:
+              and the round <strong style={{ color: "#f9a8d4" }}>Timer</strong>
+              {isWeb
+                ? " — here or in the app. Pro can only be bought in the app, and unlocks:"
+                : ". Go Pro to unlock:"}
             </p>
             <div style={styles.list}>
               {PRO_ITEMS.map((it) => (
@@ -231,12 +257,34 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
         {isLast ? (
           <div style={styles.actions}>
-            <button type="button" onClick={onUnlock} style={styles.primary}>
-              See Pro Plans
-            </button>
-            <button type="button" onClick={onSkip} style={styles.secondary}>
-              Maybe later — start free
-            </button>
+            {/* In a browser, Pro cannot be bought — "See Pro Plans" leads to a
+                paywall whose entire job is to explain that and point at the
+                stores. So on web the ask is the store directly. This also
+                absorbs the standalone install prompt, which used to fire at a
+                first-time visitor seconds after they closed this. */}
+            {isWeb ? (
+              <>
+                <button
+                  type="button"
+                  onClick={openStore}
+                  style={styles.primary}
+                >
+                  Get the app
+                </button>
+                <button type="button" onClick={onSkip} style={styles.secondary}>
+                  Keep going in the browser
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={onUnlock} style={styles.primary}>
+                  See Pro Plans
+                </button>
+                <button type="button" onClick={onSkip} style={styles.secondary}>
+                  Maybe later — start free
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div style={styles.actions}>
@@ -251,11 +299,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         )}
       </div>
 
-      <OnboardingModal
+      <GlossaryModal
         open={showGlossary}
-        modalScrollPosition={0}
-        linkButtonStyle={{}}
-        setPage={() => {}}
         onClose={() => setShowGlossary(false)}
       />
     </div>
