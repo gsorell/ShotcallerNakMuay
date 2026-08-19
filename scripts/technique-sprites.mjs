@@ -55,6 +55,17 @@ const DEFAULTS = {
   cutoff: 0.72,
   /** Feathers the cut edge. A little is what stops the silhouette looking cut out. */
   softness: 0.05,
+  /**
+   * Passes of morphological opening (erode, then dilate) on the alpha mask.
+   *
+   * Real rooms have thin dark features the key cannot distinguish from a
+   * fighter: the seam where a wall meets the floor, scuff marks, a skirting
+   * line. They are thin and a solid body is not, so eroding then dilating
+   * deletes them and leaves the silhouette intact. Two passes clears a typical
+   * court floor seam. Raise it for a scruffier room; drop to 0 to keep fine
+   * detail such as open fingers.
+   */
+  clean: 2,
   /** "bright" = light wall, dark fighter. "dark" = the other way round. */
   background: "bright",
   /** Bright core, saturated glow — the app's roadmap accent pair. */
@@ -119,7 +130,7 @@ function rgb(hex) {
  * bright core, which is what reads as neon; tile lays the frames out in a row.
  */
 function buildFilter(shot) {
-  const { frames, size, cutoff, softness, background, glow } = shot;
+  const { frames, size, cutoff, softness, background, glow, clean } = shot;
   const core = rgb(shot.color);
   const halo = rgb(shot.glowColor);
 
@@ -154,7 +165,15 @@ function buildFilter(shot) {
 
   const paint = (c) => `geq=r='${c.r}':g='${c.g}':b='${c.b}':a='alpha(X,Y)'`;
 
-  const head = `fps=${fps},${flip}${key},${fit}`;
+  // Morphological opening, applied to the alpha only: pull the mask out, open
+  // it, merge it back. This runs before the paint so the glow follows the
+  // cleaned outline rather than tracing the specks it was meant to remove.
+  const open = clean > 0
+    ? `,split[ck][ca];[ca]alphaextract,${"erosion,".repeat(clean)}${"dilation,".repeat(clean)}` +
+      `null[cm];[ck][cm]alphamerge`
+    : "";
+
+  const head = `fps=${fps},${flip}${key},${fit}${open}`;
 
   if (!glow) return `${head},${paint(core)}`;
 

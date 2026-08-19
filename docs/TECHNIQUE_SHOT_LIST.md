@@ -10,8 +10,8 @@ with a short looping sprite of the technique being thrown.
 The output is a **neon silhouette**, not a photograph. The slot is roughly 150px on
 desktop and smaller on a phone, so photographic detail is wasted at that size, and a
 silhouette matches the app's existing icon art. That makes the shoot forgiving: you do
-not need good lighting, a nice gym, or a photogenic model. You need a plain background
-and correct form.
+not need good lighting, a nice gym, or a photogenic model. You need a background that
+contrasts with the fighter, and correct form.
 
 Everything below is keyed to the lesson `slug` in
 `src/features/learn/data/techniqueLibrary.ts`. One visual per lesson — **not** per
@@ -42,8 +42,8 @@ either until the whole tier is shot.
 
 | | |
 |---|---|
-| Background | Plain, evenly lit, strongly contrasting with the fighter. A blank wall is ideal. |
-| Wardrobe | Solid colours that do not blend into the wall. Plain shorts and bare shins read far better in silhouette than baggy gear. |
+| Background | Plain and evenly lit, and — see below — a **contrast pair** with the fighter, not merely plain. A racquetball court is close to ideal: measured, its walls and floor sit within 0.04 of each other, so one threshold handles both. |
+| Wardrobe | Dark, and **unprinted**. A light graphic on a dark top is brighter than the fabric and punches holes in the torso. Plain shorts and bare shins read far better in silhouette than baggy gear. |
 | Framing | Full body with headroom, **including for punches** — the lessons repeatedly teach that power starts at the feet, so the feet must be in frame. |
 | Frame rate | 60fps if the phone offers it. More frames to choose from during extraction. |
 | Reps | Three clean reps per technique, with a pause between. Best one gets picked in the edit. |
@@ -60,7 +60,45 @@ chunk, which has no way to store an alpha channel — the encode reports success
 silhouette arrives on an opaque black box. Only the lossless `VP8L` path carries alpha.
 Flat-coloured silhouettes compress well losslessly anyway, so it costs very little.
 
-Budget is roughly 1MB for all 25, against an app that already ships audio.
+Budget is roughly 2MB for all 25, measured from real keyed footage at ~79KB a sheet,
+against an app that already ships audio.
+
+## What the court test showed
+
+Measured off real footage shot in a racquetball court — dark top, dark shorts, bare
+legs, static camera. Luma on a 0–1 scale:
+
+| Region | Luma | |
+|---|---|---|
+| Ceiling light | 0.97 | background |
+| Floor, near feet | 0.64 | background |
+| Floor, open | 0.63 | background |
+| Wall, behind head | 0.63 | background |
+| Wall, left | 0.60 | background |
+| Thigh, bare skin | 0.30 | fighter |
+| Shirt | 0.26 | fighter |
+| Calf, bare skin | 0.25 | fighter |
+| Shoe | 0.16 | fighter |
+| Shorts | 0.02 | fighter |
+
+Three things follow, and they change the spec above.
+
+**The feet are not the risk.** Bare skin sits at 0.25–0.30 against a floor at 0.63 —
+a wider margin than the torso gets. Any cutoff between about 0.40 and 0.55 separates
+them, and bare feet key as cleanly as shoes. This was the obvious worry going in and
+it is unfounded.
+
+**What matters is a contrast pair, not a plain wall.** The fighter and the background
+have to sit at opposite ends of the luma range. A shirtless fighter in daylight sits
+mid-range and will fail against a bright wall no matter how plain that wall is — that
+is exactly how the first test clip failed, with no usable threshold anywhere between
+0.55 and 0.85.
+
+**What did survive the key was the room, not the body**: the seam where the wall meets
+the floor, and scuff marks on the wall. Both are thin and a body is not, so the
+pipeline now opens the mask — erode, then dilate — and they disappear. That is the
+`clean` setting, defaulting to 2 passes. Drop it to 0 to keep fine detail such as
+open fingers; raise it in a scruffier room.
 
 ## Processing
 
@@ -79,8 +117,9 @@ Entries whose footage does not exist yet are skipped rather than failing the run
 manifest can be complete long before the shoot is.
 
 The one setting that needs a human eye is `cutoff` — the luma above which a pixel counts
-as wall. Default is 0.72, which suits a white-ish wall; raise it if the fighter is being
-eaten, lower it if the wall is surviving. `--frames` writes the six frames as PNGs
+as wall. The default 0.72 suits a white-ish wall; a lit racquetball court measured out
+nearer 0.50. Raise it if the fighter is being eaten, lower it if the wall is surviving.
+`--frames` writes the six frames as PNGs
 instead of a sheet, which is how you find the number for a given clip. Per-shot `crop`
 (as `"w:h:x:y"`) tightens framing without a reshoot, and `flip: true` mirrors a take.
 
