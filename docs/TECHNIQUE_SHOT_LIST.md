@@ -140,6 +140,34 @@ they chew visible 256px blocks out of the profile — the opposite of the intent
 With `solid` on, `softness` stays at 0: feathering before a threshold only shifts
 the outline outward.
 
+## Fast techniques need their own settings
+
+Kicks and teeps blur far more than punches, because the foot covers more ground
+than a fist. Measured on a teep at full extension, against a wall at 0.82 and a
+floor at 0.76:
+
+| Part | Luma |
+|---|---|
+| Torso | 0.09 |
+| Standing shin | 0.33 |
+| Kicking thigh | 0.49 |
+| Shin, blurred | 0.45 |
+| **Foot tip, blurred** | **0.79** |
+
+The blurred foot tip is brighter than the floor. No threshold recovers it — the
+foot has smeared far enough into the wall that it is no longer distinguishable,
+and raising the cutoff past 0.76 floods the floor in before the foot comes back.
+
+What does work is raising the cutoff just short of the floor and leaning harder on
+the opening pass: **`cutoff` 0.67 with `clean` 6** recovers most of the foot while
+the extra erosion strips the wood grain that starts keying in alongside it.
+Punches stay fine at 0.60 / 3 — they simply do not blur as much.
+
+**The real fix is at the camera.** These clips were shot at 30fps; the spec asks
+for 60, which halves the exposure per frame and so halves the smear. That single
+change would remove this whole class of problem at source rather than trading
+cutoff against floor grain in post.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
