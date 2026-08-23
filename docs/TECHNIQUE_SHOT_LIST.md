@@ -100,6 +100,26 @@ pipeline now opens the mask — erode, then dilate — and they disappear. That 
 `clean` setting, defaulting to 2 passes. Drop it to 0 to keep fine detail such as
 open fingers; raise it in a scruffier room.
 
+## Catching the strike
+
+Six frames spread evenly across a window will miss a fast technique. A jab is at
+full extension for roughly 60ms; six frames over a two-second window land one
+every 333ms, so the odds of catching extension are about one in six. On the first
+real footage it lost three times in a row and produced six frames of guard — a
+sprite in which the punch is never thrown.
+
+So the pipeline finds the strike before choosing frames. It measures the
+horizontal span of the silhouette across the window at 30fps, takes the widest
+frame as the moment of furthest extension, and places the six frames so that
+extension lands on frame four — three of wind-up, two of recovery. This is the
+`anchor` setting and it is on by default. Set it to a timestamp to pin extension
+by hand, or to `false` for even sampling.
+
+One detail worth keeping: measure the span by counting only columns that hold a
+few stacked dark pixels, never a plain bounding box. The one-pixel seam where a
+court wall meets the floor reaches both edges of frame, so a bounding box reports
+every frame as maximally wide and the peak is meaningless.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency

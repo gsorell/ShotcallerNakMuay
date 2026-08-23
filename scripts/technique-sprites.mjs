@@ -25,6 +25,7 @@
 
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 // The 25 lessons that cover the whole Start Here roadmap, in curriculum order.
@@ -41,6 +42,25 @@ const TIER_ONE = [
 const DEFAULTS = {
   /** Frames per sheet. Load → travel → land → recover, with room to breathe. */
   frames: 6,
+  /**
+   * Find the moment of furthest extension and hang the frames off it, rather
+   * than sampling evenly across the window.
+   *
+   * This is not a refinement, it is the difference between catching the strike
+   * and missing it. A jab is at full extension for roughly 60ms; six frames
+   * spread evenly over a two-second window land one every 333ms and step
+   * straight over it, producing six near-identical frames of guard and a sprite
+   * that looks like the technique was never thrown.
+   *
+   * Set to a number to pin the extension to an exact timestamp instead of
+   * detecting it, or false to go back to even sampling.
+   */
+  anchor: true,
+  /**
+   * Which frame the extension lands on, 1-based. Four of six leaves three
+   * frames of wind-up and two of recovery, which is how a strike reads.
+   */
+  anchorFrame: 4,
   /** Cell size in px. 256 is 2x the ~150px slot, which is the retina case. */
   size: 256,
   /**
@@ -129,7 +149,7 @@ function rgb(hex) {
  * that alpha; the split/blur/overlay pair puts a soft saturated copy behind a
  * bright core, which is what reads as neon; tile lays the frames out in a row.
  */
-function buildFilter(shot) {
+function buildFilter(shot, { sequence = false } = {}) {
   const { frames, size, cutoff, softness, background, glow, clean } = shot;
   const core = rgb(shot.color);
   const halo = rgb(shot.glowColor);
@@ -173,7 +193,11 @@ function buildFilter(shot) {
       `null[cm];[ck][cm]alphamerge`
     : "";
 
-  const head = `fps=${fps},${flip}${key},${fit}${open}`;
+  // Reading pre-extracted frames means the timing is already decided; resampling
+  // them would undo the anchoring.
+  const pick = sequence ? "" : `fps=${fps},`;
+
+  const head = `${pick}${flip}${key},${fit}${open}`;
 
   if (!glow) return `${head},${paint(core)}`;
 
@@ -183,6 +207,118 @@ function buildFilter(shot) {
     `[b]${paint(halo)},gblur=sigma=${glow}[halo];` +
     `[halo][core]overlay=0:0:format=auto`
   );
+}
+
+/**
+ * The timestamp of furthest extension inside the window.
+ *
+ * Measured as the horizontal span of the silhouette, counting only columns that
+ * hold a few stacked dark pixels. The column threshold matters: a bare bounding
+ * box is pinned to the full frame width on every single frame by the one-pixel
+ * wall/floor seam, which makes every frame look equally extended.
+ */
+function findExtension(shot) {
+  const W = 120, H = 140, FPS = 30, MIN_COL = 3;
+
+  const run = spawnSync("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-ss", String(shot.start), "-t", String(shot.duration),
+    "-i", shot.file,
+    "-vf", `fps=${FPS},${shot.crop ? `crop=${shot.crop},` : ""}scale=${W}:${H},format=gray`,
+    "-pix_fmt", "gray", "-f", "rawvideo", "-",
+  ], { maxBuffer: 1 << 28 });
+
+  if (run.status !== 0 || !run.stdout) return null;
+
+  const buf = run.stdout;
+  const frames = Math.floor(buf.length / (W * H));
+  if (frames < 2) return null;
+
+  const cut = Math.round(shot.cutoff * 255);
+  const darkBg = shot.background === "dark";
+  const widths = new Int32Array(frames);
+
+  for (let f = 0; f < frames; f++) {
+    const off = f * W * H;
+    const col = new Int32Array(W);
+    for (let y = 0; y < H; y++) {
+      const row = off + y * W;
+      for (let x = 0; x < W; x++) {
+        const v = buf[row + x];
+        if (darkBg ? v > cut : v < cut) col[x]++;
+      }
+    }
+    let lo = -1, hi = -1;
+    for (let x = 0; x < W; x++) if (col[x] >= MIN_COL) { if (lo < 0) lo = x; hi = x; }
+    widths[f] = hi < 0 ? 0 : hi - lo + 1;
+  }
+
+  const sorted = [...widths].sort((a, b) => a - b);
+  const median = sorted[Math.floor(frames / 2)];
+  let peak = 0;
+  for (let f = 1; f < frames; f++) if (widths[f] > widths[peak]) peak = f;
+
+  // A window with no strike in it has no peak worth anchoring to; say so rather
+  // than anchoring on noise.
+  if (widths[peak] - median < 4) return null;
+
+  return { t: shot.start + peak / FPS, width: widths[peak], median };
+}
+
+/** Frame timestamps with the extension landing on `anchorFrame`. */
+function anchoredTimes(shot, peakTime) {
+  const step = shot.duration / shot.frames;
+  const times = [];
+  for (let i = 0; i < shot.frames; i++) {
+    times.push(Math.max(0, peakTime + (i - (shot.anchorFrame - 1)) * step));
+  }
+  return times;
+}
+
+/**
+ * Pull the chosen frames one at a time, then key and tile them as a sequence.
+ * Six seeks costs a little more than one decode pass and buys exact timing.
+ */
+function runAnchored(shot, outPath, asFrames, times) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sprite-"));
+  try {
+    times.forEach((t, i) => {
+      const grab = spawnSync("ffmpeg", [
+        "-hide_banner", "-loglevel", "error", "-y",
+        "-ss", String(t), "-i", shot.file, "-frames:v", "1",
+        "-update", "1", path.join(tmp, `f${String(i + 1).padStart(2, "0")}.png`),
+      ], { encoding: "utf8" });
+      if (grab.status !== 0) throw new Error(grab.stderr || "frame grab failed");
+    });
+
+    const filter = buildFilter(shot, { sequence: true });
+    const tiled = asFrames ? filter : `${filter},tile=${shot.frames}x1`;
+
+    const args = [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-i", path.join(tmp, "f%02d.png"),
+      "-filter_complex", tiled,
+    ];
+    if (asFrames) {
+      args.push("-frames:v", String(shot.frames), outPath);
+    } else {
+      args.push("-frames:v", "1", "-c:v", "libwebp",
+                "-lossless", "1", "-compression_level", String(shot.effort),
+                "-pix_fmt", "yuva420p", outPath);
+    }
+
+    const run = spawnSync("ffmpeg", args, { encoding: "utf8" });
+    if (run.status !== 0) {
+      console.error(run.stderr?.trim() || "(no stderr)");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(String(err.message || err).trim());
+    return false;
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 function runFfmpeg(shot, outPath, asFrames) {
@@ -287,11 +423,26 @@ function main() {
       ? path.join(args.out, `${shot.slug}-%02d.png`)
       : path.join(args.out, `${shot.slug}.webp`);
 
-    if (runFfmpeg(shot, out, args.frames)) {
+    // Anchor first: without it a fast strike is simply not in the sheet.
+    let peak = null;
+    let note = "";
+    if (shot.anchor === true) {
+      peak = findExtension(shot);
+      if (!peak) note = "  (no strike found — even sampling)";
+    } else if (typeof shot.anchor === "number") {
+      peak = { t: shot.anchor };
+    }
+
+    const ok = peak
+      ? runAnchored(shot, out, args.frames, anchoredTimes(shot, peak.t))
+      : runFfmpeg(shot, out, args.frames);
+
+    if (ok) {
       const label = args.frames
         ? `${shot.frames} frames`
         : `${(fs.statSync(out).size / 1024).toFixed(0)} KB`;
-      console.log(`  ✓  ${shot.slug.padEnd(18)} ${label}`);
+      const at = peak ? ` @ ${peak.t.toFixed(2)}s` : "";
+      console.log(`  ✓  ${shot.slug.padEnd(18)} ${label}${at}${note}`);
       built++;
     } else {
       console.log(`  ✗  ${shot.slug.padEnd(18)} ffmpeg failed`);
