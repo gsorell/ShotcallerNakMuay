@@ -73,19 +73,37 @@ const DEFAULTS = {
    * its threshold rather than everything past it.
    */
   cutoff: 0.72,
-  /** Feathers the cut edge. A little is what stops the silhouette looking cut out. */
-  softness: 0.05,
   /**
-   * Passes of morphological opening (erode, then dilate) on the alpha mask.
-   *
-   * Real rooms have thin dark features the key cannot distinguish from a
-   * fighter: the seam where a wall meets the floor, scuff marks, a skirting
-   * line. They are thin and a solid body is not, so eroding then dilating
-   * deletes them and leaves the silhouette intact. Two passes clears a typical
-   * court floor seam. Raise it for a scruffier room; drop to 0 to keep fine
-   * detail such as open fingers.
+   * Feathers the cut edge before thresholding. Left at 0 with `solid` on, where
+   * the source-resolution downscale supplies the anti-aliasing instead.
    */
-  clean: 2,
+  softness: 0,
+  /**
+   * Passes of morphological OPENING (erode, then dilate) on the mask, in source
+   * pixels. Real rooms have thin dark features the key cannot tell from a
+   * fighter: the seam where a wall meets the floor, scuff marks, a skirting
+   * line. They are thin and a body is not, so opening deletes them and leaves
+   * the silhouette. Drop to 0 to keep fine detail such as open fingers.
+   */
+  clean: 3,
+  /**
+   * Passes of morphological CLOSING (dilate, then erode), in source pixels.
+   * The opposite job: fills interior holes and bridges broken outlines. A limb
+   * at full speed is motion-blurred, so its edge blends toward the wall and the
+   * key drops out in patches — that is what reads as a chewed profile and
+   * shading inside the body. Closing welds those gaps shut.
+   */
+  close: 3,
+  /**
+   * Force every pixel of the mask fully opaque or fully clear.
+   *
+   * Feathered keying leaves half-transparent pixels wherever the fighter's luma
+   * sits near the cutoff — motion-blurred limbs, shadowed cloth — and those read
+   * as grey shading inside a silhouette that should be one flat colour. The
+   * anti-aliasing is not lost: the mask is built at source resolution and the
+   * downscale to the cell re-softens the outline.
+   */
+  solid: true,
   /** "bright" = light wall, dark fighter. "dark" = the other way round. */
   background: "bright",
   /** Bright core, saturated glow — the app's roadmap accent pair. */
@@ -144,31 +162,34 @@ function rgb(hex) {
 /**
  * The filtergraph, and the only interesting part of this script.
  *
- * fps picks `frames` evenly across the trimmed clip; lumakey turns the wall
- * into alpha; geq repaints whatever survived as a flat colour while preserving
- * that alpha; the split/blur/overlay pair puts a soft saturated copy behind a
- * bright core, which is what reads as neon; tile lays the frames out in a row.
+ * Order matters more than any single filter here. Everything that shapes the
+ * mask happens at SOURCE resolution, and the downscale to the cell comes last.
+ * Run the morphology after the downscale instead and it chews visible 256px
+ * blocks out of the outline; run it before, and the same passes act on single
+ * source pixels while the downscale quietly anti-aliases the result.
+ *
+ * lumakey turns the wall into alpha; the mask is then binarised, opened to drop
+ * room noise and closed to weld motion-blur gaps; geq repaints whatever survived
+ * as flat colour; the split/blur/overlay pair puts a soft saturated copy behind
+ * a bright core, which is what reads as neon; tile lays the frames out in a row.
  */
 function buildFilter(shot, { sequence = false } = {}) {
-  const { frames, size, cutoff, softness, background, glow, clean } = shot;
+  const { frames, size, cutoff, softness, background, glow, clean, close, solid } = shot;
   const core = rgb(shot.color);
   const halo = rgb(shot.glowColor);
 
-  // Sampling rate that lands `frames` samples inside `duration` seconds. tile
-  // consumes exactly `frames`, so an extra sample from rounding is harmless.
+  // Sampling rate that lands `frames` samples inside `duration` seconds. Only
+  // used when the frames were not already chosen by anchoring.
   const fps = (frames / shot.duration).toFixed(6);
+  const pick = sequence ? "" : `fps=${fps},`;
+
+  const flip = shot.flip ? "hflip," : "";
 
   // Optional framing crop, as "w:h:x:y" in source pixels. You shoot wide enough
   // to keep the feet in on a head kick, which leaves a stance shot swimming in
   // empty room; this is how a clip gets tightened without a reshoot. Because the
   // tripod does not move, one crop usually serves every take from a session.
   const crop = shot.crop ? `crop=${shot.crop},` : "";
-
-  // Square cell: fit the whole fighter inside, pad rather than crop further. A
-  // clipped head kick is a worse failure than empty space in a stance shot.
-  const fit =
-    `${crop}scale=${size}:${size}:force_original_aspect_ratio=decrease,` +
-    `pad=${size}:${size}:(ow-iw)/2:(oh-ih)/2:color=#00000000`;
 
   // lumakey keys a BAND centred on `threshold`, half-width `tolerance` — it is
   // not a cutoff. Pinning threshold at 1 and setting tolerance to 1-cutoff makes
@@ -181,23 +202,27 @@ function buildFilter(shot, { sequence = false } = {}) {
   const key =
     `format=rgba,${invert}lumakey=threshold=1:tolerance=${tolerance}:softness=${softness}`;
 
-  const flip = shot.flip ? "hflip," : "";
+  // Mask surgery, on the alpha plane only.
+  const rep = (filter, n) => Array.from({ length: n }, () => filter);
+  const steps = [];
+  if (solid) steps.push("geq=lum='if(gt(lum(X,Y),128),255,0)'");
+  if (clean > 0) steps.push(...rep("erosion", clean), ...rep("dilation", clean));
+  if (close > 0) steps.push(...rep("dilation", close), ...rep("erosion", close));
+
+  const mask = steps.length
+    ? `,split[mk][ma];[ma]alphaextract,${steps.join(",")}[mm];[mk][mm]alphamerge`
+    : "";
+
+  // Square cell: fit the whole fighter inside, pad rather than crop further. A
+  // clipped head kick is a worse failure than empty space in a stance shot.
+  // lanczos because this downscale is now doing the anti-aliasing.
+  const fit =
+    `scale=${size}:${size}:force_original_aspect_ratio=decrease:flags=lanczos,` +
+    `pad=${size}:${size}:(ow-iw)/2:(oh-ih)/2:color=#00000000`;
 
   const paint = (c) => `geq=r='${c.r}':g='${c.g}':b='${c.b}':a='alpha(X,Y)'`;
 
-  // Morphological opening, applied to the alpha only: pull the mask out, open
-  // it, merge it back. This runs before the paint so the glow follows the
-  // cleaned outline rather than tracing the specks it was meant to remove.
-  const open = clean > 0
-    ? `,split[ck][ca];[ca]alphaextract,${"erosion,".repeat(clean)}${"dilation,".repeat(clean)}` +
-      `null[cm];[ck][cm]alphamerge`
-    : "";
-
-  // Reading pre-extracted frames means the timing is already decided; resampling
-  // them would undo the anchoring.
-  const pick = sequence ? "" : `fps=${fps},`;
-
-  const head = `${pick}${flip}${key},${fit}${open}`;
+  const head = `${pick}${flip}${crop}${key}${mask},${fit}`;
 
   if (!glow) return `${head},${paint(core)}`;
 
@@ -208,7 +233,6 @@ function buildFilter(shot, { sequence = false } = {}) {
     `[halo][core]overlay=0:0:format=auto`
   );
 }
-
 /**
  * The timestamp of furthest extension inside the window.
  *

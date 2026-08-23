@@ -120,6 +120,26 @@ few stacked dark pixels, never a plain bounding box. The one-pixel seam where a
 court wall meets the floor reaches both edges of frame, so a bounding box reports
 every frame as maximally wide and the peak is meaningless.
 
+## Keeping the silhouette solid
+
+A limb at full speed is motion-blurred, so its edge blends toward the wall and the
+key drops out in patches. That reads two ways, both bad: grey shading inside a body
+that should be one flat colour, and a chewed, broken profile line.
+
+Three settings fix it, and the order they run in matters more than any of them:
+
+- `solid` forces every mask pixel fully opaque or fully clear, removing the
+  half-transparent pixels that read as shading. On by default.
+- `clean` opens the mask (erode, then dilate) to delete thin room features.
+- `close` closes it (dilate, then erode) to fill interior holes and weld the gaps
+  motion blur tore in the outline.
+
+All of it happens at **source resolution**, with the downscale to the cell running
+last and supplying the anti-aliasing. Run the same passes after the downscale and
+they chew visible 256px blocks out of the profile — the opposite of the intent.
+With `solid` on, `softness` stays at 0: feathering before a threshold only shifts
+the outline outward.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
