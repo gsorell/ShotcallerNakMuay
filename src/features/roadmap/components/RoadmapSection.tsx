@@ -4,6 +4,8 @@ import { useEntitlement } from "@/features/entitlement";
 // The data module, not the Learn barrel: LearnSection hosts this component, and
 // going through the barrel would make the two features a circular import.
 import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
+// Direct path rather than the Learn barrel, for the same reason as above.
+import { TechniqueSprite } from "@/features/learn/components/TechniqueSprite";
 import { usePaywall } from "@/features/paywall";
 import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
@@ -394,22 +396,27 @@ function LevelDetail({
               </summary>
               {entry && (
                 <div className="roadmap-card-body">
-                  {callouts.length > 1 && (
-                    <p className="roadmap-card-callouts">
-                      Called as {callouts.join(" · ")}
-                    </p>
-                  )}
-                  <p className="roadmap-card-summary">{entry.summary}</p>
-                  <ul className="roadmap-card-list">
-                    {entry.keyPoints.slice(0, 3).map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                  {entry.mistakes[0] && (
-                    <p className="roadmap-card-mistake">
-                      <strong>Watch out:</strong> {entry.mistakes[0]}
-                    </p>
-                  )}
+                  <div className="roadmap-card-copy">
+                    {callouts.length > 1 && (
+                      <p className="roadmap-card-callouts">
+                        Called as {callouts.join(" · ")}
+                      </p>
+                    )}
+                    <p className="roadmap-card-summary">{entry.summary}</p>
+                    <ul className="roadmap-card-list">
+                      {entry.keyPoints.slice(0, 3).map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                    {entry.mistakes[0] && (
+                      <p className="roadmap-card-mistake">
+                        <strong>Watch out:</strong> {entry.mistakes[0]}
+                      </p>
+                    )}
+                  </div>
+                  {/* Nothing renders for a lesson with no sheet, so the copy
+                      simply takes the full width. */}
+                  <TechniqueSprite slug={entry.slug} name={entry.name} />
                 </div>
               )}
             </details>

@@ -26,6 +26,7 @@ import {
   type LearnEntry,
   type TechniqueCategory,
 } from "../data/techniqueLibrary";
+import { TechniqueSprite } from "./TechniqueSprite";
 import "./LearnSection.css";
 
 type View =
@@ -326,7 +327,11 @@ function LessonDetail({
         {entry.thai && <span className="learn-detail-thai">{entry.thai}</span>}
       </p>
 
-      <p className="learn-detail-summary">{entry.summary}</p>
+      <div className="learn-detail-intro">
+        <p className="learn-detail-summary">{entry.summary}</p>
+        {/* Nothing renders for a lesson with no sheet. */}
+        <TechniqueSprite slug={entry.slug} name={entry.name} />
+      </div>
 
       {level && (
         <button className="learn-path-link" onClick={onOpenPath}>

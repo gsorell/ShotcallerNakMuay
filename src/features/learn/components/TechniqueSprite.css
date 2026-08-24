@@ -1,0 +1,49 @@
+/* The looping technique silhouette. See TechniqueSprite.tsx for why the frame
+   step is a percentage translate rather than a background-position offset. */
+
+.technique-sprite {
+  flex: none;
+  width: 150px;
+  height: 150px;
+  /* Clips the sheet to a single cell — this is what makes the step animation a
+     frame rather than a slide. No background: the silhouette carries its own
+     glow, and a second one behind it just muddies the figure. */
+  overflow: hidden;
+}
+
+.technique-sprite img {
+  display: block;
+  height: 100%;
+  /* width is set inline: frames x 100%, so one cell fills the window.
+     max-width MUST be released. The sheet is deliberately six times wider than
+     its window, and any reset carrying `img { max-width: 100% }` clamps it back
+     to one window-width — which squeezes all six frames into the slot and looks
+     like a compressed still rather than an animation. */
+  max-width: none;
+  min-width: 0;
+  animation: technique-sprite-run 1.15s steps(6) infinite;
+}
+
+@keyframes technique-sprite-run {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* Hold the landed frame — the fourth of six, which is where the pipeline puts
+   the moment of furthest extension. */
+@media (prefers-reduced-motion: reduce) {
+  .technique-sprite img {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}
+
+/* Phone: a 150px slot beside the copy leaves roughly a 190px column, which
+   reads badly. Above the text at full width instead. */
+@media (max-width: 600px) {
+  .technique-sprite {
+    width: 132px;
+    height: 132px;
+    align-self: center;
+  }
+}

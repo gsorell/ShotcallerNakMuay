@@ -623,6 +623,28 @@
   padding-top: 0.6rem;
   margin-top: 0.55rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* min-width:0 or the copy refuses to wrap and shoves the sprite off the card. */
+.roadmap-card-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Beside the copy is fine on a wide card. On a phone it leaves roughly a 190px
+   column of three-word lines, so stack instead, figure on top. */
+@media (max-width: 600px) {
+  .roadmap-card-body {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .roadmap-card-body .technique-sprite {
+    order: -1;
+  }
 }
 
 .roadmap-card-name {
