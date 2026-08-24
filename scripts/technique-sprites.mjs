@@ -82,6 +82,15 @@ const DEFAULTS = {
    */
   hold: 0,
   /**
+   * Bunches the frames toward the peak instead of spacing them evenly.
+   *
+   * The fix for a position that will not read. `hold` repeats the peak frame,
+   * which stops the loop dead and looks broken; easing keeps every frame
+   * distinct but slows the approach, so the technique settles into its shape
+   * and lingers there. 1 is even spacing; 2 to 3 reads as a deliberate pause.
+   */
+  ease: 1,
+  /**
    * Everything on the wall side of this luma (0–1) becomes transparent. This is
    * the one knob you will actually turn: raise it if the fighter is getting
    * eaten, lower it if the wall is surviving. Tune it with --frames.
@@ -338,16 +347,26 @@ function keepBody(mask, w, h, minFraction) {
  * extra frames parked on it.
  */
 function anchoredTimes(shot, peakTime) {
-  const step = shot.duration / shot.frames;
   const hold = Math.max(0, Math.min(shot.hold ?? 0, shot.frames - shot.anchorFrame));
   const lead = shot.anchorFrame - 1;
   const trail = shot.frames - shot.anchorFrame - hold;
+  const ease = shot.ease ?? 1;
+
+  // Even spacing keeps the old timing exactly; easing normalises so the
+  // outermost frame still sits half the window away, and everything inside it
+  // crowds toward the peak.
+  const span = shot.duration / 2;
+  const reach = Math.max(lead, trail, 1);
+  const offset = (k) =>
+    ease === 1
+      ? k * (shot.duration / shot.frames)
+      : Math.sign(k) * Math.pow(Math.abs(k) / reach, ease) * span;
 
   const times = [];
-  for (let i = lead; i >= 1; i--) times.push(peakTime - i * step);
+  for (let i = lead; i >= 1; i--) times.push(peakTime + offset(-i));
   times.push(peakTime);
   for (let i = 0; i < hold; i++) times.push(peakTime);
-  for (let i = 1; i <= trail; i++) times.push(peakTime + i * step);
+  for (let i = 1; i <= trail; i++) times.push(peakTime + offset(i));
 
   return times.slice(0, shot.frames).map((t) => Math.max(0, t));
 }

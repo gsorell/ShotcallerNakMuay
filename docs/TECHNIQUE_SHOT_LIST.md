@@ -212,6 +212,41 @@ the glow). The first found three clipped sprites, the second found five more —
 and the two kicks among them were cropping the extended leg, which is the entire
 point of the picture.
 
+## Easing, and picking the right peak per technique
+
+`hold` repeats the peak frame, which emphasises a position but stops the loop
+dead — it reads as broken rather than deliberate. `ease` is the better tool: it
+bunches the frames toward the peak so every frame stays distinct while the
+technique visibly settles into its shape. 1 is even spacing; 2 to 3 reads as a
+pause. Both guards use 2.4.
+
+No single measure finds the peak of every technique, and using the wrong one
+picks a frame between reps:
+
+| Technique | What peaks |
+|---|---|
+| Punches, kicks, teeps | Horizontal reach |
+| Roll, duck, slip | Lowest head position |
+| Pivot | Narrowest silhouette — the completed turn |
+| High guard | Most mass in the upper third — hands at their highest |
+| Long guard | Widest upper body only, ignoring the legs |
+
+## Floor reflection
+
+A varnished court reflects the fighter, and the reflection is joined to the feet,
+so `isolate` cannot remove it — it is attached to the body by definition.
+
+Lowering the cutoff does remove it. Profiling straight down the body: the fighter
+runs 0.05 to 0.34, the contact reflection 0.53, and the reflection further out
+0.65 to 0.69. A cutoff of 0.60 sits above the contact reflection and lets it in;
+0.50 excludes it while keeping every part of the body.
+
+The limit is motion blur, which pushes a limb's luma up toward the floor. Tested
+on the teep: 0.58 keeps the whole foot, 0.52 starts eating it, and below 0.45 the
+shins break up on any technique. So the cutoff is set per class — around 0.50 for
+static and defensive work, 0.52 for punches, 0.58 for kicks — rather than one
+value for the session.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
