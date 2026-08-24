@@ -1,0 +1,48 @@
+/* The looping technique silhouette. See TechniqueSprite.tsx for why the frame
+   step is a percentage translate rather than a background-position offset. */
+
+.technique-sprite {
+  flex: none;
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 10px;
+  /* A whisper of the accent behind the figure, so the slot reads as part of the
+     card rather than a hole punched in it. */
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(236, 72, 153, 0.12),
+    rgba(236, 72, 153, 0) 70%
+  );
+}
+
+.technique-sprite img {
+  display: block;
+  height: 100%;
+  /* width is set inline: frames x 100%, so one cell fills the window. */
+  animation: technique-sprite-run 1.15s steps(6) infinite;
+}
+
+@keyframes technique-sprite-run {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+/* Hold the landed frame — the fourth of six, which is where the pipeline puts
+   the moment of furthest extension. */
+@media (prefers-reduced-motion: reduce) {
+  .technique-sprite img {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}
+
+/* Phone: a 150px slot beside the copy leaves roughly a 190px column, which
+   reads badly. Above the text at full width instead. */
+@media (max-width: 600px) {
+  .technique-sprite {
+    width: 132px;
+    height: 132px;
+    align-self: center;
+  }
+}
