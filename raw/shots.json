@@ -4,7 +4,7 @@
   "size": 256,
   "background": "bright",
   "isolate": true,
-  "file": "C:/Users/gsore/Downloads/PXL_20260823_182627956.mp4"
+  "file": "retouch/PXL_20260823_182627956.mp4"
  },
  "shots": [
   {
@@ -144,13 +144,22 @@
    "ease": 2.4
   },
   {
-   "slug": "straight-knee",
+   "slug": "straight-knee-rear",
    "anchor": 186.27,
    "crop": "538:860:339:130",
    "duration": 0.9,
    "cutoff": 0.65,
    "clean": 5,
    "hold": 0
+  },
+  {
+   "slug": "straight-knee-lead",
+   "anchor": 198.1,
+   "crop": "570:880:370:130",
+   "cutoff": 0.65,
+   "clean": 5,
+   "duration": 1.8,
+   "ease": 1.5
   },
   {
    "slug": "body-punching",
@@ -198,9 +207,18 @@
    "hold": 0
   },
   {
-   "slug": "up-elbow",
+   "slug": "up-elbow-lead",
    "anchor": 282.83,
    "crop": "480:869:464:121",
+   "duration": 0.85,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
+   "slug": "up-elbow-rear",
+   "anchor": 286.35,
+   "crop": "480:880:480:130",
    "duration": 0.85,
    "cutoff": 0.63,
    "clean": 4,
@@ -239,18 +257,22 @@
    "duration": 1
   },
   {
-   "frames": 6,
-   "size": 256,
-   "background": "bright",
-   "isolate": true,
    "crop": "560:880:300:130",
    "cutoff": 0.63,
    "clean": 5,
    "duration": 1,
    "ease": 1.6,
-   "slug": "check",
-   "anchor": 92.25,
-   "file": "C:/Users/gsore/Downloads/PXL_20260823_182627956.mp4"
+   "slug": "check-lead",
+   "anchor": 92.25
+  },
+  {
+   "slug": "check-rear",
+   "anchor": 97.55,
+   "crop": "560:880:300:130",
+   "cutoff": 0.63,
+   "clean": 5,
+   "duration": 1,
+   "ease": 1.6
   }
  ]
 }

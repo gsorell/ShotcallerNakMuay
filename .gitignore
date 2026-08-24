@@ -40,3 +40,7 @@ dist-ssr
 # without them a rebuild silently reverts to the automatic result.
 retouch/*.plate.png
 retouch/*.psd
+
+# The source footage lives here too, at three quarters of a gigabyte. It is the
+# one irreplaceable input and it does not belong in git.
+retouch/*.mp4
