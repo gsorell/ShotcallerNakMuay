@@ -30,6 +30,24 @@ const filesOnDisk = existsSync(SPRITE_DIR)
 /** The wrapper element that orders itself against the lesson copy. */
 const WRAPPER = "technique-sprites";
 
+/** Every block opened by `at`, matched by counting braces. */
+function mediaBlocks(css: string, at: string): string[] {
+  const out: string[] = [];
+  let i = css.indexOf(at);
+  while (i !== -1) {
+    let depth = 0;
+    let j = css.indexOf("{", i);
+    const start = j;
+    for (; j < css.length; j++) {
+      if (css[j] === "{") depth++;
+      else if (css[j] === "}" && --depth === 0) break;
+    }
+    out.push(css.slice(start, j));
+    i = css.indexOf(at, j);
+  }
+  return out;
+}
+
 describe("technique sprites", () => {
   it("every referenced sheet exists on disk", () => {
     const missing = referenced.filter(
@@ -57,33 +75,53 @@ describe("technique sprites", () => {
     }
   });
 
-  it("stacks the figure above the copy on narrow screens", () => {
-    // Ordering belongs to the WRAPPER. When the component gained a second
-    // variant the wrapper was renamed to the plural and these rules kept naming
-    // the inner cell, which silently dropped the figure below the text on every
-    // phone — the layout still worked, it was just upside down. Nothing else
-    // catches that.
+  it("keeps the figure above the copy on narrow screens", () => {
+    // The two surfaces reach the same place by different means, so this checks
+    // each one's own mechanism. What must not happen either way is the figure
+    // landing under the text: reading past a wall of copy to reach it defeats
+    // the point of having shot it.
     const component = readFileSync(
       "src/features/learn/components/TechniqueSprite.tsx",
       "utf8"
     );
     expect(component).toContain(WRAPPER);
 
-    for (const css of [
-      "src/features/roadmap/components/RoadmapSection.css",
+    // Learn stacks a flex column, so ordering is what lifts the figure. It has
+    // to name the WRAPPER: when the component gained a second variant the
+    // wrapper was renamed to the plural and this rule kept naming the inner
+    // cell, which silently put the figure below the text on every phone.
+    const learn = readFileSync(
       "src/features/learn/components/LearnSection.css",
-    ]) {
-      const text = readFileSync(css, "utf8");
-      const rules = text.match(
-        /\.technique-sprites?[^{]*\{[^}]*order:\s*-1[^}]*\}/g
-      );
-      expect(rules, css + " has no order rule for the sprite").toBeTruthy();
-      for (const rule of rules ?? []) {
-        expect(rule, css + " orders the inner cell, not the wrapper").toContain(
-          "." + WRAPPER
-        );
-      }
+      "utf8"
+    );
+    const orderRules = learn.match(
+      /\.technique-sprites?[^{]*\{[^}]*order:\s*-1[^}]*\}/g
+    );
+    expect(orderRules, "LearnSection.css has no order rule for the sprite")
+      .toBeTruthy();
+    for (const rule of orderRules ?? []) {
+      expect(rule, "LearnSection.css orders the inner cell, not the wrapper")
+        .toContain("." + WRAPPER);
     }
+
+    // The roadmap card is a grid instead, because the figure also has to show
+    // while the card is shut. It holds row one in both states and the copy
+    // drops beneath it across both columns — so the figure grows in place
+    // rather than moving when a card opens.
+    const roadmap = readFileSync(
+      "src/features/roadmap/components/RoadmapSection.css",
+      "utf8"
+    );
+    const narrow = mediaBlocks(roadmap, "@media (max-width: 600px)").join("\n");
+    expect(narrow, "no narrow-screen rules for the card").toContain(
+      "roadmap-card"
+    );
+    expect(narrow).toMatch(
+      /\.roadmap-card--open \.technique-sprites[^{]*\{[^}]*grid-row:\s*1;/
+    );
+    expect(narrow).toMatch(
+      /\.roadmap-card--open \.roadmap-card-copy[^{]*\{[^}]*grid-column:\s*1 \/ -1;/
+    );
   });
 
   it("steps through the frame count the sheets were cut with", () => {
