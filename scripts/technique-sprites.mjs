@@ -104,6 +104,21 @@ const DEFAULTS = {
    * downscale to the cell re-softens the outline.
    */
   solid: true,
+  /**
+   * Keep only what is joined to the fighter.
+   *
+   * Opening deletes thin noise but not compact noise: a knot in the floorboards
+   * or a scuff the size of a fist survives any number of passes, and lands in
+   * the sprite as a speck floating beside the body. Labelling the mask's
+   * connected regions and dropping everything not attached to the largest one
+   * removes them by definition rather than by size.
+   *
+   * `isolateMin` keeps smaller regions worth this fraction of the main body,
+   * so a genuinely detached limb — a blurred foot that broke away from the leg —
+   * is not thrown out with the floor.
+   */
+  isolate: true,
+  isolateMin: 0.04,
   /** "bright" = light wall, dark fighter. "dark" = the other way round. */
   background: "bright",
   /** Bright core, saturated glow — the app's roadmap accent pair. */
@@ -168,12 +183,12 @@ function rgb(hex) {
  * blocks out of the outline; run it before, and the same passes act on single
  * source pixels while the downscale quietly anti-aliases the result.
  *
- * lumakey turns the wall into alpha; the mask is then binarised, opened to drop
- * room noise and closed to weld motion-blur gaps; geq repaints whatever survived
- * as flat colour; the split/blur/overlay pair puts a soft saturated copy behind
- * a bright core, which is what reads as neon; tile lays the frames out in a row.
+ * Three modes:
+ *   default     key, shape the mask, paint, tile — the whole job in one graph
+ *   maskOnly    stop at the mask and emit it as grey, for isolation in node
+ *   mask        take the cleaned mask back from input 1 and carry on
  */
-function buildFilter(shot, { sequence = false } = {}) {
+function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } = {}) {
   const { frames, size, cutoff, softness, background, glow, clean, close, solid } = shot;
   const core = rgb(shot.color);
   const halo = rgb(shot.glowColor);
@@ -187,31 +202,33 @@ function buildFilter(shot, { sequence = false } = {}) {
 
   // Optional framing crop, as "w:h:x:y" in source pixels. You shoot wide enough
   // to keep the feet in on a head kick, which leaves a stance shot swimming in
-  // empty room; this is how a clip gets tightened without a reshoot. Because the
-  // tripod does not move, one crop usually serves every take from a session.
+  // empty room; this is how a clip gets tightened without a reshoot.
   const crop = shot.crop ? `crop=${shot.crop},` : "";
 
   // lumakey keys a BAND centred on `threshold`, half-width `tolerance` — it is
   // not a cutoff. Pinning threshold at 1 and setting tolerance to 1-cutoff makes
   // the keyed band [cutoff, 1], which is the "everything brighter than this is
-  // wall" behaviour we actually want. Getting this wrong keys a mid-grey band
-  // and leaves a white wall fully opaque, which looks like the filter silently
-  // doing nothing.
+  // wall" behaviour we actually want.
   const tolerance = (1 - cutoff).toFixed(4);
   const invert = background === "dark" ? "negate," : "";
   const key =
     `format=rgba,${invert}lumakey=threshold=1:tolerance=${tolerance}:softness=${softness}`;
 
-  // Mask surgery, on the alpha plane only.
+  // Mask surgery, on the alpha plane only. Binarise, open away thin room noise,
+  // close the gaps motion blur tore in the outline.
   const rep = (filter, n) => Array.from({ length: n }, () => filter);
   const steps = [];
   if (solid) steps.push("geq=lum='if(gt(lum(X,Y),128),255,0)'");
   if (clean > 0) steps.push(...rep("erosion", clean), ...rep("dilation", clean));
   if (close > 0) steps.push(...rep("dilation", close), ...rep("erosion", close));
+  const shaping = steps.join(",");
 
-  const mask = steps.length
-    ? `,split[mk][ma];[ma]alphaextract,${steps.join(",")}[mm];[mk][mm]alphamerge`
-    : "";
+  if (maskOnly) {
+    // The explicit format=rgba is load-bearing: without it alphaextract cannot
+    // negotiate a format against a raw grey sink and the whole graph fails to
+    // configure, which surfaces as a filter error rather than a bad mask.
+    return `${pick}${flip}${crop}${key},format=rgba,alphaextract${shaping ? "," + shaping : ""}`;
+  }
 
   // Square cell: fit the whole fighter inside, pad rather than crop further. A
   // clipped head kick is a worse failure than empty space in a stance shot.
@@ -222,71 +239,77 @@ function buildFilter(shot, { sequence = false } = {}) {
 
   const paint = (c) => `geq=r='${c.r}':g='${c.g}':b='${c.b}':a='alpha(X,Y)'`;
 
-  const head = `${pick}${flip}${crop}${key}${mask},${fit}`;
+  const tail = glow
+    ? `split=2[a][b];[a]${paint(core)}[core];` +
+      `[b]${paint(halo)},gblur=sigma=${glow}[halo];` +
+      `[halo][core]overlay=0:0:format=auto`
+    : paint(core);
 
-  if (!glow) return `${head},${paint(core)}`;
-
-  return (
-    `${head},split=2[a][b];` +
-    `[a]${paint(core)}[core];` +
-    `[b]${paint(halo)},gblur=sigma=${glow}[halo];` +
-    `[halo][core]overlay=0:0:format=auto`
-  );
-}
-/**
- * The timestamp of furthest extension inside the window.
- *
- * Measured as the horizontal span of the silhouette, counting only columns that
- * hold a few stacked dark pixels. The column threshold matters: a bare bounding
- * box is pinned to the full frame width on every single frame by the one-pixel
- * wall/floor seam, which makes every frame look equally extended.
- */
-function findExtension(shot) {
-  const W = 120, H = 140, FPS = 30, MIN_COL = 3;
-
-  const run = spawnSync("ffmpeg", [
-    "-hide_banner", "-loglevel", "error",
-    "-ss", String(shot.start), "-t", String(shot.duration),
-    "-i", shot.file,
-    "-vf", `fps=${FPS},${shot.crop ? `crop=${shot.crop},` : ""}scale=${W}:${H},format=gray`,
-    "-pix_fmt", "gray", "-f", "rawvideo", "-",
-  ], { maxBuffer: 1 << 28 });
-
-  if (run.status !== 0 || !run.stdout) return null;
-
-  const buf = run.stdout;
-  const frames = Math.floor(buf.length / (W * H));
-  if (frames < 2) return null;
-
-  const cut = Math.round(shot.cutoff * 255);
-  const darkBg = shot.background === "dark";
-  const widths = new Int32Array(frames);
-
-  for (let f = 0; f < frames; f++) {
-    const off = f * W * H;
-    const col = new Int32Array(W);
-    for (let y = 0; y < H; y++) {
-      const row = off + y * W;
-      for (let x = 0; x < W; x++) {
-        const v = buf[row + x];
-        if (darkBg ? v > cut : v < cut) col[x]++;
-      }
-    }
-    let lo = -1, hi = -1;
-    for (let x = 0; x < W; x++) if (col[x] >= MIN_COL) { if (lo < 0) lo = x; hi = x; }
-    widths[f] = hi < 0 ? 0 : hi - lo + 1;
+  if (mask) {
+    // The mask arrives already keyed, shaped and isolated; the base only needs
+    // cropping to match it.
+    return (
+      `[0:v]${pick}${flip}${crop}format=rgba[base];` +
+      `[1:v]format=gray[mm];` +
+      `[base][mm]alphamerge,${fit},${tail}`
+    );
   }
 
-  const sorted = [...widths].sort((a, b) => a - b);
-  const median = sorted[Math.floor(frames / 2)];
-  let peak = 0;
-  for (let f = 1; f < frames; f++) if (widths[f] > widths[peak]) peak = f;
+  const inline = shaping
+    ? `,split[mk][ma];[ma]alphaextract,${shaping}[mm];[mk][mm]alphamerge`
+    : "";
 
-  // A window with no strike in it has no peak worth anchoring to; say so rather
-  // than anchoring on noise.
-  if (widths[peak] - median < 4) return null;
+  return `${pick}${flip}${crop}${key}${inline},${fit},${tail}`;
+}
 
-  return { t: shot.start + peak / FPS, width: widths[peak], median };
+/** Source dimensions, needed to size the raw mask when no crop is given. */
+function sourceSize(file) {
+  const probe = spawnSync("ffprobe", [
+    "-v", "error", "-select_streams", "v:0",
+    "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", file,
+  ], { encoding: "utf8" });
+  const m = /(\d+)x(\d+)/.exec(probe.stdout || "");
+  return m ? { w: Number(m[1]), h: Number(m[2]) } : null;
+}
+
+/**
+ * Strip every region of the mask not joined to the fighter.
+ *
+ * Four-connected labelling over an explicit stack — recursion blows up on a
+ * body-sized region at source resolution. Operates in place on one frame.
+ */
+function keepBody(mask, w, h, minFraction) {
+  const label = new Int32Array(w * h).fill(-1);
+  const sizes = [];
+  const stack = new Int32Array(w * h);
+
+  for (let start = 0; start < w * h; start++) {
+    if (!mask[start] || label[start] !== -1) continue;
+    const id = sizes.length;
+    let top = 0, count = 0;
+    stack[top++] = start;
+    label[start] = id;
+    while (top > 0) {
+      const i = stack[--top];
+      count++;
+      const x = i % w, y = (i / w) | 0;
+      if (x > 0     && mask[i - 1] && label[i - 1] === -1) { label[i - 1] = id; stack[top++] = i - 1; }
+      if (x < w - 1 && mask[i + 1] && label[i + 1] === -1) { label[i + 1] = id; stack[top++] = i + 1; }
+      if (y > 0     && mask[i - w] && label[i - w] === -1) { label[i - w] = id; stack[top++] = i - w; }
+      if (y < h - 1 && mask[i + w] && label[i + w] === -1) { label[i + w] = id; stack[top++] = i + w; }
+    }
+    sizes.push(count);
+  }
+
+  if (!sizes.length) return 0;
+  const biggest = Math.max(...sizes);
+  const floor = biggest * minFraction;
+  let dropped = 0;
+  for (let i = 0; i < w * h; i++) {
+    if (!mask[i]) continue;
+    if (sizes[label[i]] < floor) { mask[i] = 0; dropped++; }
+  }
+  return dropped;
 }
 
 /** Frame timestamps with the extension landing on `anchorFrame`. */
@@ -297,6 +320,51 @@ function anchoredTimes(shot, peakTime) {
     times.push(Math.max(0, peakTime + (i - (shot.anchorFrame - 1)) * step));
   }
   return times;
+}
+
+/**
+ * Build the mask, drop everything not joined to the fighter, and hand back a
+ * raw grayscale file ffmpeg can merge as alpha.
+ */
+function isolateMask(shot, tmp) {
+  let w, h;
+  if (shot.crop) {
+    const [cw, ch] = shot.crop.split(":").map(Number);
+    w = cw; h = ch;
+  } else {
+    const size = sourceSize(shot.file);
+    if (!size) return null;
+    w = size.w; h = size.h;
+  }
+
+  const raw = path.join(tmp, "mask.raw");
+  const build = spawnSync("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-i", path.join(tmp, "f%02d.png"),
+    "-filter_complex", buildFilter(shot, { sequence: true, maskOnly: true }),
+    "-pix_fmt", "gray", "-f", "rawvideo", raw,
+  ], { encoding: "utf8" });
+
+  if (build.status !== 0) {
+    console.error(build.stderr?.trim() || "mask pass failed");
+    return null;
+  }
+
+  const buf = fs.readFileSync(raw);
+  const frames = Math.floor(buf.length / (w * h));
+  if (frames < 1) return null;
+
+  for (let f = 0; f < frames; f++) {
+    const view = buf.subarray(f * w * h, (f + 1) * w * h);
+    // Binary in, binary out — the mask was thresholded before it got here.
+    for (let i = 0; i < view.length; i++) view[i] = view[i] > 127 ? 1 : 0;
+    keepBody(view, w, h, shot.isolateMin);
+    for (let i = 0; i < view.length; i++) view[i] = view[i] ? 255 : 0;
+  }
+
+  const out = path.join(tmp, "mask-clean.raw");
+  fs.writeFileSync(out, buf);
+  return { file: out, w, h };
 }
 
 /**
@@ -315,14 +383,24 @@ function runAnchored(shot, outPath, asFrames, times) {
       if (grab.status !== 0) throw new Error(grab.stderr || "frame grab failed");
     });
 
-    const filter = buildFilter(shot, { sequence: true });
+    // Isolation needs the mask as plain bytes, so it runs as its own pass:
+    // ffmpeg builds the mask, node deletes the unattached regions, ffmpeg
+    // merges the cleaned mask back onto the same frames.
+    let isolated = null;
+    if (shot.isolate) isolated = isolateMask(shot, tmp);
+
+    const filter = buildFilter(shot, { sequence: true, mask: isolated });
     const tiled = asFrames ? filter : `${filter},tile=${shot.frames}x1`;
 
     const args = [
       "-hide_banner", "-loglevel", "error", "-y",
       "-i", path.join(tmp, "f%02d.png"),
-      "-filter_complex", tiled,
     ];
+    if (isolated) {
+      args.push("-f", "rawvideo", "-pix_fmt", "gray",
+                "-s", `${isolated.w}x${isolated.h}`, "-r", "25", "-i", isolated.file);
+    }
+    args.push("-filter_complex", tiled);
     if (asFrames) {
       args.push("-frames:v", String(shot.frames), outPath);
     } else {

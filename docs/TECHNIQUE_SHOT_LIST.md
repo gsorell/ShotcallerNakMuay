@@ -168,6 +168,28 @@ for 60, which halves the exposure per frame and so halves the smear. That single
 change would remove this whole class of problem at source rather than trading
 cutoff against floor grain in post.
 
+## Keeping only the fighter
+
+Opening deletes thin noise but not compact noise. A knot in the floorboards or a
+scuff the size of a fist survives any number of erosion passes and lands in the
+sprite as a speck floating beside the body — and pushing `clean` high enough to
+remove it starts eating the standing leg.
+
+`isolate` solves it by definition rather than by size: label the mask's connected
+regions and keep only what is joined to the largest one. Anything not attached to
+the fighter is gone regardless of how big it is. On by default.
+
+`isolateMin` (0.04) keeps separate regions worth at least that fraction of the
+main body, so a blurred foot that genuinely broke away from the leg survives while
+floor grain does not.
+
+This runs as its own pass — ffmpeg builds the mask, node relabels it, ffmpeg merges
+it back — because ffmpeg has no connected-component filter. Two things to know if
+that pass is ever touched: the mask must be emitted as raw grey rather than an
+image format, so node can read it without needing a PNG decoder; and
+`alphaextract` needs an explicit `format=rgba` immediately before it, or the graph
+fails to configure against a raw grey sink.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
