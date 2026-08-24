@@ -155,6 +155,28 @@ const DEFAULTS = {
    */
   solid: true,
   /**
+   * Gaussian blur on the finished mask, in CELL pixels, before hardening.
+   *
+   * Averages out wobble in the outline. A keyed edge wobbles by a source
+   * pixel or so; a hand-retouched one wobbles by however steady the brush
+   * was, which along the feet is several. Both come out the same width once
+   * `harden` puts the edge back.
+   */
+  smooth: 1.2,
+  /**
+   * Contrast gain that puts the edge back after `smooth`, as a multiplier
+   * about mid-grey.
+   *
+   * Not free to choose. A step blurred by sigma has a peak slope of
+   * 255/(2.5*sigma) luma per pixel, so a gain of K leaves a ramp
+   * 2.5*sigma/K pixels wide. Setting this to 2.5x `smooth` therefore lands
+   * on a one-pixel edge — the same anti-aliasing the downscale gives a
+   * computed mask, now held there whatever the input was. Raise it beyond
+   * that and the outline starts to stair-step; drop it and the sprite goes
+   * soft.
+   */
+  harden: 3,
+  /**
    * Keep only what is joined to the fighter.
    *
    * Opening deletes thin noise but not compact noise: a knot in the floorboards
@@ -236,6 +258,29 @@ function rgb(hex) {
  * Shared, because a retouched mask has to land on exactly the same geometry as
  * the sprite it was exported from, or the paint lands in the wrong place.
  */
+/**
+ * One edge for every sheet, wherever its mask came from.
+ *
+ * A computed mask is anti-aliased by the source-resolution downscale and
+ * nothing else; a retouched one carries whatever the brush left, which along
+ * the feet is a freehand contour, softer in places and wavier than the keyed
+ * edge above it. Blur the mask and steepen it back through the midpoint and
+ * both arrive at the same place: the blur averages the wobble away, the gain
+ * restores a hard edge of a known width.
+ *
+ * Runs on the mask at CELL resolution — after the downscale, unlike the
+ * morphology, because it is measured in the pixels the sprite actually ships
+ * with and a retouched mask only exists at that size.
+ */
+function edgeGraph(shot) {
+  const steps = [];
+  if (shot.smooth > 0) steps.push(`gblur=sigma=${shot.smooth}`);
+  if (shot.harden > 0) {
+    steps.push(`geq=lum='clip((lum(X,Y)-128)*${shot.harden}+128,0,255)'`);
+  }
+  return steps.join(",");
+}
+
 function fitOf(shot) {
   const inner = Math.max(16, Math.round(shot.size * (1 - 2 * (shot.margin ?? 0))));
   return (
@@ -329,6 +374,14 @@ function buildFilter(
 
   const fit = fitOf(shot);
 
+  // Spliced onto the alpha plane the same way the morphology is, but on the
+  // far side of the downscale. Labels are distinct from `inline`'s because a
+  // graph can carry both.
+  const edge = edgeGraph(shot);
+  const conditioned = edge
+    ? `,split[ck][ca];[ca]alphaextract,${edge}[cm];[ck][cm]alphamerge`
+    : "";
+
   const paint = (c) => `geq=r='${c.r}':g='${c.g}':b='${c.b}':a='alpha(X,Y)'`;
 
   const tail = glow
@@ -354,11 +407,11 @@ function buildFilter(
     return (
       `[0:v]${pick}${flip}${crop}format=rgba[base];` +
       `[1:v]format=gray[mm];` +
-      `[base][mm]alphamerge,${fit},${tail}`
+      `[base][mm]alphamerge,${fit}${conditioned},${tail}`
     );
   }
 
-  return `${pick}${flip}${crop}${key}${inline},${fit},${tail}`;
+  return `${pick}${flip}${crop}${key}${inline},${fit}${conditioned},${tail}`;
 }
 
 /** Source dimensions, needed to size the raw mask when no crop is given. */
@@ -644,9 +697,11 @@ function applyMask(shot, maskFile, outPath, times) {
     // The plate is tiled first so it matches the mask sheet one-to-one; the
     // painted alpha then replaces the computed one wholesale.
     const tail = buildFilter(shot, { sequence: true, tailOnly: true });
+    const edge = edgeGraph(shot);
     const graph =
       `[0:v]${buildFilter(shot, { sequence: true, plate: true })}[base];` +
-      `[1:v]format=gray[m];[base][m]alphamerge,${tail}`;
+      `[1:v]format=gray${edge ? "," + edge : ""}[m];` +
+      `[base][m]alphamerge,${tail}`;
 
     const run = spawnSync("ffmpeg", [
       "-hide_banner", "-loglevel", "error", "-y",
