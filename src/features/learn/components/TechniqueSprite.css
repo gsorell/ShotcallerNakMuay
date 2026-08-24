@@ -6,6 +6,16 @@
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
+  /* One knob for the cell size, so a host can resize the figure without
+     knowing anything about how the animation works. The roadmap card drives it
+     to shrink the figure into a closed row and grow it back on open. */
+  --sprite-size: 150px;
+}
+
+/* Two sides shown together still have to fit a phone beside nothing else, so
+   each cell gives up a little width. */
+.technique-sprites--2 {
+  --sprite-size: 116px;
 }
 
 .technique-sprite-figure {
@@ -17,19 +27,14 @@
 }
 
 .technique-sprite {
-  width: 150px;
-  height: 150px;
+  width: var(--sprite-size);
+  height: var(--sprite-size);
   /* Clips the sheet to a single cell — this is what makes the step animation a
      frame rather than a slide. No background: the silhouette carries its own
      glow, and a second one behind it just muddies the figure. */
   overflow: hidden;
-}
-
-/* Two sides shown together still have to fit a phone beside nothing else, so
-   each cell gives up a little width. */
-.technique-sprites--2 .technique-sprite {
-  width: 116px;
-  height: 116px;
+  /* Only ever driven by --sprite-size, and only the roadmap card changes it. */
+  transition: width 0.18s ease, height 0.18s ease;
 }
 
 .technique-sprite img {
@@ -60,6 +65,10 @@
 /* Hold the landed frame — the fourth of six, which is where the pipeline puts
    the moment of furthest extension. */
 @media (prefers-reduced-motion: reduce) {
+  .technique-sprite {
+    transition: none;
+  }
+
   .technique-sprite img {
     animation: none;
     transform: translateX(-50%);
@@ -73,8 +82,7 @@
     align-self: center;
   }
 
-  .technique-sprites--1 .technique-sprite {
-    width: 132px;
-    height: 132px;
+  .technique-sprites--1 {
+    --sprite-size: 132px;
   }
 }

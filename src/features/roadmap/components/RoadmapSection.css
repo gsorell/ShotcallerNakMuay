@@ -573,33 +573,51 @@
   gap: 0.7rem;
 }
 
+/* Two tracks: the lesson down the left, the silhouette pinned right in both
+   states. The figure grows in place rather than moving, so opening a card
+   never makes it jump. `--sprite-slot` is the only thing that changes size;
+   TechniqueSprite reads it. */
 .roadmap-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.9rem;
+  align-items: start;
   background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.6rem;
   padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  --sprite-slot: 64px;
 }
 
-.roadmap-card[open] {
+.roadmap-card--open {
   border-color: rgba(236, 72, 153, 0.35);
   background: rgba(0, 0, 0, 0.3);
+  --sprite-slot: 150px;
 }
 
-/* The whole row is the control. */
-.roadmap-card > summary {
+/* The whole row is the control — the click handler sits on the card. This
+   button is what carries the semantics and the keyboard, so it is styled back
+   down to plain text. */
+.roadmap-card-head {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
-  list-style: none;
 }
 
-.roadmap-card > summary::-webkit-details-marker {
-  display: none;
-}
-
-.roadmap-card > summary::after {
+.roadmap-card-head::after {
   content: "⌄";
   margin-left: auto;
   align-self: center;
@@ -609,45 +627,76 @@
   transition: transform 0.2s ease;
 }
 
-.roadmap-card[open] > summary::after {
+.roadmap-card--open .roadmap-card-head::after {
   transform: rotate(180deg);
 }
 
-.roadmap-card > summary:focus-visible {
+.roadmap-card-head:focus-visible {
   outline: 2px solid #60a5fa;
   outline-offset: 3px;
   border-radius: 4px;
 }
 
-.roadmap-card-body {
+/* A callout with no written lesson has nothing to open. */
+.roadmap-card-head:disabled {
+  cursor: default;
+}
+
+.roadmap-card-head:disabled::after {
+  display: none;
+}
+
+/* Click-through, so tapping the figure opens the lesson exactly as tapping its
+   name does — the card behind it is the target. */
+.roadmap-card .technique-sprites {
+  grid-column: 2;
+  grid-row: 1;
+  pointer-events: none;
+  --sprite-size: var(--sprite-slot);
+}
+
+/* A paired lesson puts two cells in the same slot, giving up the same fraction
+   each that it always has. */
+.roadmap-card .technique-sprites--2 {
+  --sprite-size: calc(var(--sprite-slot) * 0.78);
+}
+
+/* Open, with room: the figure spans both rows so the copy reads beside it. */
+.roadmap-card--open .technique-sprites {
+  grid-row: 1 / span 2;
+}
+
+/* min-width:0 or the copy refuses to wrap and shoves the figure off the card. */
+.roadmap-card-copy {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
   padding-top: 0.6rem;
   margin-top: 0.55rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  cursor: auto;
 }
 
-/* min-width:0 or the copy refuses to wrap and shoves the sprite off the card. */
-.roadmap-card-copy {
-  flex: 1 1 auto;
-  min-width: 0;
+/* Spelled out because a `display` on the class would quietly beat the hidden
+   attribute and leave the lesson on screen with the card shut. */
+.roadmap-card-copy[hidden] {
+  display: none;
 }
 
-/* Beside the copy is fine on a wide card. On a phone it leaves roughly a 190px
-   column of three-word lines, so stack instead, figure on top. */
+/* Phone: beside the copy leaves roughly a 190px column of three-word lines, so
+   the copy takes the full width underneath. The figure keeps the corner it
+   held while the card was shut — above the copy, and it still has not moved. */
 @media (max-width: 600px) {
-  .roadmap-card-body {
-    flex-direction: column;
-    gap: 0.75rem;
+  .roadmap-card--open {
+    --sprite-slot: 120px;
   }
 
-  /* Above the copy, not below it: the figure is the thing worth seeing
-     first, and reading past a wall of text to reach it defeats the point.
-     Must name the WRAPPER — `.technique-sprite` is the inner cell and cannot
-     order itself against the copy. */
-  .roadmap-card-body .technique-sprites {
-    order: -1;
+  .roadmap-card--open .technique-sprites {
+    grid-row: 1;
+  }
+
+  .roadmap-card--open .roadmap-card-copy {
+    grid-column: 1 / -1;
   }
 }
 

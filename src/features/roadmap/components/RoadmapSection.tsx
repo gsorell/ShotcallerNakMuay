@@ -321,6 +321,20 @@ function LevelDetail({
 }) {
   const path = FOUNDATIONS;
   const known = cumulativeSingles(path, level.id).length;
+
+  // Which cards are open. A Set rather than a single id because the cards are
+  // independent — comparing two techniques on one level means having both
+  // open at once, which the native <details> this replaced also allowed.
+  const [openCards, setOpenCards] = useState<ReadonlySet<string>>(
+    () => new Set()
+  );
+  const toggleCard = useCallback((key: string) => {
+    setOpenCards((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }, []);
   const rounds = Array.from(
     { length: level.session.roundsCount },
     (_, i) => i + 1
@@ -375,28 +389,62 @@ function LevelDetail({
       <section className="roadmap-panel">
         <h2 className="roadmap-panel-title">New this level</h2>
         <div className="roadmap-cards">
-          {/* Every card is closed by default and opens to the whole lesson.
-              All of this is reference material — read once while learning the
-              movement, not on every visit — so what the screen owes you at a
-              glance is the list of what is new, not an essay per technique.
-              The card itself is the control, rather than a small link inside
-              it: a bigger target, and the list reads as one accordion. */}
-          {lessons.map(({ callouts, entry }) => (
-            <details className="roadmap-card" key={callouts[0]}>
-              <summary className="roadmap-card-head">
-                <span className="roadmap-card-name">
-                  {entry?.name ?? callouts[0]}
-                </span>
-                {entry?.numbering && (
-                  <span className="roadmap-card-number">{entry.numbering}</span>
-                )}
-                {entry?.thai && (
-                  <span className="roadmap-card-thai">{entry.thai}</span>
-                )}
-              </summary>
-              {entry && (
-                <div className="roadmap-card-body">
-                  <div className="roadmap-card-copy">
+          {/* The silhouette rides in the closed row, so the list shows what
+              every technique looks like without being opened — that is the
+              whole point of having shot them. The written lesson stays behind
+              the disclosure: it is reference material, read once while
+              learning the movement, and an essay per technique would bury the
+              list of what is new under it.
+
+              Not <details> any more. The figure has to be visible while the
+              card is shut, and <details> hides everything that is not the
+              <summary>. A button with aria-expanded says the same thing to a
+              screen reader; the whole row stays the target because the click
+              handler sits on the card, and the copy stops the event so
+              selecting text does not collapse what you are reading. */}
+          {lessons.map(({ callouts, entry }) => {
+            const key = callouts[0];
+            const open = openCards.has(key);
+            const bodyId = `roadmap-card-${level.id}-${key.replace(/\s+/g, "-").toLowerCase()}`;
+
+            return (
+              <div
+                className={`roadmap-card${open ? " roadmap-card--open" : ""}`}
+                key={key}
+                onClick={entry ? () => toggleCard(key) : undefined}
+              >
+                <button
+                  type="button"
+                  className="roadmap-card-head"
+                  aria-expanded={open}
+                  aria-controls={entry ? bodyId : undefined}
+                  disabled={!entry}
+                >
+                  <span className="roadmap-card-name">
+                    {entry?.name ?? callouts[0]}
+                  </span>
+                  {entry?.numbering && (
+                    <span className="roadmap-card-number">
+                      {entry.numbering}
+                    </span>
+                  )}
+                  {entry?.thai && (
+                    <span className="roadmap-card-thai">{entry.thai}</span>
+                  )}
+                </button>
+
+                {/* Nothing renders for a lesson with no sheet, and the row
+                    simply has no figure in it. Click-through, so the figure is
+                    part of the same target as the name behind it. */}
+                {entry && <TechniqueSprite slug={entry.slug} name={entry.name} />}
+
+                {entry && (
+                  <div
+                    className="roadmap-card-copy"
+                    id={bodyId}
+                    hidden={!open}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {callouts.length > 1 && (
                       <p className="roadmap-card-callouts">
                         Called as {callouts.join(" · ")}
@@ -414,13 +462,10 @@ function LevelDetail({
                       </p>
                     )}
                   </div>
-                  {/* Nothing renders for a lesson with no sheet, so the copy
-                      simply takes the full width. */}
-                  <TechniqueSprite slug={entry.slug} name={entry.name} />
-                </div>
-              )}
-            </details>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
