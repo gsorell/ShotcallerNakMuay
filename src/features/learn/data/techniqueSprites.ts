@@ -41,6 +41,7 @@ const SINGLE = [
   "lead-uppercut",
   "rear-uppercut",
   "overhand",
+  "horizontal-elbow",
 ] as const;
 
 /**
@@ -65,10 +66,6 @@ const PAIRED: Record<string, SpriteVariant[]> = {
   "straight-knee": [
     { src: "/assets/technique/straight-knee-lead.webp", label: "Lead" },
     { src: "/assets/technique/straight-knee-rear.webp", label: "Rear" },
-  ],
-  "horizontal-elbow": [
-    { src: "/assets/technique/horizontal-elbow-lead.webp", label: "Lead" },
-    { src: "/assets/technique/horizontal-elbow-rear.webp", label: "Rear" },
   ],
   "up-elbow": [
     { src: "/assets/technique/up-elbow-lead.webp", label: "Lead" },
