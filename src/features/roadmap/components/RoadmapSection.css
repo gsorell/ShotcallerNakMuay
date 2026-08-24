@@ -642,7 +642,11 @@
     gap: 0.75rem;
   }
 
-  .roadmap-card-body .technique-sprite {
+  /* Above the copy, not below it: the figure is the thing worth seeing
+     first, and reading past a wall of text to reach it defeats the point.
+     Must name the WRAPPER — `.technique-sprite` is the inner cell and cannot
+     order itself against the copy. */
+  .roadmap-card-body .technique-sprites {
     order: -1;
   }
 }
