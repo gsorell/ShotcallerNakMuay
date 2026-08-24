@@ -538,6 +538,54 @@ function exportRetouch(shot, dir, times) {
   }
 }
 
+/**
+ * Is this file actually a mask?
+ *
+ * The retouch happens in an image editor with the footage visible underneath,
+ * and the easy mistake is saving the composite — footage and all — over the
+ * mask. That still renders: every pixel is opaque, so the sprite comes out as a
+ * solid rectangle with no silhouette at all. A real mask is almost entirely
+ * black or white, so a wide spread of mid-tones means a photo got saved.
+ *
+ * Wrong size is fatal; suspicious content is a warning, because a soft-brushed
+ * edge is legitimate and only the author can say which they meant.
+ */
+function checkMask(file, shot) {
+  const expect = { w: shot.size * shot.frames, h: shot.size };
+
+  const probe = spawnSync("ffprobe", [
+    "-v", "error", "-select_streams", "v:0",
+    "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", file,
+  ], { encoding: "utf8" });
+  const dims = /(\d+)x(\d+)/.exec(probe.stdout || "");
+  if (!dims) return { ok: false, why: "could not read the mask" };
+
+  const w = Number(dims[1]), h = Number(dims[2]);
+  if (w !== expect.w || h !== expect.h) {
+    return {
+      ok: false,
+      why: `mask is ${w}x${h}, expected ${expect.w}x${expect.h} — do not resize or crop`,
+    };
+  }
+
+  const raw = spawnSync("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-i", file,
+    "-vf", "format=gray", "-pix_fmt", "gray", "-f", "rawvideo", "-",
+  ], { maxBuffer: 1 << 28 });
+  if (raw.status !== 0 || !raw.stdout) return { ok: true };
+
+  let mid = 0;
+  const buf = raw.stdout;
+  for (let i = 0; i < buf.length; i++) {
+    if (buf[i] > 40 && buf[i] < 215) mid++;
+  }
+  const share = mid / buf.length;
+
+  return share > 0.12
+    ? { ok: true, warn: `${(share * 100).toFixed(0)}% mid-grey — did the plate get saved over the mask?` }
+    : { ok: true };
+}
+
 /** Render a sprite from a retouched mask sheet instead of a computed one. */
 function applyMask(shot, maskFile, outPath, times) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "applymask-"));
@@ -758,8 +806,17 @@ function main() {
     const retouched = args.masks
       ? path.join(args.masks, `${shot.slug}.mask.png`)
       : null;
-    const useRetouched = retouched && fs.existsSync(retouched) && times;
-    if (useRetouched) note = "  (retouched mask)";
+    let useRetouched = retouched && fs.existsSync(retouched) && times;
+    if (useRetouched) {
+      const verdict = checkMask(retouched, shot);
+      if (!verdict.ok) {
+        console.log(`  ✗  ${shot.slug.padEnd(18)} ${verdict.why}`);
+        failed++;
+        continue;
+      }
+      if (verdict.warn) note = `  (retouched — ${verdict.warn})`;
+    }
+    if (useRetouched && !note) note = "  (retouched mask)";
 
     const ok = useRetouched
       ? applyMask(shot, retouched, out, times)

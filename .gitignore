@@ -33,3 +33,9 @@ dist-ssr
 *-base64.txt
 *api-key*.txt
 *certificate*.txt
+
+# Sprite retouching. Plates are regenerated from the footage by
+# `technique-sprites.mjs --export-masks`, so they are never worth committing.
+# Edited masks ARE worth keeping — they are the only record of a hand fix, and
+# without them a rebuild silently reverts to the automatic result.
+retouch/*.plate.png

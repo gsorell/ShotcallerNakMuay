@@ -1,0 +1,253 @@
+{
+ "defaults": {
+  "frames": 6,
+  "size": 256,
+  "background": "bright",
+  "isolate": true,
+  "file": "C:/Users/gsore/Downloads/PXL_20260823_182627956.mp4"
+ },
+ "shots": [
+  {
+   "slug": "jab",
+   "anchor": 9.27,
+   "crop": "700:820:370:150",
+   "cutoff": 0.6,
+   "clean": 3,
+   "duration": 0.9,
+   "hold": 0
+  },
+  {
+   "slug": "cross",
+   "anchor": 14.27,
+   "crop": "700:820:370:150",
+   "cutoff": 0.6,
+   "clean": 3,
+   "duration": 0.9,
+   "hold": 0
+  },
+  {
+   "slug": "lead-hook",
+   "anchor": 25,
+   "crop": "700:820:370:150",
+   "cutoff": 0.6,
+   "clean": 3,
+   "duration": 0.9,
+   "hold": 0
+  },
+  {
+   "slug": "rear-hook",
+   "anchor": 31.63,
+   "crop": "700:820:370:150",
+   "cutoff": 0.6,
+   "clean": 3,
+   "duration": 0.9,
+   "hold": 0
+  },
+  {
+   "slug": "low-kick",
+   "anchor": 57.53,
+   "crop": "720:890:250:105",
+   "cutoff": 0.67,
+   "clean": 6,
+   "duration": 0.9,
+   "hold": 0
+  },
+  {
+   "slug": "switch-kick",
+   "anchor": 73.2,
+   "crop": "738:910:339:109",
+   "cutoff": 0.67,
+   "clean": 6,
+   "duration": 0.9,
+   "hold": 0
+  },
+  {
+   "slug": "head-kick",
+   "anchor": 254.23,
+   "crop": "842:854:299:133",
+   "cutoff": 0.67,
+   "clean": 6,
+   "duration": 1,
+   "hold": 0
+  },
+  {
+   "slug": "high-guard",
+   "anchor": 107.55,
+   "crop": "403:869:342:121",
+   "duration": 1.4,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 1.8
+  },
+  {
+   "slug": "long-guard",
+   "anchor": 118,
+   "crop": "461:878:346:113",
+   "duration": 1.5,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 1.8
+  },
+  {
+   "slug": "slip",
+   "anchor": 131.6,
+   "crop": "394:860:335:130",
+   "duration": 0.9,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 2.4
+  },
+  {
+   "slug": "duck",
+   "anchor": 136.57,
+   "crop": "374:878:345:121",
+   "duration": 0.9,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 2.4
+  },
+  {
+   "slug": "lean-back",
+   "anchor": 142.33,
+   "crop": "470:878:329:121",
+   "duration": 1,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 2.4
+  },
+  {
+   "slug": "roll",
+   "anchor": 150.1,
+   "crop": "586:854:179:141",
+   "duration": 1.3,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 2.4
+  },
+  {
+   "slug": "pivot",
+   "anchor": 166.6,
+   "crop": "458:830:355:149",
+   "duration": 2.4,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 2.4
+  },
+  {
+   "slug": "straight-knee",
+   "anchor": 186.27,
+   "crop": "538:860:339:130",
+   "duration": 0.9,
+   "cutoff": 0.65,
+   "clean": 5,
+   "hold": 0
+  },
+  {
+   "slug": "body-punching",
+   "anchor": 208.47,
+   "crop": "595:860:342:130",
+   "duration": 0.9,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
+   "slug": "lead-uppercut",
+   "anchor": 224.7,
+   "crop": "480:851:360:138",
+   "duration": 0.85,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
+   "slug": "rear-uppercut",
+   "anchor": 233.17,
+   "crop": "480:851:360:138",
+   "duration": 0.85,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
+   "slug": "inside-low-kick",
+   "anchor": 248,
+   "crop": "643:860:306:130",
+   "duration": 0.9,
+   "cutoff": 0.67,
+   "clean": 6,
+   "hold": 0
+  },
+  {
+   "slug": "horizontal-elbow",
+   "anchor": 271.6,
+   "crop": "499:860:454:130",
+   "duration": 0.85,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
+   "slug": "up-elbow",
+   "anchor": 282.83,
+   "crop": "480:869:464:121",
+   "duration": 0.85,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
+   "slug": "teep-lead",
+   "anchor": 40.07,
+   "crop": "690:846:347:133",
+   "cutoff": 0.67,
+   "clean": 6,
+   "duration": 0.85
+  },
+  {
+   "slug": "teep-rear",
+   "anchor": 46,
+   "crop": "730:838:315:141",
+   "cutoff": 0.67,
+   "clean": 6,
+   "duration": 0.85
+  },
+  {
+   "slug": "overhand",
+   "anchor": 239.53,
+   "crop": "554:830:355:149",
+   "cutoff": 0.63,
+   "clean": 4,
+   "duration": 0.85
+  },
+  {
+   "slug": "roundhouse-kick",
+   "anchor": 66.2,
+   "crop": "714:854:315:125",
+   "cutoff": 0.67,
+   "clean": 6,
+   "duration": 1
+  },
+  {
+   "frames": 6,
+   "size": 256,
+   "background": "bright",
+   "isolate": true,
+   "crop": "560:880:300:130",
+   "cutoff": 0.63,
+   "clean": 5,
+   "duration": 1,
+   "ease": 1.6,
+   "slug": "check",
+   "anchor": 92.25,
+   "file": "C:/Users/gsore/Downloads/PXL_20260823_182627956.mp4"
+  }
+ ]
+}
