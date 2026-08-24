@@ -158,8 +158,8 @@
    "crop": "560:880:300:130",
    "cutoff": 0.65,
    "clean": 5,
-   "duration": 0.9,
-   "hold": 0
+   "duration": 1.8,
+   "ease": 1.5
   },
   {
    "slug": "body-punching",
