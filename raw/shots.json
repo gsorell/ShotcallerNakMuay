@@ -118,7 +118,10 @@
    "cutoff": 0.6,
    "clean": 3,
    "hold": 0,
-   "ease": 2.4
+   "ease": 2.4,
+   "duplicateFrames": {
+    "6": 2
+   }
   },
   {
    "slug": "roll",
