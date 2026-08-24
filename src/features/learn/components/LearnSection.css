@@ -319,7 +319,8 @@
     gap: 0.85rem;
   }
 
-  .learn-detail-intro .technique-sprite {
+  /* Wrapper, not the inner cell — see the note in RoadmapSection.css. */
+  .learn-detail-intro .technique-sprites {
     order: -1;
   }
 }
