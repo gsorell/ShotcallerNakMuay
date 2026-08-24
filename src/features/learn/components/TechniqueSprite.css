@@ -5,15 +5,10 @@
   flex: none;
   width: 150px;
   height: 150px;
+  /* Clips the sheet to a single cell — this is what makes the step animation a
+     frame rather than a slide. No background: the silhouette carries its own
+     glow, and a second one behind it just muddies the figure. */
   overflow: hidden;
-  border-radius: 10px;
-  /* A whisper of the accent behind the figure, so the slot reads as part of the
-     card rather than a hole punched in it. */
-  background: radial-gradient(
-    circle at 50% 45%,
-    rgba(236, 72, 153, 0.12),
-    rgba(236, 72, 153, 0) 70%
-  );
 }
 
 .technique-sprite img {
