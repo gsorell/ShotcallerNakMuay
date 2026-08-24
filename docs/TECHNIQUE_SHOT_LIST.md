@@ -231,6 +231,33 @@ picks a frame between reps:
 | High guard | Chin tucked so the head vanishes into the guard — not raised hands |
 | Long guard | Widest upper body only, ignoring the legs |
 
+## A silhouette cannot show a limb that overlaps the body
+
+The one real limitation of this whole approach, found the hard way on the
+rear-leg check.
+
+Shot side-on, a check with the *lead* leg reads perfectly: the knee lifts on the
+camera side, against the wall, and there is background between the raised shin
+and the standing leg. The same check with the *rear* leg does not read at all.
+The leg comes up in front of the torso, so every pixel of it sits inside the
+body's own outline — and a silhouette has no way to draw it. The sprite comes
+out as a fighter standing in guard.
+
+Nothing downstream can recover this. It is not the key, not the morphology
+(2/0 and 5/3 are identical here), and not the take: all three rear-check reps in
+the solo footage — 97.55, 99.70, 102.10 — have the same geometry. The
+information was never in the frame.
+
+**So the test when shooting is not "is the technique correct" but "does every
+moving part break the body's outline".** Stand where the camera is and look:
+if a limb travels across the torso rather than away from it, that camera
+position cannot capture the technique, however good the form is.
+
+For the techniques this affects — anything where the far-side limb works across
+the body — the fix is a second camera position at roughly three-quarters,
+turned so the working side opens toward the lens. Shoot the same rep from both
+and keep whichever breaks the outline.
+
 ## Floor reflection
 
 A varnished court reflects the fighter, and the reflection is joined to the feet,
