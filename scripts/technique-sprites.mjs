@@ -17,6 +17,15 @@
 //   node scripts/technique-sprites.mjs --only jab        # rebuild one
 //   node scripts/technique-sprites.mjs --only jab --frames
 //
+// Retouching. Some floor stays fused to the feet — a reflection or contact
+// shadow is JOINED to the body, so no amount of isolating removes it. Fix it
+// by hand on the MASK, never on the finished sprite: the sprite has the glow
+// baked in, so erasing there leaves a halo exactly where the floor was.
+//
+//   node scripts/technique-sprites.mjs --export-masks retouch
+//   ...paint the .mask.png files, white keeps, black drops...
+//   node scripts/technique-sprites.mjs --masks retouch
+//
 // `--frames` writes the six frames as separate PNGs instead of a sheet. Use it
 // while dialling in `threshold` for a clip: the keying is the only part of this
 // that needs a human eye, and a contact sheet of six PNGs is how you find the
@@ -165,7 +174,11 @@ const OUT_DIR = "public/assets/technique";
 // ------------------------------------------------------------------- args --
 
 function parseArgs(argv) {
-  const args = { only: null, frames: false, init: false, manifest: MANIFEST, out: OUT_DIR };
+  const args = {
+    only: null, frames: false, init: false,
+    manifest: MANIFEST, out: OUT_DIR,
+    exportMasks: null, masks: null,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--init") args.init = true;
@@ -173,6 +186,8 @@ function parseArgs(argv) {
     else if (a === "--only") args.only = argv[++i];
     else if (a === "--manifest") args.manifest = argv[++i];
     else if (a === "--out") args.out = argv[++i];
+    else if (a === "--export-masks") args.exportMasks = argv[++i];
+    else if (a === "--masks") args.masks = argv[++i];
     else die(`Unknown argument: ${a}`);
   }
   return args;
@@ -202,6 +217,20 @@ function rgb(hex) {
 }
 
 /**
+ * Fit the figure inside the cell's margin, then pad back to a square.
+ *
+ * Shared, because a retouched mask has to land on exactly the same geometry as
+ * the sprite it was exported from, or the paint lands in the wrong place.
+ */
+function fitOf(shot) {
+  const inner = Math.max(16, Math.round(shot.size * (1 - 2 * (shot.margin ?? 0))));
+  return (
+    `scale=${inner}:${inner}:force_original_aspect_ratio=decrease:flags=lanczos,` +
+    `pad=${shot.size}:${shot.size}:(ow-iw)/2:(oh-ih)/2:color=#00000000`
+  );
+}
+
+/**
  * The filtergraph, and the only interesting part of this script.
  *
  * Order matters more than any single filter here. Everything that shapes the
@@ -215,7 +244,18 @@ function rgb(hex) {
  *   maskOnly    stop at the mask and emit it as grey, for isolation in node
  *   mask        take the cleaned mask back from input 1 and carry on
  */
-function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } = {}) {
+function buildFilter(
+  shot,
+  {
+    sequence = false,
+    maskOnly = false,
+    mask = null,
+    plate = false,
+    untiled = false,
+    alphaSheet = false,
+    tailOnly = false,
+  } = {}
+) {
   const { frames, size, cutoff, softness, background, glow, clean, close, solid } = shot;
   const core = rgb(shot.color);
   const halo = rgb(shot.glowColor);
@@ -250,6 +290,16 @@ function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } =
   if (close > 0) steps.push(...rep("dilation", close), ...rep("erosion", close));
   const shaping = steps.join(",");
 
+  // The footage itself, cropped and tiled to match the sheet exactly. This is
+  // the reference layer for retouching — without it you are painting a white
+  // shape with no way to tell a foot from its reflection.
+  if (plate) {
+    // untiled stops before the tile so a per-frame mask can still be merged.
+    return untiled
+      ? `${pick}${flip}${crop}format=rgba`
+      : `${pick}${flip}${crop}${fitOf(shot)},tile=${frames}x1`;
+  }
+
   if (maskOnly) {
     // The explicit format=rgba is load-bearing: without it alphaextract cannot
     // negotiate a format against a raw grey sink and the whole graph fails to
@@ -257,15 +307,13 @@ function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } =
     return `${pick}${flip}${crop}${key},format=rgba,alphaextract${shaping ? "," + shaping : ""}`;
   }
 
-  // Square cell: fit the whole fighter inside, pad rather than crop further. A
-  // clipped head kick is a worse failure than empty space in a stance shot.
-  // lanczos because this downscale is now doing the anti-aliasing.
-  // Fit inside the margin, then pad back out to a square cell. The inset is what
-  // keeps the glow from being sliced off at the boundary.
-  const inner = Math.max(16, Math.round(size * (1 - 2 * (shot.margin ?? 0))));
-  const fit =
-    `scale=${inner}:${inner}:force_original_aspect_ratio=decrease:flags=lanczos,` +
-    `pad=${size}:${size}:(ow-iw)/2:(oh-ih)/2:color=#00000000`;
+  // The mask surgery, spliced onto the alpha plane. Declared here because both
+  // the sprite and the alpha-sheet export need it.
+  const inline = shaping
+    ? `,split[mk][ma];[ma]alphaextract,${shaping}[mm];[mk][mm]alphamerge`
+    : "";
+
+  const fit = fitOf(shot);
 
   const paint = (c) => `geq=r='${c.r}':g='${c.g}':b='${c.b}':a='alpha(X,Y)'`;
 
@@ -274,6 +322,17 @@ function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } =
       `[b]${paint(halo)},gblur=sigma=${glow}[halo];` +
       `[halo][core]overlay=0:0:format=auto`
     : paint(core);
+
+  // The finished alpha at sheet resolution — the file that gets painted.
+  if (alphaSheet) {
+    return (
+      `${pick}${flip}${crop}${key}${inline},${fit},` +
+      `tile=${frames}x1,format=rgba,alphaextract`
+    );
+  }
+
+  // Just the paint and glow, for a graph that supplied its own alpha.
+  if (tailOnly) return tail;
 
   if (mask) {
     // The mask arrives already keyed, shaped and isolated; the base only needs
@@ -284,10 +343,6 @@ function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } =
       `[base][mm]alphamerge,${fit},${tail}`
     );
   }
-
-  const inline = shaping
-    ? `,split[mk][ma];[ma]alphaextract,${shaping}[mm];[mk][mm]alphamerge`
-    : "";
 
   return `${pick}${flip}${crop}${key}${inline},${fit},${tail}`;
 }
@@ -371,6 +426,18 @@ function anchoredTimes(shot, peakTime) {
   return times.slice(0, shot.frames).map((t) => Math.max(0, t));
 }
 
+/** Pull each chosen timestamp to its own PNG, numbered for ffmpeg's sequencer. */
+function grabFrames(shot, dir, times) {
+  times.forEach((t, i) => {
+    const grab = spawnSync("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-ss", String(t), "-i", shot.file, "-frames:v", "1",
+      "-update", "1", path.join(dir, `f${String(i + 1).padStart(2, "0")}.png`),
+    ], { encoding: "utf8" });
+    if (grab.status !== 0) throw new Error(grab.stderr || "frame grab failed");
+  });
+}
+
 /**
  * Build the mask, drop everything not joined to the fighter, and hand back a
  * raw grayscale file ffmpeg can merge as alpha.
@@ -417,20 +484,104 @@ function isolateMask(shot, tmp) {
 }
 
 /**
+ * Write the two files a retouch needs: the mask to paint on, and the footage
+ * behind it so you can see what you are painting.
+ *
+ * Both land on the sprite's exact geometry, so an edited mask drops straight
+ * back on without alignment.
+ */
+function exportRetouch(shot, dir, times) {
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "retouch-"));
+  try {
+    grabFrames(shot, tmp, times);
+
+    // Isolation is a node pass, not a filter, so the exported mask has to come
+    // through the same route the sprite does. Skip it and a round trip through
+    // an untouched mask silently reinstates every speck isolate removed.
+    const isolated = shot.isolate ? isolateMask(shot, tmp) : null;
+    const fitOfShot = fitOf(shot);
+
+    const maskGraph = isolated
+      ? `[0:v]${buildFilter(shot, { sequence: true, plate: true, untiled: true })}[base];` +
+        `[1:v]format=gray[m];[base][m]alphamerge,${fitOfShot},tile=${shot.frames}x1,` +
+        `format=rgba,alphaextract`
+      : buildFilter(shot, { sequence: true, alphaSheet: true });
+
+    const maskArgs = [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-i", path.join(tmp, "f%02d.png"),
+    ];
+    if (isolated) {
+      maskArgs.push("-f", "rawvideo", "-pix_fmt", "gray",
+                    "-s", `${isolated.w}x${isolated.h}`, "-r", "25", "-i", isolated.file);
+    }
+    maskArgs.push("-filter_complex", maskGraph, "-frames:v", "1",
+                  "-pix_fmt", "gray", path.join(dir, `${shot.slug}.mask.png`));
+
+    const maskRun = spawnSync("ffmpeg", maskArgs, { encoding: "utf8" });
+    if (maskRun.status !== 0) throw new Error(maskRun.stderr || "mask export failed");
+
+    const plateRun = spawnSync("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-i", path.join(tmp, "f%02d.png"),
+      "-filter_complex", buildFilter(shot, { sequence: true, plate: true }),
+      "-frames:v", "1", path.join(dir, `${shot.slug}.plate.png`),
+    ], { encoding: "utf8" });
+    if (plateRun.status !== 0) throw new Error(plateRun.stderr || "plate export failed");
+    return true;
+  } catch (err) {
+    console.error(String(err.message || err).trim());
+    return false;
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+/** Render a sprite from a retouched mask sheet instead of a computed one. */
+function applyMask(shot, maskFile, outPath, times) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "applymask-"));
+  try {
+    grabFrames(shot, tmp, times);
+
+    // The plate is tiled first so it matches the mask sheet one-to-one; the
+    // painted alpha then replaces the computed one wholesale.
+    const tail = buildFilter(shot, { sequence: true, tailOnly: true });
+    const graph =
+      `[0:v]${buildFilter(shot, { sequence: true, plate: true })}[base];` +
+      `[1:v]format=gray[m];[base][m]alphamerge,${tail}`;
+
+    const run = spawnSync("ffmpeg", [
+      "-hide_banner", "-loglevel", "error", "-y",
+      "-i", path.join(tmp, "f%02d.png"),
+      "-i", maskFile,
+      "-filter_complex", graph,
+      "-frames:v", "1", "-c:v", "libwebp",
+      "-lossless", "1", "-compression_level", String(shot.effort),
+      "-pix_fmt", "yuva420p", outPath,
+    ], { encoding: "utf8" });
+
+    if (run.status !== 0) {
+      console.error(run.stderr?.trim() || "(no stderr)");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(String(err.message || err).trim());
+    return false;
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+/**
  * Pull the chosen frames one at a time, then key and tile them as a sequence.
  * Six seeks costs a little more than one decode pass and buys exact timing.
  */
 function runAnchored(shot, outPath, asFrames, times) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sprite-"));
   try {
-    times.forEach((t, i) => {
-      const grab = spawnSync("ffmpeg", [
-        "-hide_banner", "-loglevel", "error", "-y",
-        "-ss", String(t), "-i", shot.file, "-frames:v", "1",
-        "-update", "1", path.join(tmp, `f${String(i + 1).padStart(2, "0")}.png`),
-      ], { encoding: "utf8" });
-      if (grab.status !== 0) throw new Error(grab.stderr || "frame grab failed");
-    });
+    grabFrames(shot, tmp, times);
 
     // Isolation needs the mask as plain bytes, so it runs as its own pass:
     // ffmpeg builds the mask, node deletes the unattached regions, ffmpeg
@@ -584,9 +735,37 @@ function main() {
       peak = { t: shot.anchor };
     }
 
-    const ok = peak
-      ? runAnchored(shot, out, args.frames, anchoredTimes(shot, peak.t))
-      : runFfmpeg(shot, out, args.frames);
+    const times = peak ? anchoredTimes(shot, peak.t) : null;
+
+    // Retouch export: write the mask and its reference plate, build nothing.
+    if (args.exportMasks) {
+      if (!times) {
+        console.log(`  ·  ${shot.slug.padEnd(18)} no strike found, skipped`);
+        skipped++;
+        continue;
+      }
+      if (exportRetouch(shot, args.exportMasks, times)) {
+        console.log(`  ✎  ${shot.slug.padEnd(18)} mask + plate`);
+        built++;
+      } else {
+        console.log(`  ✗  ${shot.slug.padEnd(18)} export failed`);
+        failed++;
+      }
+      continue;
+    }
+
+    // A retouched mask for this slug wins over the computed one.
+    const retouched = args.masks
+      ? path.join(args.masks, `${shot.slug}.mask.png`)
+      : null;
+    const useRetouched = retouched && fs.existsSync(retouched) && times;
+    if (useRetouched) note = "  (retouched mask)";
+
+    const ok = useRetouched
+      ? applyMask(shot, retouched, out, times)
+      : times
+        ? runAnchored(shot, out, args.frames, times)
+        : runFfmpeg(shot, out, args.frames);
 
     if (ok) {
       const label = args.frames

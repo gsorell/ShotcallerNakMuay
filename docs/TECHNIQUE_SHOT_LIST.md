@@ -251,6 +251,45 @@ and defensive work, 0.63 for punches, 0.65–0.67 for kicks and knees.
 
 The reflection is best treated at the camera instead — matte floor, or a shooting
 position that keeps the contact point out of frame.
+## Retouching in Photoshop
+
+Some floor survives every automatic pass. A reflection or contact shadow is
+*joined* to the foot, so isolation cannot cut it, and the cutoff range that would
+remove it overlaps bare skin. That last bit is a hand job.
+
+**Paint the mask, never the sprite.** The finished sprite has the glow baked in,
+so erasing floor there leaves a halo exactly where the floor was, and painting
+flat colour back over a limb cannot restore its edge. The mask is one channel,
+black and white, and everything downstream is regenerated from it.
+
+```
+node scripts/technique-sprites.mjs --export-masks retouch
+```
+
+That writes two files per technique at the sprite's exact geometry — 1536x256,
+six cells across:
+
+- `<slug>.mask.png` — the alpha. White keeps, black drops. This is the one to edit.
+- `<slug>.plate.png` — the same six frames as footage, for seeing what you are
+  painting. Without it you are editing a white shape with no way to tell a foot
+  from its reflection.
+
+In Photoshop: open the plate, place the mask above it, drop the mask layer to
+about 50% opacity so the footage shows through. Paint pure black to remove and
+pure white to restore, hard brush. Most floor sits in a band along the bottom, so
+a rectangular marquee across all six cells, minus the feet, clears a technique in
+one action. Flatten, save over the same `.mask.png`. Do not resize or crop —
+geometry has to match or the paint lands in the wrong place.
+
+```
+node scripts/technique-sprites.mjs --masks retouch
+```
+
+Any slug with a mask in that folder is rendered from it; the rest are computed as
+normal, so only the files actually edited need to be there. An untouched mask
+round-trips to a pixel-identical sprite, which is the property that makes this
+safe to re-run.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
