@@ -10,6 +10,7 @@
 // on the setup screen.
 // ===========================================================================
 
+import { devUnlockAll } from "@/utils/devUnlock";
 import {
   ROADMAP_BANNER_DISMISSED_KEY,
   ROADMAP_STORAGE_KEY,
@@ -106,6 +107,9 @@ export function isLevelCleared(pathId: string, levelId: number): boolean {
  * level, so clearing it is what opens them.
  */
 export function isLevelUnlocked(pathId: string, levelId: number): boolean {
+  // Dev review walks the whole ladder without clearing it first. Compiled out
+  // of production — see devUnlockAll.
+  if (devUnlockAll()) return true;
   if (levelId <= 1) return true;
   return isLevelCleared(pathId, levelId - 1);
 }
