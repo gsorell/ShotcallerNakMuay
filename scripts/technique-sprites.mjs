@@ -575,14 +575,36 @@ function checkMask(file, shot) {
   if (raw.status !== 0 || !raw.stdout) return { ok: true };
 
   let mid = 0;
+  let white = 0;
   const buf = raw.stdout;
   for (let i = 0; i < buf.length; i++) {
-    if (buf[i] > 40 && buf[i] < 215) mid++;
+    const v = buf[i];
+    if (v >= 215) white++;
+    else if (v > 40) mid++;
   }
-  const share = mid / buf.length;
 
-  return share > 0.12
-    ? { ok: true, warn: `${(share * 100).toFixed(0)}% mid-grey — did the plate get saved over the mask?` }
+  // Measure mid-grey against the FIGURE, not the whole sheet. As a share of the
+  // sheet a composite barely registers, because most of a sheet is empty black
+  // either way — the first version of this check used that and waved through a
+  // saved composite at 8%. Against the figure the two cases are unmistakable:
+  // a real mask is about 7% mid-grey, which is just its anti-aliased edge, and
+  // a composite is around 67%, because every pixel of the footage is mid-grey.
+  const figure = mid + white;
+  if (figure === 0) return { ok: false, why: "mask is blank" };
+  const greyness = mid / figure;
+
+  if (greyness > 0.25) {
+    return {
+      ok: false,
+      why:
+        `${(greyness * 100).toFixed(0)}% of the figure is mid-grey — this looks like ` +
+        `the composite, not the mask. Set the mask layer to 100% opacity and hide ` +
+        `the plate before exporting.`,
+    };
+  }
+
+  return greyness > 0.15
+    ? { ok: true, warn: `${(greyness * 100).toFixed(0)}% grey edges — softer than usual` }
     : { ok: true };
 }
 
