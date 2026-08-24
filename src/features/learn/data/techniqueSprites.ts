@@ -30,7 +30,6 @@ const SINGLE = [
   "switch-kick",
   "head-kick",
   "inside-low-kick",
-  "check",
   "high-guard",
   "long-guard",
   "slip",
@@ -38,7 +37,6 @@ const SINGLE = [
   "lean-back",
   "roll",
   "pivot",
-  "straight-knee",
   "body-punching",
   "lead-uppercut",
   "rear-uppercut",
@@ -47,11 +45,28 @@ const SINGLE = [
   "up-elbow",
 ] as const;
 
-/** Lessons that show both sides, because the two read differently. */
+/**
+ * Lessons that show both sides, because the two read differently.
+ *
+ * Which leg does the work is the entire content of these three. A check with
+ * the lead leg and a check with the rear leg are different shapes — the rear
+ * one turns the body over to get there — and the path calls them separately,
+ * as "Left Check" and "Right Check". One sheet could only ever teach half of
+ * it. Contrast the slip, roll and pivot, which really are mirrors, and where a
+ * single sheet says everything.
+ */
 const PAIRED: Record<string, SpriteVariant[]> = {
   teep: [
     { src: "/assets/technique/teep-lead.webp", label: "Lead" },
     { src: "/assets/technique/teep-rear.webp", label: "Rear" },
+  ],
+  check: [
+    { src: "/assets/technique/check-lead.webp", label: "Lead" },
+    { src: "/assets/technique/check-rear.webp", label: "Rear" },
+  ],
+  "straight-knee": [
+    { src: "/assets/technique/straight-knee-lead.webp", label: "Lead" },
+    { src: "/assets/technique/straight-knee-rear.webp", label: "Rear" },
   ],
 };
 
