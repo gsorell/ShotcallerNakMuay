@@ -190,6 +190,28 @@ image format, so node can read it without needing a PNG decoder; and
 `alphaextract` needs an explicit `format=rgba` immediately before it, or the graph
 fails to configure against a raw grey sink.
 
+## Framing inside the cell
+
+Two settings decide whether a sprite reads as complete.
+
+`margin` (0.07 per side) fits the figure inside an inset rather than the full
+cell. Without it, a technique that reaches — a teep, a switch kick — lands hard
+against the boundary and the glow, which extends several pixels past the
+silhouette, is sliced off square. It looks like the fighter was cropped even
+though every pixel of them is present.
+
+`hold` repeats the peak frame. A guard is a position, not a movement, and at an
+even six frames it flickers past the thing it is meant to teach. `hold: 2` parks
+the animation on the held shape for half the loop.
+
+Worth auditing rather than eyeballing. Two checks catch nearly everything:
+compare each crop against the fighter's bounding box over the exact frames the
+sprite uses (catches a crop that cuts them off), and check whether the finished
+mask touches any cell edge (catches a figure that fills the cell with no room for
+the glow). The first found three clipped sprites, the second found five more —
+and the two kicks among them were cropping the extended leg, which is the entire
+point of the picture.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency

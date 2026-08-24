@@ -64,6 +64,24 @@ const DEFAULTS = {
   /** Cell size in px. 256 is 2x the ~150px slot, which is the retina case. */
   size: 256,
   /**
+   * Breathing room inside the cell, as a fraction per side.
+   *
+   * Fitting the figure to the full cell means a technique that reaches — a teep,
+   * a switch kick — lands hard against the boundary, and the glow, which extends
+   * several pixels past the silhouette, is cut off square. It reads as the
+   * fighter being cropped even though every pixel of them is present.
+   */
+  margin: 0.07,
+  /**
+   * Extra frames held on the peak.
+   *
+   * A guard is a position, not a movement: played at an even six frames it
+   * flickers past the thing it is meant to teach. Repeating the peak frame
+   * parks the animation on the held shape for an extra beat without changing
+   * how the sheet is stepped through.
+   */
+  hold: 0,
+  /**
    * Everything on the wall side of this luma (0–1) becomes transparent. This is
    * the one knob you will actually turn: raise it if the fighter is getting
    * eaten, lower it if the wall is surviving. Tune it with --frames.
@@ -233,8 +251,11 @@ function buildFilter(shot, { sequence = false, maskOnly = false, mask = null } =
   // Square cell: fit the whole fighter inside, pad rather than crop further. A
   // clipped head kick is a worse failure than empty space in a stance shot.
   // lanczos because this downscale is now doing the anti-aliasing.
+  // Fit inside the margin, then pad back out to a square cell. The inset is what
+  // keeps the glow from being sliced off at the boundary.
+  const inner = Math.max(16, Math.round(size * (1 - 2 * (shot.margin ?? 0))));
   const fit =
-    `scale=${size}:${size}:force_original_aspect_ratio=decrease:flags=lanczos,` +
+    `scale=${inner}:${inner}:force_original_aspect_ratio=decrease:flags=lanczos,` +
     `pad=${size}:${size}:(ow-iw)/2:(oh-ih)/2:color=#00000000`;
 
   const paint = (c) => `geq=r='${c.r}':g='${c.g}':b='${c.b}':a='alpha(X,Y)'`;
@@ -312,14 +333,23 @@ function keepBody(mask, w, h, minFraction) {
   return dropped;
 }
 
-/** Frame timestamps with the extension landing on `anchorFrame`. */
+/**
+ * Frame timestamps with the extension landing on `anchorFrame`, and `hold`
+ * extra frames parked on it.
+ */
 function anchoredTimes(shot, peakTime) {
   const step = shot.duration / shot.frames;
+  const hold = Math.max(0, Math.min(shot.hold ?? 0, shot.frames - shot.anchorFrame));
+  const lead = shot.anchorFrame - 1;
+  const trail = shot.frames - shot.anchorFrame - hold;
+
   const times = [];
-  for (let i = 0; i < shot.frames; i++) {
-    times.push(Math.max(0, peakTime + (i - (shot.anchorFrame - 1)) * step));
-  }
-  return times;
+  for (let i = lead; i >= 1; i--) times.push(peakTime - i * step);
+  times.push(peakTime);
+  for (let i = 0; i < hold; i++) times.push(peakTime);
+  for (let i = 1; i <= trail; i++) times.push(peakTime + i * step);
+
+  return times.slice(0, shot.frames).map((t) => Math.max(0, t));
 }
 
 /**
