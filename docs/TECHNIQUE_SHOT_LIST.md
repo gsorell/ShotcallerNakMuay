@@ -228,7 +228,7 @@ picks a frame between reps:
 | Punches, kicks, teeps | Horizontal reach |
 | Roll, duck, slip | Lowest head position |
 | Pivot | Narrowest silhouette — the completed turn |
-| High guard | Most mass in the upper third — hands at their highest |
+| High guard | Chin tucked so the head vanishes into the guard — not raised hands |
 | Long guard | Widest upper body only, ignoring the legs |
 
 ## Floor reflection
@@ -236,17 +236,21 @@ picks a frame between reps:
 A varnished court reflects the fighter, and the reflection is joined to the feet,
 so `isolate` cannot remove it — it is attached to the body by definition.
 
-Lowering the cutoff does remove it. Profiling straight down the body: the fighter
-runs 0.05 to 0.34, the contact reflection 0.53, and the reflection further out
-0.65 to 0.69. A cutoff of 0.60 sits above the contact reflection and lets it in;
-0.50 excludes it while keeping every part of the body.
+Lowering the cutoff to shed it does not work, and it is worth recording why,
+because the measurement that suggested it looked convincing. A luma profile taken
+straight down the body at one moment showed the fighter at 0.05–0.34 against a
+contact reflection at 0.53, implying a cutoff near 0.50 would separate them
+cleanly. It does at that spot. It does not anywhere else: the court is lit
+unevenly, and elsewhere in the same clip bare skin measures up to 0.49. A cutoff
+of 0.50 therefore eats the body — feet first, since skin is the brightest part of
+the fighter — and the silhouettes come back spotty with clipped feet.
 
-The limit is motion blur, which pushes a limb's luma up toward the floor. Tested
-on the teep: 0.58 keeps the whole foot, 0.52 starts eating it, and below 0.45 the
-shins break up on any technique. So the cutoff is set per class — around 0.50 for
-static and defensive work, 0.52 for punches, 0.58 for kicks — rather than one
-value for the session.
+**One profile is not a calibration.** Sample several points across the session
+before moving a threshold, or leave the per-class values alone: 0.60 for static
+and defensive work, 0.63 for punches, 0.65–0.67 for kicks and knees.
 
+The reflection is best treated at the camera instead — matte floor, or a shooting
+position that keeps the contact point out of frame.
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
