@@ -1,3 +1,4 @@
+import { devUnlockAll } from "@/utils/devUnlock";
 import React, {
   createContext,
   useCallback,
@@ -285,7 +286,9 @@ export function EntitlementProvider({
     };
   }, [evaluate, setStatus]);
 
-  const isPro = PRO_STATUSES.has(status);
+  // Dev review needs the Pro surfaces visible without a purchase. Compiled
+  // out of production — see devUnlockAll.
+  const isPro = devUnlockAll() || PRO_STATUSES.has(status);
   // Safe to render entitlement-dependent UI: either resolved for real, or
   // seeded from the last resolution. Only a genuine first launch has neither.
   const hydrated = cachedStatus !== null || ready;
