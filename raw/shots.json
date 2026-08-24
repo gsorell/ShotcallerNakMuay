@@ -155,7 +155,7 @@
   {
    "slug": "straight-knee-lead",
    "anchor": 198.1,
-   "crop": "560:880:300:130",
+   "crop": "570:880:370:130",
    "cutoff": 0.65,
    "clean": 5,
    "duration": 1.8,
