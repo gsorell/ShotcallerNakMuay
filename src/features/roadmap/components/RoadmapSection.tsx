@@ -409,7 +409,9 @@ function LevelDetail({
 
             return (
               <div
-                className={`roadmap-card${open ? " roadmap-card--open" : ""}`}
+                className={`roadmap-card${open ? " roadmap-card--open" : ""}${
+                  entry ? "" : " roadmap-card--bare"
+                }`}
                 key={key}
                 onClick={entry ? () => toggleCard(key) : undefined}
               >
