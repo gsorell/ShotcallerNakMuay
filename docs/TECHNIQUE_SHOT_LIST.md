@@ -274,12 +274,25 @@ six cells across:
   painting. Without it you are editing a white shape with no way to tell a foot
   from its reflection.
 
-In Photoshop: open the plate, place the mask above it, drop the mask layer to
-about 50% opacity so the footage shows through. Paint pure black to remove and
-pure white to restore, hard brush. Most floor sits in a band along the bottom, so
-a rectangular marquee across all six cells, minus the feet, clears a technique in
-one action. Flatten, save over the same `.mask.png`. Do not resize or crop —
-geometry has to match or the paint lands in the wrong place.
+In Photoshop: open the plate, **File > Place Embedded** the mask above it, commit
+at 100%, and rasterize when prompted — a smart object cannot be painted on. Drop
+the mask layer to roughly 50% opacity so the footage reads through, and paint on
+it: pure black removes, pure white restores, hard brush. Most floor sits in a band
+along the bottom, so a rectangular marquee across all six cells, minus the feet,
+clears a technique in about three actions rather than six passes.
+
+**Saving is where this goes wrong.** The file has to end up as the mask ALONE —
+black and white, no footage. Set the mask layer back to 100% opacity, hide the
+plate layer, then Flatten Image and discard hidden layers before saving over the
+same `.mask.png`. Flatten with the plate still visible and the footage is baked
+into the mask; because every pixel is then opaque, the sprite renders as a solid
+rectangle with no silhouette at all.
+
+`--masks` checks for both mistakes. A mask that is not the right size is refused
+outright, since every edit would land in the wrong place. One carrying a wide
+spread of mid-greys is flagged as a probable saved composite — a warning rather
+than a refusal, because a soft-brushed edge is legitimate and only the author
+knows which was meant.
 
 ```
 node scripts/technique-sprites.mjs --masks retouch
