@@ -19,7 +19,13 @@
 .technique-sprite img {
   display: block;
   height: 100%;
-  /* width is set inline: frames x 100%, so one cell fills the window. */
+  /* width is set inline: frames x 100%, so one cell fills the window.
+     max-width MUST be released. The sheet is deliberately six times wider than
+     its window, and any reset carrying `img { max-width: 100% }` clamps it back
+     to one window-width — which squeezes all six frames into the slot and looks
+     like a compressed still rather than an animation. */
+  max-width: none;
+  min-width: 0;
   animation: technique-sprite-run 1.15s steps(6) infinite;
 }
 
