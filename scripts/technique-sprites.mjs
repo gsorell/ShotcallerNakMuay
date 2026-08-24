@@ -91,6 +91,20 @@ const DEFAULTS = {
    */
   hold: 0,
   /**
+   * Re-point a frame at another frame's moment, as `{ 6: 2 }` — frame six
+   * takes frame two's timestamp.
+   *
+   * For when the tail of a technique reads worse than something earlier in it.
+   * A lean-back recovers to a pose the loop already passed through, so ending
+   * on a copy of that returns to guard more legibly than whatever the clock
+   * happened to land on.
+   *
+   * Both frames then come from the same instant, so the retouched mask must
+   * carry the same cell twice — see `--export-masks`, which writes the sheet
+   * after this remap and so already agrees with it.
+   */
+  duplicateFrames: null,
+  /**
    * Bunches the frames toward the peak instead of spacing them evenly.
    *
    * The fix for a position that will not read. `hold` repeats the peak frame,
@@ -423,7 +437,20 @@ function anchoredTimes(shot, peakTime) {
   for (let i = 0; i < hold; i++) times.push(peakTime);
   for (let i = 1; i <= trail; i++) times.push(peakTime + offset(i));
 
-  return times.slice(0, shot.frames).map((t) => Math.max(0, t));
+  const out = times.slice(0, shot.frames).map((t) => Math.max(0, t));
+
+  // Remap after the spacing is decided, so a duplicated frame lands on the
+  // other frame's real moment rather than a recomputed guess at it.
+  const dupes = shot.duplicateFrames;
+  if (dupes) {
+    for (const [target, source] of Object.entries(dupes)) {
+      const t = Number(target) - 1;
+      const f = Number(source) - 1;
+      if (t >= 0 && t < out.length && f >= 0 && f < out.length) out[t] = out[f];
+    }
+  }
+
+  return out;
 }
 
 /** Pull each chosen timestamp to its own PNG, numbered for ffmpeg's sequencer. */
