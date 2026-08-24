@@ -303,6 +303,40 @@ normal, so only the files actually edited need to be there. An untouched mask
 round-trips to a pixel-identical sprite, which is the property that makes this
 safe to re-run.
 
+## One edge for every sheet
+
+Twenty-six masks painted by hand over two days will not agree with each other,
+and the sprites sit side by side in the app where any disagreement shows. So the
+render conditions the mask before it becomes alpha: a small blur, then a gain
+about mid-grey that puts the edge back.
+
+The two numbers are tied to each other. A step blurred by sigma has a peak slope
+of 255/(2.5*sigma) luma per pixel, so a gain of K leaves a ramp 2.5*sigma/K
+pixels wide. Set `harden` to 2.5x `smooth` and the result is a one-pixel edge no
+matter how soft or hard the input was — the same anti-aliasing the downscale
+gives a computed mask, now guaranteed rather than inherited. The defaults are
+1.2 and 3.
+
+Both are worth respecting. At a gain of 8 the outline stair-steps, visibly, on
+any diagonal — a shin, a forearm. Past about sigma 2 the blur starts rounding
+real detail: a heel loses its corner, and the notch between a glove and the head
+in the high guard closes up. The measured cost at the defaults is a shape change
+of a quarter of a percent, which is nothing, and a core edge that tightens from
+0.92 to 0.68 grey pixels per boundary pixel.
+
+The pass runs on the far side of the downscale, unlike the morphology, because
+it is measured in the pixels the sprite ships with and a retouched mask only
+exists at that size. Both routes into a sheet — computed and painted — go
+through it, which is what keeps an untouched mask round-tripping to a
+byte-identical sprite.
+
+Worth knowing what this pass is *not* for. Measured across all 26 masks, the
+painted edges came out at 0.75 grey pixels per boundary pixel with a spread of
+0.12, and the one mask that was never retouched sits at 0.71 — the brushwork did
+not actually feather anything. What reads as softness in a finished sprite is the
+glow, a 6-pixel blur of the same alpha. Tighten that and the whole silhouette
+hardens; conditioning the mask only ever sharpens the last pixel.
+
 ## Processing
 
 `scripts/technique-sprites.mjs` does the whole conversion. ffmpeg is its only dependency
