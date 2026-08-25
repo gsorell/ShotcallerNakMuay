@@ -68,6 +68,32 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
+/* The way back to the library. Quiet, and outside the body button — the card
+   is a "continue" card, so this must not compete with its action line. */
+.starthere-browse {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.9rem 0.7rem;
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(249, 168, 212, 0.85);
+  transition: color 0.2s;
+}
+
+.starthere-browse:hover {
+  color: #fff;
+}
+
+.starthere-browse:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
 .starthere-text {
   display: flex;
   flex-direction: column;
@@ -178,31 +204,6 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
-}
-
-.roadmap-back {
-  background: linear-gradient(
-    135deg,
-    rgba(236, 72, 153, 0.15) 0%,
-    rgba(236, 72, 153, 0.25) 100%
-  );
-  color: #f9a8d4;
-  border: 1px solid rgba(236, 72, 153, 0.3);
-  border-radius: 0.75rem;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
-}
-
-.roadmap-back:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(236, 72, 153, 0.25) 0%,
-    rgba(236, 72, 153, 0.35) 100%
-  );
 }
 
 .roadmap-pro-chip {

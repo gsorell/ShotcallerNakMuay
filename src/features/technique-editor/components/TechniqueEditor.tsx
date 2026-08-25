@@ -194,14 +194,16 @@ export default function TechniqueEditor({
     <div ref={topRef} className="tech-editor-container">
       {/* Top-left Back button, visually aligned and not overlapping */}
       {onBack && (
-        <div>
+        <div className="tech-editor-back-row">
           <button
             type="button"
             onClick={onBack}
-            className="tech-editor-btn--back"
+            className="back-link"
             title="Back to Training (Esc)"
           >
-            <span>←</span>
+            <span className="back-link-arrow" aria-hidden="true">
+              ←
+            </span>
             Back
           </button>
         </div>

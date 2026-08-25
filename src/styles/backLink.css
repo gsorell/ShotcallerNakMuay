@@ -1,0 +1,59 @@
+/* The "← Back" control, shared by every screen that has one.
+   ---------------------------------------------------------------------------
+   A link, not a button. Back is the most-used control on these screens and the
+   least interesting thing on them: it goes where you came from, which needs no
+   persuading. Given a filled pill it competed with the page title directly
+   beneath it, and on Learn it sat a few pixels from the filter chips — a second
+   pink rounded thing that was not a filter.
+
+   Defined once because `.learn-back` and `.roadmap-back` were identical rules
+   in two files, and the roadmap ladder renders INSIDE the Learn page, so the
+   two are frequently the same button a moment apart. */
+
+.back-link {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  /* No visible box, but keep a comfortable target — this is a phone control,
+     and the text alone is a small thing to hit. */
+  padding: 0.5rem 0.25rem;
+  color: #f9a8d4;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: color 0.2s ease, gap 0.2s ease;
+}
+
+.back-link:hover {
+  color: #fff;
+}
+
+.back-link:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* The arrow leads, and eases out a little on hover — the only movement, and it
+   points the way the control goes. */
+.back-link-arrow {
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.back-link:hover .back-link-arrow {
+  transform: translateX(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-link,
+  .back-link-arrow {
+    transition: none;
+  }
+
+  .back-link:hover .back-link-arrow {
+    transform: none;
+  }
+}

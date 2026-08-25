@@ -71,7 +71,21 @@
 }
 
 /* Hold the landed frame — the fourth of six, which is where the pipeline puts
-   the moment of furthest extension. */
+   the moment of furthest extension. -50% of a sheet six cells wide is three
+   cells across, which lands on it.
+
+   Two callers want exactly this and want it for different reasons: a host that
+   asks for `still`, because there the figure is a picture of a destination
+   rather than a technique being demonstrated; and anyone who has asked the
+   system not to animate. Same frame either way, so the offset is written once.
+
+   Note this is on the IMAGE. Mirroring is on the window, so a still figure
+   still flips for a southpaw. */
+.technique-sprite--still img {
+  animation: none;
+  transform: translateX(-50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .technique-sprite {
     transition: none;

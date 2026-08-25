@@ -47,24 +47,7 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
 
   return (
     <section className={`shelf${paused ? " shelf--paused" : ""}`}>
-      <div className="shelf-head">
-        <div>
-          <h2 className="learn-section-heading">Browse every technique</h2>
-          <p className="learn-subtitle shelf-lede">
-            Every technique we have filmed, from both sides where both sides
-            matter. Tap any one for the lesson.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="shelf-pause"
-          aria-pressed={paused}
-          onClick={() => setPaused((p) => !p)}
-        >
-          {paused ? "▶" : "❚❚"}
-          <span className="shelf-pause-label">{paused ? "Play" : "Pause"}</span>
-        </button>
-      </div>
+      <h2 className="learn-section-heading shelf-head">Browse techniques</h2>
 
       <div className="shelf-filters" role="group" aria-label="Filter techniques">
         <button
@@ -87,6 +70,24 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
             <span className="shelf-filter-count">{s.lessonCount}</span>
           </button>
         ))}
+      </div>
+
+      {/* Its own row, and deliberately not another pill: the chips choose what
+          you are looking at, this changes how it behaves, and making the two
+          look alike would suggest it is a sixth filter. */}
+      <div className="shelf-pause-row">
+        <button
+          type="button"
+          className={`shelf-pause${paused ? " is-paused" : ""}`}
+          aria-pressed={paused}
+          aria-label={paused ? "Play the figures" : "Hold the figures still"}
+          onClick={() => setPaused((p) => !p)}
+        >
+          <span className="shelf-pause-glyph" aria-hidden="true">
+            {paused ? "▶" : "❚❚"}
+          </span>
+          <span className="shelf-pause-label">{paused ? "Play" : "Pause"}</span>
+        </button>
       </div>
 
       {sections.map((section) => (

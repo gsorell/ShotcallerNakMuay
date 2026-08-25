@@ -1,54 +1,76 @@
 /* The shelf — Learn's whole browse on one screen. See TechniqueGallery.tsx for
    why categories are a filter rather than a step, and galleryTiles.ts for why
-   every lesson has a tile whether or not it has been shot. */
+   a lesson with no sheet is not here at all. */
 
 .shelf {
   margin-bottom: 1.5rem;
 }
 
 .shelf-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.shelf-lede {
-  margin-bottom: 0;
+  margin-bottom: 0.5rem;
 }
 
 /* ----------------------------------------------------------------- pause -- */
+
+/* A hairline drawn across the shelf with the control sitting in the break.
+   Deliberately not another pill: the chips choose what you are looking at,
+   this changes how it behaves, and making the two look alike would suggest it
+   is a sixth filter. */
+.shelf-pause-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
+}
+
+.shelf-pause-row::before,
+.shelf-pause-row::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.09);
+}
 
 .shelf-pause {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.15rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.72rem;
+  gap: 0.45rem;
+  padding: 0.15rem 0.2rem;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.66rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: border-color 0.18s ease, color 0.18s ease;
+  transition: color 0.18s ease;
 }
 
 .shelf-pause:hover {
   color: #fff;
-  border-color: rgba(236, 72, 153, 0.5);
 }
 
 .shelf-pause:focus-visible {
   outline: 2px solid rgba(236, 72, 153, 0.8);
-  outline-offset: 2px;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-.shelf-pause-label {
-  text-transform: uppercase;
+/* The glyph carries the state, so it stays lit while the label stays quiet. */
+.shelf-pause-glyph {
+  font-size: 0.7rem;
+  letter-spacing: 0;
+  color: #f9a8d4;
+}
+
+.shelf-pause.is-paused {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.shelf-pause.is-paused .shelf-pause-glyph {
+  color: #ec4899;
 }
 
 /* Holding the figures still. The animation is declared in TechniqueSprite.css;
@@ -63,7 +85,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin: 0.8rem 0 1.1rem;
+  margin-bottom: 0.7rem;
 }
 
 .shelf-filter {

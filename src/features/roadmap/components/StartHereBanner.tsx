@@ -31,6 +31,12 @@ interface StartHereBannerProps {
    * Back returns there rather than dropping the user on the timer.
    */
   onOpen?: () => void;
+  /**
+   * Where "browse the library" goes. Omitted inside Learn, which IS the
+   * library — the link only exists to make the relationship reciprocal from
+   * the home screen, since Learn has always linked back to the path.
+   */
+  onBrowse?: () => void;
   /** Offer the ✕. The home screen does; inside Learn there is nothing to hide from. */
   dismissible?: boolean;
   /**
@@ -44,6 +50,7 @@ interface StartHereBannerProps {
 
 export function StartHereBanner({
   onOpen,
+  onBrowse,
   dismissible = true,
   hideWhenGraduated = true,
   source = "setup_banner",
@@ -103,13 +110,16 @@ export function StartHereBanner({
           className="starthere-art"
         />
         <span className="starthere-text">
-          <span className="starthere-eyebrow">
-            {summary.graduated
-              ? "Start Here · complete"
-              : summary.started
-              ? `Start Here · level ${level.id} of ${summary.totalLevels}`
-              : "New to Muay Thai?"}
-          </span>
+          {/* Only once there is progress to report. Before that the headline
+              already says "Start Here", and the question the eyebrow used to
+              ask now opens the line underneath it. */}
+          {(summary.started || summary.graduated) && (
+            <span className="starthere-eyebrow">
+              {summary.graduated
+                ? "Start Here · complete"
+                : `Start Here · level ${level.id} of ${summary.totalLevels}`}
+            </span>
+          )}
 
           <span className="starthere-headline">
             {summary.graduated
@@ -122,7 +132,7 @@ export function StartHereBanner({
           <span className="starthere-sub">
             {summary.started
               ? `${summary.known} of ${summary.total} callouts learned`
-              : "Ten levels that teach the strikes a few at a time. First level free."}
+              : "Ten levels to get you up to speed."}
           </span>
 
           {summary.started && (
@@ -144,6 +154,16 @@ export function StartHereBanner({
           </span>
         </span>
       </button>
+
+      {/* Outside the body button, because a link inside a button is not a
+          thing. The path and the library are two ways into the same material,
+          and until now only one direction was navigable. */}
+      {onBrowse && (
+        <button type="button" className="starthere-browse" onClick={onBrowse}>
+          Browse technique library
+          <span aria-hidden="true"> →</span>
+        </button>
+      )}
     </section>
   );
 }

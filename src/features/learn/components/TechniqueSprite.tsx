@@ -69,6 +69,15 @@ interface SpriteFigureProps {
   name: string;
   /** Whether to print the variant's side under the figure. */
   showLabel?: boolean;
+  /**
+   * Hold the landed frame instead of running the loop.
+   *
+   * For a host where the figure illustrates a destination rather than
+   * demonstrating a technique — one still pose reads as a picture, where a
+   * lone looping figure on an otherwise static screen reads as a thing
+   * demanding to be watched.
+   */
+  still?: boolean;
   /** Called when the sheet fails to load, so the host can drop this figure. */
   onBroken?: () => void;
   className?: string;
@@ -87,6 +96,7 @@ export function SpriteFigure({
   variant,
   name,
   showLabel = false,
+  still = false,
   onBroken,
   className,
 }: SpriteFigureProps) {
@@ -99,7 +109,11 @@ export function SpriteFigure({
   return (
     <figure className={`technique-sprite-figure${className ? ` ${className}` : ""}`}>
       <div
-        className={`technique-sprite${southpaw ? " technique-sprite--mirrored" : ""}`}
+        className={
+          "technique-sprite" +
+          (southpaw ? " technique-sprite--mirrored" : "") +
+          (still ? " technique-sprite--still" : "")
+        }
         role="img"
         aria-label={
           label

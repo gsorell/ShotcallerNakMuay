@@ -48,8 +48,8 @@
   gap: 3rem;
 }
 
-/* The "Learn the Techniques" button uses the shared `.setup-action-btn`
-   styling in styles/setupActions.css, paired with "Manage Techniques". */
+/* The Learn card and the Manage Techniques link are styled in
+   styles/setupActions.css — see the note there for why they are not a pair. */
 
 /* "Show Advanced" button */
 .workout-setup-advanced-toggle {

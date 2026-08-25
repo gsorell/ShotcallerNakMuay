@@ -12,7 +12,11 @@ import { useUIContext } from "@/features/shared";
 import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
 import { useWorkoutContext } from "@/features/workout";
 import { trackEvent } from "@/utils/analytics";
-import { scrollContentToTop } from "@/utils/scroll";
+import {
+  rememberScroll,
+  restoreScroll,
+  scrollContentToTop,
+} from "@/utils/scroll";
 import type { EmphasisKey } from "@/types";
 
 import {
@@ -25,6 +29,13 @@ import { displayName } from "../data/techniqueSprites";
 import { TechniqueSprite } from "./TechniqueSprite";
 import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
+
+/**
+ * Where the shelf was left. One key, because there is one shelf — the filter
+ * narrows it in place rather than pushing a screen, so there is no per-category
+ * position to keep.
+ */
+const SHELF_SCROLL = "learn:shelf";
 
 type View =
   | { mode: "categories" }
@@ -54,6 +65,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
         return;
       }
       trackEvent("learn_lesson_open", { slug: entry.slug });
+      rememberScroll(SHELF_SCROLL);
       setView({ mode: "detail", slug: entry.slug });
       scrollContentToTop("auto");
     },
@@ -64,13 +76,14 @@ export function LearnSection({ onBack }: LearnSectionProps) {
   // setState updater — updaters must stay pure (StrictMode runs them twice,
   // which would fire onBack() twice and skip a level).
   const goBack = useCallback(() => {
-    if (view.mode === "detail") {
+    if (view.mode === "detail" || view.mode === "path") {
+      // Back onto the shelf, at the tile you opened rather than the top of a
+      // grid you would then have to hunt through again.
       setView({ mode: "categories" });
-    } else {
-      onBack();
+      restoreScroll(SHELF_SCROLL);
       return;
     }
-    scrollContentToTop("auto");
+    onBack();
   }, [view, onBack]);
 
   /**
@@ -97,7 +110,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
         <RoadmapSection
           onBack={() => {
             setView({ mode: "categories" });
-            scrollContentToTop("auto");
+            restoreScroll(SHELF_SCROLL);
           }}
         />
       </div>
@@ -107,8 +120,11 @@ export function LearnSection({ onBack }: LearnSectionProps) {
   return (
     <div className="learn">
       <div className="learn-header">
-        <button className="learn-back" onClick={goBack}>
-          ← Back
+        <button className="back-link" onClick={goBack}>
+          <span className="back-link-arrow" aria-hidden="true">
+            ←
+          </span>
+          Back
         </button>
         {!isPro && <span className="learn-pro-chip">Pro</span>}
       </div>
@@ -118,6 +134,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
           isPro={isPro}
           onOpenLesson={openLesson}
           onOpenPath={() => {
+            rememberScroll(SHELF_SCROLL);
             setView({ mode: "path" });
             scrollContentToTop("auto");
           }}

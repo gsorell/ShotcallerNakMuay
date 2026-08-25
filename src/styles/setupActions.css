@@ -1,35 +1,40 @@
-/* Setup-screen action buttons — "Manage Techniques" and "Learn the Techniques".
+/* The two secondary destinations off the setup screen.
    ---------------------------------------------------------------------------
-   These are the two secondary destinations off the setup screen. They sit
-   directly beneath the style grid and deliberately reuse the emphasis tiles'
-   visual language — same 1rem radius, same 2px translucent white border, same
-   10% white fill, same 56px rounded icon — so the screen reads as one system
-   instead of a grid plus two unrelated buttons.
+   They are NOT a matched pair, and used to be styled as one. Learn is a place —
+   a curriculum and a library of filmed technique — while Manage Techniques is a
+   tool you open when you want to change what gets called out. Two identical
+   cards forced the larger thing to wear the smaller thing's size, and once the
+   artwork came off there was nothing left in either of them.
 
-   They are NOT tiles, though: single row, shorter than `.emphasis-tile`'s
-   6.25rem min-height, and they navigate rather than toggle. The size
-   difference is what keeps them from being mistaken for selectable styles.
-
-   The grid mirrors `.emphasis-grid` above so the pair lines up with the
-   columns of tiles, and collapses to one column on narrow screens. */
+   So: Learn is a card carrying a live silhouette, and Manage is a text link.
+   The figure is what earns the card. It is a sample of the content rather than
+   a symbol standing for it, and being the only thing on this screen that moves,
+   it cannot be read as another selectable style tile — which is exactly what a
+   second neon icon here was doing. */
 
 .setup-action-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
   max-width: 60rem;
   width: 100%;
   margin: 0 auto;
 }
 
-.setup-action-btn {
+/* ------------------------------------------------------------------ learn -- */
+
+/* Borrows the emphasis tiles' shell — same 1rem radius, same 2px translucent
+   border, same 10% fill — so it belongs to the screen. It is wider and shorter
+   than a tile, and it navigates rather than toggles. */
+.setup-learn-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 1rem;
   border: 2px solid rgba(255, 255, 255, 0.2);
   background-color: rgba(255, 255, 255, 0.1);
@@ -39,41 +44,83 @@
   transition: border 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.setup-action-btn:hover {
-  border-color: rgba(255, 255, 255, 0.35);
+.setup-learn-card:hover {
+  border-color: rgba(236, 72, 153, 0.45);
   background-color: rgba(255, 255, 255, 0.16);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.setup-action-btn:focus-visible {
+.setup-learn-card:focus-visible {
   outline: none;
   border-color: #60a5fa;
 }
 
-.setup-action-btn-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  object-fit: cover;
+/* Sized to sit where the 56px icon used to, with a little more room because a
+   figure needs height the way a flat glyph does not. */
+.setup-learn-figure {
+  --sprite-size: 64px;
   flex-shrink: 0;
 }
 
-.setup-action-btn-text {
+.setup-learn-text {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.15rem;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
-.setup-action-btn-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  line-height: 1.25;
+.setup-learn-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
   color: #fff;
 }
 
-.setup-action-btn-desc {
+.setup-learn-desc {
   font-size: 0.8rem;
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.65);
+}
+
+.setup-learn-chevron {
+  flex: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: rgba(249, 168, 212, 0.8);
+}
+
+/* ----------------------------------------------------------------- manage -- */
+
+/* A link, matching "Show Advanced Settings" below it — the two quiet utilities
+   at the bottom of the screen now read as the same kind of thing. */
+.setup-manage-link {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 0.75rem;
+  text-align: center;
+  color: #f9a8d4;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+
+.setup-manage-link:hover {
+  opacity: 0.8;
+}
+
+.setup-manage-link:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.setup-manage-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
 }

@@ -112,7 +112,7 @@ export const FOUNDATIONS: RoadmapPath = {
   id: "foundations",
   title: "Start Here",
   subtitle:
-    "Ten levels from your first jab to every callout Nak Muay Newb can throw.",
+    "Ten levels from your first jab to every callout in Nak Muay Newb.",
   graduatesTo: "newb",
   levels: [
     {
