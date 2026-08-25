@@ -68,6 +68,32 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
+/* The way back to the library. Quiet, and outside the body button — the card
+   is a "continue" card, so this must not compete with its action line. */
+.starthere-browse {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.9rem 0.7rem;
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(249, 168, 212, 0.85);
+  transition: color 0.2s;
+}
+
+.starthere-browse:hover {
+  color: #fff;
+}
+
+.starthere-browse:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
 .starthere-text {
   display: flex;
   flex-direction: column;

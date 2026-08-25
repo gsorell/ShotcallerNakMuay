@@ -31,6 +31,12 @@ interface StartHereBannerProps {
    * Back returns there rather than dropping the user on the timer.
    */
   onOpen?: () => void;
+  /**
+   * Where "browse the library" goes. Omitted inside Learn, which IS the
+   * library — the link only exists to make the relationship reciprocal from
+   * the home screen, since Learn has always linked back to the path.
+   */
+  onBrowse?: () => void;
   /** Offer the ✕. The home screen does; inside Learn there is nothing to hide from. */
   dismissible?: boolean;
   /**
@@ -44,6 +50,7 @@ interface StartHereBannerProps {
 
 export function StartHereBanner({
   onOpen,
+  onBrowse,
   dismissible = true,
   hideWhenGraduated = true,
   source = "setup_banner",
@@ -144,6 +151,16 @@ export function StartHereBanner({
           </span>
         </span>
       </button>
+
+      {/* Outside the body button, because a link inside a button is not a
+          thing. The path and the library are two ways into the same material,
+          and until now only one direction was navigable. */}
+      {onBrowse && (
+        <button type="button" className="starthere-browse" onClick={onBrowse}>
+          Or browse the technique library
+          <span aria-hidden="true"> →</span>
+        </button>
+      )}
     </section>
   );
 }
