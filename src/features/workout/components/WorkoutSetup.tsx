@@ -18,9 +18,14 @@ import "./WorkoutSetup.css";
  * the same place on every visit, and a silhouette that changed under you would
  * read as a different destination each time.
  *
+ * Held on the landed frame rather than looped. Here the figure illustrates a
+ * destination rather than demonstrating a technique, and a lone moving thing
+ * on an otherwise static screen asks to be watched instead of read.
+ *
  * A kick because it has to work at 64px: a kick throws a limb clear of the
  * body and stays legible, where a punch that small is a standing figure with a
- * twitch at one shoulder. The head kick is the one that reads best of them.
+ * twitch at one shoulder. The head kick is the one that reads best of them —
+ * and at full extension it is unmistakable as a single frame.
  */
 const learnFigure = spritesFor("head-kick")[0];
 
@@ -127,6 +132,7 @@ export default function WorkoutSetup() {
               <SpriteFigure
                 variant={learnFigure}
                 name="Learn"
+                still
                 className="setup-learn-figure"
               />
             )}
