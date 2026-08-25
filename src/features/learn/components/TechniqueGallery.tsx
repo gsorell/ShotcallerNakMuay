@@ -1,99 +1,165 @@
 import { useMemo, useState } from "react";
 
-import { SPRITED_ENTRIES } from "../data/techniqueIndex";
-import { SPRITE_GROUPS, spritesFor } from "../data/techniqueSprites";
-import type { LearnEntry } from "../data/techniqueLibrary";
+import { ImageWithFallback } from "@/features/shared";
+
+import {
+  FIGURE_COUNT,
+  GALLERY_SECTIONS,
+  type GalleryTile,
+} from "../data/galleryTiles";
+import { TOTAL_LESSON_COUNT } from "../data/techniqueIndex";
+import type { LearnEntry, TechniqueCategory } from "../data/techniqueLibrary";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
 
 interface TechniqueGalleryProps {
-  /** Opening a figure opens its lesson — Pro-gated the same way the list is. */
+  /** Opening a tile opens its lesson — Pro-gated the same way it always was. */
   onOpenLesson: (entry: LearnEntry) => void;
 }
 
+type Filter = "all" | TechniqueCategory;
+
 /**
- * The shelf of figures at the top of Learn.
+ * The whole of Learn's browse, on one screen.
  *
- * Every technique with a silhouette, which is exactly the set the guided path
- * teaches — twenty-five for twenty-five, no more and no less. That is why this
- * can lead the page while the library below it stays text: the gallery is a
- * complete thing in its own right, so it has no holes to explain, where a
- * figure beside every one of the sixty-three lessons would be blank more often
- * than not.
+ * Categories are a filter rather than a step: picking one narrows the shelf in
+ * place instead of pushing a second screen, so looking a technique up is one
+ * tap and a scroll rather than three taps and a back button.
  *
- * One sheet per tile even for the lessons that carry two. A tile is an index
- * entry, not the lesson: it says "this exists and this is roughly its shape",
- * and the pair is waiting inside for anyone who taps it.
+ * The pause control is here because the figures are the content. Thirty-one
+ * of them stepping at once is a lot to read past when you are trying to find
+ * one particular thing, and holding them still is the difference between a
+ * shelf you can scan and a shelf that keeps moving while you scan it.
  */
 export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
-  const [group, setGroup] = useState<string>("all");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [paused, setPaused] = useState(false);
 
-  const shown = useMemo(() => {
-    if (group === "all") return SPRITED_ENTRIES;
-    const match = SPRITE_GROUPS.find((g) => g.key === group);
-    if (!match) return SPRITED_ENTRIES;
-    return SPRITED_ENTRIES.filter((e) => match.categories.includes(e.category));
-  }, [group]);
-
-  const filters = useMemo(
-    () => [
-      { key: "all", label: "All", count: SPRITED_ENTRIES.length },
-      ...SPRITE_GROUPS.map((g) => ({
-        key: g.key,
-        label: g.label,
-        count: SPRITED_ENTRIES.filter((e) => g.categories.includes(e.category))
-          .length,
-      })),
-    ],
-    []
+  const sections = useMemo(
+    () =>
+      filter === "all"
+        ? GALLERY_SECTIONS
+        : GALLERY_SECTIONS.filter((s) => s.meta.key === filter),
+    [filter]
   );
-
-  if (SPRITED_ENTRIES.length === 0) return null;
 
   return (
-    <section className="technique-gallery">
-      <h2 className="learn-section-heading">Every technique Start Here teaches</h2>
-      <p className="learn-subtitle">
-        {SPRITED_ENTRIES.length} techniques, shot on the court. Tap any one to
-        read the lesson.
-      </p>
+    <section className={`shelf${paused ? " shelf--paused" : ""}`}>
+      <div className="shelf-head">
+        <div>
+          <h2 className="learn-section-heading">Browse every technique</h2>
+          <p className="learn-subtitle shelf-lede">
+            {TOTAL_LESSON_COUNT} techniques the app calls out, {FIGURE_COUNT}{" "}
+            of them shot on the court. Tap any one for the lesson.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="shelf-pause"
+          aria-pressed={paused}
+          onClick={() => setPaused((p) => !p)}
+        >
+          {paused ? "▶" : "❚❚"}
+          <span className="shelf-pause-label">{paused ? "Play" : "Pause"}</span>
+        </button>
+      </div>
 
-      <div className="gallery-filters" role="group" aria-label="Filter figures">
-        {filters.map((f) => (
+      <div className="shelf-filters" role="group" aria-label="Filter techniques">
+        <button
+          type="button"
+          className={`shelf-filter${filter === "all" ? " is-on" : ""}`}
+          aria-pressed={filter === "all"}
+          onClick={() => setFilter("all")}
+        >
+          All<span className="shelf-filter-count">{TOTAL_LESSON_COUNT}</span>
+        </button>
+        {GALLERY_SECTIONS.map((s) => (
           <button
-            key={f.key}
+            key={s.meta.key}
             type="button"
-            className={`gallery-filter${group === f.key ? " is-on" : ""}`}
-            aria-pressed={group === f.key}
-            onClick={() => setGroup(f.key)}
+            className={`shelf-filter${filter === s.meta.key ? " is-on" : ""}`}
+            aria-pressed={filter === s.meta.key}
+            onClick={() => setFilter(s.meta.key)}
           >
-            {f.label}
-            <span className="gallery-filter-count">{f.count}</span>
+            {s.meta.label}
+            <span className="shelf-filter-count">{s.lessonCount}</span>
           </button>
         ))}
       </div>
 
-      <div className="gallery-grid">
-        {shown.map((entry) => (
-          <button
-            key={entry.slug}
-            type="button"
-            className="gallery-tile"
-            onClick={() => onOpenLesson(entry)}
-          >
-            <SpriteFigure
-              variant={spritesFor(entry.slug)[0]!}
-              name={entry.name}
-            />
-            <span className="gallery-tile-name">{entry.name}</span>
-            {entry.numbering && (
-              <span className="gallery-tile-number">{entry.numbering}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {sections.map((section) => (
+        <div className="shelf-section" key={section.meta.key}>
+          <h3 className="shelf-section-title">
+            {section.meta.label}
+            <span className="shelf-section-count">{section.lessonCount}</span>
+          </h3>
+          <p className="shelf-section-blurb">{section.meta.blurb}</p>
+          <div className="shelf-grid">
+            {section.tiles.map((tile) => (
+              <Tile key={tile.key} tile={tile} onOpen={onOpenLesson} />
+            ))}
+          </div>
+        </div>
+      ))}
     </section>
   );
+}
+
+function Tile({
+  tile,
+  onOpen,
+}: {
+  tile: GalleryTile;
+  onOpen: (entry: LearnEntry) => void;
+}) {
+  const { entry, variant, side } = tile;
+  const [broken, setBroken] = useState(false);
+  const figure = variant && !broken ? variant : null;
+
+  return (
+    <button
+      type="button"
+      className={`shelf-tile${figure ? "" : " shelf-tile--flat"}`}
+      onClick={() => onOpen(entry)}
+      aria-label={side ? `${entry.name}, ${side.toLowerCase()} side` : entry.name}
+    >
+      {figure ? (
+        <SpriteFigure
+          variant={figure}
+          name={entry.name}
+          onBroken={() => setBroken(true)}
+        />
+      ) : (
+        <ImageWithFallback
+          srcPath={categoryIcon(tile)}
+          alt=""
+          emoji={categoryEmoji(tile)}
+          className="shelf-tile-icon"
+        />
+      )}
+      <span className="shelf-tile-name">{entry.name}</span>
+      <span className="shelf-tile-meta">
+        {side && <span className="shelf-tile-side">{side}</span>}
+        {entry.numbering && (
+          <span className="shelf-tile-number">{entry.numbering}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+// The category's own artwork stands in for a lesson that has not been shot —
+// see the note at the top of galleryTiles.ts.
+function sectionFor(tile: GalleryTile) {
+  return GALLERY_SECTIONS.find((s) => s.meta.key === tile.entry.category);
+}
+
+function categoryIcon(tile: GalleryTile): string {
+  return sectionFor(tile)?.meta.iconPath ?? "";
+}
+
+function categoryEmoji(tile: GalleryTile): string {
+  return sectionFor(tile)?.meta.icon ?? "•";
 }
 
 export default TechniqueGallery;

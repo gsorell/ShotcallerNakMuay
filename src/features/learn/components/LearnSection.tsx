@@ -8,32 +8,24 @@ import { RoadmapSection } from "@/features/roadmap/components/RoadmapSection";
 import { StartHereBanner } from "@/features/roadmap/components/StartHereBanner";
 import { FOUNDATIONS } from "@/features/roadmap/data/paths";
 import { levelTeaching } from "@/features/roadmap/vocabulary";
-import { ImageWithFallback, useUIContext } from "@/features/shared";
+import { useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
 import { trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
 import type { EmphasisKey } from "@/types";
 
 import {
-  ENTRIES_BY_CATEGORY,
-  TOTAL_LESSON_COUNT,
   getEntry,
   getStylesForEntry,
   isCalisthenicsOnly,
 } from "../data/techniqueIndex";
-import {
-  CATEGORY_META,
-  type LearnEntry,
-  type TechniqueCategory,
-} from "../data/techniqueLibrary";
-import { categoryHero } from "../data/techniqueSprites";
-import { SpriteFigure, TechniqueSprite } from "./TechniqueSprite";
+import type { LearnEntry } from "../data/techniqueLibrary";
+import { TechniqueSprite } from "./TechniqueSprite";
 import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
 
 type View =
   | { mode: "categories" }
-  | { mode: "list"; category: TechniqueCategory }
   | { mode: "detail"; slug: string }
   /** The guided path, hosted here rather than on its own page — see below. */
   | { mode: "path" };
@@ -66,21 +58,11 @@ export function LearnSection({ onBack }: LearnSectionProps) {
     [isPro, openPaywall]
   );
 
-  const openCategory = useCallback((category: TechniqueCategory) => {
-    setView({ mode: "list", category });
-    scrollContentToTop("auto");
-  }, []);
-
   // Navigation is derived from the current view rather than computed inside a
   // setState updater — updaters must stay pure (StrictMode runs them twice,
   // which would fire onBack() twice and skip a level).
   const goBack = useCallback(() => {
     if (view.mode === "detail") {
-      const entry = getEntry(view.slug);
-      setView(
-        entry ? { mode: "list", category: entry.category } : { mode: "categories" }
-      );
-    } else if (view.mode === "list") {
       setView({ mode: "categories" });
     } else {
       onBack();
@@ -132,21 +114,12 @@ export function LearnSection({ onBack }: LearnSectionProps) {
       {view.mode === "categories" && (
         <CategoryList
           isPro={isPro}
-          onOpenCategory={openCategory}
           onOpenLesson={openLesson}
           onOpenPath={() => {
             setView({ mode: "path" });
             scrollContentToTop("auto");
           }}
           onUnlock={() => openPaywall("learn_header")}
-        />
-      )}
-
-      {view.mode === "list" && (
-        <TechniqueList
-          category={view.category}
-          isPro={isPro}
-          onOpenLesson={openLesson}
         />
       )}
 
@@ -168,20 +141,15 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 
 function CategoryList({
   isPro,
-  onOpenCategory,
   onOpenLesson,
   onOpenPath,
   onUnlock,
 }: {
   isPro: boolean;
-  onOpenCategory: (c: TechniqueCategory) => void;
   onOpenLesson: (entry: LearnEntry) => void;
   onOpenPath: () => void;
   onUnlock: () => void;
 }) {
-  // A category whose sheet will not load falls back to the neon icon rather
-  // than to an empty square.
-  const [brokenHeroes, setBrokenHeroes] = useState<string[]>([]);
   return (
     <>
       <h1 className="learn-title">Learn</h1>
@@ -202,123 +170,19 @@ function CategoryList({
         source="learn"
       />
 
-      <TechniqueGallery onOpenLesson={onOpenLesson} />
-
-      <h2 className="learn-section-heading">Browse every technique</h2>
-      <p className="learn-subtitle">
-        {TOTAL_LESSON_COUNT} techniques the app calls out — what each one is,
-        how to throw it, and what people get wrong.
-      </p>
-
       {!isPro && (
         <button className="learn-unlock-banner" onClick={onUnlock}>
           <span className="learn-unlock-banner-title">
             🔒 Full lessons are part of Pro
           </span>
           <span className="learn-unlock-banner-body">
-            Browse the whole list below. Unlock Pro to open any lesson and drill
-            it straight from here.
+            Browse the whole shelf below. Unlock Pro to open any lesson and
+            drill it straight from here.
           </span>
         </button>
       )}
 
-      <div className="learn-category-grid">
-        {CATEGORY_META.map((meta) => {
-          const count = ENTRIES_BY_CATEGORY[meta.key].length;
-          const hero = categoryHero(meta.key);
-          const usable = hero && !brokenHeroes.includes(hero.src) ? hero : null;
-          return (
-            <button
-              key={meta.key}
-              className="learn-category-card"
-              onClick={() => onOpenCategory(meta.key)}
-            >
-              {usable ? (
-                <SpriteFigure
-                  variant={usable}
-                  name={meta.label}
-                  className="learn-category-sprite"
-                  onBroken={() =>
-                    setBrokenHeroes((b) => [...b, usable.src])
-                  }
-                />
-              ) : (
-                <ImageWithFallback
-                  srcPath={meta.iconPath}
-                  alt=""
-                  emoji={meta.icon}
-                  className="learn-category-icon"
-                />
-              )}
-              <span className="learn-category-text">
-                <span className="learn-category-label">{meta.label}</span>
-                <span className="learn-category-blurb">{meta.blurb}</span>
-              </span>
-              <span className="learn-category-count">{count}</span>
-            </button>
-          );
-        })}
-      </div>
-    </>
-  );
-}
-
-// ---------------------------------------------------------- technique list --
-
-function TechniqueList({
-  category,
-  isPro,
-  onOpenLesson,
-}: {
-  category: TechniqueCategory;
-  isPro: boolean;
-  onOpenLesson: (entry: LearnEntry) => void;
-}) {
-  const meta = CATEGORY_META.find((m) => m.key === category);
-  const entries = ENTRIES_BY_CATEGORY[category];
-
-  return (
-    <>
-      <div className="learn-list-header">
-        {meta && (
-          <ImageWithFallback
-            srcPath={meta.iconPath}
-            alt=""
-            emoji={meta.icon}
-            className="learn-list-header-icon"
-          />
-        )}
-        <h1 className="learn-title learn-title--inline">{meta?.label}</h1>
-      </div>
-      <p className="learn-subtitle">{meta?.blurb}</p>
-
-      <div className="learn-list">
-        {entries.map((entry) => (
-          <button
-            key={entry.slug}
-            className="learn-list-item"
-            onClick={() => onOpenLesson(entry)}
-            aria-label={
-              isPro ? entry.name : `Unlock ${entry.name} lesson with Pro`
-            }
-          >
-            <span className="learn-list-text">
-              <span className="learn-list-name">
-                {entry.name}
-                {entry.numbering && (
-                  <span className="learn-list-number">{entry.numbering}</span>
-                )}
-              </span>
-              {entry.thai && (
-                <span className="learn-list-thai">{entry.thai}</span>
-              )}
-            </span>
-            <span className="learn-list-chevron" aria-hidden="true">
-              {isPro ? "›" : "🔒"}
-            </span>
-          </button>
-        ))}
-      </div>
+      <TechniqueGallery onOpenLesson={onOpenLesson} />
     </>
   );
 }

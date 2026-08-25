@@ -3,93 +3,91 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  ENTRIES_BY_CATEGORY,
-  SPRITED_ENTRIES,
-} from "@/features/learn/data/techniqueIndex";
+  ALL_TILES,
+  FIGURE_COUNT,
+  GALLERY_SECTIONS,
+} from "@/features/learn/data/galleryTiles";
 import {
   CATEGORY_META,
   TECHNIQUE_LIBRARY,
 } from "@/features/learn/data/techniqueLibrary";
-import {
-  SPRITE_GROUPS,
-  categoryHero,
-  spritesFor,
-} from "@/features/learn/data/techniqueSprites";
+import { spritesFor } from "@/features/learn/data/techniqueSprites";
 
 const onDisk = (src: string) =>
   existsSync(resolve(process.cwd(), "public", src.replace(/^\//, "")));
 
-describe("the gallery's set", () => {
-  it("is every lesson that has a sheet, and nothing else", () => {
-    const expected = TECHNIQUE_LIBRARY.filter(
-      (e) => spritesFor(e.slug).length > 0
-    );
-    expect(SPRITED_ENTRIES).toHaveLength(expected.length);
-    expect(SPRITED_ENTRIES.map((e) => e.slug)).toEqual(
-      expected.map((e) => e.slug)
-    );
+describe("the shelf covers the library", () => {
+  it("gives every lesson at least one tile", () => {
+    // The whole point of consolidating: this shelf IS the browse, so a lesson
+    // missing from it is a lesson with no way in.
+    const covered = new Set(ALL_TILES.map((t) => t.entry.slug));
+    for (const entry of TECHNIQUE_LIBRARY) {
+      expect(covered.has(entry.slug), `${entry.slug} has no tile`).toBe(true);
+    }
+    expect(covered.size).toBe(TECHNIQUE_LIBRARY.length);
   });
 
-  it("shows a sheet that is actually on disk for every tile", () => {
-    // A tile renders the FIRST sheet of its lesson. `spritesFor` names files
-    // rather than importing them, so a renamed sheet is invisible until the
-    // shelf renders an empty square on someone's phone.
-    for (const entry of SPRITED_ENTRIES) {
-      const first = spritesFor(entry.slug)[0]!;
-      expect(onDisk(first.src), `${entry.slug}: ${first.src}`).toBe(true);
-    }
+  it("keeps a section for every category, in library order", () => {
+    expect(GALLERY_SECTIONS.map((s) => s.meta.key)).toEqual(
+      CATEGORY_META.map((m) => m.key)
+    );
+    const total = GALLERY_SECTIONS.reduce((n, s) => n + s.lessonCount, 0);
+    expect(total).toBe(TECHNIQUE_LIBRARY.length);
   });
 });
 
-describe("the gallery's filters", () => {
-  it("partition the set — every figure in exactly one group", () => {
-    const counts = new Map<string, number>();
-    for (const entry of SPRITED_ENTRIES) {
-      const hit = SPRITE_GROUPS.filter((g) =>
-        g.categories.includes(entry.category)
-      );
-      expect(
-        hit.map((g) => g.key),
-        `${entry.slug} belongs to ${hit.length} groups`
-      ).toHaveLength(1);
-      counts.set(hit[0]!.key, (counts.get(hit[0]!.key) ?? 0) + 1);
+describe("a lesson shot from both sides gets both tiles", () => {
+  it("gives one tile per sheet, never one per lesson", () => {
+    // The bug this replaced: the shelf showed spritesFor(slug)[0] and nothing
+    // else, so "Right Elbow" and "Slip Right" were shot and then invisible.
+    for (const entry of TECHNIQUE_LIBRARY) {
+      const sheets = spritesFor(entry.slug);
+      const tiles = ALL_TILES.filter((t) => t.entry.slug === entry.slug);
+      expect(tiles, entry.slug).toHaveLength(Math.max(1, sheets.length));
     }
-
-    const total = [...counts.values()].reduce((a, b) => a + b, 0);
-    expect(total).toBe(SPRITED_ENTRIES.length);
   });
 
-  it("never come back empty", () => {
-    // An empty filter is a chip that looks broken when tapped.
-    for (const group of SPRITE_GROUPS) {
-      const n = SPRITED_ENTRIES.filter((e) =>
-        group.categories.includes(e.category)
-      ).length;
-      expect(n, `${group.key} is empty`).toBeGreaterThan(0);
+  it("names the side only where there is another side to confuse it with", () => {
+    for (const tile of ALL_TILES) {
+      const sheets = spritesFor(tile.entry.slug);
+      if (sheets.length > 1) {
+        expect(tile.side, `${tile.key} should name its side`).toBeTruthy();
+      } else {
+        expect(tile.side, `${tile.key} should not name a side`).toBeUndefined();
+      }
     }
+  });
+
+  it("shows every sheet that exists exactly once", () => {
+    const shown = ALL_TILES.flatMap((t) => (t.variant ? [t.variant.src] : []));
+    const every = TECHNIQUE_LIBRARY.flatMap((e) =>
+      spritesFor(e.slug).map((v) => v.src)
+    );
+    expect(new Set(shown).size, "a sheet is shown twice").toBe(shown.length);
+    expect(shown.sort()).toEqual(every.sort());
+    expect(FIGURE_COUNT).toBe(every.length);
   });
 });
 
-describe("category cards", () => {
-  it("carry a figure exactly when the category has one to carry", () => {
-    // The rule that keeps the shelf honest: a category with sheets shows one,
-    // and a category with none keeps its neon icon rather than a blank slot.
-    for (const meta of CATEGORY_META) {
-      const anyShot = ENTRIES_BY_CATEGORY[meta.key].some(
-        (e) => spritesFor(e.slug).length > 0
-      );
-      expect(
-        categoryHero(meta.key) !== undefined,
-        `${meta.key}: ${anyShot ? "has sheets but no hero" : "has a hero but nothing shot"}`
-      ).toBe(anyShot);
+describe("every tile has something to show", () => {
+  it("points at a sheet that is on disk, or falls back to its category", () => {
+    for (const tile of ALL_TILES) {
+      if (tile.variant) {
+        expect(onDisk(tile.variant.src), `${tile.key}: ${tile.variant.src}`).toBe(
+          true
+        );
+        continue;
+      }
+      // No sheet: the tile carries its category's artwork instead, so the slot
+      // is never empty. See the note at the top of galleryTiles.ts.
+      const meta = CATEGORY_META.find((m) => m.key === tile.entry.category);
+      expect(meta, `${tile.key} has no category meta`).toBeDefined();
+      expect(meta!.iconPath, `${tile.key} has no fallback art`).toBeTruthy();
     }
   });
 
-  it("point at a sheet that is on disk", () => {
-    for (const meta of CATEGORY_META) {
-      const hero = categoryHero(meta.key);
-      if (!hero) continue;
-      expect(onDisk(hero.src), `${meta.key}: ${hero.src}`).toBe(true);
-    }
+  it("has unique keys", () => {
+    const keys = ALL_TILES.map((t) => t.key);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });

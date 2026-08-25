@@ -12,8 +12,6 @@
 // Where they are near-mirrors (slip, roll, pivot) a single sheet still says it.
 // ===========================================================================
 
-import type { TechniqueCategory } from "./techniqueLibrary";
-
 export interface SpriteVariant {
   /** Sheet path under public/. */
   src: string;
@@ -100,63 +98,3 @@ export function spritesFor(slug: string): SpriteVariant[] {
   if (SINGLE_SET.has(slug)) return [{ src: `/assets/technique/${slug}.webp` }];
   return [];
 }
-
-// ---------------------------------------------------------------------------
-// Which figure stands for a whole category on the Learn shelf.
-// ---------------------------------------------------------------------------
-
-/**
- * The technique whose silhouette represents its category.
- *
- * Three categories are missing on purpose. Nothing in the clinch, the feints,
- * or the conditioning list has been shot, so those cards keep the neon icon
- * they have always had — the same two-tier arrangement the roadmap ladder uses,
- * where bespoke art leads and category art is the floor rather than a gap.
- *
- * Each pick is the technique someone would name if asked what the category is:
- * the jab, the round kick, the straight knee, the horizontal elbow. Defence
- * takes the slip because a guard is a position and reads as a still, while the
- * slip is a movement and is the only one of them that gains anything from being
- * animated on a shelf.
- */
-const CATEGORY_HERO: Partial<Record<TechniqueCategory, string>> = {
-  punches: "jab",
-  kicks: "roundhouse-kick",
-  knees: "straight-knee",
-  elbows: "horizontal-elbow",
-  defense: "slip",
-};
-
-/** The sheet to show on a category card, if that category has one. */
-export function categoryHero(
-  category: TechniqueCategory
-): SpriteVariant | undefined {
-  const slug = CATEGORY_HERO[category];
-  return slug ? spritesFor(slug)[0] : undefined;
-}
-
-// ---------------------------------------------------------------------------
-// How the gallery groups the figures.
-// ---------------------------------------------------------------------------
-
-export interface SpriteGroup {
-  key: string;
-  label: string;
-  categories: TechniqueCategory[];
-}
-
-/**
- * Filters for the gallery, which are NOT the library's own categories.
- *
- * Knees and elbows have one and two sheets between them; as separate filters
- * they would be two chips that barely change the grid. Paired up they make a
- * third of a reasonable size, and "what you hit with up close" is how someone
- * would group them anyway. The categories with nothing shot never appear here
- * at all, so no filter can ever come back empty.
- */
-export const SPRITE_GROUPS: SpriteGroup[] = [
-  { key: "punches", label: "Punches", categories: ["punches"] },
-  { key: "kicks", label: "Kicks", categories: ["kicks"] },
-  { key: "close", label: "Knees & Elbows", categories: ["knees", "elbows"] },
-  { key: "defense", label: "Defence", categories: ["defense"] },
-];
