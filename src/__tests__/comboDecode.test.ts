@@ -54,7 +54,25 @@ describe("decodeCombo", () => {
   it("keeps the slot for a beat it cannot resolve", () => {
     const { beats } = decodeCombo("1 2, Cartwheel Kick");
     expect(beats).toHaveLength(3);
-    expect(beats[2]).toEqual({ token: "Cartwheel Kick" });
+    expect(beats[2]).toEqual({
+      token: "Cartwheel Kick",
+      label: "Cartwheel Kick",
+    });
+  });
+
+  it("captions a number with its lesson, and words as called", () => {
+    // A number is the thing being decoded.
+    expect(decodeCombo("1 2").beats.map((b) => b.label)).toEqual([
+      "Jab",
+      "Cross",
+    ]);
+    // "Slip Right" resolves to the Slip lesson. Captioning it "Slip" would
+    // drop the only part the student has to act on.
+    expect(decodeCombo("Slip Right, 6 3").beats.map((b) => b.label)).toEqual([
+      "Slip Right",
+      "Right Uppercut",
+      "Left Hook",
+    ]);
   });
 });
 

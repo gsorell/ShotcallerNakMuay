@@ -32,8 +32,19 @@ export interface ComboBeat {
   token: string;
   /** The lesson it resolves to, when it resolves to one. */
   slug?: string;
-  /** Lesson name. This is the actual decode: "1" reads out as "Jab". */
+  /** Lesson name, for the accessible label on the figure. */
   name?: string;
+  /**
+   * What to print under the figure.
+   *
+   * A bare number is the thing that needs decoding, so it prints its lesson
+   * name: "1" reads out as "Jab". Anything already spoken as words prints as
+   * called, because the lesson behind it is often broader than the callout and
+   * printing the lesson name throws away the half that matters — "Slip Right"
+   * resolves to the Slip lesson, and captioning the figure "Slip" drops the
+   * only part of it the student has to act on.
+   */
+  label: string;
   /** The one sheet to show for this beat. */
   sprite?: SpriteVariant;
 }
@@ -95,11 +106,12 @@ export function decodeCombo(combo: string, southpaw = false): DecodedCombo {
 
   const beats = tokenizeCombo(text).map((token): ComboBeat => {
     const entry = getEntryForCallout(token);
-    if (!entry) return { token };
+    if (!entry) return { token, label: token };
     return {
       token,
       slug: entry.slug,
       name: entry.name,
+      label: /^\d+$/.test(token) ? entry.name : token,
       sprite: pickVariant(token, spritesFor(entry.slug)),
     };
   });

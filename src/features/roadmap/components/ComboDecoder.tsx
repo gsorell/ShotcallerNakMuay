@@ -54,7 +54,7 @@ export function ComboDecoder({ combos, southpaw = false }: ComboDecoderProps) {
                     <span className="combo-decoder-beat-blank" aria-hidden="true" />
                   )}
                   <span className="combo-decoder-beat-name">
-                    {beat.name ?? beat.token}
+                    {beat.label}
                   </span>
                 </li>
               );
