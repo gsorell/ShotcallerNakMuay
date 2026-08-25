@@ -181,7 +181,9 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Dropping the elbow and turning it into an arm-punch with no hip behind it.",
       "Letting the head follow the punch and drift onto the centerline.",
     ],
-    matches: ["Left Hook", "3"],
+    // "3 to the Head" is the same punch, named to contrast with "3 to the
+    // Body" — level 9 of the guided path calls both in one combination.
+    matches: ["Left Hook", "3", "3 to the Head"],
   },
   {
     slug: "rear-hook",
@@ -307,6 +309,7 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Left Hook to the Body",
       "3 to the Body",
       "Right Hook to the Body",
+      "4 to the Body",
     ],
   },
 
