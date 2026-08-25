@@ -137,8 +137,11 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
   return (
     <div className="roadmap">
       <div className="roadmap-header">
-        <button className="roadmap-back" onClick={goBack}>
-          ← Back
+        <button className="back-link" onClick={goBack}>
+          <span className="back-link-arrow" aria-hidden="true">
+            ←
+          </span>
+          Back
         </button>
         {!isPro && <span className="roadmap-pro-chip">Pro</span>}
       </div>

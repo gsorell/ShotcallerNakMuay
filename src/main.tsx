@@ -7,6 +7,7 @@ import { OnboardingProvider } from "@/features/onboarding";
 import { PaywallProvider } from "@/features/paywall";
 import { TTSProvider, UIProvider } from "@/features/shared";
 import { WorkoutProvider } from "@/features/workout";
+import "@/styles/backLink.css";
 import "@/index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

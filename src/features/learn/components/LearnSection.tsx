@@ -120,8 +120,11 @@ export function LearnSection({ onBack }: LearnSectionProps) {
   return (
     <div className="learn">
       <div className="learn-header">
-        <button className="learn-back" onClick={goBack}>
-          ← Back
+        <button className="back-link" onClick={goBack}>
+          <span className="back-link-arrow" aria-hidden="true">
+            ←
+          </span>
+          Back
         </button>
         {!isPro && <span className="learn-pro-chip">Pro</span>}
       </div>
