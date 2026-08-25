@@ -703,8 +703,24 @@
     grid-row: 1;
   }
 
+  /* Auto rather than a fixed row, so a figure that needs the full width can
+     take row two and push this to row three. With a single figure nothing
+     changes: it holds row one and this lands in row two exactly as before. */
   .roadmap-card--open .roadmap-card-copy {
     grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  /* A pair will not share a row with the name on a phone. Two cells beside a
+     name leave it about 110px, which wraps "Horizontal Elbow" onto two lines
+     and the Thai onto two more. Given the whole width instead, both figures
+     get bigger AND the name gets its row back. */
+  .roadmap-card--open .technique-sprites--2 {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-self: center;
+    margin-top: 0.75rem;
+    --sprite-size: 116px;
   }
 }
 
