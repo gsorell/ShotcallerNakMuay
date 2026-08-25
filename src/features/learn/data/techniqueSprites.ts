@@ -9,7 +9,7 @@
 // A lesson can carry MORE THAN ONE sheet. Several lessons cover a mirrored
 // pair — "Left Teep" and "Right Teep" are one card — and where the two sides
 // look meaningfully different, showing both teaches more than picking one.
-// Where they are near-mirrors (slip, roll, pivot) a single sheet still says it.
+// Where they are near-mirrors (pivot) a single sheet still says it.
 // ===========================================================================
 
 import { mirrorTechnique } from "@/utils/textUtils";
@@ -40,9 +40,7 @@ const SINGLE = [
   "long-guard",
   "duck",
   "lean-back",
-  "roll",
   "pivot",
-  "body-punching",
   "lead-uppercut",
   "rear-uppercut",
   "overhand",
@@ -57,11 +55,11 @@ const SINGLE = [
  * separately, as "Left Check" and "Right Check". One sheet could only ever
  * teach half of it.
  *
- * The slip is here for a weaker reason. Its two sides are near mirrors, so one
- * sheet was thought to be enough; in the event they were thrown differently
- * enough that the two sheets share only half their pixels, and showing both
- * says more than picking one. The roll and pivot stay single, because for
- * those a single sheet really does say everything.
+ * The slip and the roll are here for a weaker reason. Their two sides are near
+ * mirrors, so one sheet was thought to be enough for each; in the event they
+ * were thrown differently enough that the two sheets share only half their
+ * pixels, and showing both says more than picking one. The pivot stays single,
+ * because for that one a single sheet really does say everything.
  */
 const PAIRED: Record<string, SpriteVariant[]> = {
   teep: [
@@ -87,6 +85,26 @@ const PAIRED: Record<string, SpriteVariant[]> = {
   slip: [
     { src: "/assets/technique/slip-left.webp", label: "Left" },
     { src: "/assets/technique/slip-right.webp", label: "Right" },
+  ],
+  roll: [
+    { src: "/assets/technique/roll-left.webp", label: "Left" },
+    { src: "/assets/technique/roll-right.webp", label: "Right" },
+  ],
+  /**
+   * Not a pair — the one lesson that covers four callouts.
+   *
+   * Labelled by NUMBER rather than by name, and that is not shorthand. The
+   * numbers are stance-relative, so 3 is the lead hook whichever way you stand
+   * and the label stays true for a southpaw without being flipped — where
+   * "Left Hook" would have to flip and, being two words, would slip past the
+   * Left/Right swap in `sideLabel` and quietly contradict its own figure.
+   *
+   * 2 to the Body has not been shot. The lesson still explains it.
+   */
+  "body-punching": [
+    { src: "/assets/technique/body-punching-1.webp", label: "1" },
+    { src: "/assets/technique/body-punching-3.webp", label: "3" },
+    { src: "/assets/technique/body-punching-4.webp", label: "4" },
   ],
 };
 

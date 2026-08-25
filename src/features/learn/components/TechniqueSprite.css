@@ -18,6 +18,13 @@
   --sprite-size: 116px;
 }
 
+/* Three, for the one lesson that covers four callouts. Small, but a body shot
+   is a compact movement anyway — the figure stays low and the arms stay in, so
+   it loses less at this size than a kick would. */
+.technique-sprites--3 {
+  --sprite-size: 88px;
+}
+
 .technique-sprite-figure {
   margin: 0;
   display: flex;
@@ -106,5 +113,9 @@
 
   .technique-sprites--1 {
     --sprite-size: 132px;
+  }
+
+  .technique-sprites--3 {
+    --sprite-size: 74px;
   }
 }

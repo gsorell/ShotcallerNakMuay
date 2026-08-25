@@ -670,6 +670,10 @@
   --sprite-size: calc(var(--sprite-slot) * 0.78);
 }
 
+.roadmap-card .technique-sprites--3 {
+  --sprite-size: calc(var(--sprite-slot) * 0.6);
+}
+
 /* Open, with room: the figure spans both rows so the copy reads beside it. */
 .roadmap-card--open .technique-sprites {
   grid-row: 1 / span 2;

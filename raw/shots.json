@@ -135,7 +135,7 @@
    }
   },
   {
-   "slug": "roll",
+   "slug": "roll-right",
    "anchor": 150.1,
    "crop": "586:854:179:141",
    "duration": 1.3,
@@ -143,6 +143,17 @@
    "clean": 3,
    "hold": 0,
    "ease": 2.4
+  },
+  {
+   "slug": "roll-left",
+   "anchor": 0.6,
+   "crop": "515:750:388:180",
+   "duration": 1.3,
+   "cutoff": 0.6,
+   "clean": 3,
+   "hold": 0,
+   "ease": 2.4,
+   "file": "retouch/roll-left.mp4"
   },
   {
    "slug": "pivot",
@@ -180,6 +191,36 @@
    "cutoff": 0.63,
    "clean": 4,
    "hold": 0
+  },
+  {
+   "slug": "body-punching-1",
+   "anchor": 0.52,
+   "crop": "555:809:346:147",
+   "duration": 0.9,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0,
+   "file": "retouch/body-shots.mp4"
+  },
+  {
+   "slug": "body-punching-4",
+   "anchor": 1.72,
+   "crop": "555:809:346:147",
+   "duration": 0.6,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0,
+   "file": "retouch/body-shots.mp4"
+  },
+  {
+   "slug": "body-punching-3",
+   "anchor": 2.06,
+   "crop": "555:809:346:147",
+   "duration": 0.6,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0,
+   "file": "retouch/body-shots.mp4"
   },
   {
    "slug": "lead-uppercut",
