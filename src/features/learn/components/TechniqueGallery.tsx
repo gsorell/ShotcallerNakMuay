@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 
-import { ImageWithFallback } from "@/features/shared";
-
 import {
-  FIGURE_COUNT,
+  ALL_TILES,
   GALLERY_SECTIONS,
+  SHELF_LESSON_COUNT,
   type GalleryTile,
 } from "../data/galleryTiles";
-import { TOTAL_LESSON_COUNT } from "../data/techniqueIndex";
 import type { LearnEntry, TechniqueCategory } from "../data/techniqueLibrary";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
@@ -26,7 +24,7 @@ type Filter = "all" | TechniqueCategory;
  * place instead of pushing a second screen, so looking a technique up is one
  * tap and a scroll rather than three taps and a back button.
  *
- * The pause control is here because the figures are the content. Thirty-one
+ * The pause control is here because the figures are the content. Thirty-two
  * of them stepping at once is a lot to read past when you are trying to find
  * one particular thing, and holding them still is the difference between a
  * shelf you can scan and a shelf that keeps moving while you scan it.
@@ -49,8 +47,8 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
         <div>
           <h2 className="learn-section-heading">Browse every technique</h2>
           <p className="learn-subtitle shelf-lede">
-            {TOTAL_LESSON_COUNT} techniques the app calls out, {FIGURE_COUNT}{" "}
-            of them shot on the court. Tap any one for the lesson.
+            {SHELF_LESSON_COUNT} techniques, {ALL_TILES.length} angles, all of
+            it shot on the court. Tap any one for the lesson.
           </p>
         </div>
         <button
@@ -71,7 +69,7 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
           aria-pressed={filter === "all"}
           onClick={() => setFilter("all")}
         >
-          All<span className="shelf-filter-count">{TOTAL_LESSON_COUNT}</span>
+          All<span className="shelf-filter-count">{SHELF_LESSON_COUNT}</span>
         </button>
         {GALLERY_SECTIONS.map((s) => (
           <button
@@ -113,30 +111,15 @@ function Tile({
   onOpen: (entry: LearnEntry) => void;
 }) {
   const { entry, variant, side } = tile;
-  const [broken, setBroken] = useState(false);
-  const figure = variant && !broken ? variant : null;
 
   return (
     <button
       type="button"
-      className={`shelf-tile${figure ? "" : " shelf-tile--flat"}`}
+      className="shelf-tile"
       onClick={() => onOpen(entry)}
       aria-label={side ? `${entry.name}, ${side.toLowerCase()} side` : entry.name}
     >
-      {figure ? (
-        <SpriteFigure
-          variant={figure}
-          name={entry.name}
-          onBroken={() => setBroken(true)}
-        />
-      ) : (
-        <ImageWithFallback
-          srcPath={categoryIcon(tile)}
-          alt=""
-          emoji={categoryEmoji(tile)}
-          className="shelf-tile-icon"
-        />
-      )}
+      <SpriteFigure variant={variant} name={entry.name} />
       <span className="shelf-tile-name">{entry.name}</span>
       <span className="shelf-tile-meta">
         {side && <span className="shelf-tile-side">{side}</span>}
@@ -146,20 +129,6 @@ function Tile({
       </span>
     </button>
   );
-}
-
-// The category's own artwork stands in for a lesson that has not been shot —
-// see the note at the top of galleryTiles.ts.
-function sectionFor(tile: GalleryTile) {
-  return GALLERY_SECTIONS.find((s) => s.meta.key === tile.entry.category);
-}
-
-function categoryIcon(tile: GalleryTile): string {
-  return sectionFor(tile)?.meta.iconPath ?? "";
-}
-
-function categoryEmoji(tile: GalleryTile): string {
-  return sectionFor(tile)?.meta.icon ?? "•";
 }
 
 export default TechniqueGallery;

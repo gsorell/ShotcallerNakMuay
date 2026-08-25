@@ -18,8 +18,15 @@ Everything below is keyed to the lesson `slug` in
 callout, because the cards already group callouts by lesson.
 
 - 63 lessons in the library
-- **25** of them are taught by the Start Here roadmap → Tier 1, shoot these first
-- 38 remain → Tier 2, and some of those should probably never get one (see below)
+- **25** of them are taught by the Start Here roadmap → Tier 1, **shot**
+- **1** more (`double-jab`) is derived from a Tier 1 sheet rather than filmed — see
+  *Derived sheets* below
+- **37 remain** → Tier 2, and some of those should probably never get one (see below)
+
+**These 37 are not visible in the app.** Learn shows the figures and nothing else, so a
+lesson with no sheet is not on the shelf at all — its written content still sits in
+`techniqueLibrary.ts` and appears the moment a sheet lands. The list below is therefore
+also the list of lessons currently unreachable from Learn.
 
 ## Why we film rather than generate
 
@@ -466,7 +473,7 @@ levels.
 Seven of these cover mirrored callout pairs and one covers four punches, so 25 shots
 answer all 35 roadmap callouts.
 
-## Tier 2 — the remaining 38 Learn lessons
+## Tier 2 — the remaining 37 Learn lessons
 
 Not needed to ship the roadmap. Grouped by how easy they are to shoot rather than by
 category, because that is what decides the running order of a second session.
@@ -475,8 +482,8 @@ category, because that is what decides the running order of a second session.
 whole list:
 `burpee`, `jumpsquats`, `jumping-jacks`, `high-knees`, `punch-burnouts`
 
-**Straightforward solo strikes (12)** — same protocol as Tier 1:
-`double-jab`, `question-mark-kick`, `spinning-back-kick`, `spinning-heel-kick`,
+**Straightforward solo strikes (11)** — same protocol as Tier 1:
+`question-mark-kick`, `spinning-back-kick`, `spinning-heel-kick`,
 `speed-kicks`, `step-in-knee`, `flying-knee`, `jump-switch-knee`, `axe-elbow`,
 `spinning-elbow`, `step-in-elbow`, `step-off-elbow`
 
@@ -497,6 +504,23 @@ A feint is defined by the reaction it draws, not by the movement itself. Filmed 
 `shoulder-feint` and `jab-feint` are indistinguishable from a twitch. These either need
 two people in frame, or they are the category where a schematic diagram beats footage.
 Worth deciding before booking a partner for the Tier 2 shoot.
+
+## Derived sheets
+
+`double-jab` is not filmed. It is the jab's own six cells re-cut into a new order —
+guard, extension, a partial retract, extension again, retract, guard — because a double
+jab is one jab and then another and the jab clip already contains every pose in it.
+
+    node scripts/technique-sprites.mjs --derive
+
+The bar for this is deliberately high, and it is not "the technique is similar". The
+derived sheet must contain **no pose the source does not**, or it stops being a
+rearrangement of real footage and becomes a fabrication of technique — which is the
+thing *Why we film rather than generate* exists to prevent. A jab-cross is two different
+punches. A jab to the body is a level change the jab clip never makes. Neither qualifies.
+
+What might: a triple jab, and `speed-kicks` off the round kick, if the intent is the same
+kick repeated. Both need a look at the source cells before committing.
 
 ## Open decisions
 

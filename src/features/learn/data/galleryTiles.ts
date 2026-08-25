@@ -1,22 +1,24 @@
 // ===========================================================================
-// The shelf: every lesson the app teaches, as something you can look at.
+// The shelf: the techniques we can show, as something you can look at.
 // ---------------------------------------------------------------------------
 // Learn used to browse in two steps — pick a category, then read a list of
 // names — with the only silhouette in the section buried on the lesson page
 // underneath. This is the one surface that replaced both.
 //
-// Two rules make it work with the sheets we actually have.
+// Two rules decide what is on it.
 //
 // A LESSON WITH TWO SHEETS GETS TWO TILES. Six lessons cover a mirrored pair,
 // and "Left Elbow" and "Right Elbow" are separate callouts the app says out
 // loud. Showing one sheet and calling it the elbow hides half of what was shot
 // and half of what gets called.
 //
-// A LESSON WITH NO SHEET STILL GETS A TILE, carrying its category's artwork.
-// Thirty-eight lessons have not been filmed — all thirteen feints among them —
-// and a grid where those slots were empty would read as broken. A tile that was
-// never figure-shaped reads as a tile. This is the same two-tier arrangement
-// the roadmap ladder uses: bespoke art leads, category art is the floor.
+// A LESSON WITH NO SHEET IS NOT HERE AT ALL. The shelf is the figures; a tile
+// standing in for a technique nobody has filmed is a placeholder pretending to
+// be content, and a grid full of them reads as a half-built page rather than a
+// library. The written lessons for those techniques still exist in
+// `techniqueLibrary`, and the moment a sheet lands the tile appears with no
+// other change. What is still un-shot is tracked in
+// docs/TECHNIQUE_SHOT_LIST.md.
 // ===========================================================================
 
 import {
@@ -24,7 +26,6 @@ import {
   TECHNIQUE_LIBRARY,
   type CategoryMeta,
   type LearnEntry,
-  type TechniqueCategory,
 } from "./techniqueLibrary";
 import { spritesFor, type SpriteVariant } from "./techniqueSprites";
 
@@ -32,15 +33,15 @@ export interface GalleryTile {
   /** Unique across the shelf — a lesson with two sheets yields two keys. */
   key: string;
   entry: LearnEntry;
-  /** The sheet this tile shows. Absent when the lesson has not been shot. */
-  variant?: SpriteVariant;
+  /** The sheet this tile shows. Every tile has one. */
+  variant: SpriteVariant;
   /** "Lead", "Left" — only when the lesson has more than one sheet to tell apart. */
   side?: string;
 }
 
 export interface GallerySection {
   meta: CategoryMeta;
-  /** Lessons here — the count the library has always shown for this category. */
+  /** Lessons shown here. Categories with nothing shot never become a section. */
   lessonCount: number;
   /** Tiles here, which is larger wherever a lesson was shot from both sides. */
   tiles: GalleryTile[];
@@ -48,8 +49,6 @@ export interface GallerySection {
 
 function tilesFor(entry: LearnEntry): GalleryTile[] {
   const sheets = spritesFor(entry.slug);
-  if (sheets.length === 0) return [{ key: entry.slug, entry }];
-
   return sheets.map((variant, i) => ({
     key: `${entry.slug}:${i}`,
     entry,
@@ -62,18 +61,27 @@ function tilesFor(entry: LearnEntry): GalleryTile[] {
 /**
  * The shelf, in the library's own order: categories as declared, lessons as
  * declared within them, sheets in the order they were listed.
+ *
+ * A category with nothing shot is dropped rather than rendered empty, so the
+ * filter row can never offer a chip that leads to a blank grid.
  */
-export const GALLERY_SECTIONS: GallerySection[] = CATEGORY_META.map((meta) => {
-  const entries = TECHNIQUE_LIBRARY.filter((e) => e.category === meta.key);
-  return {
-    meta,
-    lessonCount: entries.length,
-    tiles: entries.flatMap(tilesFor),
-  };
-});
+export const GALLERY_SECTIONS: GallerySection[] = CATEGORY_META.flatMap(
+  (meta) => {
+    const entries = TECHNIQUE_LIBRARY.filter(
+      (e) => e.category === meta.key && spritesFor(e.slug).length > 0
+    );
+    if (entries.length === 0) return [];
+    return [
+      { meta, lessonCount: entries.length, tiles: entries.flatMap(tilesFor) },
+    ];
+  }
+);
 
 /** Every tile on the shelf, flattened. */
 export const ALL_TILES: GalleryTile[] = GALLERY_SECTIONS.flatMap((s) => s.tiles);
 
-/** How many tiles actually carry a figure. */
-export const FIGURE_COUNT = ALL_TILES.filter((t) => t.variant).length;
+/** Distinct lessons on the shelf — fewer than the tiles, which count sheets. */
+export const SHELF_LESSON_COUNT = GALLERY_SECTIONS.reduce(
+  (n, s) => n + s.lessonCount,
+  0
+);

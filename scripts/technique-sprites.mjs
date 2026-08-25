@@ -16,6 +16,7 @@
 //   node scripts/technique-sprites.mjs                   # build everything
 //   node scripts/technique-sprites.mjs --only jab        # rebuild one
 //   node scripts/technique-sprites.mjs --only jab --frames
+//   node scripts/technique-sprites.mjs --derive          # sheets cut from sheets
 //
 // Retouching. Some floor stays fused to the feet — a reflection or contact
 // shadow is JOINED to the body, so no amount of isolating removes it. Fix it
@@ -47,6 +48,35 @@ const TIER_ONE = [
   "pivot", "straight-knee", "body-punching", "lead-uppercut", "rear-uppercut",
   "overhand", "inside-low-kick", "head-kick", "horizontal-elbow", "up-elbow",
 ];
+
+// ---------------------------------------------------------------------------
+// Derived sheets — built from another sheet, not from footage.
+// ---------------------------------------------------------------------------
+// A few callouts are a technique the shoot already covers, thrown twice. The
+// double jab is one jab and then another; there is nothing in it the jab clip
+// does not already contain, so re-cutting its own cells into a new order says
+// the whole thing without going back to the court.
+//
+// This is the ONLY honest use of the trick, and the bar is deliberately high:
+// the derived sheet must contain no pose the source does not, or it is a
+// fabrication of technique rather than a rearrangement of it. Anything where
+// the second strike differs — a hook off a jab, a jab to the body — needs
+// footage. See docs/TECHNIQUE_SHOT_LIST.md.
+//
+// Cells are 0-based indices into the source sheet. The jab reads:
+//
+//   0 guard   1 load   2 arm out   3 EXTENSION   4 retract   5 guard
+//
+// so a double jab is guard, extension, a partial retract, extension again,
+// retract, guard. It keeps extension on cell 3 like every shot sheet, which is
+// the frame the reduced-motion rule holds still.
+const DERIVED = {
+  "double-jab": {
+    from: "jab",
+    cells: [0, 3, 2, 3, 4, 5],
+    note: "jab, re-cut — two extensions with a partial retract between",
+  },
+};
 
 const DEFAULTS = {
   /** Frames per sheet. Load → travel → land → recover, with room to breathe. */
@@ -218,6 +248,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--init") args.init = true;
+    else if (a === "--derive") args.derive = true;
     else if (a === "--frames") args.frames = true;
     else if (a === "--only") args.only = argv[++i];
     else if (a === "--manifest") args.manifest = argv[++i];
@@ -835,6 +866,81 @@ function writeStubManifest(file) {
   console.log(`  Fill in file/start/duration as you cut takes, then run the script again.\n`);
 }
 
+// ----------------------------------------------------------------- derive --
+
+/** Cell size of a finished sheet: it is `frames` cells wide and one tall. */
+function sheetCell(file, frames) {
+  const out = spawnSync(
+    "ffprobe",
+    ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
+     "-of", "csv=p=0", file],
+    { encoding: "utf8" }
+  );
+  if (out.status !== 0) return null;
+  const [w, h] = out.stdout.trim().split(",").map(Number);
+  if (!w || !h) return null;
+  // A sheet that is not `frames` cells of square is not a sheet this pipeline
+  // wrote, and slicing it by assumption would produce silent nonsense.
+  if (Math.round(w / frames) !== h) return null;
+  return h;
+}
+
+function buildDerived(slug, spec, outDir, frames) {
+  const src = path.join(outDir, `${spec.from}.webp`);
+  if (!fs.existsSync(src)) return { ok: false, why: `no ${spec.from}.webp to cut from` };
+  if (spec.cells.length !== frames) {
+    return { ok: false, why: `${spec.cells.length} cells, expected ${frames}` };
+  }
+
+  const cell = sheetCell(src, frames);
+  if (!cell) return { ok: false, why: "source is not a readable sheet" };
+
+  const parts = spec.cells.map(
+    (c, i) => `[0:v]crop=${cell}:${cell}:${c * cell}:0[c${i}]`
+  );
+  const chain =
+    parts.join(";") +
+    ";" +
+    spec.cells.map((_, i) => `[c${i}]`).join("") +
+    `hstack=inputs=${frames},format=rgba[out]`;
+
+  const out = path.join(outDir, `${slug}.webp`);
+  // Lossless is not optional: ffmpeg's lossy WebP encoder writes a bare VP8
+  // chunk with nowhere to put alpha, and every silhouette lands on an opaque
+  // black box. Same reason the shot pipeline encodes this way.
+  const run = spawnSync(
+    "ffmpeg",
+    ["-y", "-v", "error", "-i", src, "-filter_complex", chain, "-map", "[out]",
+     "-c:v", "libwebp", "-lossless", "1", "-frames:v", "1", out],
+    { encoding: "utf8" }
+  );
+  if (run.status !== 0) {
+    return { ok: false, why: (run.stderr || "").trim().slice(0, 200) };
+  }
+  return { ok: true, size: fs.statSync(out).size };
+}
+
+function runDerive(outDir, frames) {
+  let built = 0;
+  let failed = 0;
+  for (const [slug, spec] of Object.entries(DERIVED)) {
+    const r = buildDerived(slug, spec, outDir, frames);
+    if (r.ok) {
+      console.log(
+        `  ✓  ${slug.padEnd(18)} ${(r.size / 1024).toFixed(0)} KB  ← ${spec.from}  (${spec.note})`
+      );
+      built++;
+    } else {
+      console.log(`  ✗  ${slug.padEnd(18)} ${r.why}`);
+      failed++;
+    }
+  }
+  console.log(`
+  ${built} derived · ${failed} failed
+`);
+  if (failed) process.exit(1);
+}
+
 // -------------------------------------------------------------------- main --
 
 function main() {
@@ -846,6 +952,13 @@ function main() {
   }
 
   console.log(`\n  ${requireFfmpeg()}`);
+
+  // Derived sheets are cut from finished sheets, so this path never opens
+  // the manifest or touches footage.
+  if (args.derive) {
+    runDerive(args.out, DEFAULTS.frames);
+    return;
+  }
 
   if (!fs.existsSync(args.manifest)) {
     die(`No manifest at ${args.manifest}. Run with --init to create one.`);

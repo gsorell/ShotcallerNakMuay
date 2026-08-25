@@ -154,8 +154,8 @@ function CategoryList({
     <>
       <h1 className="learn-title">Learn</h1>
       <p className="learn-subtitle">
-        A guided path if you are starting out, and every technique the app calls
-        out if you just need to look something up.
+        A guided path if you are starting out, and the technique library if you
+        just need to look something up.
       </p>
 
       {/* The path leads, because someone who does not know where to begin is
