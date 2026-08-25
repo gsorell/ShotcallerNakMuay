@@ -279,37 +279,10 @@ export default function WorkoutLogs({
     >
       {/* Header with Back button */}
       <div style={{ marginBottom: "1rem" }}>
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back to main page"
-          style={{
-            all: "unset",
-            cursor: "pointer",
-            color: "white",
-            padding: "0.625rem 1.125rem",
-            borderRadius: "0.75rem",
-            border: "1px solid rgba(255,255,255,0.15)",
-            background: "rgba(255,255,255,0.08)",
-            fontSize: "0.875rem",
-            fontWeight: 600,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.375rem",
-            transition: "all 0.2s ease",
-            marginBottom: "0.75rem",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.08)";
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          <span style={{ fontSize: "1rem" }}>←</span>
+        <button type="button" className="back-link" onClick={onBack}>
+          <span className="back-link-arrow" aria-hidden="true">
+            ←
+          </span>
           Back
         </button>
         <h2
