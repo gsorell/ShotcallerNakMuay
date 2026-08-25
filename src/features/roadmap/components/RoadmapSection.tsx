@@ -403,7 +403,8 @@ function LevelDetail({
               handler sits on the card, and the copy stops the event so
               selecting text does not collapse what you are reading. */}
           {lessons.map(({ callouts, entry }) => {
-            const key = callouts[0];
+            // Never empty: `lessons` seeds every group with one callout.
+            const key = callouts[0]!;
             const open = openCards.has(key);
             const bodyId = `roadmap-card-${level.id}-${key.replace(/\s+/g, "-").toLowerCase()}`;
 
