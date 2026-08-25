@@ -26,7 +26,9 @@ import {
   type LearnEntry,
   type TechniqueCategory,
 } from "../data/techniqueLibrary";
-import { TechniqueSprite } from "./TechniqueSprite";
+import { categoryHero } from "../data/techniqueSprites";
+import { SpriteFigure, TechniqueSprite } from "./TechniqueSprite";
+import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
 
 type View =
@@ -131,6 +133,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
         <CategoryList
           isPro={isPro}
           onOpenCategory={openCategory}
+          onOpenLesson={openLesson}
           onOpenPath={() => {
             setView({ mode: "path" });
             scrollContentToTop("auto");
@@ -166,14 +169,19 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 function CategoryList({
   isPro,
   onOpenCategory,
+  onOpenLesson,
   onOpenPath,
   onUnlock,
 }: {
   isPro: boolean;
   onOpenCategory: (c: TechniqueCategory) => void;
+  onOpenLesson: (entry: LearnEntry) => void;
   onOpenPath: () => void;
   onUnlock: () => void;
 }) {
+  // A category whose sheet will not load falls back to the neon icon rather
+  // than to an empty square.
+  const [brokenHeroes, setBrokenHeroes] = useState<string[]>([]);
   return (
     <>
       <h1 className="learn-title">Learn</h1>
@@ -193,6 +201,8 @@ function CategoryList({
         hideWhenGraduated={false}
         source="learn"
       />
+
+      <TechniqueGallery onOpenLesson={onOpenLesson} />
 
       <h2 className="learn-section-heading">Browse every technique</h2>
       <p className="learn-subtitle">
@@ -215,18 +225,31 @@ function CategoryList({
       <div className="learn-category-grid">
         {CATEGORY_META.map((meta) => {
           const count = ENTRIES_BY_CATEGORY[meta.key].length;
+          const hero = categoryHero(meta.key);
+          const usable = hero && !brokenHeroes.includes(hero.src) ? hero : null;
           return (
             <button
               key={meta.key}
               className="learn-category-card"
               onClick={() => onOpenCategory(meta.key)}
             >
-              <ImageWithFallback
-                srcPath={meta.iconPath}
-                alt=""
-                emoji={meta.icon}
-                className="learn-category-icon"
-              />
+              {usable ? (
+                <SpriteFigure
+                  variant={usable}
+                  name={meta.label}
+                  className="learn-category-sprite"
+                  onBroken={() =>
+                    setBrokenHeroes((b) => [...b, usable.src])
+                  }
+                />
+              ) : (
+                <ImageWithFallback
+                  srcPath={meta.iconPath}
+                  alt=""
+                  emoji={meta.icon}
+                  className="learn-category-icon"
+                />
+              )}
               <span className="learn-category-text">
                 <span className="learn-category-label">{meta.label}</span>
                 <span className="learn-category-blurb">{meta.blurb}</span>

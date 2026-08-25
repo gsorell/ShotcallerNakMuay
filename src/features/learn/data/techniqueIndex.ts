@@ -10,6 +10,7 @@
 import { INITIAL_TECHNIQUES, techniqueText } from "@/constants/techniques";
 import { BASE_EMPHASIS_CONFIG } from "@/emphasisConfig";
 
+import { spritesFor } from "./techniqueSprites";
 import {
   CATEGORY_META,
   TECHNIQUE_LIBRARY,
@@ -36,6 +37,16 @@ for (const entry of TECHNIQUE_LIBRARY) {
 
 const BY_SLUG = new Map<string, LearnEntry>(
   TECHNIQUE_LIBRARY.map((e) => [e.slug, e])
+);
+
+/**
+ * Every lesson that has a silhouette, in library order.
+ *
+ * Derived rather than listed, so the gallery cannot drift from the sheets that
+ * actually exist: adding a slug to `techniqueSprites` is the only step.
+ */
+export const SPRITED_ENTRIES: readonly LearnEntry[] = TECHNIQUE_LIBRARY.filter(
+  (entry) => spritesFor(entry.slug).length > 0
 );
 
 export function getEntry(slug: string): LearnEntry | undefined {

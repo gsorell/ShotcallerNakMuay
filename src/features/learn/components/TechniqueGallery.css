@@ -1,0 +1,128 @@
+/* The shelf of figures at the top of Learn. See TechniqueGallery.tsx for why
+   it can lead the page while the library below it stays text. */
+
+.technique-gallery {
+  margin-bottom: 1.75rem;
+}
+
+/* --------------------------------------------------------------- filters -- */
+
+.gallery-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0.9rem;
+}
+
+.gallery-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.gallery-filter:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.gallery-filter.is-on {
+  background: rgba(236, 72, 153, 0.18);
+  border-color: rgba(236, 72, 153, 0.55);
+  color: #fff;
+}
+
+.gallery-filter-count {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.gallery-filter.is-on .gallery-filter-count {
+  color: #f9a8d4;
+}
+
+/* ------------------------------------------------------------------ grid -- */
+
+.gallery-grid {
+  display: grid;
+  /* Three across on a phone, more as the screen allows. The figures carry the
+     grid, so the tile is sized from the sheet rather than the other way round. */
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 0.5rem;
+}
+
+.gallery-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.25rem 0.6rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+  /* Twenty-five sheets stepping at once is real work for a phone. This lets
+     the browser skip the ones scrolled off screen, animation included. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
+  --sprite-size: 76px;
+}
+
+.gallery-tile:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.gallery-tile:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+.gallery-tile-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.gallery-tile-number {
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #f9a8d4;
+}
+
+/* A little more room once there is room to give. */
+@media (min-width: 560px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  }
+
+  .gallery-tile {
+    --sprite-size: 92px;
+    contain-intrinsic-size: auto 152px;
+  }
+}
+
+/* --------------------------------------------------- category card figure -- */
+
+/* Slots into the 56px square the neon icon used, so a card with a figure and a
+   card with an icon are the same shape. Keep in step with .learn-category-icon. */
+.learn-category-sprite {
+  --sprite-size: 56px;
+  flex-shrink: 0;
+}
