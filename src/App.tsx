@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { Capacitor } from "@capacitor/core";
 
@@ -36,7 +36,11 @@ import {
 // Utilities
 import { initializeGA4 } from "@/utils/analytics";
 import { displayInAppBrowserWarning } from "@/utils/inAppBrowserDetector";
-import { scrollContentToTop } from "@/utils/scroll";
+import {
+  pageScrollKey,
+  restoreOnNextPage,
+  scrollContentToTop,
+} from "@/utils/scroll";
 import { fmtTime } from "@/utils/timeUtils";
 
 // CSS
@@ -210,12 +214,20 @@ export default function App() {
     textAlign: "center",
   };
 
+  // Every page's back button lands on the timer, and should land on the part
+  // of it the user left — the style grid is long enough that arriving at the
+  // top means hunting for your place again.
+  const backToTimer = useCallback(() => {
+    restoreOnNextPage(pageScrollKey("timer"));
+    setPage("timer");
+  }, [setPage]);
+
   const renderPageContent = () => {
     switch (page) {
       case "logs":
         return (
           <WorkoutLogs
-            onBack={() => setPage("timer")}
+            onBack={backToTimer}
             emphasisList={emphasisList}
             onResume={resumeWorkout}
             onViewCompletion={viewCompletionScreen}
@@ -227,15 +239,15 @@ export default function App() {
           <TechniqueEditorAny
             techniques={techniques}
             setTechniques={persistTechniques}
-            onBack={() => setPage("timer")}
+            onBack={backToTimer}
           />
         );
 
       case "learn":
-        return <LearnSection onBack={() => setPage("timer")} />;
+        return <LearnSection onBack={backToTimer} />;
 
       case "roadmap":
-        return <RoadmapSection onBack={() => setPage("timer")} />;
+        return <RoadmapSection onBack={backToTimer} />;
 
       case "completed":
         if (!lastWorkout) return null;

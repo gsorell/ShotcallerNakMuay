@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import "@/styles/editor.css";
-import { scrollContentToTop } from "@/utils/scroll";
 import CharmTrophyCase from "./CharmTrophyCase";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
@@ -144,11 +143,6 @@ export default function WorkoutLogs({
 }) {
   const [logs, setLogs] = useState<WorkoutEntry[]>([]);
   const logsContainerRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to top when WorkoutLogs mounts (especially for mobile)
-  useEffect(() => {
-    scrollContentToTop("auto");
-  }, []);
 
   useEffect(() => {
     try {

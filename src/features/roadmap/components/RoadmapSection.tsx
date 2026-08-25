@@ -12,7 +12,11 @@ import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
 import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
-import { scrollContentToTop } from "@/utils/scroll";
+import {
+  rememberScroll,
+  restoreScroll,
+  scrollContentToTop,
+} from "@/utils/scroll";
 
 import {
   FOUNDATIONS,
@@ -48,6 +52,9 @@ interface RoadmapSectionProps {
 }
 
 type LevelState = "cleared" | "current" | "locked" | "pro";
+
+/** Where the ladder was left, so a level opens and closes in place. */
+const LADDER_SCROLL = "roadmap:ladder";
 
 export function RoadmapSection({ onBack }: RoadmapSectionProps) {
   const { isPro } = useEntitlement();
@@ -98,6 +105,7 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
         return;
       }
       if (state === "locked") return;
+      rememberScroll(LADDER_SCROLL);
       setView({ mode: "level", levelId: level.id });
       scrollContentToTop("auto");
     },
@@ -106,8 +114,9 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
 
   const goBack = useCallback(() => {
     if (view.mode === "level") {
+      // Back onto the rung you opened, not the top of the ladder.
       setView({ mode: "ladder" });
-      scrollContentToTop("auto");
+      restoreScroll(LADDER_SCROLL);
       return;
     }
     onBack();
