@@ -37,3 +37,40 @@ export function devUnlockAll(): boolean {
   if (import.meta.env.MODE === "test") return false;
   return import.meta.env.DEV && !respectingLocks();
 }
+
+// ---------------------------------------------------------------------------
+
+const FAST_ROUNDS_KEY = "nmsc-dev-fast-rounds";
+
+/**
+ * True when a guided level should run short rounds.
+ *
+ * Reviewing the screens BETWEEN rounds means training through the rounds
+ * first: the rest panel that shows what the combination round holds does not
+ * appear until two full minutes in, which is a slow way to look at a panel and
+ * a slower way to change one.
+ *
+ * Only the rounds shrink. Rest stays at its real thirty seconds, because rest
+ * is usually the thing being reviewed and "can this be read in the time
+ * available" is most of the question.
+ *
+ * Opt in from the console and start a level:
+ *   localStorage.setItem("nmsc-dev-fast-rounds", "1")
+ *
+ * Dev-only, like devUnlockAll — `import.meta.env.DEV` is a build-time literal,
+ * so this cannot ship enabled.
+ */
+export function devFastRounds(): boolean {
+  if (import.meta.env.MODE === "test") return false;
+  if (!import.meta.env.DEV) return false;
+  try {
+    return localStorage.getItem(FAST_ROUNDS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Round length in minutes for a guided level, honouring the dev switch. */
+export function devRoundMin(roundMin: number): number {
+  return devFastRounds() ? 0.15 : roundMin;
+}

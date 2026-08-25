@@ -22,6 +22,7 @@ import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { createWorkoutLogEntry, type RoadmapLogRef } from "@/utils/logUtils";
 import { generateTechniquePool } from "@/utils/techniqueUtils";
 import { scrollContentToTop } from "@/utils/scroll";
+import { devRoundMin } from "@/utils/devUnlock";
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from "react";
 import { useHomeStats } from "../../logs";
 import { useAudioSystem, useUIContext, useWakeLock, usePhoneCallDetection } from "../../shared";
@@ -488,7 +489,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       settings.clearAllEmphases();
       settings.setAddCalisthenics(false);
       settings.setRoundsCount(level.session.roundsCount);
-      settings.setRoundMin(level.session.roundMin);
+      settings.setRoundMin(devRoundMin(level.session.roundMin));
       settings.setRestMinutes(level.session.restMinutes);
       settings.setDifficulty(level.session.difficulty);
       settings.setReadInOrder(walksPoolInOrder(1));
@@ -615,7 +616,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         settings.clearAllEmphases();
         settings.setAddCalisthenics(false);
         settings.setRoundsCount(level.session.roundsCount);
-        settings.setRoundMin(level.session.roundMin);
+        settings.setRoundMin(devRoundMin(level.session.roundMin));
         settings.setRestMinutes(level.session.restMinutes);
         settings.setDifficulty(level.session.difficulty);
 
