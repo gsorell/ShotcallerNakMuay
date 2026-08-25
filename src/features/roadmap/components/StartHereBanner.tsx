@@ -110,13 +110,16 @@ export function StartHereBanner({
           className="starthere-art"
         />
         <span className="starthere-text">
-          <span className="starthere-eyebrow">
-            {summary.graduated
-              ? "Start Here · complete"
-              : summary.started
-              ? `Start Here · level ${level.id} of ${summary.totalLevels}`
-              : "New to Muay Thai?"}
-          </span>
+          {/* Only once there is progress to report. Before that the headline
+              already says "Start Here", and the question the eyebrow used to
+              ask now opens the line underneath it. */}
+          {(summary.started || summary.graduated) && (
+            <span className="starthere-eyebrow">
+              {summary.graduated
+                ? "Start Here · complete"
+                : `Start Here · level ${level.id} of ${summary.totalLevels}`}
+            </span>
+          )}
 
           <span className="starthere-headline">
             {summary.graduated
@@ -129,7 +132,7 @@ export function StartHereBanner({
           <span className="starthere-sub">
             {summary.started
               ? `${summary.known} of ${summary.total} callouts learned`
-              : "Ten levels that teach the strikes a few at a time. First level free."}
+              : "Brand new to Muay Thai? These ten levels will get you comfortable with the callouts and ready to make full use of the styles in the app."}
           </span>
 
           {summary.started && (

@@ -36,7 +36,7 @@ export const INITIAL_TECHNIQUES: Record<
   newb: {
     label: "newb",
     title: "Nak Muay Newb",
-    description: "Start here to learn the basic strikes",
+    description: "The basics",
     singles: [
       "Jab",
       "Cross",
