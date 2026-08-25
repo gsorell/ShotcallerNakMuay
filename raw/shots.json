@@ -207,6 +207,16 @@
    "hold": 0
   },
   {
+   "slug": "horizontal-elbow-rear",
+   "file": "retouch/right-elbow.mp4",
+   "anchor": 6.8,
+   "crop": "499:860:454:130",
+   "duration": 0.85,
+   "cutoff": 0.63,
+   "clean": 4,
+   "hold": 0
+  },
+  {
    "slug": "up-elbow-lead",
    "anchor": 282.83,
    "crop": "480:869:464:121",
