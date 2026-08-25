@@ -49,41 +49,43 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
     <section className={`shelf${paused ? " shelf--paused" : ""}`}>
       <h2 className="learn-section-heading shelf-head">Browse techniques</h2>
 
-      {/* Both controls for the grid, in one bar directly above it, and sticky
-          so they stay reachable — the grid is long, and a pause you have to
-          scroll back up to find is a pause you do not use. */}
-      <div className="shelf-controls">
-        <div className="shelf-filters" role="group" aria-label="Filter techniques">
-          <button
-            type="button"
-            className={`shelf-filter${filter === "all" ? " is-on" : ""}`}
-            aria-pressed={filter === "all"}
-            onClick={() => setFilter("all")}
-          >
-            All<span className="shelf-filter-count">{SHELF_LESSON_COUNT}</span>
-          </button>
-          {GALLERY_SECTIONS.map((s) => (
-            <button
-              key={s.meta.key}
-              type="button"
-              className={`shelf-filter${filter === s.meta.key ? " is-on" : ""}`}
-              aria-pressed={filter === s.meta.key}
-              onClick={() => setFilter(s.meta.key)}
-            >
-              {s.meta.label}
-              <span className="shelf-filter-count">{s.lessonCount}</span>
-            </button>
-          ))}
-        </div>
-
+      <div className="shelf-filters" role="group" aria-label="Filter techniques">
         <button
           type="button"
-          className="shelf-pause"
+          className={`shelf-filter${filter === "all" ? " is-on" : ""}`}
+          aria-pressed={filter === "all"}
+          onClick={() => setFilter("all")}
+        >
+          All<span className="shelf-filter-count">{SHELF_LESSON_COUNT}</span>
+        </button>
+        {GALLERY_SECTIONS.map((s) => (
+          <button
+            key={s.meta.key}
+            type="button"
+            className={`shelf-filter${filter === s.meta.key ? " is-on" : ""}`}
+            aria-pressed={filter === s.meta.key}
+            onClick={() => setFilter(s.meta.key)}
+          >
+            {s.meta.label}
+            <span className="shelf-filter-count">{s.lessonCount}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Its own row, and deliberately not another pill: the chips choose what
+          you are looking at, this changes how it behaves, and making the two
+          look alike would suggest it is a sixth filter. */}
+      <div className="shelf-pause-row">
+        <button
+          type="button"
+          className={`shelf-pause${paused ? " is-paused" : ""}`}
           aria-pressed={paused}
           aria-label={paused ? "Play the figures" : "Hold the figures still"}
           onClick={() => setPaused((p) => !p)}
         >
-          <span aria-hidden="true">{paused ? "▶" : "❚❚"}</span>
+          <span className="shelf-pause-glyph" aria-hidden="true">
+            {paused ? "▶" : "❚❚"}
+          </span>
           <span className="shelf-pause-label">{paused ? "Play" : "Pause"}</span>
         </button>
       </div>
