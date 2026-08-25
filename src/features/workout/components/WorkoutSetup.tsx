@@ -18,11 +18,11 @@ import "./WorkoutSetup.css";
  * the same place on every visit, and a silhouette that changed under you would
  * read as a different destination each time.
  *
- * A round kick because it has to work at 64px — a kick throws a limb clear of
- * the body and stays legible, where a punch at this size is a standing figure
- * with a small disturbance at one shoulder.
+ * A kick because it has to work at 64px: a kick throws a limb clear of the
+ * body and stays legible, where a punch that small is a standing figure with a
+ * twitch at one shoulder. The head kick is the one that reads best of them.
  */
-const learnFigure = spritesFor("roundhouse-kick")[0];
+const learnFigure = spritesFor("head-kick")[0];
 
 export default function WorkoutSetup() {
   const {
