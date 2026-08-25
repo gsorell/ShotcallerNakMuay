@@ -23,7 +23,11 @@ import {
 import { LearnSection } from "@/features/learn";
 import { hasOnboarded, useOnboardingState } from "@/features/onboarding";
 import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
-import { roundDescription, roundTitle } from "@/features/roadmap/session";
+import {
+  roundDescription,
+  roundKind,
+  roundTitle,
+} from "@/features/roadmap/session";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -101,6 +105,15 @@ export default function App() {
               activeRoadmap.level,
               next
             ),
+            // Only the combination round gets the decoder. The other two call
+            // single techniques by name, which need no decoding — and round 2
+            // draws on everything taught so far, which at the later levels is
+            // thirty-odd techniques and not something a rest panel can show.
+            combos:
+              roundKind(next) === "combos" ? activeRoadmap.level.combos : [],
+            // The panel prints what will actually be called, and southpaw
+            // mirrors every callout on the way out.
+            southpaw: settings.southpawMode,
           };
         })()
       : null;

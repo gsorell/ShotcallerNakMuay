@@ -1,0 +1,77 @@
+/* The combination decoder in the rest panel. See ComboDecoder.tsx for why
+   nothing here advances on its own. */
+
+.combo-decoder {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  /* Matches the closed roadmap card's slot: small enough that four beats fit
+     the panel on a phone, large enough that the silhouette still reads. */
+  --sprite-size: 64px;
+}
+
+.combo-decoder-row {
+  padding-top: 0.7rem;
+  border-top: 1px solid rgba(236, 72, 153, 0.22);
+}
+
+.combo-decoder-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* The shorthand, printed the way it will be called. */
+.combo-decoder-code {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.combo-decoder-beats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.combo-decoder-beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.combo-decoder-beat-blank {
+  display: block;
+  width: var(--sprite-size);
+  height: var(--sprite-size);
+}
+
+/* The decode itself: the number above, the punch it stands for underneath. */
+.combo-decoder-beat-name {
+  font-size: 0.62rem;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+  max-width: var(--sprite-size);
+}
+
+/* Narrow phones: four beats at 64px plus gaps overruns the panel. */
+@media (max-width: 380px) {
+  .combo-decoder {
+    --sprite-size: 54px;
+  }
+
+  .combo-decoder-beat-name {
+    font-size: 0.56rem;
+  }
+}

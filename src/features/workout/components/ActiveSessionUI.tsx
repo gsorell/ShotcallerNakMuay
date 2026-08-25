@@ -1,5 +1,6 @@
 import React from "react";
 import { type EmphasisKey } from "@/types";
+import { ComboDecoder } from "@/features/roadmap/components/ComboDecoder";
 import { ImageWithFallback } from "../../shared";
 import StatusTimer from "./StatusTimer";
 import "./ActiveSessionUI.css";
@@ -24,7 +25,14 @@ interface ActiveSessionUIProps {
   emphasisList: any[];
   isInterruptedByCall?: boolean;
   /** What the next round holds — shown during rest on a guided level. */
-  upNext?: { round: number; title: string; description: string } | null;
+  upNext?: {
+    round: number;
+    title: string;
+    description: string;
+    /** The combinations to spell out; empty on the rounds that need no decode. */
+    combos?: readonly string[];
+    southpaw?: boolean;
+  } | null;
 }
 
 export default function ActiveSessionUI({
@@ -86,6 +94,11 @@ export default function ActiveSessionUI({
           </div>
           <div className="active-session-upnext-title">{upNext.title}</div>
           <p className="active-session-upnext-desc">{upNext.description}</p>
+          {/* Renders nothing on the rounds that pass no combinations. */}
+          <ComboDecoder
+            combos={upNext.combos ?? []}
+            southpaw={upNext.southpaw}
+          />
         </section>
       )}
 
