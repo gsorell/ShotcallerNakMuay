@@ -132,7 +132,7 @@ export function StartHereBanner({
           <span className="starthere-sub">
             {summary.started
               ? `${summary.known} of ${summary.total} callouts learned`
-              : "Brand new to Muay Thai? Ten levels to get you comfortable with the callouts."}
+              : "Ten levels to get you up to speed."}
           </span>
 
           {summary.started && (

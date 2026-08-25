@@ -22,7 +22,7 @@ export const BASE_EMPHASIS_CONFIG: {
   newb: {
     label: "Nak Muay Newb",
     icon: "👶",
-    desc: "Basic strikes and simple combos, all eight limbs",
+    desc: "Punches, kicks, knees and defence, plus simple combos",
     iconPath: "/assets/icon_newb.png",
   },
   khao: {

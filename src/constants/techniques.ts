@@ -36,7 +36,7 @@ export const INITIAL_TECHNIQUES: Record<
   newb: {
     label: "newb",
     title: "Nak Muay Newb",
-    description: "Basic strikes and simple combos, all eight limbs",
+    description: "Punches, kicks, knees and defence, plus simple combos",
     singles: [
       "Jab",
       "Cross",
