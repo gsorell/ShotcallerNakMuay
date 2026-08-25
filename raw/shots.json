@@ -271,11 +271,12 @@
   },
   {
    "slug": "roundhouse-kick",
-   "anchor": 66.2,
-   "crop": "714:854:315:125",
+   "file": "retouch/roundhouse-kick.mp4",
+   "anchor": 3.5,
+   "crop": "600:750:460:140",
    "cutoff": 0.67,
    "clean": 6,
-   "duration": 1
+   "duration": 2.1
   },
   {
    "crop": "560:880:300:130",
