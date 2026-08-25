@@ -1,6 +1,10 @@
 import { useState } from "react";
 
-import { SPRITE_FRAMES, spritesFor } from "../data/techniqueSprites";
+import {
+  SPRITE_FRAMES,
+  spritesFor,
+  type SpriteVariant,
+} from "../data/techniqueSprites";
 import "./TechniqueSprite.css";
 
 interface TechniqueSpriteProps {
@@ -41,35 +45,73 @@ export function TechniqueSprite({ slug, name, className }: TechniqueSpriteProps)
       }
     >
       {usable.map((variant) => (
-        <figure className="technique-sprite-figure" key={variant.src}>
-          <div
-            className="technique-sprite"
-            role="img"
-            aria-label={
-              variant.label
-                ? `Animated silhouette of ${name}, ${variant.label.toLowerCase()} side`
-                : `Animated silhouette of ${name}`
-            }
-          >
-            <img
-              src={variant.src}
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              decoding="async"
-              onError={() => setBroken((b) => [...b, variant.src])}
-              style={{ width: `${SPRITE_FRAMES * 100}%` }}
-            />
-          </div>
-          {/* Only worth naming when there is another one to tell it apart from. */}
-          {variant.label && usable.length > 1 && (
-            <figcaption className="technique-sprite-label">
-              {variant.label}
-            </figcaption>
-          )}
-        </figure>
+        <SpriteFigure
+          key={variant.src}
+          variant={variant}
+          name={name}
+          // Only worth naming when there is another one to tell it apart from.
+          showLabel={usable.length > 1}
+          onBroken={() => setBroken((b) => [...b, variant.src])}
+        />
       ))}
     </div>
+  );
+}
+
+interface SpriteFigureProps {
+  variant: SpriteVariant;
+  /** Technique name, used for the accessible label. */
+  name: string;
+  /** Whether to print the variant's side under the figure. */
+  showLabel?: boolean;
+  /** Called when the sheet fails to load, so the host can drop this figure. */
+  onBroken?: () => void;
+  className?: string;
+}
+
+/**
+ * One figure: a single sheet, stepped.
+ *
+ * Split out from `TechniqueSprite` because a host sometimes knows which of a
+ * paired lesson's two sheets it wants. The combination decoder does — "Left
+ * Teep" is one beat of a combination and gets one figure, not the pair — while
+ * a lesson card shows every sheet it has and lets `TechniqueSprite` do the
+ * picking. Both render the same markup, so the CSS only exists once.
+ */
+export function SpriteFigure({
+  variant,
+  name,
+  showLabel = false,
+  onBroken,
+  className,
+}: SpriteFigureProps) {
+  return (
+    <figure className={`technique-sprite-figure${className ? ` ${className}` : ""}`}>
+      <div
+        className="technique-sprite"
+        role="img"
+        aria-label={
+          variant.label
+            ? `Animated silhouette of ${name}, ${variant.label.toLowerCase()} side`
+            : `Animated silhouette of ${name}`
+        }
+      >
+        <img
+          src={variant.src}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          onError={onBroken}
+          style={{ width: `${SPRITE_FRAMES * 100}%` }}
+        />
+      </div>
+      {showLabel && variant.label && (
+        <figcaption className="technique-sprite-label">
+          {variant.label}
+        </figcaption>
+      )}
+    </figure>
   );
 }
 

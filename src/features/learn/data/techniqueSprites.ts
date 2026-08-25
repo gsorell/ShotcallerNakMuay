@@ -22,6 +22,10 @@ export interface SpriteVariant {
 /** Lessons whose sheet is named after the slug itself. */
 const SINGLE = [
   "jab",
+  // Not shot: cut from the jab's own cells, because a double jab is a jab and
+  // then another one. See DERIVED in scripts/technique-sprites.mjs for the bar
+  // that trick has to clear.
+  "double-jab",
   "cross",
   "lead-hook",
   "rear-hook",

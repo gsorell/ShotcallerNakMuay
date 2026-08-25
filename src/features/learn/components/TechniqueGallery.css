@@ -1,0 +1,222 @@
+/* The shelf — Learn's whole browse on one screen. See TechniqueGallery.tsx for
+   why categories are a filter rather than a step, and galleryTiles.ts for why
+   every lesson has a tile whether or not it has been shot. */
+
+.shelf {
+  margin-bottom: 1.5rem;
+}
+
+.shelf-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.shelf-lede {
+  margin-bottom: 0;
+}
+
+/* ----------------------------------------------------------------- pause -- */
+
+.shelf-pause {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.shelf-pause:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.shelf-pause:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+.shelf-pause-label {
+  text-transform: uppercase;
+}
+
+/* Holding the figures still. The animation is declared in TechniqueSprite.css;
+   this only ever changes whether it is running. */
+.shelf--paused .technique-sprite img {
+  animation-play-state: paused;
+}
+
+/* --------------------------------------------------------------- filters -- */
+
+.shelf-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.8rem 0 1.1rem;
+}
+
+.shelf-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.shelf-filter:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.shelf-filter.is-on {
+  background: rgba(236, 72, 153, 0.18);
+  border-color: rgba(236, 72, 153, 0.55);
+  color: #fff;
+}
+
+.shelf-filter:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+.shelf-filter-count {
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.shelf-filter.is-on .shelf-filter-count {
+  color: #f9a8d4;
+}
+
+/* -------------------------------------------------------------- sections -- */
+
+.shelf-section {
+  margin-bottom: 1.6rem;
+}
+
+.shelf-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.shelf-section-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.shelf-section-blurb {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ------------------------------------------------------------------ grid -- */
+
+.shelf-grid {
+  display: grid;
+  /* Three across on a phone, more as the screen allows. The figure sets the
+     tile size rather than the other way round. */
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 0.5rem;
+}
+
+.shelf-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.25rem 0.55rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+  /* Thirty-two sheets stepping at once is real work for a phone. This lets the
+     browser skip the ones scrolled off screen, animation included. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 134px;
+  --sprite-size: 76px;
+}
+
+.shelf-tile:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.shelf-tile:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+.shelf-tile-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.shelf-tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 0.85rem;
+}
+
+/* Which of a pair this is — the half that "Right Elbow" carries and the lesson
+   name does not. */
+.shelf-tile-side {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.shelf-tile-number {
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #f9a8d4;
+}
+
+@media (min-width: 560px) {
+  .shelf-grid {
+    grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  }
+
+  .shelf-tile {
+    --sprite-size: 92px;
+    contain-intrinsic-size: auto 154px;
+  }
+}

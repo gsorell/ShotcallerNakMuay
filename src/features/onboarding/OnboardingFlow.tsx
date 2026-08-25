@@ -3,7 +3,6 @@ import React, { useState } from "react";
 
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/constants/storeLinks";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
-import { TOTAL_LESSON_COUNT } from "@/features/learn";
 import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
 import { GlossaryModal } from "@/features/shared";
 
@@ -57,9 +56,10 @@ const PRO_ITEMS: Item[] = [
   {
     iconPath: "/assets/icon.muaytech.png",
     label: "Learn the Techniques",
-    // Count comes from the library itself so this can't drift as lessons are
-    // added — see features/learn/data/techniqueLibrary.
-    desc: `How to throw all ${TOTAL_LESSON_COUNT} techniques the app calls out.`,
+    // No count. It read "all 63" from the library, which stopped being true
+    // the moment Learn narrowed to the techniques that have been filmed — and
+    // any number here is a promise the shelf has to keep.
+    desc: "How to throw the techniques the app calls out.",
   },
   {
     iconPath: "/assets/icon_edit.png",
