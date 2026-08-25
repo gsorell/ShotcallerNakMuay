@@ -48,8 +48,8 @@
   gap: 3rem;
 }
 
-/* The "Learn the Techniques" button uses the shared `.setup-action-btn`
-   styling in styles/setupActions.css, paired with "Manage Techniques". */
+/* The "Learn" button uses the shared `.setup-action-btn` styling in
+   styles/setupActions.css, paired with "Manage Techniques". */
 
 /* "Show Advanced" button */
 .workout-setup-advanced-toggle {

@@ -100,16 +100,10 @@ export default function WorkoutSetup() {
             }}
             className="setup-action-btn"
           >
-            <img
-              src="/assets/icon.muaytech.png"
-              alt=""
-              aria-hidden="true"
-              className="setup-action-btn-icon"
-            />
             <span className="setup-action-btn-text">
               <span className="setup-action-btn-title">Learn</span>
               <span className="setup-action-btn-desc">
-                Guided path, and every technique explained
+                Guided path, and technique reference
               </span>
             </span>
           </button>
@@ -126,12 +120,6 @@ export default function WorkoutSetup() {
             }}
             className="setup-action-btn"
           >
-            <img
-              src="/assets/icon_edit.png"
-              alt=""
-              aria-hidden="true"
-              className="setup-action-btn-icon"
-            />
             <span className="setup-action-btn-text">
               <span className="setup-action-btn-title">Manage Techniques</span>
               <span className="setup-action-btn-desc">

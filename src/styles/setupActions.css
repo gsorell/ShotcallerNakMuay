@@ -3,8 +3,13 @@
    These are the two secondary destinations off the setup screen. They sit
    directly beneath the style grid and deliberately reuse the emphasis tiles'
    visual language — same 1rem radius, same 2px translucent white border, same
-   10% white fill, same 56px rounded icon — so the screen reads as one system
-   instead of a grid plus two unrelated buttons.
+   10% white fill — so the screen reads as one system instead of a grid plus
+   two unrelated buttons.
+
+   No icon. The style tiles above are picked BY their artwork, so repeating the
+   treatment here invited these two to be read as more of the same, when they
+   navigate away rather than select. Words alone is the clearer difference, and
+   it is a difference the row wanted anyway.
 
    They are NOT tiles, though: single row, shorter than `.emphasis-tile`'s
    6.25rem min-height, and they navigate rather than toggle. The size
@@ -25,7 +30,9 @@
 .setup-action-btn {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  /* Held to roughly the height the icon used to set, so losing the artwork
+     does not leave the pair looking like an afterthought under the grid. */
+  min-height: 4.5rem;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -48,14 +55,6 @@
 .setup-action-btn:focus-visible {
   outline: none;
   border-color: #60a5fa;
-}
-
-.setup-action-btn-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  object-fit: cover;
-  flex-shrink: 0;
 }
 
 .setup-action-btn-text {
