@@ -11,7 +11,11 @@ import {
   CATEGORY_META,
   TECHNIQUE_LIBRARY,
 } from "@/features/learn/data/techniqueLibrary";
-import { spritesFor } from "@/features/learn/data/techniqueSprites";
+import {
+  displayName,
+  sideLabel,
+  spritesFor,
+} from "@/features/learn/data/techniqueSprites";
 
 const onDisk = (src: string) =>
   existsSync(resolve(process.cwd(), "public", src.replace(/^\//, "")));
@@ -101,5 +105,82 @@ describe("every tile has something to show", () => {
   it("has unique keys", () => {
     const keys = ALL_TILES.map((t) => t.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe("southpaw flips the label with the figure", () => {
+  it("swaps a direction, because the picture it sits under is flipped", () => {
+    expect(sideLabel("Left", true)).toBe("Right");
+    expect(sideLabel("Right", true)).toBe("Left");
+  });
+
+  it("leaves lead and rear alone, because they are stance-relative", () => {
+    // The lead leg is the lead leg whichever way you stand, so a mirrored
+    // teep-lead sheet is still the lead teep. Swapping it would make it wrong.
+    expect(sideLabel("Lead", true)).toBe("Lead");
+    expect(sideLabel("Rear", true)).toBe("Rear");
+  });
+
+  it("changes nothing for an orthodox fighter", () => {
+    for (const l of ["Left", "Right", "Lead", "Rear"]) {
+      expect(sideLabel(l, false)).toBe(l);
+    }
+    expect(sideLabel(undefined, true)).toBeUndefined();
+  });
+
+  it("covers every label the sheets actually use", () => {
+    // If a new pair ships with a label this helper has never seen, it would
+    // pass through unflipped and silently contradict its own figure.
+    const known = new Set(["Lead", "Rear", "Left", "Right"]);
+    for (const tile of ALL_TILES) {
+      if (!tile.side) continue;
+      expect(known.has(tile.side), `unhandled side label "${tile.side}"`).toBe(true);
+    }
+  });
+});
+
+describe("southpaw flips the name with the figure", () => {
+  it("swaps the four names that carry a side", () => {
+    expect(displayName("Left Hook", true)).toBe("Right Hook");
+    expect(displayName("Right Hook", true)).toBe("Left Hook");
+    expect(displayName("Left Uppercut", true)).toBe("Right Uppercut");
+    expect(displayName("Right Uppercut", true)).toBe("Left Uppercut");
+  });
+
+  it("leaves the numbering to mean what it always meant", () => {
+    // 3 is the lead hook whichever way you stand, so a southpaw's tile reads
+    // "Right Hook · 3" — the name flips, the number does not.
+    const hook = TECHNIQUE_LIBRARY.find((e) => e.slug === "lead-hook")!;
+    expect(displayName(hook.name, true)).toBe("Right Hook");
+    expect(hook.numbering).toBe("3");
+  });
+
+  it("changes nothing for an orthodox fighter", () => {
+    for (const entry of TECHNIQUE_LIBRARY) {
+      expect(displayName(entry.name, false)).toBe(entry.name);
+    }
+  });
+
+  it("touches only the four names, and no others", () => {
+    const moved = TECHNIQUE_LIBRARY.filter(
+      (e) => displayName(e.name, true) !== e.name
+    ).map((e) => e.slug);
+    expect(moved.sort()).toEqual(
+      ["lead-hook", "lead-uppercut", "rear-hook", "rear-uppercut"].sort()
+    );
+  });
+
+  it("is never let near lesson prose", () => {
+    // The copy is written in lead and rear so it needs no flipping, and the
+    // stray "right"s in it are English. One lesson says "right before it stops
+    // being harmless", which this would turn into "left before it stops".
+    const prose = TECHNIQUE_LIBRARY.flatMap((e) => [
+      e.summary,
+      ...e.keyPoints,
+      ...e.mistakes,
+    ]);
+    const idiom = prose.find((t) => t.includes("right before it stops"));
+    expect(idiom, "the canary sentence moved — check this still holds").toBeDefined();
+    expect(displayName(idiom!, true)).not.toBe(idiom);
   });
 });

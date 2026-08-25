@@ -101,6 +101,17 @@ const roadmapLogRef = (
   label: roadmapLogLabel(level),
 });
 
+/**
+ * Which way round the user stands, for anything that only needs that.
+ *
+ * Deliberately does not throw outside the provider, where `useWorkoutContext`
+ * does. A component whose whole job is drawing a figure should still render in
+ * isolation — in a test, or on a screen mounted outside the session tree — and
+ * "not southpaw" is the right answer when there is no session state to read.
+ */
+export const useSouthpaw = (): boolean =>
+  Boolean(useContext(WorkoutContext)?.settings?.southpawMode);
+
 export const useWorkoutContext = () => {
   const context = useContext(WorkoutContext);
   if (!context) {

@@ -12,6 +12,8 @@
 // Where they are near-mirrors (slip, roll, pivot) a single sheet still says it.
 // ===========================================================================
 
+import { mirrorTechnique } from "@/utils/textUtils";
+
 export interface SpriteVariant {
   /** Sheet path under public/. */
   src: string;
@@ -101,4 +103,47 @@ export function spritesFor(slug: string): SpriteVariant[] {
   if (PAIRED[slug]) return PAIRED[slug];
   if (SINGLE_SET.has(slug)) return [{ src: `/assets/technique/${slug}.webp` }];
   return [];
+}
+
+/**
+ * A technique name as a southpaw should read it.
+ *
+ * "Left Hook" is the lead hook, written from orthodox like the whole library.
+ * A southpaw leads with the right, so their lead hook is a right hook — and it
+ * is still number 3, because the numbers are stance-relative. A tile reading
+ * "Right Hook · 3" is correct for them, and matches what the callout engine
+ * already says out loud.
+ *
+ * NAMES ONLY. Never run this over lesson prose: the copy is written in lead and
+ * rear precisely so it needs no flipping, and the few stray "right"s in it are
+ * English rather than directions — one lesson has "right before it stops being
+ * harmless", which this would turn into "left before it stops being harmless".
+ * Anatomy would not survive it either; the liver is on one side of a body
+ * whichever way the puncher stands.
+ */
+export function displayName(name: string, southpaw: boolean): string {
+  return southpaw ? mirrorTechnique(name) : name;
+}
+
+/**
+ * The side label to print under a mirrored figure.
+ *
+ * The sheets are shot orthodox, so a southpaw sees them flipped — and a label
+ * that names a DIRECTION has to flip with the picture or it contradicts it. A
+ * "Slip Left" sheet mirrored shows a slip to the figure's right, which is also
+ * what the callout engine will say out loud: `mirrorTechnique` swaps Left and
+ * Right on the way to the speaker.
+ *
+ * Lead and Rear do not move. They are stance-relative — the lead leg is the
+ * lead leg whichever way you stand — so the mirrored figure is still the lead
+ * teep, and swapping the label would make it wrong.
+ */
+export function sideLabel(
+  label: string | undefined,
+  southpaw: boolean
+): string | undefined {
+  if (!label || !southpaw) return label;
+  if (label === "Left") return "Right";
+  if (label === "Right") return "Left";
+  return label;
 }

@@ -9,6 +9,7 @@ import { StartHereBanner } from "@/features/roadmap/components/StartHereBanner";
 import { FOUNDATIONS } from "@/features/roadmap/data/paths";
 import { levelTeaching } from "@/features/roadmap/vocabulary";
 import { useUIContext } from "@/features/shared";
+import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
 import { useWorkoutContext } from "@/features/workout";
 import { trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
@@ -20,6 +21,7 @@ import {
   isCalisthenicsOnly,
 } from "../data/techniqueIndex";
 import type { LearnEntry } from "../data/techniqueLibrary";
+import { displayName } from "../data/techniqueSprites";
 import { TechniqueSprite } from "./TechniqueSprite";
 import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
@@ -199,14 +201,17 @@ function LessonDetail({
   onOpenPath: () => void;
 }) {
   const entry = getEntry(slug);
+  const southpaw = useSouthpaw();
   const styles = useMemo(() => getStylesForEntry(slug), [slug]);
   const level = useMemo(() => levelTeaching(FOUNDATIONS, slug), [slug]);
 
   if (!entry) return <p className="learn-subtitle">Lesson not found.</p>;
 
+  const name = displayName(entry.name, southpaw);
+
   return (
     <article className="learn-detail">
-      <h1 className="learn-title">{entry.name}</h1>
+      <h1 className="learn-title">{name}</h1>
       <p className="learn-detail-meta">
         {entry.numbering && (
           <span className="learn-detail-badge">{entry.numbering}</span>
@@ -217,7 +222,7 @@ function LessonDetail({
       <div className="learn-detail-intro">
         <p className="learn-detail-summary">{entry.summary}</p>
         {/* Nothing renders for a lesson with no sheet. */}
-        <TechniqueSprite slug={entry.slug} name={entry.name} />
+        <TechniqueSprite slug={entry.slug} name={name} />
       </div>
 
       {level && (

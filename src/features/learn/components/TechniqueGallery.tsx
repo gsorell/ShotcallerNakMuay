@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
 
+// The module rather than the workout barrel: the barrel reaches back into this
+// feature.
+import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
+
 import {
   GALLERY_SECTIONS,
   SHELF_LESSON_COUNT,
   type GalleryTile,
 } from "../data/galleryTiles";
+import { displayName, sideLabel } from "../data/techniqueSprites";
 import type { LearnEntry, TechniqueCategory } from "../data/techniqueLibrary";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
@@ -109,17 +114,22 @@ function Tile({
   tile: GalleryTile;
   onOpen: (entry: LearnEntry) => void;
 }) {
-  const { entry, variant, side } = tile;
+  const { entry, variant } = tile;
+  const southpaw = useSouthpaw();
+  // The figure flips for a southpaw, so everything naming a side flips with
+  // it — see sideLabel for why Lead and Rear do not.
+  const side = sideLabel(tile.side, southpaw);
+  const name = displayName(entry.name, southpaw);
 
   return (
     <button
       type="button"
       className="shelf-tile"
       onClick={() => onOpen(entry)}
-      aria-label={side ? `${entry.name}, ${side.toLowerCase()} side` : entry.name}
+      aria-label={side ? `${name}, ${side.toLowerCase()} side` : name}
     >
-      <SpriteFigure variant={variant} name={entry.name} />
-      <span className="shelf-tile-name">{entry.name}</span>
+      <SpriteFigure variant={variant} name={name} />
+      <span className="shelf-tile-name">{name}</span>
       <span className="shelf-tile-meta">
         {side && <span className="shelf-tile-side">{side}</span>}
         {entry.numbering && (
