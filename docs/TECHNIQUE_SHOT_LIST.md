@@ -231,6 +231,49 @@ picks a frame between reps:
 | High guard | Chin tucked so the head vanishes into the guard — not raised hands |
 | Long guard | Widest upper body only, ignoring the legs |
 
+## What makes a room usable, measured
+
+The court worked because of one property, and it is worth stating precisely
+because the second location failed on it: **every part of the fighter was darker
+than every part of the background, everywhere in frame.** Body 0.02–0.30, skin
+up to 0.49, walls and floor 0.60–0.76. One threshold, no exceptions.
+
+A gym shot afterwards failed, and not by a little. Measured:
+
+| | luma |
+|---|---|
+| Wall | 0.73 |
+| Grey floor | 0.71 |
+| Fighter, body | 0.11–0.42 |
+| **Green turf underfoot** | **0.27** |
+| **Black rubber strip** | **0.25** |
+| **Foot, lit from above** | **0.64** |
+
+Two separate failures in one frame. The floor he stands on is *inside* the
+fighter's range, so it keys as body and stays joined to his feet — isolation
+cannot tell them apart because they genuinely are one region. And hard overhead
+light blows the top of the foot to 0.64 against a floor of 0.71, a margin
+narrower than the noise. Above the shins the rule is "bright is background";
+below them it is "dark is background". No single threshold does both, and a
+retouch cannot rescue it either: the feet come out as notches cut from a slab,
+so restoring them means drawing feet rather than trimming an edge.
+
+**The test before rolling** is therefore not "is the wall plain" but: stand at
+the camera and check that the darkest thing behind the fighter is still brighter
+than the brightest thing on him — *including under his feet*, which is the part
+everyone forgets.
+
+Three cheap fixes, in order of preference:
+
+1. **Something light under his feet.** A white mat, a sheet, flattened card. It
+   turns the one band that fails into the one that works, and costs nothing.
+2. **Dark socks.** Bare feet lit from above are the brightest thing on a fighter;
+   socks put them back at about 0.16 without changing the silhouette's shape at
+   150px.
+3. **Move out from under the light.** The same overhead lamp that blows the foot
+   also blows the top of the thigh — visible as holes in the mask that only the
+   closing pass fills.
+
 ## A silhouette cannot show a limb that overlaps the body
 
 The one real limitation of this whole approach, found the hard way on the

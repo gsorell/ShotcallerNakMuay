@@ -273,17 +273,6 @@
    "clean": 5,
    "duration": 1,
    "ease": 1.6
-  },
-  {
-   "slug": "parry",
-   "file": "retouch/parry.mp4",
-   "anchor": 12.3,
-   "crop": "440:880:390:110",
-   "duration": 0.9,
-   "cutoff": 0.6,
-   "clean": 3,
-   "close": 3,
-   "isolate": false
   }
  ]
 }
