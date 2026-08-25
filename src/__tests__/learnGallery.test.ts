@@ -11,7 +11,7 @@ import {
   CATEGORY_META,
   TECHNIQUE_LIBRARY,
 } from "@/features/learn/data/techniqueLibrary";
-import { spritesFor } from "@/features/learn/data/techniqueSprites";
+import { sideLabel, spritesFor } from "@/features/learn/data/techniqueSprites";
 
 const onDisk = (src: string) =>
   existsSync(resolve(process.cwd(), "public", src.replace(/^\//, "")));
@@ -101,5 +101,36 @@ describe("every tile has something to show", () => {
   it("has unique keys", () => {
     const keys = ALL_TILES.map((t) => t.key);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe("southpaw flips the label with the figure", () => {
+  it("swaps a direction, because the picture it sits under is flipped", () => {
+    expect(sideLabel("Left", true)).toBe("Right");
+    expect(sideLabel("Right", true)).toBe("Left");
+  });
+
+  it("leaves lead and rear alone, because they are stance-relative", () => {
+    // The lead leg is the lead leg whichever way you stand, so a mirrored
+    // teep-lead sheet is still the lead teep. Swapping it would make it wrong.
+    expect(sideLabel("Lead", true)).toBe("Lead");
+    expect(sideLabel("Rear", true)).toBe("Rear");
+  });
+
+  it("changes nothing for an orthodox fighter", () => {
+    for (const l of ["Left", "Right", "Lead", "Rear"]) {
+      expect(sideLabel(l, false)).toBe(l);
+    }
+    expect(sideLabel(undefined, true)).toBeUndefined();
+  });
+
+  it("covers every label the sheets actually use", () => {
+    // If a new pair ships with a label this helper has never seen, it would
+    // pass through unflipped and silently contradict its own figure.
+    const known = new Set(["Lead", "Rear", "Left", "Right"]);
+    for (const tile of ALL_TILES) {
+      if (!tile.side) continue;
+      expect(known.has(tile.side), `unhandled side label "${tile.side}"`).toBe(true);
+    }
   });
 });

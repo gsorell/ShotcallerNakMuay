@@ -50,6 +50,14 @@
   animation: technique-sprite-run 1.15s steps(6) infinite;
 }
 
+/* Southpaw. The window is flipped rather than the image inside it, because the
+   image already carries the frame-stepping transform and a second one on the
+   same element would fight it. Flipping the window mirrors the visible cell and
+   leaves the stepping untouched. */
+.technique-sprite--mirrored {
+  transform: scaleX(-1);
+}
+
 @keyframes technique-sprite-run {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); }

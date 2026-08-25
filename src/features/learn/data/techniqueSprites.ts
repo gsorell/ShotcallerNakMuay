@@ -102,3 +102,26 @@ export function spritesFor(slug: string): SpriteVariant[] {
   if (SINGLE_SET.has(slug)) return [{ src: `/assets/technique/${slug}.webp` }];
   return [];
 }
+
+/**
+ * The side label to print under a mirrored figure.
+ *
+ * The sheets are shot orthodox, so a southpaw sees them flipped — and a label
+ * that names a DIRECTION has to flip with the picture or it contradicts it. A
+ * "Slip Left" sheet mirrored shows a slip to the figure's right, which is also
+ * what the callout engine will say out loud: `mirrorTechnique` swaps Left and
+ * Right on the way to the speaker.
+ *
+ * Lead and Rear do not move. They are stance-relative — the lead leg is the
+ * lead leg whichever way you stand — so the mirrored figure is still the lead
+ * teep, and swapping the label would make it wrong.
+ */
+export function sideLabel(
+  label: string | undefined,
+  southpaw: boolean
+): string | undefined {
+  if (!label || !southpaw) return label;
+  if (label === "Left") return "Right";
+  if (label === "Right") return "Left";
+  return label;
+}

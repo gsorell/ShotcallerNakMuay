@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
 
+// The module rather than the workout barrel: the barrel reaches back into this
+// feature.
+import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
+
 import {
   GALLERY_SECTIONS,
   SHELF_LESSON_COUNT,
   type GalleryTile,
 } from "../data/galleryTiles";
+import { sideLabel } from "../data/techniqueSprites";
 import type { LearnEntry, TechniqueCategory } from "../data/techniqueLibrary";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
@@ -109,7 +114,10 @@ function Tile({
   tile: GalleryTile;
   onOpen: (entry: LearnEntry) => void;
 }) {
-  const { entry, variant, side } = tile;
+  const { entry, variant } = tile;
+  // The figure flips for a southpaw, so the side printed on it flips too —
+  // see sideLabel for why Lead and Rear do not.
+  const side = sideLabel(tile.side, useSouthpaw());
 
   return (
     <button

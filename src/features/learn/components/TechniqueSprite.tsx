@@ -1,7 +1,12 @@
 import { useState } from "react";
 
+// The module rather than the workout barrel: the barrel reaches back into this
+// feature, and a figure only needs to know which way round the user stands.
+import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
+
 import {
   SPRITE_FRAMES,
+  sideLabel,
   spritesFor,
   type SpriteVariant,
 } from "../data/techniqueSprites";
@@ -85,14 +90,20 @@ export function SpriteFigure({
   onBroken,
   className,
 }: SpriteFigureProps) {
+  // Every sheet was shot orthodox. A southpaw is looking at a picture of
+  // someone standing the other way round, which is exactly the thing the
+  // figure exists to show them, so flip it — and flip the label with it.
+  const southpaw = useSouthpaw();
+  const label = sideLabel(variant.label, southpaw);
+
   return (
     <figure className={`technique-sprite-figure${className ? ` ${className}` : ""}`}>
       <div
-        className="technique-sprite"
+        className={`technique-sprite${southpaw ? " technique-sprite--mirrored" : ""}`}
         role="img"
         aria-label={
-          variant.label
-            ? `Animated silhouette of ${name}, ${variant.label.toLowerCase()} side`
+          label
+            ? `Animated silhouette of ${name}, ${label.toLowerCase()} side`
             : `Animated silhouette of ${name}`
         }
       >
@@ -106,10 +117,8 @@ export function SpriteFigure({
           style={{ width: `${SPRITE_FRAMES * 100}%` }}
         />
       </div>
-      {showLabel && variant.label && (
-        <figcaption className="technique-sprite-label">
-          {variant.label}
-        </figcaption>
+      {showLabel && label && (
+        <figcaption className="technique-sprite-label">{label}</figcaption>
       )}
     </figure>
   );
