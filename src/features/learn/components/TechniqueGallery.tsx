@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import {
-  ALL_TILES,
   GALLERY_SECTIONS,
   SHELF_LESSON_COUNT,
   type GalleryTile,
@@ -47,8 +46,8 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
         <div>
           <h2 className="learn-section-heading">Browse every technique</h2>
           <p className="learn-subtitle shelf-lede">
-            {SHELF_LESSON_COUNT} techniques, {ALL_TILES.length} angles, all of
-            it shot on the court. Tap any one for the lesson.
+            Every technique we have filmed, from both sides where both sides
+            matter. Tap any one for the lesson.
           </p>
         </div>
         <button
