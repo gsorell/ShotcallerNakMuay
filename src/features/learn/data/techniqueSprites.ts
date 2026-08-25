@@ -32,7 +32,6 @@ const SINGLE = [
   "inside-low-kick",
   "high-guard",
   "long-guard",
-  "slip",
   "duck",
   "lean-back",
   "roll",
@@ -46,12 +45,17 @@ const SINGLE = [
 /**
  * Lessons that show both sides, because the two read differently.
  *
- * Which leg does the work is the entire content of these three. A check with
- * the lead leg and a check with the rear leg are different shapes — the rear
- * one turns the body over to get there — and the path calls them separately,
- * as "Left Check" and "Right Check". One sheet could only ever teach half of
- * it. Contrast the slip, roll and pivot, which really are mirrors, and where a
- * single sheet says everything.
+ * Which side does the work is the entire content of most of these. A check
+ * with the lead leg and a check with the rear leg are different shapes — the
+ * rear one turns the body over to get there — and the path calls them
+ * separately, as "Left Check" and "Right Check". One sheet could only ever
+ * teach half of it.
+ *
+ * The slip is here for a weaker reason. Its two sides are near mirrors, so one
+ * sheet was thought to be enough; in the event they were thrown differently
+ * enough that the two sheets share only half their pixels, and showing both
+ * says more than picking one. The roll and pivot stay single, because for
+ * those a single sheet really does say everything.
  */
 const PAIRED: Record<string, SpriteVariant[]> = {
   teep: [
@@ -73,6 +77,10 @@ const PAIRED: Record<string, SpriteVariant[]> = {
   "horizontal-elbow": [
     { src: "/assets/technique/horizontal-elbow-lead.webp", label: "Lead" },
     { src: "/assets/technique/horizontal-elbow-rear.webp", label: "Rear" },
+  ],
+  slip: [
+    { src: "/assets/technique/slip-left.webp", label: "Left" },
+    { src: "/assets/technique/slip-right.webp", label: "Right" },
   ],
 };
 

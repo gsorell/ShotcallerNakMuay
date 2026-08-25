@@ -91,7 +91,7 @@
    "ease": 1.8
   },
   {
-   "slug": "slip",
+   "slug": "slip-left",
    "anchor": 131.6,
    "crop": "394:860:335:130",
    "duration": 0.9,
@@ -99,6 +99,17 @@
    "clean": 3,
    "hold": 0,
    "ease": 2.4
+  },
+  {
+   "slug": "slip-right",
+   "file": "retouch/slip-right.mp4",
+   "anchor": 2.18,
+   "crop": "394:860:349:130",
+   "duration": 0.9,
+   "cutoff": 0.6,
+   "clean": 3,
+   "ease": 2.4,
+   "hold": 0
   },
   {
    "slug": "duck",
