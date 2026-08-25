@@ -9,7 +9,7 @@ import {
   SHELF_LESSON_COUNT,
   type GalleryTile,
 } from "../data/galleryTiles";
-import { sideLabel } from "../data/techniqueSprites";
+import { displayName, sideLabel } from "../data/techniqueSprites";
 import type { LearnEntry, TechniqueCategory } from "../data/techniqueLibrary";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
@@ -115,19 +115,21 @@ function Tile({
   onOpen: (entry: LearnEntry) => void;
 }) {
   const { entry, variant } = tile;
-  // The figure flips for a southpaw, so the side printed on it flips too —
-  // see sideLabel for why Lead and Rear do not.
-  const side = sideLabel(tile.side, useSouthpaw());
+  const southpaw = useSouthpaw();
+  // The figure flips for a southpaw, so everything naming a side flips with
+  // it — see sideLabel for why Lead and Rear do not.
+  const side = sideLabel(tile.side, southpaw);
+  const name = displayName(entry.name, southpaw);
 
   return (
     <button
       type="button"
       className="shelf-tile"
       onClick={() => onOpen(entry)}
-      aria-label={side ? `${entry.name}, ${side.toLowerCase()} side` : entry.name}
+      aria-label={side ? `${name}, ${side.toLowerCase()} side` : name}
     >
-      <SpriteFigure variant={variant} name={entry.name} />
-      <span className="shelf-tile-name">{entry.name}</span>
+      <SpriteFigure variant={variant} name={name} />
+      <span className="shelf-tile-name">{name}</span>
       <span className="shelf-tile-meta">
         {side && <span className="shelf-tile-side">{side}</span>}
         {entry.numbering && (

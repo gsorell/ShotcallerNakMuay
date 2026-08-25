@@ -6,9 +6,11 @@ import { useEntitlement } from "@/features/entitlement";
 import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
 // Direct path rather than the Learn barrel, for the same reason as above.
 import { TechniqueSprite } from "@/features/learn/components/TechniqueSprite";
+import { displayName } from "@/features/learn/data/techniqueSprites";
 import { usePaywall } from "@/features/paywall";
 import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
+import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
 
@@ -348,6 +350,8 @@ function LevelDetail({
   // listing them per callout printed the same card twice on most levels and
   // four times on level 9. The callouts are named on the card instead, which is
   // the part that actually differs.
+  const southpaw = useSouthpaw();
+
   const lessons = useMemo(() => {
     const byLesson = new Map<
       string,
@@ -424,7 +428,7 @@ function LevelDetail({
                   disabled={!entry}
                 >
                   <span className="roadmap-card-name">
-                    {entry?.name ?? callouts[0]}
+                    {displayName(entry?.name ?? callouts[0]!, southpaw)}
                   </span>
                   {entry?.numbering && (
                     <span className="roadmap-card-number">
@@ -439,7 +443,12 @@ function LevelDetail({
                 {/* Nothing renders for a lesson with no sheet, and the row
                     simply has no figure in it. Click-through, so the figure is
                     part of the same target as the name behind it. */}
-                {entry && <TechniqueSprite slug={entry.slug} name={entry.name} />}
+                {entry && (
+                  <TechniqueSprite
+                    slug={entry.slug}
+                    name={displayName(entry.name, southpaw)}
+                  />
+                )}
 
                 {entry && (
                   <div
@@ -450,7 +459,10 @@ function LevelDetail({
                   >
                     {callouts.length > 1 && (
                       <p className="roadmap-card-callouts">
-                        Called as {callouts.join(" · ")}
+                        {/* What the voice will actually say, which for a
+                            southpaw is the mirrored form. */}
+                        Called as{" "}
+                        {callouts.map((c) => displayName(c, southpaw)).join(" · ")}
                       </p>
                     )}
                     <p className="roadmap-card-summary">{entry.summary}</p>
