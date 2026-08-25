@@ -7,14 +7,31 @@
 }
 
 .shelf-head {
+  margin-bottom: 0.5rem;
+}
+
+/* ------------------------------------------------------------- controls -- */
+
+/* Filters and pause together, directly above the grid they both act on, and
+   sticky so they stay reachable down a long shelf.
+
+   Sticky works here with no top offset because the app header is a sibling of
+   the scroll region rather than floating over it — see AppLayout. The bar is
+   the same width as the grid, being its sibling in the same padded column, so
+   tiles scroll away behind it with nothing peeking down either side. */
+.shelf-controls {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.shelf-lede {
-  margin-bottom: 0;
+  gap: 0.6rem;
+  margin: 0 -0.4rem 1.1rem;
+  padding: 0.55rem 0.4rem;
+  background: rgba(12, 8, 22, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ----------------------------------------------------------------- pause -- */
@@ -24,8 +41,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.15rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(0, 0, 0, 0.3);
@@ -60,10 +76,11 @@
 /* --------------------------------------------------------------- filters -- */
 
 .shelf-filters {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin: 0.8rem 0 1.1rem;
 }
 
 .shelf-filter {

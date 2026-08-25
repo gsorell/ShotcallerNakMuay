@@ -47,46 +47,45 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
 
   return (
     <section className={`shelf${paused ? " shelf--paused" : ""}`}>
-      <div className="shelf-head">
-        <div>
-          <h2 className="learn-section-heading">Browse every technique</h2>
-          <p className="learn-subtitle shelf-lede">
-            Every technique we have filmed, from both sides where both sides
-            matter. Tap any one for the lesson.
-          </p>
+      <h2 className="learn-section-heading shelf-head">Browse techniques</h2>
+
+      {/* Both controls for the grid, in one bar directly above it, and sticky
+          so they stay reachable — the grid is long, and a pause you have to
+          scroll back up to find is a pause you do not use. */}
+      <div className="shelf-controls">
+        <div className="shelf-filters" role="group" aria-label="Filter techniques">
+          <button
+            type="button"
+            className={`shelf-filter${filter === "all" ? " is-on" : ""}`}
+            aria-pressed={filter === "all"}
+            onClick={() => setFilter("all")}
+          >
+            All<span className="shelf-filter-count">{SHELF_LESSON_COUNT}</span>
+          </button>
+          {GALLERY_SECTIONS.map((s) => (
+            <button
+              key={s.meta.key}
+              type="button"
+              className={`shelf-filter${filter === s.meta.key ? " is-on" : ""}`}
+              aria-pressed={filter === s.meta.key}
+              onClick={() => setFilter(s.meta.key)}
+            >
+              {s.meta.label}
+              <span className="shelf-filter-count">{s.lessonCount}</span>
+            </button>
+          ))}
         </div>
+
         <button
           type="button"
           className="shelf-pause"
           aria-pressed={paused}
+          aria-label={paused ? "Play the figures" : "Hold the figures still"}
           onClick={() => setPaused((p) => !p)}
         >
-          {paused ? "▶" : "❚❚"}
+          <span aria-hidden="true">{paused ? "▶" : "❚❚"}</span>
           <span className="shelf-pause-label">{paused ? "Play" : "Pause"}</span>
         </button>
-      </div>
-
-      <div className="shelf-filters" role="group" aria-label="Filter techniques">
-        <button
-          type="button"
-          className={`shelf-filter${filter === "all" ? " is-on" : ""}`}
-          aria-pressed={filter === "all"}
-          onClick={() => setFilter("all")}
-        >
-          All<span className="shelf-filter-count">{SHELF_LESSON_COUNT}</span>
-        </button>
-        {GALLERY_SECTIONS.map((s) => (
-          <button
-            key={s.meta.key}
-            type="button"
-            className={`shelf-filter${filter === s.meta.key ? " is-on" : ""}`}
-            aria-pressed={filter === s.meta.key}
-            onClick={() => setFilter(s.meta.key)}
-          >
-            {s.meta.label}
-            <span className="shelf-filter-count">{s.lessonCount}</span>
-          </button>
-        ))}
       </div>
 
       {sections.map((section) => (
