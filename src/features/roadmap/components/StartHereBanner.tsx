@@ -157,7 +157,7 @@ export function StartHereBanner({
           and until now only one direction was navigable. */}
       {onBrowse && (
         <button type="button" className="starthere-browse" onClick={onBrowse}>
-          Or browse the technique library
+          Browse technique library
           <span aria-hidden="true"> →</span>
         </button>
       )}
