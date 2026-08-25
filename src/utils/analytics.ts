@@ -54,8 +54,10 @@ const GA_API_SECRET = "GYagL3PhQGa2d8daPA6hJg";
 // Set to false for production - debug endpoint validates but doesn't send to GA4
 const GA_DEBUG_MODE = false;
 
-// App version - imported from package.json at build time
-const APP_VERSION = "1.5.0";
+// App version - injected from package.json at build time by vite.config.ts.
+// Was a hand-maintained literal and sat at "1.5.0" through eight releases, so
+// every event since reported a version the user was not running.
+const APP_VERSION = __APP_VERSION__;
 
 // Check if running in Capacitor native app
 const isCapacitorNative = () => {

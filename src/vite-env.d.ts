@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+/** package.json `version`, injected by the `define` in vite.config.ts. */
+declare const __APP_VERSION__: string;
+
 interface ImportMetaEnv {
   // RevenueCat public SDK keys, injected at build time. Set once the real
   // stores are connected in RevenueCat (Task 6). Absent = purchases disabled,
