@@ -99,10 +99,11 @@ const PAIRED: Record<string, SpriteVariant[]> = {
    * "Left Hook" would have to flip and, being two words, would slip past the
    * Left/Right swap in `sideLabel` and quietly contradict its own figure.
    *
-   * 2 and 4 to the Body have no sheet. The lesson still explains them.
+   * 4 to the Body has no sheet. The lesson still explains it.
    */
   "body-punching": [
     { src: "/assets/technique/body-punching-1.webp", label: "1" },
+    { src: "/assets/technique/body-punching-2.webp", label: "2" },
     { src: "/assets/technique/body-punching-3.webp", label: "3" },
   ],
 };
