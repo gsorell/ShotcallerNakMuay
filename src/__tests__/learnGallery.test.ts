@@ -170,12 +170,22 @@ describe("southpaw flips the name with the figure", () => {
     }
   });
 
-  it("touches only the four names, and no others", () => {
+  it("touches only the names that carry a side, and no others", () => {
+    // The hooks and uppercuts, upstairs and down. All of them are named from
+    // orthodox and all of them flip: a southpaw's lead hook to the body is
+    // their RIGHT hook to the body.
     const moved = TECHNIQUE_LIBRARY.filter(
       (e) => displayName(e.name, true) !== e.name
     ).map((e) => e.slug);
     expect(moved.sort()).toEqual(
-      ["lead-hook", "lead-uppercut", "rear-hook", "rear-uppercut"].sort()
+      [
+        "lead-hook",
+        "lead-hook-to-body",
+        "lead-uppercut",
+        "rear-hook",
+        "rear-hook-to-body",
+        "rear-uppercut",
+      ].sort()
     );
   });
 

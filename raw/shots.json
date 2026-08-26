@@ -193,7 +193,7 @@
    "hold": 0
   },
   {
-   "slug": "body-punching-1",
+   "slug": "jab-to-body",
    "anchor": 0.52,
    "crop": "555:809:346:147",
    "duration": 0.9,
@@ -203,7 +203,7 @@
    "file": "retouch/body-shots.mp4"
   },
   {
-   "slug": "body-punching-2",
+   "slug": "cross-to-body",
    "anchor": 208.47,
    "crop": "595:860:342:130",
    "duration": 0.9,
@@ -212,7 +212,7 @@
    "hold": 0
   },
   {
-   "slug": "body-punching-3",
+   "slug": "lead-hook-to-body",
    "anchor": 2.06,
    "crop": "555:809:346:147",
    "duration": 0.6,

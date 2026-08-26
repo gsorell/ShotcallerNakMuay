@@ -44,6 +44,12 @@ const SINGLE = [
   "lead-uppercut",
   "rear-uppercut",
   "overhand",
+  // The body shots. One sheet each, named for their own lesson — they were a
+  // single "body punching" entry with three labelled variants until each got
+  // its own page. 4 to the body has no sheet.
+  "jab-to-body",
+  "cross-to-body",
+  "lead-hook-to-body",
 ] as const;
 
 /**
@@ -89,22 +95,6 @@ const PAIRED: Record<string, SpriteVariant[]> = {
   roll: [
     { src: "/assets/technique/roll-left.webp", label: "Left" },
     { src: "/assets/technique/roll-right.webp", label: "Right" },
-  ],
-  /**
-   * Not a pair — the one lesson that covers four callouts.
-   *
-   * Labelled by NUMBER rather than by name, and that is not shorthand. The
-   * numbers are stance-relative, so 3 is the lead hook whichever way you stand
-   * and the label stays true for a southpaw without being flipped — where
-   * "Left Hook" would have to flip and, being two words, would slip past the
-   * Left/Right swap in `sideLabel` and quietly contradict its own figure.
-   *
-   * 4 to the Body has no sheet. The lesson still explains it.
-   */
-  "body-punching": [
-    { src: "/assets/technique/body-punching-1.webp", label: "1" },
-    { src: "/assets/technique/body-punching-2.webp", label: "2" },
-    { src: "/assets/technique/body-punching-3.webp", label: "3" },
   ],
 };
 
