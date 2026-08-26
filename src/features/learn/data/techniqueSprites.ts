@@ -44,12 +44,12 @@ const SINGLE = [
   "lead-uppercut",
   "rear-uppercut",
   "overhand",
-  // The body shots. One sheet each, named for their own lesson — they were a
-  // single "body punching" entry with three labelled variants until each got
-  // its own page. 4 to the body has no sheet.
+  // The body shots. The hooks share one sheet and one lesson because the
+  // footage is a 4-3 combination rather than an isolated rep — the card is
+  // named for what it actually shows.
   "jab-to-body",
   "cross-to-body",
-  "lead-hook-to-body",
+  "body-hooks",
 ] as const;
 
 /**

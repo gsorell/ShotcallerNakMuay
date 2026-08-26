@@ -17,7 +17,7 @@ Everything below is keyed to the lesson `slug` in
 `src/features/learn/data/techniqueLibrary.ts`. One visual per lesson — **not** per
 callout, because the cards already group callouts by lesson.
 
-- 66 lessons in the library
+- 65 lessons in the library
 - **25** of them are taught by the Start Here roadmap → Tier 1, **shot**
 - **1** more (`double-jab`) is derived from a Tier 1 sheet rather than filmed — see
   *Derived sheets* below

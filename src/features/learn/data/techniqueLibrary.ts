@@ -329,42 +329,30 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
     matches: ["Cross to the Body", "2 to the Body"],
   },
   {
-    slug: "lead-hook-to-body",
-    name: "Left Hook to the Body",
+    slug: "body-hooks",
+    name: "Body Hooks",
     category: "punches",
     summary:
-      "The lead hook under the elbow — the liver shot. Landed just below the ribs on the opponent's right side it is the one body punch that ends fights outright, and it takes rounds off anyone it lands on cleanly.",
+      "Both hooks downstairs, into the ribs on either side. The lead hook lands under the elbow on the opponent's right — that one is the liver shot, the single body punch that ends fights outright. The rear hook answers on the other side, and the two are usually thrown as a pair.",
     keyPoints: [
-      "Change level with your legs; the hook itself stays flat, you get lower.",
-      "Keep the elbow at roughly the same height as the fist — a level arc.",
-      "Turn the lead foot and knee inward; it is a hip rotation, not an arm swing.",
-      "Aim just under the elbow, below the ribs on their right side.",
+      "Change level with your legs — the hooks stay flat, you get lower.",
+      "Keep each elbow at roughly the same height as its fist; a level arc, not a scoop.",
+      "Turn the foot and knee on the punching side inward. It is a hip rotation, not an arm swing.",
+      "For the liver, aim just under the elbow and below the ribs on their right side.",
+      "Doubling up is the point: the first one moves the guard, the second lands where it was.",
     ],
     mistakes: [
       "Scooping up into the ribs from underneath rather than turning through them.",
-      "Bending at the waist instead of the knees.",
-      "Winding up wide, so it is seen coming from across the room.",
+      "Bending at the waist instead of the knees, which drops your head onto a knee or an uppercut.",
+      "Dropping the off hand as the punching hand goes — you are low and inside range.",
+      "Staying crouched after the pair, giving away your head position.",
     ],
-    matches: ["Left Hook to the Body", "3 to the Body"],
-  },
-  {
-    slug: "rear-hook-to-body",
-    name: "Right Hook to the Body",
-    category: "punches",
-    summary:
-      "The rear hook downstairs, into the ribs on the side their lead hand is guarding. Heavier and slower to arrive than the lead hook to the body, so it works best once something has pulled their guard across.",
-    keyPoints: [
-      "Change level with your legs — bend the knees, keep the spine upright.",
-      "Pivot hard on the rear foot; the whole back side of the body turns through.",
-      "Keep the elbow bent at about ninety degrees and level with the fist.",
-      "Recover the hand to the guard, not to your hip.",
+    matches: [
+      "Left Hook to the Body",
+      "3 to the Body",
+      "Right Hook to the Body",
+      "4 to the Body",
     ],
-    mistakes: [
-      "Bending at the waist instead of the knees.",
-      "Dropping the lead hand as the rear hand goes.",
-      "Staying crouched after the punch, giving away your head position.",
-    ],
-    matches: ["Right Hook to the Body", "4 to the Body"],
   },
 
   // ---------------------------------------------------------------- KICKS --
