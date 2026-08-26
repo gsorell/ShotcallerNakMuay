@@ -17,6 +17,8 @@ interface TechniqueSpriteProps {
   slug: string;
   /** Technique name, used for the accessible label. */
   name: string;
+  /** Hold one frame across every sheet this lesson shows. */
+  frame?: number | null;
   className?: string;
 }
 
@@ -32,7 +34,12 @@ interface TechniqueSpriteProps {
  * animating `background-position` — cannot do this, because a percentage there
  * resolves against (container - image) rather than the image, and inverts.
  */
-export function TechniqueSprite({ slug, name, className }: TechniqueSpriteProps) {
+export function TechniqueSprite({
+  slug,
+  name,
+  frame = null,
+  className,
+}: TechniqueSpriteProps) {
   const variants = spritesFor(slug);
   const [broken, setBroken] = useState<string[]>([]);
 
@@ -54,6 +61,7 @@ export function TechniqueSprite({ slug, name, className }: TechniqueSpriteProps)
           key={variant.src}
           variant={variant}
           name={name}
+          frame={frame}
           // Only worth naming when there is another one to tell it apart from.
           showLabel={usable.length > 1}
           onBroken={() => setBroken((b) => [...b, variant.src])}
@@ -70,14 +78,16 @@ interface SpriteFigureProps {
   /** Whether to print the variant's side under the figure. */
   showLabel?: boolean;
   /**
-   * Hold the landed frame instead of running the loop.
+   * Hold one frame instead of running the loop. Zero-based; null or omitted
+   * plays.
    *
-   * For a host where the figure illustrates a destination rather than
-   * demonstrating a technique — one still pose reads as a picture, where a
-   * lone looping figure on an otherwise static screen reads as a thing
-   * demanding to be watched.
+   * Two callers want this for different reasons. A host where the figure
+   * illustrates a destination rather than demonstrating a technique holds
+   * LANDED_FRAME, because one still pose reads as a picture where a lone
+   * looping figure reads as a thing demanding to be watched. And the lesson
+   * viewer holds whichever frame the reader is stepping through.
    */
-  still?: boolean;
+  frame?: number | null;
   /** Called when the sheet fails to load, so the host can drop this figure. */
   onBroken?: () => void;
   className?: string;
@@ -96,7 +106,7 @@ export function SpriteFigure({
   variant,
   name,
   showLabel = false,
-  still = false,
+  frame = null,
   onBroken,
   className,
 }: SpriteFigureProps) {
@@ -110,9 +120,7 @@ export function SpriteFigure({
     <figure className={`technique-sprite-figure${className ? ` ${className}` : ""}`}>
       <div
         className={
-          "technique-sprite" +
-          (southpaw ? " technique-sprite--mirrored" : "") +
-          (still ? " technique-sprite--still" : "")
+          "technique-sprite" + (southpaw ? " technique-sprite--mirrored" : "")
         }
         role="img"
         aria-label={
@@ -128,7 +136,17 @@ export function SpriteFigure({
           loading="lazy"
           decoding="async"
           onError={onBroken}
-          style={{ width: `${SPRITE_FRAMES * 100}%` }}
+          style={{
+            width: `${SPRITE_FRAMES * 100}%`,
+            // Inline so it beats both the running animation and the
+            // reduced-motion rule, which holds a frame of its own.
+            ...(frame === null
+              ? null
+              : {
+                  animation: "none",
+                  transform: `translateX(-${(frame * 100) / SPRITE_FRAMES}%)`,
+                }),
+          }}
         />
       </div>
       {showLabel && label && (

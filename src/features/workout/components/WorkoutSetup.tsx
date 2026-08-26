@@ -4,7 +4,10 @@ import { StartHereBanner } from "@/features/roadmap/components/StartHereBanner";
 // Deep imports rather than the learn barrel: the barrel pulls LearnSection,
 // which imports this feature back.
 import { SpriteFigure } from "@/features/learn/components/TechniqueSprite";
-import { spritesFor } from "@/features/learn/data/techniqueSprites";
+import {
+  LANDED_FRAME,
+  spritesFor,
+} from "@/features/learn/data/techniqueSprites";
 import { trackEvent } from "@/utils/analytics";
 import React from "react";
 import { ImageWithFallback, useUIContext } from "../../shared";
@@ -132,7 +135,7 @@ export default function WorkoutSetup() {
               <SpriteFigure
                 variant={learnFigure}
                 name="Learn"
-                still
+                frame={LANDED_FRAME}
                 className="setup-learn-figure"
               />
             )}

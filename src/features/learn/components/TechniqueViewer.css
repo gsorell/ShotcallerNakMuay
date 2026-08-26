@@ -1,0 +1,105 @@
+/* The figure on a lesson page, with the loop under the reader's control.
+   See TechniqueViewer.tsx for why pausing lands on the extension frame. */
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.viewer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------------ play -- */
+
+.viewer-play {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.viewer-play:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.viewer-play:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- frames -- */
+
+.viewer-frames {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/* Square rather than round, and evenly sized, so the six read as a filmstrip
+   rather than as a set of options. */
+.viewer-frame {
+  all: unset;
+  cursor: pointer;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.viewer-frame:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.viewer-frame:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+/* The frame the sheet was built around. Marked even while playing, because it
+   is the one worth stopping on. */
+.viewer-frame.is-peak {
+  border-color: rgba(249, 168, 212, 0.45);
+  color: rgba(249, 168, 212, 0.9);
+}
+
+.viewer-frame.is-on {
+  background: rgba(236, 72, 153, 0.22);
+  border-color: rgba(236, 72, 153, 0.6);
+  color: #fff;
+}
+
+.viewer-hint {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 26rem;
+}

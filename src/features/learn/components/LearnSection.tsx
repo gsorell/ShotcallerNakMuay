@@ -26,7 +26,7 @@ import {
 } from "../data/techniqueIndex";
 import type { LearnEntry } from "../data/techniqueLibrary";
 import { displayName } from "../data/techniqueSprites";
-import { TechniqueSprite } from "./TechniqueSprite";
+import { TechniqueViewer } from "./TechniqueViewer";
 import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
 
@@ -239,7 +239,7 @@ function LessonDetail({
       <div className="learn-detail-intro">
         <p className="learn-detail-summary">{entry.summary}</p>
         {/* Nothing renders for a lesson with no sheet. */}
-        <TechniqueSprite slug={entry.slug} name={name} />
+        <TechniqueViewer slug={entry.slug} name={name} />
       </div>
 
       {level && (

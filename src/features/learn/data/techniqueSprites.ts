@@ -116,6 +116,15 @@ const SINGLE_SET: ReadonlySet<string> = new Set(SINGLE);
  */
 export const SPRITE_FRAMES = 6;
 
+/**
+ * The frame the pipeline puts furthest extension on — the landed punch, the
+ * deepest point of a roll. Zero-based, so this is the fourth of six.
+ *
+ * Anything that needs to hold ONE frame wants this one: the reduced-motion
+ * rule, the still figure on the Learn card, and the frame a viewer pauses to.
+ */
+export const LANDED_FRAME = 3;
+
 /** Every sheet for a lesson. Empty when that lesson has not been shot. */
 export function spritesFor(slug: string): SpriteVariant[] {
   if (PAIRED[slug]) return PAIRED[slug];
