@@ -75,7 +75,7 @@ describe("technique sprites", () => {
     }
   });
 
-  it("keeps the figure above the copy on narrow screens", () => {
+  it("keeps the figure above the copy", () => {
     // The two surfaces reach the same place by different means, so this checks
     // each one's own mechanism. What must not happen either way is the figure
     // landing under the text: reading past a wall of copy to reach it defeats
@@ -86,23 +86,22 @@ describe("technique sprites", () => {
     );
     expect(component).toContain(WRAPPER);
 
-    // Learn stacks a flex column, so ordering is what lifts the figure. It has
-    // to name the WRAPPER: when the component gained a second variant the
-    // wrapper was renamed to the plural and this rule kept naming the inner
-    // cell, which silently put the figure below the text on every phone.
-    const learn = readFileSync(
-      "src/features/learn/components/LearnSection.css",
+    // Learn puts the figure first in the DOM and stacks a column at every
+    // width, so nothing has to reorder it. This used to lean on `order: -1`
+    // against a row layout, which broke silently once: the component gained a
+    // second variant, the wrapper was renamed to the plural, and the rule kept
+    // naming the inner cell — putting the figure under the text on every
+    // phone. Document order cannot come apart that way.
+    const detail = readFileSync(
+      "src/features/learn/components/LearnSection.tsx",
       "utf8"
     );
-    const orderRules = learn.match(
-      /\.technique-sprites?[^{]*\{[^}]*order:\s*-1[^}]*\}/g
-    );
-    expect(orderRules, "LearnSection.css has no order rule for the sprite")
-      .toBeTruthy();
-    for (const rule of orderRules ?? []) {
-      expect(rule, "LearnSection.css orders the inner cell, not the wrapper")
-        .toContain("." + WRAPPER);
-    }
+    const intro = detail.slice(detail.indexOf('className="learn-detail-intro"'));
+    const figure = intro.indexOf("<TechniqueViewer");
+    const copy = intro.indexOf("learn-detail-summary");
+    expect(figure, "the detail page renders no figure").toBeGreaterThan(-1);
+    expect(copy, "the detail page renders no summary").toBeGreaterThan(-1);
+    expect(figure, "the summary comes before the figure").toBeLessThan(copy);
 
     // The roadmap card is a grid instead, because the figure also has to show
     // while the card is shut. It holds row one in both states and the copy

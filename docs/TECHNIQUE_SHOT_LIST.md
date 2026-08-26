@@ -17,7 +17,7 @@ Everything below is keyed to the lesson `slug` in
 `src/features/learn/data/techniqueLibrary.ts`. One visual per lesson — **not** per
 callout, because the cards already group callouts by lesson.
 
-- 63 lessons in the library
+- 65 lessons in the library
 - **25** of them are taught by the Start Here roadmap → Tier 1, **shot**
 - **1** more (`double-jab`) is derived from a Tier 1 sheet rather than filmed — see
   *Derived sheets* below
@@ -27,6 +27,22 @@ callout, because the cards already group callouts by lesson.
 lesson with no sheet is not on the shelf at all — its written content still sits in
 `techniqueLibrary.ts` and appears the moment a sheet lands. The list below is therefore
 also the list of lessons currently unreachable from Learn.
+
+## Where the pieces live
+
+| | |
+|---|---|
+| This document | the shoot spec, the keying settings, and what is left to film |
+| `scripts/technique-sprites.mjs` | the build. `--init`, `--only`, `--frames`, `--export-masks`/`--masks` for retouching, `--derive` for sheets cut from other sheets. Its header is the operator's manual |
+| `src/features/learn/data/techniqueSprites.ts` | which slugs have sheets, and which carry a mirrored pair |
+| [Technique Shot List](https://claude.ai/code/artifact/2ee4d1fa-7e68-4ee2-bdfe-52027074cdd1) | this list as a field checklist, to read on a phone at the gym |
+| [Court Silhouettes](https://claude.ai/code/artifact/6a56f738-a774-43ac-8a23-6a808eb76ec1) | every finished sheet, animated, with size and speed controls — the review surface for judging a cut before it ships |
+
+**Running the whole thing again from footage is destructive.** `node
+scripts/technique-sprites.mjs` with no arguments rebuilds every sheet from the
+raw clips and does *not* apply the retouched masks, so hand-painted work is
+silently replaced by the automatic key. Rebuild with `--masks retouch`, or
+rebuild one slug with `--only`.
 
 ## Why we film rather than generate
 

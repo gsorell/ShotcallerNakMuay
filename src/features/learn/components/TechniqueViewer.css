@@ -1,0 +1,97 @@
+/* The figure on a lesson page, with the loop under the reader's control.
+   See TechniqueViewer.tsx for why pausing lands on the extension frame. */
+
+/* The figure is the point of this page, so it gets room on both sides of it
+   rather than being packed between the title and the copy. The gap below is
+   larger than the one above because the controls belong to the figure — they
+   should read as part of it, and the copy as the next thing down. */
+.viewer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 0 0.35rem;
+}
+
+/* Space around the silhouette itself, so a tall pose does not sit with its
+   head against the title above it. */
+.viewer .technique-sprites {
+  margin: 0.35rem 0 0.15rem;
+}
+
+.viewer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------------ play -- */
+
+.viewer-play {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.viewer-play:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.viewer-play:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ step -- */
+
+/* Square against the play control's pill, so the three read as one transport
+   rather than three buttons. */
+.viewer-step {
+  all: unset;
+  cursor: pointer;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.7rem;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.viewer-step:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.45);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.viewer-step:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+.viewer-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 26rem;
+}

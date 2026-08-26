@@ -26,7 +26,7 @@ import {
 } from "../data/techniqueIndex";
 import type { LearnEntry } from "../data/techniqueLibrary";
 import { displayName } from "../data/techniqueSprites";
-import { TechniqueSprite } from "./TechniqueSprite";
+import { TechniqueViewer } from "./TechniqueViewer";
 import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
 
@@ -228,31 +228,28 @@ function LessonDetail({
 
   return (
     <article className="learn-detail">
-      <h1 className="learn-title">{name}</h1>
-      <p className="learn-detail-meta">
+      <div className="learn-detail-head">
+        <h1 className="learn-title learn-title--inline">{name}</h1>
+        {/* The number is the name in the other language the app speaks, so it
+            belongs beside the name rather than under it. */}
         {entry.numbering && (
           <span className="learn-detail-badge">{entry.numbering}</span>
         )}
-        {entry.thai && <span className="learn-detail-thai">{entry.thai}</span>}
-      </p>
-
-      <div className="learn-detail-intro">
-        <p className="learn-detail-summary">{entry.summary}</p>
-        {/* Nothing renders for a lesson with no sheet. */}
-        <TechniqueSprite slug={entry.slug} name={name} />
       </div>
-
-      {level && (
-        <button className="learn-path-link" onClick={onOpenPath}>
-          <span className="learn-path-link-label">
-            Taught at {level.bonus ? "the bonus level" : `level ${level.id}`} of
-            Start Here
-          </span>
-          <span className="learn-path-link-title">
-            {level.title.replace(/^Bonus: /, "")} ›
-          </span>
-        </button>
+      {entry.thai && (
+        <p className="learn-detail-meta">
+          <span className="learn-detail-thai">{entry.thai}</span>
+        </p>
       )}
+
+      {/* Figure first. It is the fastest way to know whether this is the
+          technique you came looking for, and the copy underneath is what you
+          read once you know it is. Nothing renders for a lesson with no
+          sheet. */}
+      <div className="learn-detail-intro">
+        <TechniqueViewer slug={entry.slug} name={name} />
+        <p className="learn-detail-summary">{entry.summary}</p>
+      </div>
 
       <section className="learn-panel">
         <h2 className="learn-panel-title">Key points</h2>
@@ -271,6 +268,21 @@ function LessonDetail({
           ))}
         </ul>
       </section>
+
+      {/* Sits with "Drill it" rather than under the summary: both answer the
+          same question — now that you have read it, where do you go? Above the
+          key points it interrupted the lesson to advertise a different one. */}
+      {level && (
+        <button className="learn-path-link" onClick={onOpenPath}>
+          <span className="learn-path-link-label">
+            Taught at {level.bonus ? "the bonus level" : `level ${level.id}`} of
+            Start Here
+          </span>
+          <span className="learn-path-link-title">
+            {level.title.replace(/^Bonus: /, "")} ›
+          </span>
+        </button>
+      )}
 
       {styles.length > 0 && (
         <section className="learn-panel learn-panel--drill">

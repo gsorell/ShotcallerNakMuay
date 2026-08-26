@@ -9,7 +9,7 @@
 // A lesson can carry MORE THAN ONE sheet. Several lessons cover a mirrored
 // pair — "Left Teep" and "Right Teep" are one card — and where the two sides
 // look meaningfully different, showing both teaches more than picking one.
-// Where they are near-mirrors (slip, roll, pivot) a single sheet still says it.
+// Where they are near-mirrors (pivot) a single sheet still says it.
 // ===========================================================================
 
 import { mirrorTechnique } from "@/utils/textUtils";
@@ -40,12 +40,16 @@ const SINGLE = [
   "long-guard",
   "duck",
   "lean-back",
-  "roll",
   "pivot",
-  "body-punching",
   "lead-uppercut",
   "rear-uppercut",
   "overhand",
+  // The body shots. The hooks share one sheet and one lesson because the
+  // footage is a 4-3 combination rather than an isolated rep — the card is
+  // named for what it actually shows.
+  "jab-to-body",
+  "cross-to-body",
+  "body-hooks",
 ] as const;
 
 /**
@@ -57,11 +61,11 @@ const SINGLE = [
  * separately, as "Left Check" and "Right Check". One sheet could only ever
  * teach half of it.
  *
- * The slip is here for a weaker reason. Its two sides are near mirrors, so one
- * sheet was thought to be enough; in the event they were thrown differently
- * enough that the two sheets share only half their pixels, and showing both
- * says more than picking one. The roll and pivot stay single, because for
- * those a single sheet really does say everything.
+ * The slip and the roll are here for a weaker reason. Their two sides are near
+ * mirrors, so one sheet was thought to be enough for each; in the event they
+ * were thrown differently enough that the two sheets share only half their
+ * pixels, and showing both says more than picking one. The pivot stays single,
+ * because for that one a single sheet really does say everything.
  */
 const PAIRED: Record<string, SpriteVariant[]> = {
   teep: [
@@ -88,6 +92,10 @@ const PAIRED: Record<string, SpriteVariant[]> = {
     { src: "/assets/technique/slip-left.webp", label: "Left" },
     { src: "/assets/technique/slip-right.webp", label: "Right" },
   ],
+  roll: [
+    { src: "/assets/technique/roll-left.webp", label: "Left" },
+    { src: "/assets/technique/roll-right.webp", label: "Right" },
+  ],
 };
 
 const SINGLE_SET: ReadonlySet<string> = new Set(SINGLE);
@@ -97,6 +105,15 @@ const SINGLE_SET: ReadonlySet<string> = new Set(SINGLE);
  * has to match what the pipeline produced — `frames` in the shot manifest.
  */
 export const SPRITE_FRAMES = 6;
+
+/**
+ * The frame the pipeline puts furthest extension on — the landed punch, the
+ * deepest point of a roll. Zero-based, so this is the fourth of six.
+ *
+ * Anything that needs to hold ONE frame wants this one: the reduced-motion
+ * rule, the still figure on the Learn card, and the frame a viewer pauses to.
+ */
+export const LANDED_FRAME = 3;
 
 /** Every sheet for a lesson. Empty when that lesson has not been shot. */
 export function spritesFor(slug: string): SpriteVariant[] {

@@ -18,6 +18,13 @@
   --sprite-size: 116px;
 }
 
+/* Three, for the one lesson that covers four callouts. Small, but a body shot
+   is a compact movement anyway — the figure stays low and the arms stay in, so
+   it loses less at this size than a kick would. */
+.technique-sprites--3 {
+  --sprite-size: 88px;
+}
+
 .technique-sprite-figure {
   margin: 0;
   display: flex;
@@ -70,22 +77,16 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
-/* Hold the landed frame — the fourth of six, which is where the pipeline puts
-   the moment of furthest extension. -50% of a sheet six cells wide is three
+/* Reduced motion holds the landed frame — the fourth of six, where the
+   pipeline puts furthest extension. -50% of a sheet six cells wide is three
    cells across, which lands on it.
 
-   Two callers want exactly this and want it for different reasons: a host that
-   asks for `still`, because there the figure is a picture of a destination
-   rather than a technique being demonstrated; and anyone who has asked the
-   system not to animate. Same frame either way, so the offset is written once.
+   A held frame from the viewer is set inline instead, because it varies; an
+   inline transform beats this rule, which is what lets stepping work even for
+   a reader who has asked the system not to animate.
 
-   Note this is on the IMAGE. Mirroring is on the window, so a still figure
+   Note this is on the IMAGE. Mirroring is on the window, so a held figure
    still flips for a southpaw. */
-.technique-sprite--still img {
-  animation: none;
-  transform: translateX(-50%);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .technique-sprite {
     transition: none;
@@ -106,5 +107,9 @@
 
   .technique-sprites--1 {
     --sprite-size: 132px;
+  }
+
+  .technique-sprites--3 {
+    --sprite-size: 74px;
   }
 }

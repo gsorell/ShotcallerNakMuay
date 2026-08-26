@@ -129,11 +129,20 @@ describe("southpaw flips the label with the figure", () => {
   });
 
   it("covers every label the sheets actually use", () => {
-    // If a new pair ships with a label this helper has never seen, it would
-    // pass through unflipped and silently contradict its own figure.
+    // If a new set ships with a label this helper has never seen, it would pass
+    // through unflipped and silently contradict its own figure.
+    //
+    // A bare number is fine unflipped, and deliberately so: the numbers are
+    // stance-relative, so 3 is the lead hook whichever way you stand.
     const known = new Set(["Lead", "Rear", "Left", "Right"]);
     for (const tile of ALL_TILES) {
       if (!tile.side) continue;
+      if (/^\d+$/.test(tile.side)) {
+        expect(sideLabel(tile.side, true), `number ${tile.side} must not flip`).toBe(
+          tile.side
+        );
+        continue;
+      }
       expect(known.has(tile.side), `unhandled side label "${tile.side}"`).toBe(true);
     }
   });
@@ -161,7 +170,10 @@ describe("southpaw flips the name with the figure", () => {
     }
   });
 
-  it("touches only the four names, and no others", () => {
+  it("touches only the names that carry a side, and no others", () => {
+    // The hooks and uppercuts upstairs, and nothing else. Note what is NOT
+    // here: Body Hooks covers both sides in one lesson, so it names no side
+    // and has nothing to flip — which is the point of naming it that way.
     const moved = TECHNIQUE_LIBRARY.filter(
       (e) => displayName(e.name, true) !== e.name
     ).map((e) => e.slug);
