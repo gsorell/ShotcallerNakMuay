@@ -203,16 +203,6 @@
    "file": "retouch/body-shots.mp4"
   },
   {
-   "slug": "body-punching-4",
-   "anchor": 1.72,
-   "crop": "555:809:346:147",
-   "duration": 0.6,
-   "cutoff": 0.63,
-   "clean": 4,
-   "hold": 0,
-   "file": "retouch/body-shots.mp4"
-  },
-  {
    "slug": "body-punching-3",
    "anchor": 2.06,
    "crop": "555:809:346:147",
