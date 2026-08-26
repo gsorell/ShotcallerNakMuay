@@ -236,10 +236,13 @@ function LessonDetail({
         {entry.thai && <span className="learn-detail-thai">{entry.thai}</span>}
       </p>
 
+      {/* Figure first. It is the fastest way to know whether this is the
+          technique you came looking for, and the copy underneath is what you
+          read once you know it is. Nothing renders for a lesson with no
+          sheet. */}
       <div className="learn-detail-intro">
-        <p className="learn-detail-summary">{entry.summary}</p>
-        {/* Nothing renders for a lesson with no sheet. */}
         <TechniqueViewer slug={entry.slug} name={name} />
+        <p className="learn-detail-summary">{entry.summary}</p>
       </div>
 
       {level && (

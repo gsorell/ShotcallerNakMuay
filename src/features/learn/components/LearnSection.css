@@ -274,30 +274,20 @@
   font-style: italic;
 }
 
+/* The figure leads and the copy follows, at every width. It used to sit beside
+   the text on a wide screen, which put it second in reading order on the one
+   page whose whole job is showing what a technique looks like. */
 .learn-detail-intro {
   display: flex;
-  align-items: flex-start;
-  gap: 1.1rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
   margin-bottom: 0.9rem;
 }
 
-/* min-width:0 keeps the summary wrapping instead of pushing the sprite out. */
 .learn-detail-intro .learn-detail-summary {
-  flex: 1 1 auto;
-  min-width: 0;
   margin-bottom: 0;
-}
-
-@media (max-width: 600px) {
-  .learn-detail-intro {
-    flex-direction: column;
-    gap: 0.85rem;
-  }
-
-  /* Wrapper, not the inner cell — see the note in RoadmapSection.css. */
-  .learn-detail-intro .technique-sprites {
-    order: -1;
-  }
+  align-self: stretch;
 }
 
 .learn-detail-summary {

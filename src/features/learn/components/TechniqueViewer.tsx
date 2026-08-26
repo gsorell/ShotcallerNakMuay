@@ -65,6 +65,15 @@ export function TechniqueViewer({ slug, name }: TechniqueViewerProps) {
       <div className="viewer-controls">
         <button
           type="button"
+          className="viewer-step"
+          aria-label="Previous frame"
+          onClick={() => step(-1)}
+        >
+          <span aria-hidden="true">◀</span>
+        </button>
+
+        <button
+          type="button"
           className="viewer-play"
           aria-pressed={!playing}
           aria-label={playing ? `Hold ${name} still` : `Play ${name}`}
@@ -74,26 +83,14 @@ export function TechniqueViewer({ slug, name }: TechniqueViewerProps) {
           {playing ? "Pause" : "Play"}
         </button>
 
-        <div className="viewer-frames" role="group" aria-label="Frame">
-          {Array.from({ length: SPRITE_FRAMES }, (_, i) => (
-            <button
-              key={i}
-              type="button"
-              className={`viewer-frame${frame === i ? " is-on" : ""}${
-                i === LANDED_FRAME ? " is-peak" : ""
-              }`}
-              aria-pressed={frame === i}
-              aria-label={
-                i === LANDED_FRAME
-                  ? `Frame ${i + 1}, furthest extension`
-                  : `Frame ${i + 1}`
-              }
-              onClick={() => setFrame(i)}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
+        <button
+          type="button"
+          className="viewer-step"
+          aria-label="Next frame"
+          onClick={() => step(1)}
+        >
+          <span aria-hidden="true">▶</span>
+        </button>
       </div>
 
       <p className="viewer-hint">

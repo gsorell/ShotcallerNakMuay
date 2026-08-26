@@ -45,54 +45,35 @@
   outline-offset: 2px;
 }
 
-/* ---------------------------------------------------------------- frames -- */
+/* ------------------------------------------------------------------ step -- */
 
-.viewer-frames {
-  display: flex;
-  gap: 0.25rem;
-}
-
-/* Square rather than round, and evenly sized, so the six read as a filmstrip
-   rather than as a set of options. */
-.viewer-frame {
+/* Square against the play control's pill, so the three read as one transport
+   rather than three buttons. */
+.viewer-step {
   all: unset;
   cursor: pointer;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.9rem;
+  height: 1.9rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.35rem;
+  border-radius: 0.4rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.25);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.72rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.7rem;
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
-.viewer-frame:hover {
+.viewer-step:hover {
   color: #fff;
   border-color: rgba(236, 72, 153, 0.45);
+  background: rgba(0, 0, 0, 0.35);
 }
 
-.viewer-frame:focus-visible {
+.viewer-step:focus-visible {
   outline: 2px solid rgba(236, 72, 153, 0.8);
   outline-offset: 2px;
-}
-
-/* The frame the sheet was built around. Marked even while playing, because it
-   is the one worth stopping on. */
-.viewer-frame.is-peak {
-  border-color: rgba(249, 168, 212, 0.45);
-  color: rgba(249, 168, 212, 0.9);
-}
-
-.viewer-frame.is-on {
-  background: rgba(236, 72, 153, 0.22);
-  border-color: rgba(236, 72, 153, 0.6);
-  color: #fff;
 }
 
 .viewer-hint {
