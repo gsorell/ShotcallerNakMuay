@@ -250,12 +250,26 @@
 
 /* --- lesson detail ------------------------------------------------------ */
 
+/* Name and number on one line, pushed apart. The number is the same technique
+   in the app's other language, so it reads as a second label on the same thing
+   rather than as a fact about it. */
+.learn-detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.learn-detail-head .learn-detail-badge {
+  flex: none;
+}
+
 .learn-detail-meta {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin: 0 0 0.75rem;
-  min-height: 1rem;
 }
 
 .learn-detail-badge {
