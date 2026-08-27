@@ -95,17 +95,44 @@
 }
 
 /* Standing on its own, once the card above it has been dismissed or outgrown.
-   The link stays exactly where it was — top of the setup screen, right-aligned
-   over the style grid — but loses the padding that only made sense as the foot
-   of a panel, so it reads as an action belonging to the grid below rather than
-   the leftover of something missing. */
+   It keeps its place at the top of the setup screen, but it cannot keep its
+   looks: as the tail of a panel a quiet pink line was right, while up against
+   the header it lands directly under "Select one or more styles to get
+   started." in nearly the same pink at nearly the same size, and reads as a
+   second line of that sentence. The card used to stand between them.
+
+   So alone it becomes a chip — bordered, hugging its text, in the translucent
+   panel language of the style tiles below. Shape is what separates it from the
+   copy; colour could not, since the accent pink is the thing they share. */
 .starthere-linkonly {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.6rem;
+  text-align: right;
 }
 
 .starthere-linkonly .starthere-browse {
-  padding: 0 0.2rem 0.4rem;
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(249, 168, 212, 0.95);
+  font-size: 0.78rem;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.starthere-linkonly .starthere-browse:hover {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* Outside the pill rather than inset, which is what the panel-foot version
+   wanted. */
+.starthere-linkonly .starthere-browse:focus-visible {
+  border-radius: 999px;
+  outline-offset: 2px;
 }
 
 .starthere-text {
