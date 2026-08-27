@@ -101,12 +101,10 @@
    nearly the same pink at nearly the same size, and reads as a second line of
    that sentence. The card used to stand between them.
 
-   Answered with typography rather than a box. A third container on a screen
-   that already has style tiles and the card would be the loudest way to say
-   the quietest thing, so instead: white against the caption's pink, a pink
-   underline to keep it tied to the path material, and the right edge to
-   itself. Underlined text is the one form nothing else here wears, which is
-   exactly what a link should be. */
+   White is the whole of the fix. The caption is pink and centred; this is
+   white, bold and held to the right edge with the arrow after it, and that is
+   enough to read as an action rather than more of the copy — without adding a
+   third container to a screen that already has style tiles and the card. */
 .starthere-linkonly {
   margin-bottom: 0.9rem;
   text-align: right;
@@ -120,16 +118,14 @@
   padding: 0.3rem 0.2rem;
   font-size: 0.8rem;
   color: #fff;
-  text-decoration: underline;
-  text-decoration-color: rgba(236, 72, 153, 0.9);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.3em;
-  transition: text-decoration-color 0.2s, color 0.2s;
+  transition: opacity 0.2s;
 }
 
+/* Matching `.setup-manage-link` at the foot of this screen — the quiet
+   utilities here dim rather than change colour. */
 .starthere-linkonly .starthere-browse:hover {
   color: #fff;
-  text-decoration-color: #fff;
+  opacity: 0.8;
 }
 
 .starthere-linkonly .starthere-browse:focus-visible {
