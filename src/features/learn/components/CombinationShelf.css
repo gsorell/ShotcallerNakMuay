@@ -1,0 +1,328 @@
+/* "Combinations" — the chip row on the shelf, and the player it opens into.
+   See CombinationShelf.tsx for why they are chips rather than figures, and why
+   the row answers to the filter above it.
+
+   The player reuses the viewer's overlay, port and caption classes rather than
+   restating them: it is the same screen showing a different exhibit, and two
+   sets of rules for one scrim is how the two drift apart. */
+
+/* ----------------------------------------------------------------- shelf -- */
+
+/* Set apart from the filter row above it, so a second row of chips does not
+   read as a continuation of the first. The heading is what does most of that
+   work; the space is what stops the two rows touching. */
+.shelf-combos {
+  margin: 1.1rem 0 1.2rem;
+  /* Room above the heading when the collapse scrolls it back to the top, so it
+     lands as a section rather than jammed against the edge. */
+  scroll-margin-top: 0.75rem;
+}
+
+.shelf-combos-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.15rem;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.shelf-combos-blurb {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Two rows, then clipped.
+   The height is clamped rather than the list sliced, because "two rows" is a
+   fact about how these particular strings wrap at this particular width — see
+   useClip, which measures where the second row actually ends and sets the real
+   height inline. Every chip is in the DOM either way; the ones past the clip
+   leave the tab order until the row is opened.
+
+   The max-height here is only the estimate that holds until that measurement
+   lands, so that the first paint is never the whole list. It is deliberately a
+   touch SHORT of two rows: too short shows two rows and a sliver of nothing,
+   too tall shows the tops of a third row and then snaps.
+
+   Positioned, so the chips report `offsetTop` from this box — the one the
+   clamp is applied to. */
+.shelf-combo-chips {
+  --chip-gap: 0.35rem;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chip-gap);
+  max-height: calc(3.3rem + var(--chip-gap));
+  overflow: hidden;
+}
+
+/* No height at all, rather than a large one.
+   This first shipped with a generous max-height so the open and closed states
+   could be animated between, and a generous height is still a height: the full
+   list runs past it on a phone and the last row was being cut in half. There
+   is no number that is safely bigger than "every combination, wrapped at an
+   unknown width", so the open state does not name one, and the row opens
+   without a transition. */
+.shelf-combo-chips.is-open {
+  max-height: none;
+  overflow: visible;
+}
+
+/* The shelf's own pill, to the value.
+   These were squarer at first, on the theory that a row of chips that opens a
+   screen should not look like the row above it that narrows the page. On the
+   screen that reads as two kinds of chip a few pixels apart for no reason the
+   eye can name, and one shelf should be built out of one thing. Kept in step
+   with `.shelf-filter` in TechniqueGallery.css. */
+.shelf-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  /* A combination is one phrase. Wrapped over two lines it stops being a chip
+     and starts being a paragraph. */
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.shelf-combo:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.shelf-combo:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+/* Where it is taught, given the treatment the filter pills give their counts:
+   same size, same weight of attention. It orders the row roughly by difficulty
+   for anyone who wants that and disappears for anyone who does not. */
+.shelf-combo-level {
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* More / Less.
+
+   Deliberately the control the style grid on the home screen already uses —
+   right-aligned, borderless, pink, with a caret that turns over. It is the
+   app's established "there is more of this" gesture, and a second look for the
+   same idea two screens apart is how an app stops feeling like one thing.
+
+   (Those styles are inline in EmphasisSelector, so this mirrors the values
+   rather than sharing them. Worth lifting into one place if a third row of
+   this kind ever appears.) */
+.shelf-combos-more-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+  padding-right: 0.5rem;
+}
+
+.shelf-combos-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 1rem;
+  background: transparent;
+  box-shadow: none;
+  color: #f9a8d4;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shelf-combos-more:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}
+
+.shelf-combos-caret {
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 1.1em;
+  transition: transform 0.2s;
+}
+
+.shelf-combos-caret.is-open {
+  transform: rotate(180deg);
+}
+
+/* ----------------------------------------------------------------- board -- */
+
+/* One row, always. A combination read down a column or wrapped onto a second
+   line is no longer a sequence — the left-to-right IS the information.
+   So the cells shrink with the viewport instead, and the overflow rule is
+   only there to keep a six-beat combination from pushing the page sideways on
+   the narrowest phones. */
+.combo-board {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.15rem;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  --sprite-size: min(3.4rem, 13vw);
+}
+
+.combo-board::-webkit-scrollbar {
+  display: none;
+}
+
+.combo-beat-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: none;
+}
+
+.combo-arrow {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.combo-beat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The window each beat sits in — the port's ink at thumbnail size, so a row
+   of beats reads as small windows onto the same stage rather than as tiles of
+   their own. */
+.combo-beat-window {
+  display: flex;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #04060f;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.combo-beat-token {
+  max-width: var(--sprite-size);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.18s ease;
+}
+
+/* ---------------------------------------------------------------- player -- */
+
+/* The port also carries the name of the technique currently on screen, so it
+   is a column rather than the single centred figure the lone viewer shows. */
+.combo-port {
+  flex-direction: column;
+  gap: 0.5rem;
+  --sprite-size: min(62vw, 30vh, 17rem);
+}
+
+.combo-now {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f9a8d4;
+}
+
+/* The board, as the strip. Held back so the port stays the thing being
+   watched, exactly as the frame thumbnails are, and lit on the beat playing. */
+.combo-strip {
+  display: block;
+}
+
+.combo-strip .combo-beat-window {
+  opacity: 0.5;
+}
+
+.combo-strip .combo-beat {
+  cursor: pointer;
+}
+
+.combo-strip .combo-beat:hover .combo-beat-window {
+  opacity: 0.85;
+  border-color: rgba(236, 72, 153, 0.4);
+}
+
+.combo-strip .combo-beat--on .combo-beat-window {
+  opacity: 1;
+  border-color: rgba(236, 72, 153, 0.85);
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.35);
+}
+
+.combo-strip .combo-beat--on .combo-beat-token {
+  color: #fff;
+}
+
+.combo-strip .combo-beat:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Two rows of controls rather than the lone viewer's one: there are four
+   things to say here, and a single row of them on a phone wraps into a shape
+   that reads as a paragraph of buttons. */
+.combo-controls {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.combo-speed {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.combo-btn {
+  all: unset;
+  cursor: pointer;
+  padding: 0.4rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(4, 6, 15, 0.75);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.combo-btn:hover {
+  color: #fff;
+  border-color: rgba(236, 72, 153, 0.45);
+  background: rgba(4, 6, 15, 0.95);
+}
+
+.combo-btn--on {
+  color: #f9a8d4;
+  border-color: rgba(236, 72, 153, 0.7);
+  background: rgba(236, 72, 153, 0.16);
+}
+
+.combo-btn:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
+}

@@ -94,6 +94,23 @@ export function LearnSection({ onBack }: LearnSectionProps) {
     [isPro, openPaywall]
   );
 
+  /**
+   * Opening a combination, on exactly the terms a lesson opens on: the shelf
+   * is browsable free so the depth of what Pro buys is visible, and playing
+   * something is where Pro starts.
+   */
+  const openCombo = useCallback(
+    (combo: string) => {
+      if (!isPro) {
+        openPaywall("learn_combo");
+        return false;
+      }
+      trackEvent("learn_combo_play", { combo });
+      return true;
+    },
+    [isPro, openPaywall]
+  );
+
   // Navigation is derived from the current view rather than computed inside a
   // setState updater — updaters must stay pure (StrictMode runs them twice,
   // which would fire onBack() twice and skip a level).
@@ -155,6 +172,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
         <CategoryList
           isPro={isPro}
           onOpenTile={openTile}
+          onOpenCombo={openCombo}
           onOpenPath={() => {
             rememberScroll(SHELF_SCROLL);
             setView({ mode: "path" });
@@ -184,11 +202,13 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 function CategoryList({
   isPro,
   onOpenTile,
+  onOpenCombo,
   onOpenPath,
   onUnlock,
 }: {
   isPro: boolean;
   onOpenTile: (tile: GalleryTile) => void;
+  onOpenCombo: (combo: string) => boolean;
   onOpenPath: () => void;
   onUnlock: () => void;
 }) {
@@ -224,7 +244,7 @@ function CategoryList({
         </button>
       )}
 
-      <TechniqueGallery onOpenTile={onOpenTile} />
+      <TechniqueGallery onOpenTile={onOpenTile} onOpenCombo={onOpenCombo} />
     </>
   );
 }

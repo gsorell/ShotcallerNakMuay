@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useId, useRef, useState } from "react";
 
 import { LANDED_FRAME, SPRITE_FRAMES, spritesFor } from "../data/techniqueSprites";
 import { SpriteFigure, TechniqueSprite } from "./TechniqueSprite";
+import { ViewerShell, activate, keepOpen } from "./ViewerShell";
 import "./TechniqueViewer.css";
 
 interface TechniqueViewerProps {
@@ -38,26 +38,6 @@ function openingLine(summary: string): string {
   return (summary.match(/^.*?[.!?](?=\s|$)/) ?? [summary])[0];
 }
 
-/** A swipe in any direction past this many pixels closes the viewer. */
-const SWIPE_CLOSE_PX = 60;
-
-/**
- * Enter and Space on something carrying `role="button"`.
- *
- * Both tap targets here wrap the sprite, and the sprite renders a `<figure>` —
- * flow content, which a real `<button>` may not contain. So they are divs with
- * the button role, and a div does not fire click on a keypress the way a
- * button does. This puts that back.
- */
-function activate(fn: () => void) {
-  return (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      fn();
-    }
-  };
-}
-
 /**
  * The figure on a lesson page: framed where it sits, and openable.
  *
@@ -81,9 +61,13 @@ function activate(fn: () => void) {
  * on the frame the sheet was built around is a better answer than an arbitrary
  * one. Playing restarts the loop from frame one for the same reason.
  *
- * Nothing inside the viewing mode closes it; everything around it does. Tap
- * off the figure, swipe, or press Escape. A dismiss button would be one more
- * thing on a screen whose whole job is to hold one large picture.
+ * (The combination player next door pauses wherever it is, because it drives
+ * its own frames in JS and therefore knows where it stopped. The two modes
+ * differ because what they can honestly offer differs.)
+ *
+ * Nothing inside the viewing mode closes it; everything around it does, and
+ * there is an ✕ for anyone who would rather not find that out by trying — see
+ * `ViewerShell`, which owns both and the reasons for them.
  */
 export function TechniqueViewer({
   slug,
@@ -95,11 +79,6 @@ export function TechniqueViewer({
   const [frame, setFrame] = useState<number | null>(null);
   const titleId = useId();
   const openerRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  // Distinguishes "closed because the reader closed it" from "closed because
-  // the page just rendered". Without it the close effect fires on mount and
-  // pulls focus to the figure on every lesson you open.
-  const wasOpen = useRef(false);
 
   const step = useCallback((delta: number) => {
     setFrame((f) => {
@@ -123,93 +102,6 @@ export function TechniqueViewer({
     []
   );
 
-  useEffect(() => {
-    if (open) overlayRef.current?.focus();
-    else if (wasOpen.current) openerRef.current?.focus();
-    wasOpen.current = open;
-  }, [open]);
-
-  // On the document, in the capture phase, and stopped dead there.
-  //
-  // The app's back gesture listens for Escape on the document too, so the
-  // obvious version of this — a React onKeyDown on the overlay — closed the
-  // viewer and then walked the reader back out of the lesson on the same
-  // press. Capture runs before that listener; stopping the event means the
-  // viewer gets the key and the page never hears it.
-  //
-  // The arrows ride along rather than living on the overlay, so stepping works
-  // wherever focus happens to be inside it. They only preventDefault, since
-  // nothing else wants them while this is open.
-  useEffect(() => {
-    if (!open) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        close();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        step(1);
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        step(-1);
-      }
-      // Enter and Space are left alone: whatever is focused handles its own,
-      // and handling them here as well would fire twice.
-    };
-
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [open, close, step]);
-
-  // Swipe to dismiss, in any direction — captured and swallowed for the same
-  // reason the keys are. The app's back gesture watches document touches, so a
-  // swipe that began near the left edge would close the viewer and navigate
-  // out of the lesson together.
-  //
-  // Direction is deliberately not checked. The back gesture is a left-to-right
-  // swipe from the edge, but this is one picture filling the screen, and being
-  // made to flick it a particular way to put it down is a rule with nothing
-  // behind it.
-  useEffect(() => {
-    if (!open) return;
-
-    let startX: number | null = null;
-    let startY: number | null = null;
-
-    const onStart = (e: TouchEvent) => {
-      e.stopPropagation();
-      const touch = e.touches[0];
-      if (!touch) return;
-      startX = touch.clientX;
-      startY = touch.clientY;
-    };
-
-    const onMove = (e: TouchEvent) => e.stopPropagation();
-
-    const onEnd = (e: TouchEvent) => {
-      e.stopPropagation();
-      const touch = e.changedTouches[0];
-      if (!touch || startX === null || startY === null) return;
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-      startX = null;
-      startY = null;
-      if (Math.hypot(dx, dy) > SWIPE_CLOSE_PX) close();
-    };
-
-    const opts = { capture: true, passive: true } as const;
-    document.addEventListener("touchstart", onStart, opts);
-    document.addEventListener("touchmove", onMove, opts);
-    document.addEventListener("touchend", onEnd, opts);
-    return () => {
-      document.removeEventListener("touchstart", onStart, true);
-      document.removeEventListener("touchmove", onMove, true);
-      document.removeEventListener("touchend", onEnd, true);
-    };
-  }, [open, close]);
-
   const sheets = spritesFor(slug);
   if (sheets.length === 0) return null;
 
@@ -221,24 +113,35 @@ export function TechniqueViewer({
   // the same rule TechniqueSprite follows, so the strip simply does not draw.
   const sheet = variantIndex === null ? sheets[0] : sheets[variantIndex];
 
-  // Only the figure and the transport keep their clicks. Everything else in
-  // here — the margins, the hint, the whole backdrop — closes, which is what
-  // makes a dismiss button unnecessary.
-  const keepOpen = (e: React.MouseEvent) => e.stopPropagation();
+  return (
+    <div className="viewer">
+      <div
+        ref={openerRef}
+        className="viewer-frame"
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-label={`Open ${name} larger`}
+        onClick={openViewer}
+        onKeyDown={activate(openViewer)}
+      >
+        <TechniqueSprite slug={slug} name={name} variantIndex={variantIndex} />
+      </div>
 
-  const overlay = (
-    <div
-      ref={overlayRef}
-      className="viewer-overlay"
-      role="dialog"
-      aria-modal="true"
-      // Named by the visible heading rather than by a second copy of the name.
-      aria-labelledby={titleId}
-      tabIndex={-1}
-      onClick={close}
-    >
-      <div className="viewer-stage">
+      {/* Hidden from screen readers on purpose: the frame's own label already
+          says it opens larger, and this would be that sentence a second time.
+          It is here for the eye, which has nothing else to go on. */}
+      <p className="viewer-cue" aria-hidden="true">
+        Tap to enlarge
+      </p>
 
+      <ViewerShell
+        open={open}
+        onClose={close}
+        onStep={step}
+        openerRef={openerRef}
+        labelledBy={titleId}
+      >
         <div
           className="viewer-figure"
           role="button"
@@ -323,35 +226,7 @@ export function TechniqueViewer({
           </h2>
           {summary && <p className="viewer-summary">{openingLine(summary)}</p>}
         </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="viewer">
-      <div
-        ref={openerRef}
-        className="viewer-frame"
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
-        aria-label={`Open ${name} larger`}
-        onClick={openViewer}
-        onKeyDown={activate(openViewer)}
-      >
-        <TechniqueSprite slug={slug} name={name} variantIndex={variantIndex} />
-      </div>
-
-      {/* Hidden from screen readers on purpose: the frame's own label already
-          says it opens larger, and this would be that sentence a second time.
-          It is here for the eye, which has nothing else to go on. */}
-      <p className="viewer-cue" aria-hidden="true">
-        Tap to enlarge
-      </p>
-
-      {open && typeof document !== "undefined"
-        ? createPortal(overlay, document.body)
-        : null}
+      </ViewerShell>
     </div>
   );
 }

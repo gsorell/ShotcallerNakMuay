@@ -1,7 +1,7 @@
 /* The figure on a lesson page — framed in place, and openable into a viewing
    mode. See TechniqueViewer.tsx for why pausing lands on the extension frame,
-   why the tap targets are divs rather than buttons, and why nothing in the
-   viewing mode closes it. */
+   why the tap targets are divs rather than buttons, and why everything around
+   the figure closes the viewing mode while nothing inside it does. */
 
 .viewer {
   display: flex;
@@ -109,6 +109,48 @@
 
 .viewer-overlay:focus {
   outline: none;
+}
+
+/* The way out.
+
+   Held well back — the screen is a lit figure on a dark field, and a bright
+   control in the corner competes with the one thing anybody opened this to
+   look at. It comes up to full strength on hover and focus, which is when it
+   is being looked for.
+
+   Clear of the notch, and given a target larger than the glyph: the ✕ is small
+   because it should be quiet, not because it should be hard to hit. */
+.viewer-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 0.6rem);
+  right: 0.6rem;
+  z-index: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.viewer-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.viewer-close:focus-visible {
+  color: #fff;
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 2px;
 }
 
 .viewer-stage {
