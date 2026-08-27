@@ -23,6 +23,8 @@ import "./RoadmapSection.css";
  * already knows a teep from a switch kick should not be nagged forever. The
  * roadmap screen can bring it back, and the action-row card below the style
  * grid is always there regardless.
+ *
+ * The library link underneath it does NOT share that fate: see `onBrowse`.
  */
 interface StartHereBannerProps {
   /**
@@ -35,6 +37,12 @@ interface StartHereBannerProps {
    * Where "browse the library" goes. Omitted inside Learn, which IS the
    * library — the link only exists to make the relationship reciprocal from
    * the home screen, since Learn has always linked back to the path.
+   *
+   * Outlives the card. Dismissing hides the guided path, and graduating
+   * finishes it, but neither is a statement about the library — which is the
+   * other way into the same material, and never the thing being dismissed. So
+   * where a host screen passes this, the link keeps its place at the top of
+   * that screen after the card above it has gone.
    */
   onBrowse?: () => void;
   /** Offer the ✕. The home screen does; inside Learn there is nothing to hide from. */
@@ -82,78 +90,91 @@ export function StartHereBanner({
     setDismissed(true);
   }, []);
 
-  if (dismissible && dismissed) return null;
-  if (hideWhenGraduated && summary.graduated) return null;
-
   const level = FOUNDATIONS.levels.find((l) => l.id === summary.nextLevelId);
-  if (!level) return null;
+
+  // Only the card answers to these. Hidden, graduated, or pointing at a level
+  // that no longer exists — all three are reasons to stop showing a "continue"
+  // card, and none of them is a reason to close the door to the library.
+  const showCard =
+    !!level &&
+    !(dismissible && dismissed) &&
+    !(hideWhenGraduated && summary.graduated);
+
+  if (!showCard && !onBrowse) return null;
 
   return (
-    <section className="starthere" aria-label="Start Here guided path">
-      {dismissible && (
-        <button
-          type="button"
-          className="starthere-dismiss"
-          onClick={hide}
-          aria-label="Hide Start Here from the home screen"
-          title="Hide from home screen"
-        >
-          ✕
-        </button>
+    <section
+      className={showCard ? "starthere" : "starthere starthere-linkonly"}
+      aria-label={showCard ? "Start Here guided path" : "Technique library"}
+    >
+      {showCard && level && (
+        <>
+          {dismissible && (
+            <button
+              type="button"
+              className="starthere-dismiss"
+              onClick={hide}
+              aria-label="Hide Start Here from the home screen"
+              title="Hide from home screen"
+            >
+              ✕
+            </button>
+          )}
+
+          <button type="button" className="starthere-body" onClick={open}>
+            <ImageWithFallback
+              srcPath={artworkForLevel(level).iconPath}
+              alt=""
+              emoji={artworkForLevel(level).icon}
+              className="starthere-art"
+            />
+            <span className="starthere-text">
+              {/* Only once there is progress to report. Before that the headline
+                  already says "Start Here", and the question the eyebrow used to
+                  ask now opens the line underneath it. */}
+              {(summary.started || summary.graduated) && (
+                <span className="starthere-eyebrow">
+                  {summary.graduated
+                    ? "Start Here · complete"
+                    : `Start Here · level ${level.id} of ${summary.totalLevels}`}
+                </span>
+              )}
+
+              <span className="starthere-headline">
+                {summary.graduated
+                  ? "You finished the path"
+                  : summary.started
+                  ? `${level.bonus ? "Bonus" : "Level " + level.id} · ${level.title.replace(/^Bonus: /, "")}`
+                  : "Start Here — a guided path"}
+              </span>
+
+              <span className="starthere-sub">
+                {summary.started
+                  ? `${summary.known} of ${summary.total} callouts learned`
+                  : "Ten levels to get you up to speed."}
+              </span>
+
+              {summary.started && (
+                <span className="starthere-track" aria-hidden="true">
+                  <span
+                    className="starthere-fill"
+                    style={{ width: `${summary.percent}%` }}
+                  />
+                </span>
+              )}
+
+              <span className="starthere-action">
+                {summary.graduated
+                  ? "Replay any level"
+                  : summary.started
+                  ? "Continue"
+                  : "Begin level 1"}
+                <span aria-hidden="true"> →</span>
+              </span>
+            </span>
+          </button>
+        </>
       )}
-
-      <button type="button" className="starthere-body" onClick={open}>
-        <ImageWithFallback
-          srcPath={artworkForLevel(level).iconPath}
-          alt=""
-          emoji={artworkForLevel(level).icon}
-          className="starthere-art"
-        />
-        <span className="starthere-text">
-          {/* Only once there is progress to report. Before that the headline
-              already says "Start Here", and the question the eyebrow used to
-              ask now opens the line underneath it. */}
-          {(summary.started || summary.graduated) && (
-            <span className="starthere-eyebrow">
-              {summary.graduated
-                ? "Start Here · complete"
-                : `Start Here · level ${level.id} of ${summary.totalLevels}`}
-            </span>
-          )}
-
-          <span className="starthere-headline">
-            {summary.graduated
-              ? "You finished the path"
-              : summary.started
-              ? `${level.bonus ? "Bonus" : "Level " + level.id} · ${level.title.replace(/^Bonus: /, "")}`
-              : "Start Here — a guided path"}
-          </span>
-
-          <span className="starthere-sub">
-            {summary.started
-              ? `${summary.known} of ${summary.total} callouts learned`
-              : "Ten levels to get you up to speed."}
-          </span>
-
-          {summary.started && (
-            <span className="starthere-track" aria-hidden="true">
-              <span
-                className="starthere-fill"
-                style={{ width: `${summary.percent}%` }}
-              />
-            </span>
-          )}
-
-          <span className="starthere-action">
-            {summary.graduated
-              ? "Replay any level"
-              : summary.started
-              ? "Continue"
-              : "Begin level 1"}
-            <span aria-hidden="true"> →</span>
-          </span>
-        </span>
-      </button>
 
       {/* Outside the body button, because a link inside a button is not a
           thing. The path and the library are two ways into the same material,

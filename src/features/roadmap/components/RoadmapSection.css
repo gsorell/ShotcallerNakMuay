@@ -94,6 +94,20 @@
   border-radius: 6px;
 }
 
+/* Standing on its own, once the card above it has been dismissed or outgrown.
+   The link stays exactly where it was — top of the setup screen, right-aligned
+   over the style grid — but loses the padding that only made sense as the foot
+   of a panel, so it reads as an action belonging to the grid below rather than
+   the leftover of something missing. */
+.starthere-linkonly {
+  margin-bottom: 0.25rem;
+}
+
+.starthere-linkonly .starthere-browse {
+  padding: 0 0.2rem 0.4rem;
+  font-size: 0.82rem;
+}
+
 .starthere-text {
   display: flex;
   flex-direction: column;
