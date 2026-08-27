@@ -11,6 +11,7 @@ import {
 } from "../data/galleryTiles";
 import { displayName, sideLabel } from "../data/techniqueSprites";
 import type { TechniqueCategory } from "../data/techniqueLibrary";
+import { CombinationShelf } from "./CombinationShelf";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
 
@@ -22,6 +23,11 @@ interface TechniqueGalleryProps {
    * thing that knows which one was tapped.
    */
   onOpenTile: (tile: GalleryTile) => void;
+  /**
+   * Asked before a combination plays, and gated the same way a tile is —
+   * false means the paywall went up instead.
+   */
+  onOpenCombo: (combo: string) => boolean;
 }
 
 type Filter = "all" | TechniqueCategory;
@@ -38,7 +44,10 @@ type Filter = "all" | TechniqueCategory;
  * one particular thing, and holding them still is the difference between a
  * shelf you can scan and a shelf that keeps moving while you scan it.
  */
-export function TechniqueGallery({ onOpenTile }: TechniqueGalleryProps) {
+export function TechniqueGallery({
+  onOpenTile,
+  onOpenCombo,
+}: TechniqueGalleryProps) {
   const [filter, setFilter] = useState<Filter>("all");
   const [paused, setPaused] = useState(false);
 
@@ -76,6 +85,11 @@ export function TechniqueGallery({ onOpenTile }: TechniqueGalleryProps) {
           </button>
         ))}
       </div>
+
+      {/* Under the filter and above the grid, because a combination is made of
+          the things in that grid: the row reads as the next thing you can do
+          with what you just narrowed to, rather than as a second shelf. */}
+      <CombinationShelf filter={filter} onRequestOpen={onOpenCombo} />
 
       {/* Its own row, and deliberately not another pill: the chips choose what
           you are looking at, this changes how it behaves, and making the two
