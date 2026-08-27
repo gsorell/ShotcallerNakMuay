@@ -97,42 +97,43 @@
 /* Standing on its own, once the card above it has been dismissed or outgrown.
    It keeps its place at the top of the setup screen, but it cannot keep its
    looks: as the tail of a panel a quiet pink line was right, while up against
-   the header it lands directly under "Select one or more styles to get
-   started." in nearly the same pink at nearly the same size, and reads as a
-   second line of that sentence. The card used to stand between them.
+   the header it lands under "Select one or more styles to get started." in
+   nearly the same pink at nearly the same size, and reads as a second line of
+   that sentence. The card used to stand between them.
 
-   So alone it becomes a chip — bordered, hugging its text, in the translucent
-   panel language of the style tiles below. Shape is what separates it from the
-   copy; colour could not, since the accent pink is the thing they share. */
+   Answered with typography rather than a box. A third container on a screen
+   that already has style tiles and the card would be the loudest way to say
+   the quietest thing, so instead: white against the caption's pink, a pink
+   underline to keep it tied to the path material, and the right edge to
+   itself. Underlined text is the one form nothing else here wears, which is
+   exactly what a link should be. */
 .starthere-linkonly {
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.9rem;
   text-align: right;
 }
 
+/* inline-block, not inline-flex: as a flex container it swallowed the space in
+   front of the arrow and jammed the arrow against the word. */
 .starthere-linkonly .starthere-browse {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   width: auto;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(249, 168, 212, 0.95);
-  font-size: 0.78rem;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  padding: 0.3rem 0.2rem;
+  font-size: 0.8rem;
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: rgba(236, 72, 153, 0.9);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color 0.2s, color 0.2s;
 }
 
 .starthere-linkonly .starthere-browse:hover {
-  border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.14);
   color: #fff;
+  text-decoration-color: #fff;
 }
 
-/* Outside the pill rather than inset, which is what the panel-foot version
-   wanted. */
 .starthere-linkonly .starthere-browse:focus-visible {
-  border-radius: 999px;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .starthere-text {
