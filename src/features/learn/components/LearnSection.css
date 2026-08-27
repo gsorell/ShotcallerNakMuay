@@ -311,27 +311,35 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
+/* Key points and common mistakes are prose. They used to sit in boxes like
+   the one the figure sits in, which made a lesson read as a stack of cards
+   with no hierarchy between them — the thing you look at and the two things
+   you read all framed identically. The coloured heading and the coloured
+   marker say which section you are in; a border was saying it twice.
+
+   Space does the separating now, so it has to be worth more than the border
+   was. */
 .learn-panel {
+  margin: 0 0 1.5rem;
+}
+
+/* Drill it keeps its box. It is the only section that asks you to DO
+   something rather than read something, and its buttons want an edge to sit
+   inside rather than floating against the page. */
+.learn-panel--drill {
   background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.3);
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.learn-panel--mistakes {
-  border-color: rgba(220, 38, 38, 0.25);
-}
-
-.learn-panel--drill {
-  border-color: rgba(236, 72, 153, 0.3);
 }
 
 .learn-panel-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.8rem;
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  /* Wider than it was. Set loose on the page rather than tucked into a corner
+     of a box, the label has to read as a label on its own. */
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #f9a8d4;
 }
@@ -342,15 +350,15 @@
 
 .learn-panel-list {
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.55rem;
 }
 
 .learn-panel-list li {
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.55;
   color: rgba(255, 255, 255, 0.85);
 }
 

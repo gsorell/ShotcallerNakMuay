@@ -19,13 +19,14 @@ import {
 } from "@/utils/scroll";
 import type { EmphasisKey } from "@/types";
 
+import type { GalleryTile } from "../data/galleryTiles";
 import {
   getEntry,
   getStylesForEntry,
   isCalisthenicsOnly,
 } from "../data/techniqueIndex";
-import type { LearnEntry } from "../data/techniqueLibrary";
-import { displayName } from "../data/techniqueSprites";
+import { lessonCard } from "../data/techniqueLibrary";
+import { displayName, spritesFor } from "../data/techniqueSprites";
 import { TechniqueViewer } from "./TechniqueViewer";
 import { TechniqueGallery } from "./TechniqueGallery";
 import "./LearnSection.css";
@@ -39,7 +40,18 @@ const SHELF_SCROLL = "learn:shelf";
 
 type View =
   | { mode: "categories" }
-  | { mode: "detail"; slug: string }
+  /**
+   * One page per FIGURE, not per lesson — a tile and a card, one to one.
+   *
+   * A lesson shot from both sides used to open a single page with the two
+   * silhouettes side by side, at two-thirds size, under one heading: the shelf
+   * offered the lead knee and the rear knee as separate things to tap and then
+   * landed both on the same words. They are separate techniques — thrown
+   * differently, costing differently, chosen for different reasons — so each
+   * has its own card, with its own copy, and no control on it for switching to
+   * the other. The shelf is where you choose which one you want.
+   */
+  | { mode: "detail"; slug: string; variantIndex: number }
   /** The guided path, hosted here rather than on its own page — see below. */
   | { mode: "path" };
 
@@ -58,15 +70,25 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 
   // Free users can browse the shelf — categories and technique names — so the
   // depth of what Pro buys is visible. Opening a lesson is where Pro starts.
-  const openLesson = useCallback(
-    (entry: LearnEntry) => {
+  const openTile = useCallback(
+    (tile: GalleryTile) => {
       if (!isPro) {
         openPaywall("learn_lesson");
         return;
       }
-      trackEvent("learn_lesson_open", { slug: entry.slug });
+      trackEvent("learn_lesson_open", {
+        slug: tile.entry.slug,
+        // Which side was tapped, where the lesson has more than one. Without
+        // it the two pages of a paired lesson are indistinguishable in the
+        // funnel, which is exactly the thing splitting them was meant to fix.
+        ...(tile.side ? { side: tile.side } : null),
+      });
       rememberScroll(SHELF_SCROLL);
-      setView({ mode: "detail", slug: entry.slug });
+      setView({
+        mode: "detail",
+        slug: tile.entry.slug,
+        variantIndex: tile.variantIndex,
+      });
       scrollContentToTop("auto");
     },
     [isPro, openPaywall]
@@ -132,7 +154,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
       {view.mode === "categories" && (
         <CategoryList
           isPro={isPro}
-          onOpenLesson={openLesson}
+          onOpenTile={openTile}
           onOpenPath={() => {
             rememberScroll(SHELF_SCROLL);
             setView({ mode: "path" });
@@ -145,6 +167,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
       {view.mode === "detail" && (
         <LessonDetail
           slug={view.slug}
+          variantIndex={view.variantIndex}
           onDrill={drillStyle}
           onOpenPath={() => {
             setView({ mode: "path" });
@@ -160,12 +183,12 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 
 function CategoryList({
   isPro,
-  onOpenLesson,
+  onOpenTile,
   onOpenPath,
   onUnlock,
 }: {
   isPro: boolean;
-  onOpenLesson: (entry: LearnEntry) => void;
+  onOpenTile: (tile: GalleryTile) => void;
   onOpenPath: () => void;
   onUnlock: () => void;
 }) {
@@ -201,7 +224,7 @@ function CategoryList({
         </button>
       )}
 
-      <TechniqueGallery onOpenLesson={onOpenLesson} />
+      <TechniqueGallery onOpenTile={onOpenTile} />
     </>
   );
 }
@@ -210,10 +233,13 @@ function CategoryList({
 
 function LessonDetail({
   slug,
+  variantIndex,
   onDrill,
   onOpenPath,
 }: {
   slug: string;
+  /** Which sheet this page is — see the `detail` view for why it has one. */
+  variantIndex: number;
   onDrill: (styleKey: string, slug: string) => void;
   onOpenPath: () => void;
 }) {
@@ -221,10 +247,18 @@ function LessonDetail({
   const southpaw = useSouthpaw();
   const styles = useMemo(() => getStylesForEntry(slug), [slug]);
   const level = useMemo(() => levelTeaching(FOUNDATIONS, slug), [slug]);
+  const sheets = useMemo(() => spritesFor(slug), [slug]);
 
   if (!entry) return <p className="learn-subtitle">Lesson not found.</p>;
 
-  const name = displayName(entry.name, southpaw);
+  // Which sheet this page is, named only where the lesson has another one to
+  // tell it apart from — the same rule the shelf tiles print by.
+  const sheetLabel = sheets.length > 1 ? sheets[variantIndex]?.label : undefined;
+  const card = lessonCard(entry, sheetLabel);
+  // The NAME goes through the mirror and the prose never does: a side is named
+  // "Slip Left", which is the other way round for a southpaw, while the copy is
+  // written in lead and rear so that it reads true from either stance.
+  const name = displayName(card.name, southpaw);
 
   return (
     <article className="learn-detail">
@@ -247,14 +281,19 @@ function LessonDetail({
           read once you know it is. Nothing renders for a lesson with no
           sheet. */}
       <div className="learn-detail-intro">
-        <TechniqueViewer slug={entry.slug} name={name} />
-        <p className="learn-detail-summary">{entry.summary}</p>
+        <TechniqueViewer
+          slug={entry.slug}
+          name={name}
+          variantIndex={variantIndex}
+          summary={card.summary}
+        />
+        <p className="learn-detail-summary">{card.summary}</p>
       </div>
 
       <section className="learn-panel">
         <h2 className="learn-panel-title">Key points</h2>
         <ul className="learn-panel-list">
-          {entry.keyPoints.map((point) => (
+          {card.keyPoints.map((point) => (
             <li key={point}>{point}</li>
           ))}
         </ul>
@@ -263,7 +302,7 @@ function LessonDetail({
       <section className="learn-panel learn-panel--mistakes">
         <h2 className="learn-panel-title">Common mistakes</h2>
         <ul className="learn-panel-list">
-          {entry.mistakes.map((mistake) => (
+          {card.mistakes.map((mistake) => (
             <li key={mistake}>{mistake}</li>
           ))}
         </ul>

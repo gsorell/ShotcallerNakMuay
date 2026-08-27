@@ -3,11 +3,29 @@ import React, { useState } from "react";
 
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/constants/storeLinks";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+// The library's data module, not the Learn barrel — that barrel pulls in
+// LearnSection, which reaches back into half the app.
+import { TECHNIQUE_LIBRARY } from "@/features/learn/data/techniqueLibrary";
 import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
-import { GlossaryModal } from "@/features/shared";
 
 // Derived from the path itself so the pitch can't drift as levels are added.
 const FOUNDATIONS_LEVEL_COUNT = coreLevels(FOUNDATIONS).length;
+
+/**
+ * The six numbered punches, read off the library rather than typed out here.
+ *
+ * This used to be a sentence — "Jab = 1, Cross = 2, hooks 3 & 4, uppercuts
+ * 5 & 6" — which named two of the six, abbreviated four, and left a reader to
+ * work out which hook was 3. A table says the whole system in less space, and
+ * deriving it means the onboarding, the glossary, and the callouts can never
+ * disagree about what a number means.
+ *
+ * Multi-number entries are combinations ("1 1" is a double jab), not another
+ * name for a single punch, so they have no place in a numbering table.
+ */
+const NUMBERED = TECHNIQUE_LIBRARY.filter(
+  (e) => e.numbering && /^\d+$/.test(e.numbering)
+).sort((a, b) => Number(a.numbering) - Number(b.numbering));
 
 interface OnboardingFlowProps {
   /** Dismiss to the free app without opening the paywall ("Maybe later"). */
@@ -18,6 +36,13 @@ interface OnboardingFlowProps {
    * path and links to the apps.
    */
   onUnlock: () => void;
+  /**
+   * Dismiss and land on Learn. The numbers step used to open the glossary in a
+   * modal ON TOP of this one — a reference table stacked over an introduction,
+   * with the app itself still two dismissals away. Learn is the same content
+   * with somewhere to go afterwards.
+   */
+  onOpenLearn: () => void;
 }
 
 interface Item {
@@ -96,9 +121,9 @@ const TOTAL_STEPS = 5;
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onSkip,
   onUnlock,
+  onOpenLearn,
 }) => {
   const [step, setStep] = useState(0);
-  const [showGlossary, setShowGlossary] = useState(false);
   const isLast = step === TOTAL_STEPS - 1;
 
   const isWeb = !Capacitor.isNativePlatform();
@@ -178,20 +203,23 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <>
             <h2 style={styles.title}>Speak the language</h2>
             <p style={styles.body}>
-              Muay Thai combos use a <strong>number system</strong> — Jab = 1,
-              Cross = 2, hooks 3 &amp; 4, uppercuts 5 &amp; 6 — plus kicks,
-              knees, and elbows called by name.
+              Punches are called by number. These six are the whole system:
             </p>
+            <div style={styles.numbers}>
+              {NUMBERED.map((t) => (
+                <div key={t.slug} style={styles.numberRow}>
+                  <span style={styles.numberBadge}>{t.numbering}</span>
+                  <span style={styles.numberName}>{t.name}</span>
+                </div>
+              ))}
+            </div>
             <p style={styles.note}>
-              New to the numbers? A full glossary of every strike and defense is
-              built in.{" "}
-              <button
-                type="button"
-                onClick={() => setShowGlossary(true)}
-                style={styles.link}
-              >
-                Open the glossary
+              Kicks, knees, elbows, and defense are called by name — “Left
+              Teep”, “Right Elbow”, “Check”. New to any of it?{" "}
+              <button type="button" onClick={onOpenLearn} style={styles.link}>
+                Every technique is explained in Learn
               </button>
+              .
             </p>
           </>
         )}
@@ -298,11 +326,6 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           </div>
         )}
       </div>
-
-      <GlossaryModal
-        open={showGlossary}
-        onClose={() => setShowGlossary(false)}
-      />
     </div>
   );
 };
@@ -392,6 +415,35 @@ const styles = {
     cursor: "pointer",
   },
   list: { display: "flex", flexDirection: "column", gap: "0.9rem" },
+  /* Two columns of three, so the pairs that belong together — the hooks, the
+     uppercuts — sit on the same row as each other. */
+  numbers: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "0.5rem 0.7rem",
+    margin: "0 0 0.9rem",
+  },
+  numberRow: { display: "flex", alignItems: "center", gap: "0.5rem" },
+  numberBadge: {
+    width: 24,
+    height: 24,
+    flexShrink: 0,
+    borderRadius: 999,
+    background: "rgba(236, 72, 153, 0.16)",
+    border: "1px solid rgba(236, 72, 153, 0.45)",
+    color: "#f9a8d4",
+    fontWeight: 800,
+    fontSize: "0.8rem",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  numberName: {
+    fontSize: "0.85rem",
+    fontWeight: 600,
+    color: "white",
+    textAlign: "left",
+  },
   row: { display: "flex", alignItems: "center", gap: "0.8rem" },
   rowIcon: {
     width: 44,

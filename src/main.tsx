@@ -14,15 +14,19 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <EntitlementProvider>
       <PaywallProvider>
-        <OnboardingProvider>
-          <TTSProvider>
-            <UIProvider>
+        {/* Onboarding sits INSIDE UIProvider, not outside it: its last read of
+            the app — "here is where the numbers are explained" — has to be able
+            to navigate, and navigation is UI state. Nothing above it consumes
+            onboarding state, so the swap costs nothing. */}
+        <TTSProvider>
+          <UIProvider>
+            <OnboardingProvider>
               <WorkoutProvider>
                 <App />
               </WorkoutProvider>
-            </UIProvider>
-          </TTSProvider>
-        </OnboardingProvider>
+            </OnboardingProvider>
+          </UIProvider>
+        </TTSProvider>
       </PaywallProvider>
     </EntitlementProvider>
   </React.StrictMode>

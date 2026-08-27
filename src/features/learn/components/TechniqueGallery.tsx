@@ -6,17 +6,22 @@ import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
 
 import {
   GALLERY_SECTIONS,
-  SHELF_LESSON_COUNT,
+  SHELF_TILE_COUNT,
   type GalleryTile,
 } from "../data/galleryTiles";
 import { displayName, sideLabel } from "../data/techniqueSprites";
-import type { LearnEntry, TechniqueCategory } from "../data/techniqueLibrary";
+import type { TechniqueCategory } from "../data/techniqueLibrary";
 import { SpriteFigure } from "./TechniqueSprite";
 import "./TechniqueGallery.css";
 
 interface TechniqueGalleryProps {
-  /** Opening a tile opens its lesson — Pro-gated the same way it always was. */
-  onOpenLesson: (entry: LearnEntry) => void;
+  /**
+   * Opening a tile opens THAT tile's page — Pro-gated the same way it always
+   * was. The whole tile is handed over rather than its lesson, because a
+   * lesson shot from both sides has a page per side and the tile is the only
+   * thing that knows which one was tapped.
+   */
+  onOpenTile: (tile: GalleryTile) => void;
 }
 
 type Filter = "all" | TechniqueCategory;
@@ -33,7 +38,7 @@ type Filter = "all" | TechniqueCategory;
  * one particular thing, and holding them still is the difference between a
  * shelf you can scan and a shelf that keeps moving while you scan it.
  */
-export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
+export function TechniqueGallery({ onOpenTile }: TechniqueGalleryProps) {
   const [filter, setFilter] = useState<Filter>("all");
   const [paused, setPaused] = useState(false);
 
@@ -56,7 +61,7 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
           aria-pressed={filter === "all"}
           onClick={() => setFilter("all")}
         >
-          All<span className="shelf-filter-count">{SHELF_LESSON_COUNT}</span>
+          All<span className="shelf-filter-count">{SHELF_TILE_COUNT}</span>
         </button>
         {GALLERY_SECTIONS.map((s) => (
           <button
@@ -67,7 +72,7 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
             onClick={() => setFilter(s.meta.key)}
           >
             {s.meta.label}
-            <span className="shelf-filter-count">{s.lessonCount}</span>
+            <span className="shelf-filter-count">{s.tiles.length}</span>
           </button>
         ))}
       </div>
@@ -94,12 +99,12 @@ export function TechniqueGallery({ onOpenLesson }: TechniqueGalleryProps) {
         <div className="shelf-section" key={section.meta.key}>
           <h3 className="shelf-section-title">
             {section.meta.label}
-            <span className="shelf-section-count">{section.lessonCount}</span>
+            <span className="shelf-section-count">{section.tiles.length}</span>
           </h3>
           <p className="shelf-section-blurb">{section.meta.blurb}</p>
           <div className="shelf-grid">
             {section.tiles.map((tile) => (
-              <Tile key={tile.key} tile={tile} onOpen={onOpenLesson} />
+              <Tile key={tile.key} tile={tile} onOpen={onOpenTile} />
             ))}
           </div>
         </div>
@@ -113,7 +118,7 @@ function Tile({
   onOpen,
 }: {
   tile: GalleryTile;
-  onOpen: (entry: LearnEntry) => void;
+  onOpen: (tile: GalleryTile) => void;
 }) {
   const { entry, variant } = tile;
   const southpaw = useSouthpaw();
@@ -126,7 +131,7 @@ function Tile({
     <button
       type="button"
       className="shelf-tile"
-      onClick={() => onOpen(entry)}
+      onClick={() => onOpen(tile)}
       aria-label={side ? `${name}, ${side.toLowerCase()} side` : name}
     >
       <SpriteFigure variant={variant} name={name} />

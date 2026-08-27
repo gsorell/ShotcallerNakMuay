@@ -9,6 +9,8 @@ import React, {
 
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
+import { useUIContext } from "@/features/shared";
+import { scrollContentToTop } from "@/utils/scroll";
 import { OnboardingFlow } from "./OnboardingFlow";
 import { hasOnboarded, markOnboarded } from "./storage";
 
@@ -45,6 +47,7 @@ export const useOnboardingState = () => useContext(OnboardingContext);
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const { isPro, ready } = useEntitlement();
   const { openPaywall } = usePaywall();
+  const { setPage } = useUIContext();
   const [show, setShow] = useState(false);
   const [finishedThisSession, setFinishedThisSession] = useState(false);
   // Whether the current showing is the automatic first-run one, as opposed to
@@ -82,6 +85,20 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     [openPaywall]
   );
 
+  /**
+   * Leave for Learn, from the step that explains the numbers.
+   *
+   * Treated as a finish rather than a pause: onboarding is a modal over the
+   * app, so there is nothing to come back to with it still up, and someone who
+   * has gone looking for the technique library has read the part of this that
+   * was about to point them there. Help re-opens it if they want the rest.
+   */
+  const openLearn = useCallback(() => {
+    finish(false);
+    setPage("learn");
+    scrollContentToTop("auto");
+  }, [finish, setPage]);
+
   return (
     <OnboardingContext.Provider
       value={{ isShowing: show, finishedThisSession, openOnboarding }}
@@ -91,6 +108,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         <OnboardingFlow
           onSkip={() => finish(false)}
           onUnlock={() => finish(true)}
+          onOpenLearn={openLearn}
         />
       )}
     </OnboardingContext.Provider>

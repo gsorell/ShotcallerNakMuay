@@ -6,6 +6,7 @@ import { useSouthpaw } from "@/features/workout/contexts/WorkoutProvider";
 
 import {
   SPRITE_FRAMES,
+  inkOffset,
   sideLabel,
   spritesFor,
   type SpriteVariant,
@@ -19,6 +20,15 @@ interface TechniqueSpriteProps {
   name: string;
   /** Hold one frame across every sheet this lesson shows. */
   frame?: number | null;
+  /**
+   * Show only this sheet, by position in `spritesFor`.
+   *
+   * A lesson page is now one side per page, so it names the side it wants and
+   * gets a single full-size figure. Omitted, every sheet the lesson has is
+   * shown side by side — which is what the roadmap card still wants, because
+   * there a level teaches both halves at once.
+   */
+  variantIndex?: number | null;
   className?: string;
 }
 
@@ -38,9 +48,14 @@ export function TechniqueSprite({
   slug,
   name,
   frame = null,
+  variantIndex = null,
   className,
 }: TechniqueSpriteProps) {
-  const variants = spritesFor(slug);
+  const sheets = spritesFor(slug);
+  // An out-of-range index is treated as "no such sheet" rather than clamped: a
+  // page asking for the rear teep should not quietly draw the lead one.
+  const variants =
+    variantIndex === null ? sheets : sheets.slice(variantIndex, variantIndex + 1);
   const [broken, setBroken] = useState<string[]>([]);
 
   const usable = variants.filter((v) => !broken.includes(v.src));
@@ -116,12 +131,26 @@ export function SpriteFigure({
   const southpaw = useSouthpaw();
   const label = sideLabel(variant.label, southpaw);
 
+  // A handful of sheets were framed with the figure off to one side, so the
+  // window is slid to put the figure back in the middle of whatever holds it.
+  //
+  // On the WINDOW, and composed with the mirror rather than fighting it. The
+  // image already carries the frame-stepping transform, so a second one there
+  // would collide — the same reason mirroring lives out here. Order matters
+  // and is doing real work: under `scaleX(-1)` the slide flips too, which is
+  // exactly right, because a figure sitting left of centre sits right of
+  // centre once you mirror it.
+  const offset = inkOffset(variant.src);
+  const transform =
+    `${southpaw ? "scaleX(-1) " : ""}${offset ? `translateX(${offset}%)` : ""}`.trim();
+
   return (
     <figure className={`technique-sprite-figure${className ? ` ${className}` : ""}`}>
       <div
         className={
           "technique-sprite" + (southpaw ? " technique-sprite--mirrored" : "")
         }
+        style={transform ? { transform } : undefined}
         role="img"
         aria-label={
           label

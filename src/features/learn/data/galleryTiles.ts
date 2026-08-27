@@ -35,13 +35,27 @@ export interface GalleryTile {
   entry: LearnEntry;
   /** The sheet this tile shows. Every tile has one. */
   variant: SpriteVariant;
+  /**
+   * Which of the lesson's sheets this is, by position in `spritesFor`.
+   *
+   * The tile is also an address: opening one opens THAT side's page, so the
+   * index has to survive the trip. A page cannot re-derive it from the sheet
+   * alone without matching on a file path, which is a fragile way to say
+   * "the second one".
+   */
+  variantIndex: number;
   /** "Lead", "Left" — only when the lesson has more than one sheet to tell apart. */
   side?: string;
 }
 
 export interface GallerySection {
   meta: CategoryMeta;
-  /** Lessons shown here. Categories with nothing shot never become a section. */
+  /**
+   * Lessons shown here. Categories with nothing shot never become a section.
+   *
+   * Not what the filter chips print — see SHELF_TILE_COUNT for why the number
+   * a reader is shown counts tiles instead.
+   */
   lessonCount: number;
   /** Tiles here, which is larger wherever a lesson was shot from both sides. */
   tiles: GalleryTile[];
@@ -53,6 +67,7 @@ function tilesFor(entry: LearnEntry): GalleryTile[] {
     key: `${entry.slug}:${i}`,
     entry,
     variant,
+    variantIndex: i,
     // A lone sheet needs no side printed on it; there is nothing to tell apart.
     side: sheets.length > 1 ? variant.label : undefined,
   }));
@@ -85,3 +100,13 @@ export const SHELF_LESSON_COUNT = GALLERY_SECTIONS.reduce(
   (n, s) => n + s.lessonCount,
   0
 );
+
+/**
+ * Tiles on the shelf, which is the number the filter chips print.
+ *
+ * The chips used to count LESSONS while the grid underneath drew tiles, so
+ * "Knees 1" sat directly above two knees. Every tile now opens a page of its
+ * own, which settles which of the two numbers is the honest one: a chip is a
+ * promise about what tapping it puts on screen.
+ */
+export const SHELF_TILE_COUNT = ALL_TILES.length;

@@ -10,7 +10,12 @@ import "./GlossaryModal.css";
 interface GlossaryModalProps {
   open: boolean;
   onClose: () => void;
-  /** Offered when there is somewhere to send them; omitted inside onboarding. */
+  /**
+   * Offered when there is somewhere to send them. Optional because a host may
+   * have no way to navigate — onboarding used to be one, and opened this modal
+   * on top of itself rather than sending anyone anywhere. It now links
+   * straight to Learn instead, so today every host that shows this passes it.
+   */
   onOpenLearn?: () => void;
 }
 

@@ -21,6 +21,39 @@ export interface SpriteVariant {
   label?: string;
 }
 
+/**
+ * Sheets whose figure is not centred in its own cell, as a percentage of one
+ * cell's width. 50 is centred; these are not.
+ *
+ * Measured rather than eyeballed: every sheet was decoded and the alpha
+ * bounding box of all six cells taken, then the centre of that union compared
+ * with the centre of the cell. Thirty of the thirty-five land within four
+ * points of centre. These five sit ten to fifteen points LEFT — and left on
+ * every frame individually, not just in the union, which is what says the cell
+ * was framed that way rather than a punch reaching out of it.
+ *
+ * Corrected on the way out instead of in the art. The sheets are retouched by
+ * hand and re-running the pipeline to move a figure sideways would cost that
+ * work; a number here costs nothing and is reversible. If a sheet is ever
+ * reshot centred, delete its line.
+ */
+const INK_CENTRE: Record<string, number> = {
+  "jab.webp": 40.2,
+  "double-jab.webp": 40.2,
+  "cross.webp": 39.6,
+  "lead-hook.webp": 35.5,
+  "rear-hook.webp": 36.3,
+};
+
+/**
+ * How far to slide a sheet to bring its figure to the middle, as a percentage
+ * of one cell. Zero for everything already centred.
+ */
+export function inkOffset(src: string): number {
+  const centre = INK_CENTRE[src.slice(src.lastIndexOf("/") + 1)];
+  return centre === undefined ? 0 : 50 - centre;
+}
+
 /** Lessons whose sheet is named after the slug itself. */
 const SINGLE = [
   "jab",
@@ -164,3 +197,4 @@ export function sideLabel(
   if (label === "Right") return "Left";
   return label;
 }
+

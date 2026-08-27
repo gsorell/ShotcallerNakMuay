@@ -24,6 +24,35 @@ export type TechniqueCategory =
   | "feints"
   | "conditioning";
 
+/**
+ * One side of a lesson that was shot from both.
+ *
+ * A lesson like the teep is one CONCEPT with two techniques under it, and the
+ * shelf shows the two separately because the app calls them separately. They
+ * used to share a page — one heading, one summary, two silhouettes side by
+ * side — which said "these are the same thing" about two techniques that are
+ * thrown differently, cost differently, and are chosen for different reasons.
+ * So each side carries its own copy, and the tile that shows it opens exactly
+ * that copy.
+ *
+ * Keyed by the sprite variant's label in `techniqueSprites`, and every sheet a
+ * paired lesson has must have one — `learnGallery.test.ts` fails otherwise, so
+ * a new set of sheets cannot ship two tiles that land on the same words.
+ *
+ * WRITTEN IN LEAD AND REAR, never in left and right, exactly like the base
+ * copy — the figure mirrors for a southpaw and the prose does not, so prose
+ * naming a direction would contradict the picture it sits under. The `name`
+ * is the one part that may carry a direction, because it goes through
+ * `displayName` and mirrors with the figure. A test holds both halves of this.
+ */
+export interface SideLesson {
+  /** What this side's card is called — "Rear Teep", "Slip Left". */
+  name: string;
+  summary: string;
+  keyPoints: string[];
+  mistakes: string[];
+}
+
 export interface LearnEntry {
   /** Stable id — used for routing and (later) progress tracking. */
   slug: string;
@@ -41,10 +70,31 @@ export interface LearnEntry {
   /** What people get wrong. */
   mistakes: string[];
   /**
+   * Per-side copy, for a lesson that was shot from both sides. Present exactly
+   * where `spritesFor(slug)` returns more than one sheet.
+   */
+  sides?: Record<string, SideLesson>;
+  /**
    * Exact callout strings from `@/constants/techniques` that this entry
    * explains. Matched case-insensitively and whitespace-normalized.
    */
   matches: string[];
+}
+
+/**
+ * The copy one card shows: a lesson, or one side of a lesson that has two.
+ *
+ * `LearnEntry` already has a `SideLesson`'s shape, so a lesson shot from a
+ * single side is its own card and needs no special case at the call site.
+ *
+ * `sheetLabel` is the label of the sprite variant being shown — a lesson with
+ * one sheet passes nothing, because there is nothing to tell apart.
+ */
+export function lessonCard(
+  entry: LearnEntry,
+  sheetLabel?: string
+): SideLesson {
+  return (sheetLabel && entry.sides?.[sheetLabel]) || entry;
 }
 
 export interface CategoryMeta {
@@ -487,6 +537,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Leaning far back to gain reach, which sacrifices balance and power.",
       "Leaving the leg extended after contact, inviting a catch and sweep.",
     ],
+    sides: {
+      Lead: {
+        name: "Lead Teep",
+        summary:
+          "The push kick off the front leg — the fastest thing you own, because that leg is already the closest limb to the opponent. It goes out and back before a committed strike can start, which makes it a range-keeper rather than a finisher.",
+        keyPoints: [
+          "Lift the knee straight up and push from there; a short path is a hard one to read.",
+          "Drive with the hip rather than snapping at the knee — you are moving them, not stinging them.",
+          "Land the ball of the foot on the hip or the belt line, and leave the hands where they were.",
+          "Snap the foot back to stance as it lands. A leg that hangs out front is the one that gets caught.",
+        ],
+        mistakes: [
+          "Swinging the leg up from the floor without chambering, which turns the quickest kick you have into a slow reach.",
+          "Leaning the upper body back for extra reach, which spends the balance the retraction needs.",
+          "Hunting for damage with it. Off the front leg it is a tool for distance and rhythm, and forcing it is what tells them it is coming.",
+        ],
+      },
+      Rear: {
+        name: "Rear Teep",
+        summary:
+          "The push kick off the back leg. It has the hips behind it, so it moves people rather than touching them — and it has to cross the whole stance to arrive, which is time the lead teep never spends.",
+        keyPoints: [
+          "Chamber the knee before extending; the back leg travels far enough to look like a kick the whole way if you swing it.",
+          "Turn the support foot out and drive the rear hip through the target.",
+          "Aim at mass — the belt line or the solar plexus — and push through it rather than at it.",
+          "Retract to stance rather than letting the foot fall where it finishes; square and flat-footed is not a stance.",
+        ],
+        mistakes: [
+          "Announcing it with a step or a lean before the knee lifts.",
+          "Reaching with the foot instead of driving with the hip, which pushes nobody anywhere.",
+          "Leaving the leg extended after contact, which invites the catch and the sweep that follow it.",
+        ],
+      },
+    },
     matches: ["Teep", "Left Teep", "Right Teep"],
   },
   {
@@ -585,6 +669,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Leaning too far back and losing the ability to follow up.",
       "Throwing knees from too far out, where they land with the thigh.",
     ],
+    sides: {
+      Lead: {
+        name: "Lead Straight Knee",
+        summary:
+          "The knee off the front leg, at close range. It is the quick one — that leg is already there, so it fires with no wind-up and leaves your stance where it was.",
+        keyPoints: [
+          "Drive the front hip through as the knee rises; the knee is the point, the hip is the engine.",
+          "Point the toe down and rise onto the ball of the support foot.",
+          "Pull down with the hands — head, neck, or arms — as the knee goes up.",
+          "Land back in stance. This one is meant to be thrown again immediately.",
+        ],
+        mistakes: [
+          "Lifting the knee with no hip behind it, which is a tap rather than a strike.",
+          "Throwing it from outside the range where the point can land, so it arrives as thigh.",
+          "Leaning back to make room, which costs the follow-up.",
+        ],
+      },
+      Rear: {
+        name: "Rear Straight Knee",
+        summary:
+          "The knee off the back leg, turning the hip the whole way through the target. It carries far more than the lead knee and costs more to throw: the stance turns over to deliver it.",
+        keyPoints: [
+          "Drive the rear hip through the target and past it, rather than lifting the knee up to it.",
+          "Rise onto the ball of the standing foot and let the body turn with the strike.",
+          "Pull down as it arrives — the damage is the collision of the two, not the knee travelling alone.",
+          "Target the floating ribs, the solar plexus, or the sternum.",
+        ],
+        mistakes: [
+          "Lifting the knee without extending the hip, which throws away the only reason to pick this side.",
+          "Throwing it from too far out, where the thigh lands and the point does not.",
+          "Staying turned over once it lands, with no stance underneath you and no guard.",
+        ],
+      },
+    },
     matches: ["Left Knee", "Right Knee", "Rear Knee"],
   },
   {
@@ -665,6 +783,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Winging it wide, which telegraphs the strike and exposes your ribs.",
       "Dropping the opposite hand as you turn over.",
     ],
+    sides: {
+      Lead: {
+        name: "Lead Horizontal Elbow",
+        summary:
+          "The level elbow swung across off the front side. It is the one you can throw without setting anything up — short travel, no wind-up, and it lands from where your guard already is.",
+        keyPoints: [
+          "Turn the front shoulder through; the arm is the last link, not the strike.",
+          "Keep it tight enough that the elbow passes close to your own face on the way.",
+          "Land the point of the elbow or just above it, never the flat of the forearm.",
+          "It only exists inside punching range — if you can jab it, you cannot elbow it.",
+        ],
+        mistakes: [
+          "Winging it wide to add power, which telegraphs it and opens the ribs.",
+          "Throwing it from punching range, where it swings through empty air.",
+          "Dropping the other hand as the shoulder turns over.",
+        ],
+      },
+      Rear: {
+        name: "Rear Horizontal Elbow",
+        summary:
+          "The same level elbow thrown off the back side, with the whole body turning into it. It is the heavier of the two and the more visible: the rotation that gives it its weight is also what an opponent sees coming.",
+        keyPoints: [
+          "Turn from the back foot up — foot, hip, shoulder, and the elbow arrives last.",
+          "Keep it on a tight arc close to the head rather than swinging it out and around.",
+          "Land the point, and turn through the target rather than stopping on it.",
+          "Bring the arm home on the same tight path it went out on.",
+        ],
+        mistakes: [
+          "Loading the shoulder back before throwing it, which announces the strike.",
+          "Rotating so far past the target that you finish square with nothing covering you.",
+          "Reaching for it from punching range instead of stepping in first.",
+        ],
+      },
+    },
     matches: ["Elbow", "Left Elbow", "Right Elbow"],
   },
   {
@@ -685,6 +837,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Throwing it from outside, where there is nothing in range.",
       "Standing tall on it and losing the base underneath the strike.",
     ],
+    sides: {
+      Lead: {
+        name: "Lead Up Elbow",
+        summary:
+          "The upward elbow off the front side, travelling up the centre the way an uppercut would. Off the lead it is short and sudden — it fits through a tight guard, and you can throw it while still holding your position in the clinch.",
+        keyPoints: [
+          "Drive up from the legs, exactly as with an uppercut; the arm only carries the point.",
+          "Keep the elbow tight to your own centreline on the way up.",
+          "Strongest when the opponent has ducked or lowered their level into you.",
+          "Keep the other hand controlling or guarding — at this range there is room for nothing else.",
+        ],
+        mistakes: [
+          "Reaching up with the arm and leaving the legs out of it.",
+          "Throwing it from outside, where there is nothing above you to hit.",
+          "Standing tall on it and losing the base the drive comes from.",
+        ],
+      },
+      Rear: {
+        name: "Rear Up Elbow",
+        summary:
+          "The upward elbow off the back side, with the rear hip driving it. There is more behind it than the lead version and further for it to travel, so it wants an opponent who is already bent forward or held in place.",
+        keyPoints: [
+          "Drive from the back foot and let the hip lift the elbow; do not swing it up with the arm.",
+          "Stay tight to the centreline — the strike lives in the gap a high guard leaves.",
+          "Use the other hand to hold the head or the arm where you want it.",
+          "Keep the chin down through the strike; the head rises with the body if you let it.",
+        ],
+        mistakes: [
+          "Winding the shoulder back to load it, which is the easiest thing in the clinch to see coming.",
+          "Throwing it at a standing opponent from range, where it passes under nothing.",
+          "Rising onto the toes and losing the base underneath the drive.",
+        ],
+      },
+    },
     matches: ["Up Elbow"],
   },
   {
@@ -784,6 +970,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Closing the eyes or turning the head away.",
       "Slipping straight into the path of the other hand.",
     ],
+    sides: {
+      Left: {
+        name: "Slip Left",
+        summary:
+          "Taking the head off the line toward the lead side, so a straight punch passes over the lead shoulder. The weight settles onto the front leg and the rear hand stays loaded, which is why this slip and its counter tend to arrive as one movement.",
+        keyPoints: [
+          "Move from the waist and the knees; the neck does not lean.",
+          "Slip inches, not feet — the punch only has to miss.",
+          "Let the weight settle onto the lead leg rather than falling over it.",
+          "Eyes stay on the opponent the whole way through.",
+        ],
+        mistakes: [
+          "Over-slipping past the lead leg, where the balance and the counter both go.",
+          "Slipping flat sideways instead of off the line, so the punch simply follows the head.",
+          "Dropping the guard while the head is moving, which is the moment it is needed most.",
+        ],
+      },
+      Right: {
+        name: "Slip Right",
+        summary:
+          "Taking the head off the line toward the rear side. The weight loads onto the back leg and the lead hand is the one still in range — the hook and the uppercut off that side are what this slip sets up.",
+        keyPoints: [
+          "Bend at the waist and the knees and turn slightly with it, rather than leaning the head across.",
+          "Keep it small; a slip is a miss, not an escape.",
+          "Load the rear leg without sitting back on it — you still have to come forward.",
+          "Return to centre immediately, or better, punch on the way back.",
+        ],
+        mistakes: [
+          "Slipping so far that the head leaves the stance and the counter needs a step first.",
+          "Turning the head away with the body and losing sight of the second punch.",
+          "Slipping straight into the path of the other hand.",
+        ],
+      },
+    },
     matches: ["Slip", "Slip Left", "Slip Right"],
   },
   {
@@ -803,6 +1023,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Rolling in place repeatedly until an uppercut finds you.",
       "Coming up square and flat-footed with no counter available.",
     ],
+    sides: {
+      Left: {
+        name: "Roll Left",
+        summary:
+          "Dipping under a hook and rotating toward the lead side, so the punch travels over the head or rolls off the shoulder. You come up over the front leg, already turned into whatever answers it.",
+        keyPoints: [
+          "Dip with the legs and rotate — the path under the punch is a U, not a duck.",
+          "Keep the guard where it is; rolling replaces nothing.",
+          "Come up on the far side already in position to punch, not merely upright.",
+          "Chin stays tucked from start to finish.",
+        ],
+        mistakes: [
+          "Rolling with the waist alone and leaving the head at the same height.",
+          "Coming up square and flat-footed with nothing loaded.",
+          "Standing up mid-rotation, straight into the punch you were avoiding.",
+        ],
+      },
+      Right: {
+        name: "Roll Right",
+        summary:
+          "The same dip and rotation toward the rear side, coming up over the back leg. There is more weight underneath you at the end of it, so what follows tends to be the heavy counter rather than the quick one.",
+        keyPoints: [
+          "Bend the knees first; the rotation carries the head, a lean does not.",
+          "Roll under the punch and let it run off the shoulder if it touches you at all.",
+          "Come up over the rear leg with the weight already there to spend.",
+          "Keep both hands home — the roll is a leg movement.",
+        ],
+        mistakes: [
+          "Sitting back onto the rear leg instead of loading it, which leaves nowhere to go but backwards.",
+          "Rolling in the same place twice until an uppercut finds you.",
+          "Dropping the front hand on the way round.",
+        ],
+      },
+    },
     matches: ["Roll Left", "Roll Right"],
   },
   {
@@ -899,6 +1153,40 @@ export const TECHNIQUE_LIBRARY: readonly LearnEntry[] = [
       "Checking late — a half-raised leg is worse than no check at all.",
       "Dropping the hands to help with balance.",
     ],
+    sides: {
+      Lead: {
+        name: "Lead Check",
+        summary:
+          "Taking a kick on the shin of the front leg. It is the check you actually have time to make: that leg is already the near one, so it only has to turn out and rise.",
+        keyPoints: [
+          "Turn the knee outward as the shin comes up, so bone meets the kick instead of the soft inside of the thigh.",
+          "Point the toe down and keep the shin angled, not flat.",
+          "Rise onto the ball of the standing foot and stay tall — checking is a leg job, the guard does not move.",
+          "Put the foot straight back into stance, already loaded to answer.",
+        ],
+        mistakes: [
+          "Lifting the knee without turning it out, which offers the thigh instead of the shin.",
+          "Checking late; a half-raised leg is worse than no check at all.",
+          "Dropping the hands to help with balance, trading a bruised leg for a clean head shot.",
+        ],
+      },
+      Rear: {
+        name: "Rear Check",
+        summary:
+          "Taking a kick on the shin of the back leg, which means turning the body over to get the shin there in time. It is the harder of the two to make, and the only answer to a kick aimed at the back of your stance.",
+        keyPoints: [
+          "Turn the hips and the standing foot together — the back leg cannot reach across on its own.",
+          "Knee out, toe down, shin angled: the same shape as the lead check, arrived at the long way round.",
+          "Keep the guard sealed through the turn. The rotation is what opens the head, not the leg.",
+          "Unwind back into stance rather than landing wherever the turn put you.",
+        ],
+        mistakes: [
+          "Reaching with the leg while the hips stay facing forward, so the kick lands on the thigh anyway.",
+          "Over-rotating into a square, flat stance with nothing to fire back from.",
+          "Letting the head turn away with the body and losing sight of what comes next.",
+        ],
+      },
+    },
     matches: [
       "Left Check",
       "Right Check",

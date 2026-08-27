@@ -1,85 +1,322 @@
-/* The figure on a lesson page, with the loop under the reader's control.
-   See TechniqueViewer.tsx for why pausing lands on the extension frame. */
+/* The figure on a lesson page — framed in place, and openable into a viewing
+   mode. See TechniqueViewer.tsx for why pausing lands on the extension frame,
+   why the tap targets are divs rather than buttons, and why nothing in the
+   viewing mode closes it. */
 
-/* The figure is the point of this page, so it gets room on both sides of it
-   rather than being packed between the title and the copy. The gap below is
-   larger than the one above because the controls belong to the figure — they
-   should read as part of it, and the copy as the next thing down. */
 .viewer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.45rem;
   padding: 0.9rem 0 0.35rem;
 }
 
-/* Space around the silhouette itself, so a tall pose does not sit with its
-   head against the title above it. */
-.viewer .technique-sprites {
-  margin: 0.35rem 0 0.15rem;
+/* The only thing telling you the frame does anything.
+   Deliberately quiet — it is a cue, not an instruction, and the sentence that
+   used to sit here explained the animation at a length nobody needed. It
+   lifts when the frame is hovered or focused so the pair read as one control
+   rather than a picture with a caption under it. */
+.viewer-cue {
+  margin: 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.18s ease;
 }
 
-.viewer-controls {
+.viewer-frame:hover + .viewer-cue,
+.viewer-frame:focus-visible + .viewer-cue {
+  color: rgba(249, 168, 212, 0.85);
+}
+
+/* Both tap targets wrap an image and are tapped repeatedly, which is exactly
+   the shape a browser reads as "the user is trying to select this". Without
+   this a tap paints a selection box over the silhouette and leaves it there,
+   and the figure's own pink goes lavender under it. Buttons get this for
+   free; divs playing at being buttons do not. */
+.viewer-frame,
+.viewer-figure {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------- framed -- */
+
+/* The frame is the point of this: a silhouette on the page gradient has no
+   edge, so it reads as ornament drifting behind the copy rather than as the
+   subject of the page. Giving it a panel — the same ink and hairline the key
+   points sit in — says this is a thing.
+
+   Plain ink, no wash behind the figure. The silhouette carries its own glow
+   and a second one under it only fogs the outline, which is the one thing on
+   this page that has to stay crisp.
+
+   The padding is even on all four sides, which makes the frame square around
+   a square sprite window. It used to be wider than tall, and a figure that is
+   already sitting off-centre in its own cell reads as badly placed twice
+   over. */
+.viewer-frame {
+  cursor: zoom-in;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
   justify-content: center;
+  padding: 1.15rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
-/* ------------------------------------------------------------------ play -- */
+.viewer-frame:hover {
+  border-color: rgba(236, 72, 153, 0.45);
+  background-color: rgba(0, 0, 0, 0.35);
+}
 
-.viewer-play {
-  all: unset;
-  cursor: pointer;
-  display: inline-flex;
+.viewer-frame:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------- overlay --- */
+
+/* Under the glossary's 9995, because the two never open together and this one
+   belongs to the page beneath it rather than to the app. */
+.viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transition: color 0.18s ease, border-color 0.18s ease;
+  justify-content: center;
+  padding: 1.25rem;
+  /* Lighter than it looks like it should be, and deliberately so.
+     The scrim used to be rgba(10,4,22,.92) against a port of rgba(0,0,0,.55),
+     which measured rgb(16,6,30) outside and rgb(6,2,13) inside — a contrast
+     ratio of 1.04, which is to say none. The port could not be lifted to fix
+     it without dulling the neon figure it exists to show, so the surround goes
+     up instead. Held at .9 alpha so it lands on this colour whatever the
+     lesson page behind it happens to be.
+
+     Blue rather than the purple it started as, and matched for luminance
+     rather than eyeballed — the green channel carries most of the weight in
+     that sum, so swapping the hue without raising green would have quietly
+     given back the contrast this rule exists to buy. */
+  background: rgba(16, 27, 64, 0.9);
+  backdrop-filter: blur(10px);
+  cursor: zoom-out;
 }
 
-.viewer-play:hover {
+.viewer-overlay:focus {
+  outline: none;
+}
+
+.viewer-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 30rem;
+}
+
+/* Which technique this is, and one line on what it does. Both obvious on the
+   lesson page behind it, and neither obvious once the backdrop has blurred
+   that page away.
+
+   Given a little more room above it than the stage's own rhythm, so it reads
+   as a label belonging to the whole group rather than as another row of
+   controls under the transport. */
+.viewer-caption {
+  margin-top: 0.35rem;
+  text-align: center;
+  /* Narrower than the stage. A caption set to the full width of a phone runs
+     long enough to scan rather than read. */
+  max-width: 22rem;
+}
+
+.viewer-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
   color: #fff;
-  border-color: rgba(236, 72, 153, 0.5);
 }
 
-.viewer-play:focus-visible {
+.viewer-summary {
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* The port.
+
+   This is the one region of the overlay that is not dismissable, and it has to
+   look like it — a silhouette lit on an unbroken dark field reads as floating
+   in the room rather than as something being shown to you inside a window.
+   So: a bounded, inset panel with its own edge, dropped onto the backdrop
+   rather than dissolved into it, and bracketed at two corners so the eye reads
+   a frame even where the panel's own edge is faint.
+
+   It is also the play control, hence the pointer. */
+.viewer-figure {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.15rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Opaque, and as near black as the palette goes. Translucent, it borrowed
+     the scrim's colour and the two merged; solid, it is unambiguously a darker
+     window cut into a lighter field — and the figure's glow has the deepest
+     ground the screen can give it. */
+  background: radial-gradient(
+      circle at 50% 45%,
+      rgba(255, 255, 255, 0.05),
+      transparent 72%
+    ),
+    #04060f;
+  /* Pulled in from 26px/60px. The port is `position: relative` for its corner
+     brackets, which puts it in a later paint layer than the static strip and
+     transport below — so its drop shadow was landing ON the thumbnails and
+     greying down the pink edge of the selected one. Those two get a stacking
+     order of their own below; this keeps the shadow from reaching them in the
+     first place. */
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Two corners, not four: opposite corners are enough to read as a bracket, and
+   four turns a viewing window into a targeting reticle. */
+.viewer-figure::before,
+.viewer-figure::after {
+  content: "";
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid rgba(236, 72, 153, 0.55);
+  pointer-events: none;
+}
+
+.viewer-figure::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+  border-radius: 1.1rem 0 0 0;
+}
+
+.viewer-figure::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+  border-radius: 0 0 1.1rem 0;
+}
+
+.viewer-figure:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 4px;
+}
+
+/* As large as the screen allows, and no larger than the sheet is worth. The
+   viewport caps have to be there because the sprite window is square: bound
+   only by width, a phone in landscape puts the figure's head and feet off
+   screen. Two class names deep so it beats the size the sprite picks for
+   itself, media query included. */
+.viewer-stage .technique-sprites {
+  /* The vh term is what keeps a landscape phone honest: the stage also has to
+     hold a filmstrip, a transport and a two-line caption, and the port is the
+     only part of it that can give ground. */
+  --sprite-size: min(68vw, 33vh, 19rem);
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- strip -- */
+
+/* Six thumbnails, and deliberately NOT scrollable. A scrolling strip would be
+   dragged sideways, and a sideways drag in here closes the viewer — so the
+   thumbnails shrink to fit the width instead, which they can do because there
+   are only ever six of them. */
+.viewer-strip {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  cursor: default;
+  --sprite-size: min(2.7rem, 12.5vw);
+  /* Above the port, so nothing it casts can dull the selected thumbnail. */
+  position: relative;
+  z-index: 1;
+}
+
+.viewer-thumb {
+  cursor: pointer;
+  display: flex;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  /* The port's ink, so the strip reads as six small windows of the same
+     material rather than as tiles of their own. */
+  background: #04060f;
+  /* Held back so the port stays the thing you are looking at. The selected
+     one comes up to full strength, which is the whole signal. */
+  opacity: 0.5;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: opacity 0.18s ease, border-color 0.18s ease;
+}
+
+.viewer-thumb:hover {
+  opacity: 0.8;
+  border-color: rgba(236, 72, 153, 0.4);
+}
+
+/* Lit rather than merely outlined, so the selection survives being the one
+   small thing on a screen dominated by a large glowing figure. */
+.viewer-thumb--on {
+  opacity: 1;
+  border-color: rgba(236, 72, 153, 0.85);
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.35);
+}
+
+.viewer-thumb:focus-visible {
   outline: 2px solid rgba(236, 72, 153, 0.8);
   outline-offset: 2px;
 }
 
-/* ------------------------------------------------------------------ step -- */
+/* ---------------------------------------------------------------- step --- */
 
-/* Square against the play control's pill, so the three read as one transport
-   rather than three buttons. */
+.viewer-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: default;
+  /* Same reason as the strip: out from under the port's shadow. */
+  position: relative;
+  z-index: 1;
+}
+
 .viewer-step {
   all: unset;
   cursor: pointer;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.4rem;
+  height: 2.4rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.25);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(4, 6, 15, 0.75);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
   transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .viewer-step:hover {
   color: #fff;
   border-color: rgba(236, 72, 153, 0.45);
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(4, 6, 15, 0.95);
 }
 
 .viewer-step:focus-visible {
@@ -87,11 +324,15 @@
   outline-offset: 2px;
 }
 
-.viewer-hint {
-  margin: 0.15rem 0 0;
-  font-size: 0.7rem;
-  line-height: 1.4;
+/* Tabular figures and a fixed width, so stepping does not shuffle the two
+   arrows sideways as the digits change. */
+.viewer-count {
+  min-width: 3.2rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  max-width: 26rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.6);
 }
+
