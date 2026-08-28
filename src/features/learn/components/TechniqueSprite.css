@@ -40,6 +40,30 @@
      frame rather than a slide. No background: the silhouette carries its own
      glow, and a second one behind it just muddies the figure. */
   overflow: hidden;
+  /* And clips it again, because on iOS the first line is not enough.
+
+     WebKit gives a scrollable overflow container its own accelerated layer,
+     and a plain `overflow: hidden` descendant inside one can lose its clip
+     entirely — the sheet then paints all six cells across the strip instead
+     of the single cell the window exists to show. Blink and Gecko do not do
+     this, which is why it only ever surfaced in TestFlight.
+
+     The combination player is the one place it bites. Its beat board is
+     `overflow-x: auto` so a six-beat combination cannot push the page
+     sideways, which puts every thumbnail inside a scroller; the port above
+     them is not in one, and clipped correctly on the same screen. That
+     split is the whole tell — it is not a size problem, and the sheets are
+     not at fault.
+
+     `clip-path` rather than the usual remedies. A transform would also
+     restore the clip, but this element already carries one inline for the
+     southpaw mirror and the ink offset, so a rule here would be overridden
+     on exactly the sheets that need it most. `inset(0)` is the border box,
+     which is what `overflow: hidden` already means — so nothing changes on
+     any other platform — and it composes with that inline transform rather
+     than fighting it, because the clip is taken in the element’s own
+     coordinate space before the transform moves it. */
+  clip-path: inset(0);
   /* Only ever driven by --sprite-size, and only the roadmap card changes it. */
   transition: width 0.18s ease, height 0.18s ease;
 }
