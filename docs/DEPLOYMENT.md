@@ -65,8 +65,8 @@ This document outlines the deployment processes for Shotcaller Nak Muay across a
 ### Building the Release
 
 ```bash
-# Sync Capacitor
-npx cap sync android
+# Sync Capacitor (also strips the web-only /blog pages from the native bundle)
+npm run cap:sync:android
 
 # Navigate to android directory
 cd android
@@ -140,15 +140,18 @@ npm run preview
 
 ## Capacitor Sync
 
-After making changes to the web app, sync to native platforms:
+After making changes to the web app, sync to native platforms. Use the `cap:sync*`
+npm scripts rather than calling `cap sync` directly — they strip `dist/blog`
+first, since the marketing blog is Netlify-only and shouldn't ship inside the
+native app bundle:
 
 ```bash
 # Sync all platforms
-npx cap sync
+npm run cap:sync
 
 # Sync specific platform
-npx cap sync ios
-npx cap sync android
+npm run cap:sync:ios
+npm run cap:sync:android
 
 # Open in native IDE
 npx cap open ios

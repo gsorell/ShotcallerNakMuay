@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
       - name: Sync Capacitor
-        run: npx cap sync ios
+        run: npm run cap:sync:ios
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

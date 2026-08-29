@@ -1,0 +1,397 @@
+
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shot Caller vs. FightFlow vs. Heavy Bag Pro: Which Muay Thai App is Best?</title>
+    <meta name="description" content="A feature-by-feature comparison of Shot Caller, FightFlow, and Heavy Bag Pro comparing callout authenticity, round customization, and dynamic combo generation.">
+    <link rel="canonical" href="https://shotcallernakmuay.netlify.app/blog/muay-thai-timer-app-comparison.html">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Shot Caller vs. FightFlow vs. Heavy Bag Pro: Which Muay Thai App is Best?">
+    <meta property="og:description" content="A feature-by-feature comparison of Shot Caller, FightFlow, and Heavy Bag Pro comparing callout authenticity, round customization, and dynamic combo generation.">
+    <meta property="og:url" content="https://shotcallernakmuay.netlify.app/blog/muay-thai-timer-app-comparison.html">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": "Shot Caller vs. FightFlow vs. Heavy Bag Pro: Which Muay Thai App is Best?",
+      "description": "A feature-by-feature comparison of Shot Caller, FightFlow, and Heavy Bag Pro comparing callout authenticity, round customization, and dynamic combo generation.",
+      "author": { "@type": "Organization", "name": "Shot Caller Nak Muay" },
+      "publisher": { "@type": "Organization", "name": "Shot Caller Nak Muay" }
+    }
+    </script>
+    
+    <style>
+        :root {
+            --bg: #0f1117;
+            --text: #cbd5e1;
+            --heading: #f8fafc;
+            --accent: #ec4899;
+            --accent-hover: #f472b6;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.7;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .navbar {
+            background-color: #0a0019;
+            height: 94px;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            border-bottom: none;
+            padding: env(safe-area-inset-top) 0 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar .logo {
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            box-sizing: border-box;
+            border: none;
+            background: transparent;
+            text-decoration: none;
+            padding: 8px 12px;
+        }
+        .navbar img { 
+            height: 100%;
+            max-height: 66px;
+            width: auto;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        /* Layout wrapper styles mimicking app-layout-wrapper and app-scroll */
+        .page-wrapper {
+            max-width: 980px;
+            margin: 28px auto;
+            padding: 20px;
+            min-height: calc(100vh - 94px - 140px); /* Fill space between header and footer */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            /* Mimics the panel style in App.css */
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.06));
+            backdrop-filter: blur(6px);
+            border-radius: 12px;
+            padding: 18px 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 22px;
+            width: 100%;
+                box-sizing: border-box;
+                max-width: 720px;
+                margin: 0 auto;
+            }
+            .app-footer {
+                margin-top: 60px;
+                background: linear-gradient(180deg, transparent 0%, rgba(10, 0, 25, 0.4) 100%);
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
+                padding: 24px 16px
+                    calc(var(--footer-padding-bottom, 2rem) + env(safe-area-inset-bottom, 0px));
+            }
+            .app-footer-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+            flex-wrap: wrap;
+        }
+        .app-footer-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            object-fit: cover;
+            opacity: 0.8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .app-footer-logo:hover {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+        }
+        .app-footer-link {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .app-footer-link:hover { color: #fff; }
+        .app-footer-social img {
+            width: 24px;
+            height: 24px;
+            opacity: 0.55;
+            transition: all 0.2s ease;
+        }
+        .app-footer-social:hover img {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        h1, h2, h3 { color: var(--heading); line-height: 1.2; font-weight: 700; margin-top: 1.8em; margin-bottom: 0.8em; }
+        h1 { font-size: 2.6rem; font-weight: 800; margin-top: 0; margin-bottom: 0.2em; letter-spacing: -0.02em; }
+        h2 { font-size: 1.75rem; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+        h3 { font-size: 1.35rem; }
+        p { font-size: 1.125rem; margin-bottom: 1.6em; }
+        a { color: #38bdf8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        a:hover { color: #7dd3fc; text-decoration: underline; }
+        ul { margin-bottom: 1.6em; font-size: 1.125rem; padding-left: 20px; }
+        li { margin-bottom: 0.6em; }
+        .meta { color: #8b9bb4; font-size: 0.95rem; margin-bottom: 2.5em; display: flex; align-items: center; gap: 12px; }
+        
+        .author-avatar { 
+            width: 44px; 
+            height: 44px; 
+            border-radius: 50%; 
+            background: #1e293b; 
+            border: 2px solid #ec4899;
+            flex: none;
+            overflow: hidden; 
+            clip-path: inset(0);
+        }
+        .author-avatar img { 
+            display: block;
+            height: 100%;
+            width: 600%; /* 6 frames */
+            max-width: none;
+            /* -50% of a sheet six cells wide is three cells across, landing on frame 4 (LANDED_FRAME) */
+            transform: translateX(-50%);
+        }
+
+        table { width: 100%; border-collapse: collapse; margin: 2em 0; background: var(--card-bg); border-radius: 8px; overflow: hidden; font-size: 1.05rem; }
+        th, td { padding: 14px 16px; border: 1px solid var(--card-border); text-align: left; }
+        th { background: rgba(0,0,0,0.25); color: var(--heading); font-weight: 600; border-bottom: 2px solid var(--card-border); }
+        .post-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 28px; margin-bottom: 20px; transition: transform 0.2s ease, border-color 0.2s ease; display: block; text-decoration: none !important; }
+        .post-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .post-card h2 { border: none; padding: 0; margin: 0 0 10px 0; font-size: 1.55rem; color: var(--heading) !important; }
+        .post-card p { margin: 0; font-size: 1.05rem; color: #94a3b8; }
+        .post-card .date { font-size: 0.85rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: block; font-weight: 700; }
+        .verdict { background: rgba(236, 72, 153, 0.1); border-left: 4px solid var(--accent); padding: 24px; margin: 2.5em 0; border-radius: 0 12px 12px 0; }
+        .verdict h3 { margin-top: 0; color: var(--accent); }
+        .verdict p:last-child { margin-bottom: 0; }
+        .back-link { display: inline-block; margin-top: 4em; border-top: 1px solid var(--card-border); padding-top: 1.5em; width: 100%; text-align: left; }
+        .back-link-top { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-weight: 700; font-size: 0.9rem; margin-bottom: 24px; }
+        .back-link-top:hover { color: var(--accent-hover); text-decoration: none; }
+        .highlight { color: var(--heading); font-weight: 600; }
+        .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 32px; border-radius: 12px; margin-bottom: 40px; text-align: center; }
+        .hero h1 { margin-top: 0; font-size: 2.2rem; }
+        .hero p { color: #94a3b8; margin-bottom: 0; }
+
+        /* ---- Media-outlet redesign: masthead, filters, featured, grid ---- */
+        .container--wide { max-width: 1120px; }
+
+        .masthead { text-align: center; padding: 8px 0 32px; border-bottom: 1px solid var(--card-border); margin-bottom: 36px; }
+        .masthead-kicker { display: inline-block; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+        .masthead h1 { font-size: 2.8rem; margin: 0 0 12px; }
+        .masthead p { font-size: 1.15rem; color: #94a3b8; max-width: 580px; margin: 0 auto; }
+
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 40px; }
+        .filter-pill { font-family: inherit; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em; color: #cbd5e1; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border); border-radius: 999px; padding: 9px 18px; cursor: pointer; transition: all 0.2s ease; }
+        .filter-pill:hover { border-color: var(--accent); color: #fff; }
+        .filter-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .category-chip { display: inline-block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px; color: #0a0019; }
+
+        .featured-card { display: block; background: linear-gradient(135deg, rgba(236,72,153,0.14), rgba(56,189,248,0.06)); border: 1px solid rgba(236,72,153,0.35); border-radius: 16px; padding: 40px; margin-bottom: 44px; text-decoration: none !important; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .featured-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+        .featured-label { display: block; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 14px; }
+        .featured-card h2 { font-size: 2rem; margin: 0 0 14px; border: none; padding: 0; }
+        .featured-card p { font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; }
+        .featured-card .card-meta { color: #8b9bb4; font-size: 0.9rem; font-weight: 600; }
+
+        .post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px; align-items: start; }
+        .post-grid .post-card { margin-bottom: 0; display: flex; flex-direction: column; }
+        .card-meta { color: #8b9bb4; font-size: 0.85rem; font-weight: 600; margin-top: 14px; }
+
+        .read-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 0.9rem; font-weight: 700; color: var(--accent); }
+        .post-card:hover .read-more, .featured-card:hover .read-more { color: var(--accent-hover); }
+
+        .article-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+        .read-time { font-size: 0.85rem; color: #8b9bb4; font-weight: 600; }
+
+        .post-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 3em; padding-top: 2em; border-top: 1px solid var(--card-border); }
+        .post-nav a { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 18px; text-decoration: none !important; transition: border-color 0.2s ease, transform 0.2s ease; }
+        .post-nav a:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .post-nav-label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 800; margin-bottom: 6px; }
+        .post-nav-title { color: var(--heading); font-weight: 700; font-size: 0.98rem; }
+        .post-nav-next { text-align: right; }
+
+        .related-section { margin-top: 3em; }
+        .related-section h3 { border: none; padding: 0; margin-bottom: 0; }
+        .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 1.2em; }
+        .related-grid .post-card { padding: 20px; margin-bottom: 0; }
+        .related-grid .post-card h2 { font-size: 1.1rem; }
+
+        @media (max-width: 600px) {
+            .post-nav { grid-template-columns: 1fr; }
+            .post-nav-next { text-align: left; }
+            .masthead h1 { font-size: 2.1rem; }
+        }
+    </style>
+
+</head>
+<body>
+    <div class="navbar app-header">
+        <a href="/" class="logo">
+            <img src="/assets/Logo_Header_Banner_Smooth.png" alt="Shot Caller Nak Muay">
+        </a>
+    </div>
+    <div class="page-wrapper">
+        <div class="container ">
+
+        <a href="/blog/index.html" class="back-link-top">&larr; All Articles</a>
+        
+    <div class="article-eyebrow">
+        <span class="category-chip" style="background: #38bdf8;">Comparisons</span>
+        <span class="read-time">2 min read</span>
+    </div>
+
+        
+            <h1>Shot Caller vs. FightFlow vs. Heavy Bag Pro: Which Muay Thai App is Best?</h1>
+            
+    <div class="meta">
+        <div class="author-avatar">
+            <img src="/assets/technique/head-kick.webp" alt="Author">
+        </div>
+        <div>
+            <div>By <strong>Shotcaller Sam</strong></div>
+            <div>August 25, 2026</div>
+        </div>
+    </div>
+
+
+            <p>If you are looking to elevate your solo heavy bag or shadow boxing sessions, the top digital tools on the market consistently boil down to three options: <strong>FightFlow</strong>, <strong>Heavy Bag Pro</strong>, and <strong>Shot Caller Nak Muay</strong>. </p>
+            <p>Each app takes a completely different philosophical approach to combat sports training. Which one should you install? Here is an honest, feature-by-feature breakdown.</p>
+
+            <h2>The High-Level Differences</h2>
+            <ul>
+                <li><strong>FightFlow:</strong> A highly polished, gamified app designed heavily around western boxing and cardio-kickboxing volume.</li>
+                <li><strong>Heavy Bag Pro:</strong> A library of static, pre-recorded audio workouts styled like a digital fitness class.</li>
+                <li><strong>Shot Caller Nak Muay:</strong> A dynamic, infinitely generating audio callout engine built specifically around authentic Muay Thai styles and terminology.</li>
+            </ul>
+
+            <h2>Feature Comparison Breakdown</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Shot Caller Nak Muay</th>
+                        <th>FightFlow</th>
+                        <th>Heavy Bag Pro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Combo Generation</strong></td>
+                        <td>Infinite, dynamic algorithm</td>
+                        <td>Dynamic, boxing-heavy</td>
+                        <td>Static, pre-recorded tracks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Authentic Thai Terms</strong></td>
+                        <td>Yes (Teep, Sok, Khao, Check)</td>
+                        <td>No (Numbers & Generic Kicks)</td>
+                        <td>No (Standard Kickboxing)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Style Focus Modes</strong></td>
+                        <td>Yes (Muay Mat, Femur, Khao, etc.)</td>
+                        <td>No (General)</td>
+                        <td>No (Categorized by intensity)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Custom Round Timers</strong></td>
+                        <td>Fully customizable</td>
+                        <td>Fully customizable</td>
+                        <td>Pre-set to the workout track</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>1. Callout Authenticity & Terminology</h2>
+            <p>If you train in a real Muay Thai gym, you are used to a coach yelling "Teep," "Check," or "Elbow." <span class="highlight">FightFlow</span> and <span class="highlight">Heavy Bag Pro</span> primarily lean on standard western boxing translation: calling out a "1-2-3-Right Kick."</p>
+            <p><strong>Shot Caller</strong> was built for Nak Muays. The audio engine uses the actual terminology of the sport, and equally importantly, calls for defensive maneuvers like checks and slips mid-combo, forcing you to maintain a defensive mindset.</p>
+
+            <h2>2. Reactive Training vs. Rote Memorization</h2>
+            <p><span class="highlight">Heavy Bag Pro</span> excels if you don't want to think; you just press play on a 30-minute track and follow the coach. The downside is that you are listening to a static MP3 file. Once you've done a track a few times, you anticipate the calls.</p>
+            <p>Both <span class="highlight">FightFlow</span> and <span class="highlight">Shot Caller</span> use procedural generation, meaning no two rounds are ever the same. However, Shot Caller takes this a step further by grouping combos into actual Thai fighting styles (such as the aggressive, low-kicking <em>Muay Mat</em> or the technical <em>Muay Femur</em>).</p>
+
+            <div class="verdict">
+                <h3>Final Thought</h3>
+                <p>There is no "wrong" app here—it depends on your goals. For a sweat-inducing cardio workout, FightFlow is fantastic. For guided classes, Heavy Bag Pro is unmatched. But if you want a tool that authentically replicates an experienced Thai pad-holder challenging your timing, defense, and technique, <strong>Shot Caller Nak Muay</strong> is the clear choice.</p>
+            </div>
+
+            
+        
+    <div class="related-section">
+        <h3>You Might Also Like</h3>
+        <div class="related-grid">
+            
+    <a href="/blog/best-shadow-boxing-apps.html" class="post-card" data-tag="Comparisons">
+        <span class="category-chip" style="background: #38bdf8;">Comparisons</span>
+        <h2>The Best Shadow Boxing & Heavy Bag Apps for 2026</h2>
+        <p>What to look for in the best shadow boxing app: an authentic heavy bag audio callout timer, dynamic kickboxing combo generator, and true martial arts pacing.</p>
+        <div class="card-meta">Aug 26, 2026 &middot; 3 min read</div>
+        <span class="read-more">Read More &rarr;</span>
+    </a>
+
+    <a href="/blog/dutch-kickboxing-vs-muay-thai.html" class="post-card" data-tag="Comparisons">
+        <span class="category-chip" style="background: #38bdf8;">Comparisons</span>
+        <h2>Dutch Kickboxing vs. Traditional Muay Thai: How They Differ</h2>
+        <p>What is the difference between Dutch rules kickboxing and traditional Muay Thai? Explore the rules, stances, and combo philosophy.</p>
+        <div class="card-meta">Aug 19, 2026 &middot; 1 min read</div>
+        <span class="read-more">Read More &rarr;</span>
+    </a>
+
+        </div>
+    </div>
+
+        
+    <div class="post-nav">
+        <a href="/blog/best-shadow-boxing-apps.html"><span class="post-nav-label">&larr; Previous</span><span class="post-nav-title">The Best Shadow Boxing & Heavy Bag Apps for 2026</span></a>
+        <a href="/blog/why-i-built-shotcaller.html" class="post-nav-next"><span class="post-nav-label">Next &rarr;</span><span class="post-nav-title">Why We Built Shot Caller: The Muay Thai App We Couldn't Find</span></a>
+    </div>
+
+        <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
+        
+        </div>
+    </div>
+    <footer class="app-footer">
+        <div class="app-footer-content">
+            <a href="/">
+                <img src="/assets/logo_icon.png" alt="Logo" class="app-footer-logo">
+            </a>
+            <a href="/" class="app-footer-link">App Home</a>
+            <a href="/privacy-policy.html" class="app-footer-link">Privacy</a>
+            <a href="/terms.html" class="app-footer-link">Terms</a>
+            <a href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4" target="_blank" rel="noopener noreferrer" class="app-footer-social" aria-label="Instagram">
+                <img src="/assets/icon.instagram.png" alt="Instagram">
+            </a>
+        </div>
+    </footer>
+</body>
+</html>
+
+    

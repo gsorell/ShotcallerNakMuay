@@ -1,4 +1,5 @@
 import React, { useCallback } from "react";
+import { Capacitor } from "@capacitor/core";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
@@ -258,11 +259,30 @@ const VoiceOption = ({ voice }: { voice: UnifiedVoice }) => {
 export const AdvancedSettingsPanel = (props: AdvancedSettingsPanelProps) => {
   const trackEventToUse = props.trackEvent || trackEvent;
 
+  // The blog is a Netlify-only static site (not bundled into the native app,
+  // see scripts/strip-native-assets.mjs), so native builds link out to the
+  // deployed site instead of a path that only exists on the web build.
+  const blogHref = Capacitor.isNativePlatform()
+    ? "https://shotcallernakmuay.netlify.app/blog/index.html"
+    : "/blog/index.html";
+
   return (
     <div className="advanced-settings-panel" style={styles.panelContainer}>
       <TrainingOptions trackEvent={trackEventToUse} />
 
       <VoiceSettings />
+
+      <div style={styles.blogLinkContainer}>
+        <a
+          href={blogHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={styles.blogLink}
+          onClick={() => trackEventToUse("blog_link_click", { source: "advanced_settings" })}
+        >
+          Visit the Training Blog →
+        </a>
+      </div>
     </div>
   );
 };
@@ -392,5 +412,18 @@ const styles = {
   statusMessage: {
     marginTop: "0.5rem",
     fontSize: "0.85rem",
+  },
+  blogLinkContainer: {
+    marginTop: "1.5rem",
+    paddingTop: "1.25rem",
+    borderTop: "1px solid rgba(96, 165, 250, 0.2)",
+    textAlign: "center" as const,
+  },
+  blogLink: {
+    display: "inline-block",
+    color: "#f9a8d4",
+    fontWeight: 700,
+    fontSize: "0.95rem",
+    textDecoration: "none",
   },
 };
