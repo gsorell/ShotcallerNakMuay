@@ -7,18 +7,40 @@ if (!fs.existsSync(outDir)) {
 }
 
 const baseStyle = `
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;800&display=swap">
     <style>
+        /* ===================================================================
+           Palette taken from the technique sheets themselves. The silhouettes
+           are hot pink on transparent, so the ground has to stay dark for them
+           to glow; every neutral carries a violet bias rather than sitting on
+           a flat grey, which is what keeps the pink from looking pasted on.
+           Deliberately single-theme - this is the app's world, not a document.
+           =================================================================== */
         :root {
-            --bg: #0f1117;
-            --text: #cbd5e1;
-            --heading: #f8fafc;
-            --accent: #ec4899;
-            --accent-hover: #f472b6;
-            --card-bg: #1e293b;
-            --card-border: #334155;
+            --bg: #0c0710;
+            --card-bg: #16101f;
+            --panel-2: #1e1629;
+            --card-border: #2e2240;
+            --edge-2: #3d2d54;
+            --accent: #ff5fb0;
+            --accent-hover: #ff8ac6;
+            --cold: #7cc7f2;
+            --heading: #f4eef6;
+            --text: #c7b8d1;
+            --muted: #9d8fa9;
+            --dim: #6d6079;
+
+            /* Anton ships one weight (400). Never ask for a heavier one - the
+               browser synthesises a faux-bold and the condensed face smears. */
+            --display: 'Anton', Impact, 'Arial Narrow Bold', sans-serif;
+            --body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         }
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: var(--body);
             line-height: 1.7;
             background-color: var(--bg);
             color: var(--text);
@@ -26,13 +48,15 @@ const baseStyle = `
             padding: 0;
             -webkit-font-smoothing: antialiased;
         }
+        :focus-visible { outline: 2px solid var(--cold); outline-offset: 2px; }
+
         .navbar {
-            background-color: #0a0019;
+            background-color: #0a0510;
             height: 94px;
             display: flex;
             align-items: stretch;
             justify-content: center;
-            border-bottom: none;
+            border-bottom: 1px solid var(--card-border);
             padding: env(safe-area-inset-top) 0 0 0;
             position: sticky;
             top: 0;
@@ -40,7 +64,6 @@ const baseStyle = `
         }
         .navbar .logo {
             cursor: pointer;
-            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -51,7 +74,7 @@ const baseStyle = `
             text-decoration: none;
             padding: 8px 12px;
         }
-        .navbar img { 
+        .navbar img {
             height: 100%;
             max-height: 66px;
             width: auto;
@@ -59,39 +82,394 @@ const baseStyle = `
             user-select: none;
             -webkit-user-drag: none;
         }
-        
-        /* Layout wrapper styles mimicking app-layout-wrapper and app-scroll */
+
+        /* Wide enough for the index grid; the article container centres itself
+           at 720px inside it, so widening this does not widen running text.
+           (The old 980px silently clamped .container--wide, which is 1120.) */
         .page-wrapper {
-            max-width: 980px;
-            margin: 28px auto;
+            max-width: 1160px;
+            margin: 40px auto;
             padding: 20px;
-            min-height: calc(100vh - 94px - 140px); /* Fill space between header and footer */
+            min-height: calc(100vh - 94px - 140px);
             display: flex;
             flex-direction: column;
         }
-        
+
+        /* Flat. The article sits directly on the ink ground; panels are for
+           things that are genuinely set apart, not for the page itself. */
         .container {
-            /* Mimics the panel style in App.css */
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.06));
-            backdrop-filter: blur(6px);
-            border-radius: 12px;
-            padding: 18px 24px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            margin-bottom: 22px;
             width: 100%;
-                box-sizing: border-box;
-                max-width: 720px;
-                margin: 0 auto;
-            }
-            .app-footer {
-                margin-top: 60px;
-                background: linear-gradient(180deg, transparent 0%, rgba(10, 0, 25, 0.4) 100%);
-                border-top: 1px solid rgba(255, 255, 255, 0.06);
-                padding: 24px 16px
-                    calc(var(--footer-padding-bottom, 2rem) + env(safe-area-inset-bottom, 0px));
-            }
-            .app-footer-content {
+            max-width: 720px;
+            margin: 0 auto;
+            background: none;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 0;
+        }
+        .container--wide { max-width: 1120px; }
+
+        /* ------------------------------------------------------------ type */
+        h1, h2, h3 {
+            color: var(--heading);
+            font-family: var(--display);
+            font-weight: 400;
+            letter-spacing: 0.005em;
+            text-wrap: balance;
+            margin-top: 2em;
+            margin-bottom: 0.7em;
+        }
+        h1 {
+            font-size: clamp(2.1rem, 5.4vw, 3.05rem);
+            line-height: 1;
+            margin-top: 0;
+            margin-bottom: 0.35em;
+        }
+        h2 {
+            font-size: clamp(1.55rem, 3.4vw, 2rem);
+            line-height: 1.06;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+        }
+        h3 { font-size: 1.3rem; line-height: 1.15; }
+        p { font-size: 1.115rem; margin-bottom: 1.5em; }
+        ul { margin-bottom: 1.5em; font-size: 1.115rem; padding-left: 20px; }
+        li { margin-bottom: 0.6em; }
+        li::marker { color: var(--accent); }
+        strong, .highlight { color: var(--heading); font-weight: 600; }
+
+        a { color: var(--cold); text-decoration: none; font-weight: 500; transition: color 0.2s, border-color 0.2s; }
+        a:hover { color: #a6dcf7; }
+        /* Underline only links sitting in running prose - cards and nav are
+           anchors too, and a rule on bare \`a\` puts a line under all of them. */
+        p a, li a, td a {
+            border-bottom: 1px solid rgba(124, 199, 242, 0.32);
+        }
+        p a:hover, li a:hover, td a:hover { border-bottom-color: var(--cold); }
+
+        .meta {
+            font-family: var(--mono);
+            color: var(--dim);
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            margin-bottom: 2.8em;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .meta strong { color: var(--muted); font-weight: 500; }
+
+        /* The author mark is a real technique sheet held on its extension
+           frame - square, like the figure boxes in the app's own shelf. */
+        .author-avatar {
+            width: 46px;
+            height: 46px;
+            border-radius: 3px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent);
+            flex: none;
+            overflow: hidden;
+            clip-path: inset(0);
+        }
+        .author-avatar img {
+            display: block;
+            height: 100%;
+            width: 600%; /* 6 frames */
+            max-width: none;
+            /* -50% of a sheet six cells wide is three cells across, landing on frame 4 (LANDED_FRAME) */
+            transform: translateX(-50%);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2.2em 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            overflow: hidden;
+            font-size: 1.02rem;
+        }
+        th, td { padding: 13px 16px; border: 1px solid var(--card-border); text-align: left; }
+        th {
+            background: var(--panel-2);
+            color: var(--muted);
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        /* --------------------------------------------------------- callout */
+        .verdict {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-left: 2px solid var(--accent);
+            border-radius: 0 3px 3px 0;
+            padding: 22px 24px;
+            margin: 2.5em 0;
+        }
+        .verdict h3 {
+            margin: 0 0 10px;
+            font-family: var(--mono);
+            font-weight: 500;
+            font-size: 0.78rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        .verdict p:last-child { margin-bottom: 0; }
+
+        /* ----------------------------------------------------- index chrome */
+        .masthead {
+            text-align: left;
+            padding: 8px 0 34px;
+            border-bottom: 1px solid var(--card-border);
+            margin-bottom: 34px;
+        }
+        .masthead-kicker {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 18px;
+        }
+        .masthead h1 {
+            font-size: clamp(2.6rem, 7vw, 4.4rem);
+            text-transform: uppercase;
+            line-height: 0.94;
+            margin: 0 0 16px;
+        }
+        .masthead h1 em { font-style: normal; color: var(--accent); }
+        .masthead p { font-size: 1.1rem; color: var(--muted); max-width: 58ch; margin: 0; }
+
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 40px; }
+        .filter-pill {
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text);
+            background: transparent;
+            border: 1px solid var(--edge-2);
+            border-radius: 3px;
+            padding: 9px 15px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+        .filter-pill.active { background: var(--accent); border-color: var(--accent); color: #180a12; }
+
+        .category-chip {
+            display: inline-block;
+            /* The grid cards are column flex containers, which stretch a plain
+               inline-block child to the full card width. The chip has a solid
+               background, so that reads as a coloured bar rather than a tag. */
+            align-self: flex-start;
+            font-family: var(--mono);
+            font-size: 0.66rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.11em;
+            padding: 4px 9px;
+            border-radius: 2px;
+            margin-bottom: 14px;
+            color: #12070f;
+        }
+
+        /* The lead story borrows the "selected" treatment from the app's own
+           panes: neon edge, warmed ground. Everything else stays quiet. */
+        .featured-card {
+            display: block;
+            background: #1a0f18;
+            border: 1px solid var(--accent);
+            border-radius: 3px;
+            padding: 36px;
+            margin-bottom: 40px;
+            text-decoration: none !important;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .featured-card:hover { background: #22131f; transform: translateY(-2px); }
+        .featured-label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .featured-card h2 { font-size: clamp(1.7rem, 3.6vw, 2.2rem); margin: 0 0 14px; border: none; padding: 0; }
+        .featured-card p { font-size: 1.08rem; color: var(--text); margin-bottom: 18px; }
+
+        .post-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+            display: block;
+            text-decoration: none !important;
+        }
+        .post-card:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--panel-2); }
+        .post-card h2 {
+            border: none;
+            padding: 0;
+            margin: 0 0 10px;
+            font-size: 1.32rem;
+            line-height: 1.1;
+            color: var(--heading) !important;
+        }
+        .post-card p { margin: 0; font-size: 1rem; color: var(--muted); }
+
+        .post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; align-items: start; }
+        .post-grid .post-card { margin-bottom: 0; display: flex; flex-direction: column; }
+
+        .card-meta {
+            font-family: var(--mono);
+            color: var(--dim);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            margin-top: 16px;
+        }
+        .read-more {
+            display: inline-flex;
+            align-self: flex-start;
+            align-items: center;
+            gap: 6px;
+            margin-top: 14px;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+        .post-card:hover .read-more, .featured-card:hover .read-more { color: var(--accent-hover); }
+
+        /* --------------------------------------------------- article chrome */
+        .back-link-top {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 28px;
+        }
+        .back-link-top:hover { color: var(--accent-hover); }
+        .back-link {
+            display: inline-block;
+            margin-top: 4em;
+            border-top: 1px solid var(--card-border);
+            padding-top: 1.6em;
+            width: 100%;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .article-eyebrow { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .article-eyebrow .category-chip { margin-bottom: 0; }
+        .read-time {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+
+        .post-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 3em; padding-top: 2em; border-top: 1px solid var(--card-border); }
+        .post-nav a {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            padding: 16px 18px;
+            text-decoration: none !important;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+        .post-nav a:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .post-nav-label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .post-nav-title { color: var(--heading); font-family: var(--display); font-weight: 400; font-size: 1.05rem; line-height: 1.15; display: block; }
+        .post-nav-next { text-align: right; }
+
+        .related-section { margin-top: 3.4em; }
+        .related-section h3 { border: none; padding: 0; margin: 0 0 0.2em; font-size: 1.5rem; }
+        .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 1.2em; }
+        .related-grid .post-card { padding: 20px; margin-bottom: 0; }
+        .related-grid .post-card h2 { font-size: 1.08rem; }
+
+        /* ------------------------------------------------ app screenshots */
+        /* Phone captures, so they are held to a phone's width rather than let
+           loose across the column - a 720px-wide screenshot of a 420px screen
+           reads as a mistake. */
+        .shot { margin: 2.6em 0; }
+        .shot img {
+            display: block;
+            width: 100%;
+            max-width: 330px;
+            /* REQUIRED alongside the width/height attributes. Those attributes
+               are presentational hints, so without this the intrinsic height
+               (1800px) wins and every screenshot renders stretched to 2.5x. */
+            height: auto;
+            margin: 0 auto;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+        }
+        .shot figcaption {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            text-align: center;
+            margin-top: 14px;
+            line-height: 1.6;
+        }
+        .shot-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+        .shot-pair img { max-width: 100%; }
+        @media (max-width: 520px) {
+            .shot-pair { grid-template-columns: 1fr; }
+        }
+
+        .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 3px; margin-bottom: 40px; }
+        .hero h1 { margin-top: 0; font-size: 2.1rem; }
+        .hero p { color: var(--muted); margin-bottom: 0; }
+
+        /* ---------------------------------------------------------- footer */
+        .app-footer {
+            margin-top: 60px;
+            background: #0a0510;
+            border-top: 1px solid var(--card-border);
+            padding: 26px 16px
+                calc(var(--footer-padding-bottom, 2rem) + env(safe-area-inset-bottom, 0px));
+        }
+        .app-footer-content {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -103,135 +481,35 @@ const baseStyle = `
         .app-footer-logo {
             width: 38px;
             height: 38px;
-            border-radius: 12px;
+            border-radius: 3px;
             object-fit: cover;
-            opacity: 0.8;
+            opacity: 0.75;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: opacity 0.2s ease;
         }
-        .app-footer-logo:hover {
-            opacity: 1;
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
-        }
+        .app-footer-logo:hover { opacity: 1; }
         .app-footer-link {
-            color: rgba(255, 255, 255, 0.55);
-            font-size: 0.85rem;
+            color: var(--dim);
+            font-family: var(--mono);
+            font-size: 0.72rem;
             font-weight: 500;
             text-decoration: none;
             transition: color 0.2s ease;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.12em;
         }
-        .app-footer-link:hover { color: #fff; }
-        .app-footer-social img {
-            width: 24px;
-            height: 24px;
-            opacity: 0.55;
-            transition: all 0.2s ease;
-        }
-        .app-footer-social:hover img {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-        h1, h2, h3 { color: var(--heading); line-height: 1.2; font-weight: 700; margin-top: 1.8em; margin-bottom: 0.8em; }
-        h1 { font-size: 2.6rem; font-weight: 800; margin-top: 0; margin-bottom: 0.2em; letter-spacing: -0.02em; }
-        h2 { font-size: 1.75rem; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
-        h3 { font-size: 1.35rem; }
-        p { font-size: 1.125rem; margin-bottom: 1.6em; }
-        a { color: #38bdf8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
-        a:hover { color: #7dd3fc; text-decoration: underline; }
-        ul { margin-bottom: 1.6em; font-size: 1.125rem; padding-left: 20px; }
-        li { margin-bottom: 0.6em; }
-        .meta { color: #8b9bb4; font-size: 0.95rem; margin-bottom: 2.5em; display: flex; align-items: center; gap: 12px; }
-        
-        .author-avatar { 
-            width: 44px; 
-            height: 44px; 
-            border-radius: 50%; 
-            background: #1e293b; 
-            border: 2px solid #ec4899;
-            flex: none;
-            overflow: hidden; 
-            clip-path: inset(0);
-        }
-        .author-avatar img { 
-            display: block;
-            height: 100%;
-            width: 600%; /* 6 frames */
-            max-width: none;
-            /* -50% of a sheet six cells wide is three cells across, landing on frame 4 (LANDED_FRAME) */
-            transform: translateX(-50%);
-        }
-
-        table { width: 100%; border-collapse: collapse; margin: 2em 0; background: var(--card-bg); border-radius: 8px; overflow: hidden; font-size: 1.05rem; }
-        th, td { padding: 14px 16px; border: 1px solid var(--card-border); text-align: left; }
-        th { background: rgba(0,0,0,0.25); color: var(--heading); font-weight: 600; border-bottom: 2px solid var(--card-border); }
-        .post-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 28px; margin-bottom: 20px; transition: transform 0.2s ease, border-color 0.2s ease; display: block; text-decoration: none !important; }
-        .post-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .post-card h2 { border: none; padding: 0; margin: 0 0 10px 0; font-size: 1.55rem; color: var(--heading) !important; }
-        .post-card p { margin: 0; font-size: 1.05rem; color: #94a3b8; }
-        .post-card .date { font-size: 0.85rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: block; font-weight: 700; }
-        .verdict { background: rgba(236, 72, 153, 0.1); border-left: 4px solid var(--accent); padding: 24px; margin: 2.5em 0; border-radius: 0 12px 12px 0; }
-        .verdict h3 { margin-top: 0; color: var(--accent); }
-        .verdict p:last-child { margin-bottom: 0; }
-        .back-link { display: inline-block; margin-top: 4em; border-top: 1px solid var(--card-border); padding-top: 1.5em; width: 100%; text-align: left; }
-        .back-link-top { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-weight: 700; font-size: 0.9rem; margin-bottom: 24px; }
-        .back-link-top:hover { color: var(--accent-hover); text-decoration: none; }
-        .highlight { color: var(--heading); font-weight: 600; }
-        .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 32px; border-radius: 12px; margin-bottom: 40px; text-align: center; }
-        .hero h1 { margin-top: 0; font-size: 2.2rem; }
-        .hero p { color: #94a3b8; margin-bottom: 0; }
-
-        /* ---- Media-outlet redesign: masthead, filters, featured, grid ---- */
-        .container--wide { max-width: 1120px; }
-
-        .masthead { text-align: center; padding: 8px 0 32px; border-bottom: 1px solid var(--card-border); margin-bottom: 36px; }
-        .masthead-kicker { display: inline-block; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
-        .masthead h1 { font-size: 2.8rem; margin: 0 0 12px; }
-        .masthead p { font-size: 1.15rem; color: #94a3b8; max-width: 580px; margin: 0 auto; }
-
-        .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 40px; }
-        .filter-pill { font-family: inherit; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em; color: #cbd5e1; background: rgba(255,255,255,0.04); border: 1px solid var(--card-border); border-radius: 999px; padding: 9px 18px; cursor: pointer; transition: all 0.2s ease; }
-        .filter-pill:hover { border-color: var(--accent); color: #fff; }
-        .filter-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-        .category-chip { display: inline-block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 4px 10px; border-radius: 6px; margin-bottom: 12px; color: #0a0019; }
-
-        .featured-card { display: block; background: linear-gradient(135deg, rgba(236,72,153,0.14), rgba(56,189,248,0.06)); border: 1px solid rgba(236,72,153,0.35); border-radius: 16px; padding: 40px; margin-bottom: 44px; text-decoration: none !important; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .featured-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
-        .featured-label { display: block; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: 14px; }
-        .featured-card h2 { font-size: 2rem; margin: 0 0 14px; border: none; padding: 0; }
-        .featured-card p { font-size: 1.1rem; color: #cbd5e1; margin-bottom: 20px; }
-        .featured-card .card-meta { color: #8b9bb4; font-size: 0.9rem; font-weight: 600; }
-
-        .post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px; align-items: start; }
-        .post-grid .post-card { margin-bottom: 0; display: flex; flex-direction: column; }
-        .card-meta { color: #8b9bb4; font-size: 0.85rem; font-weight: 600; margin-top: 14px; }
-
-        .read-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; font-size: 0.9rem; font-weight: 700; color: var(--accent); }
-        .post-card:hover .read-more, .featured-card:hover .read-more { color: var(--accent-hover); }
-
-        .article-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
-        .read-time { font-size: 0.85rem; color: #8b9bb4; font-weight: 600; }
-
-        .post-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 3em; padding-top: 2em; border-top: 1px solid var(--card-border); }
-        .post-nav a { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 18px; text-decoration: none !important; transition: border-color 0.2s ease, transform 0.2s ease; }
-        .post-nav a:hover { border-color: var(--accent); transform: translateY(-2px); }
-        .post-nav-label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 800; margin-bottom: 6px; }
-        .post-nav-title { color: var(--heading); font-weight: 700; font-size: 0.98rem; }
-        .post-nav-next { text-align: right; }
-
-        .related-section { margin-top: 3em; }
-        .related-section h3 { border: none; padding: 0; margin-bottom: 0; }
-        .related-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 1.2em; }
-        .related-grid .post-card { padding: 20px; margin-bottom: 0; }
-        .related-grid .post-card h2 { font-size: 1.1rem; }
+        .app-footer-link:hover { color: var(--accent); }
+        .app-footer-social img { width: 24px; height: 24px; opacity: 0.55; transition: opacity 0.2s ease; }
+        .app-footer-social:hover img { opacity: 1; }
 
         @media (max-width: 600px) {
             .post-nav { grid-template-columns: 1fr; }
             .post-nav-next { text-align: left; }
-            .masthead h1 { font-size: 2.1rem; }
+            .featured-card { padding: 26px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+            .post-card:hover, .post-nav a:hover, .featured-card:hover { transform: none; }
         }
     </style>
 `;
@@ -303,15 +581,18 @@ const renderMeta = (author, date) => `
 `;
 
 // Category color-coding, media-outlet style.
+// Category colours, pulled toward the violet ground so eight chips read as one
+// set rather than eight unrelated highlighters. Every one of these takes dark
+// text (#12070f) at AA, which is what the chip style assumes.
 const CATEGORY_COLORS = {
-    'Comparisons': '#38bdf8',
-    'Technique': '#ec4899',
-    'App Guides': '#818cf8',
-    'Training Plans': '#34d399',
-    'Behind The Scenes': '#f59e0b',
-    'Training Mindset': '#f472b6',
-    'Gear Guides': '#facc15',
-    'Fitness': '#22d3ee',
+    'Comparisons': '#7cc7f2',
+    'Technique': '#ff5fb0',
+    'App Guides': '#a98bff',
+    'Training Plans': '#5fd6a8',
+    'Behind The Scenes': '#ffa552',
+    'Training Mindset': '#ff8ac6',
+    'Gear Guides': '#ffd166',
+    'Fitness': '#5fd0d6',
 };
 
 const renderCategoryChip = (tag) => `<span class="category-chip" style="background: ${CATEGORY_COLORS[tag] || '#94a3b8'};">${tag}</span>`;
@@ -368,6 +649,92 @@ const renderRelated = (related) => related.length === 0 ? '' : `
 
 const posts = [
     {
+        filename: 'learn-module-guided-path-technique-library.html',
+        title: 'From Your First Jab to Every Callout: Inside the New Learn Module',
+        desc: 'Shot Caller Nak Muay now ships a guided eleven-level path and a library of 35 moving technique figures, so a beginner can see what the app is calling and work up to using the whole thing.',
+        date: 'Aug 31, 2026',
+        tag: 'Behind The Scenes',
+        content: `
+            <h1>From Your First Jab to Every Callout: Inside the New Learn Module</h1>
+            ${renderMeta('Shotcaller Sam', 'August 31, 2026')}
+            <p>A combo-calling app has one failure mode that nothing else about it can fix: it shouts <em>&ldquo;1 2 3, Right Low Kick&rdquo;</em> at somebody who doesn&rsquo;t yet know what <strong>3</strong> means. Every feature past that point &mdash; the timer, the styles, the round structure &mdash; is sitting behind a wall the beginner can&rsquo;t get over.</p>
+            <p>The new <strong>Learn</strong> module is the way over it. Two halves: a guided path that hands you the vocabulary in a deliberate order, and a library where every technique the app calls is now something you can actually <em>look at</em>.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/learn-landing.webp" alt="The Learn screen in Shot Caller Nak Muay, showing the Start Here guided path card above category filters reading All 35, Punches 11, Kicks 7, Knees 2, Elbows 4, Defense and Movement 11." loading="lazy" width="840" height="1800">
+                <figcaption>Learn, in two halves &mdash; the guided path on top, the reference underneath</figcaption>
+            </figure>
+
+            <h2>The Path: Ten Levels, In An Order That Means Something</h2>
+            <p>The problem was never a shortage of material. It was <strong>sequence</strong>. <em>Nak Muay Newb</em> is 32 individual techniques and every one of them is live from the first bell &mdash; set the difficulty to Novice and a first-timer still gets hit with the full vocabulary immediately.</p>
+            <p><strong>Start Here</strong> is a curated ordering of that exact pool. Ten levels to graduation, each one introducing two to five techniques and then drilling them against everything already learned:</p>
+            <ul>
+                <li><strong>Hands before legs.</strong> Lowest injury risk, fastest wins. Levels 1 and 2 are the jab, cross and both hooks.</li>
+                <li><strong>Distance before power.</strong> The teep comes before any round kick &mdash; it&rsquo;s the safest thing the lead leg can do and it teaches range, which every later kick depends on.</li>
+                <li><strong>Defense the moment you can be countered.</strong> Level 5 is checks and guards, deliberately placed straight after kicks. The moment you can kick, you can be kicked.</li>
+                <li><strong>Committed shots last.</strong> Uppercuts, the overhand and the head kick punish bad fundamentals hardest, so they wait until level 10.</li>
+            </ul>
+            <p>The ladder is honest about where you are, because the point isn&rsquo;t the levels &mdash; it&rsquo;s the coverage. The progress bar counts how much of the callout vocabulary you can actually answer to.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/roadmap-ladder.webp" alt="The Start Here ladder: ten levels from Stance and the Two Numbers through The Committed Shots, plus a bonus elbow level, with a progress bar reading 0 of 32 callouts." loading="lazy" width="840" height="1800">
+                <figcaption>&ldquo;You answer to 0 of 32 callouts&rdquo; &mdash; the ladder measures coverage, not levels</figcaption>
+            </figure>
+
+            <p>Graduate level 10 and the union of everything you&rsquo;ve been taught is <em>exactly</em> the 32 techniques Nak Muay Newb draws from. Not approximately &mdash; a test in the codebase enforces it, so the curriculum can&rsquo;t quietly drift away from what the app actually says out loud. After that there&rsquo;s a bonus eleventh level for elbows.</p>
+
+            <h2>The Library: 35 Figures You Can Look At</h2>
+            <p>A written lesson can tell you the round kick turns the hip over. It can&rsquo;t show you the shape. Every technique on the shelf now carries a moving figure &mdash; 35 of them across 28 techniques, with seven shot from both sides because the two sides genuinely differ.</p>
+            <p>Here&rsquo;s the part that does the real work: <strong>the number sits right under the name.</strong> Jab 1. Cross 2. Left Hook 3. The shelf isn&rsquo;t just a reference &mdash; it&rsquo;s a decoder for the thing the app is shouting at you.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/learn-shelf.webp" alt="The technique shelf showing neon silhouette figures in a grid, each labelled with its name and callout number: Jab 1, Cross 2, Left Hook 3, Right Hook 4, Left Uppercut 5, Right Uppercut 6." loading="lazy" width="840" height="1800">
+                <figcaption>The number under the name &mdash; the shelf decodes the callouts</figcaption>
+            </figure>
+
+            <p>Categories are a filter that narrows in place rather than a screen you push into, so looking something up mid-session is a tap and a scroll instead of three taps and a back button.</p>
+
+            <h2>Every Figure Is A Lesson</h2>
+            <p>Tap one and you get the written technique behind it: what it is, the key points, and the common mistakes &mdash; the ones that actually cost you, like kicking with the instep instead of the shin, or dropping the kicking-side hand right when the counter cross arrives.</p>
+            <p>The figure runs six frames in 1.15 seconds, which is about 190 milliseconds a pose. That&rsquo;s right when you want the rhythm and useless when you want to know where the rear heel is at the moment of extension &mdash; so there are transport controls. Back, play, forward, and the arrow keys step. Pause lands on the extension frame, the one each figure was built around.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/learn-lesson.webp" alt="The Roundhouse Kick lesson page, showing the technique figure held at full extension above the written description and a Key Points list." loading="lazy" width="840" height="1800">
+                <figcaption>Roundhouse Kick, held on the extension frame</figcaption>
+            </figure>
+
+            <h2>Then The Loop Closes</h2>
+            <p>This is the bit that makes it a learning module rather than a glossary. Every lesson knows where it sits in the path, and every lesson can start a round.</p>
+            <p><strong>Taught at level 4 of Start Here</strong> takes you to the level that drills it. <strong>Drill it</strong> loads a style that calls it and starts the timer. So the reference and the curriculum point at each other in both directions, and both of them point at actually training.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/learn-loop.webp" alt="The bottom of a lesson page: a link reading Taught at level 4 of Start Here, The Round Kick, above a Drill It panel listing styles that call the technique." loading="lazy" width="840" height="1564">
+                <figcaption>Look it up &rarr; find it in the path &rarr; drill it. In two taps.</figcaption>
+            </figure>
+
+            <p>That&rsquo;s the whole reason the library lives inside the app instead of on a website. Looking a technique up and drilling it are two halves of the same errand.</p>
+
+            <h2>Southpaws Included</h2>
+            <p>Every figure was shot orthodox, so a southpaw browsing the library used to be looking at someone standing the other way round from them. Turn on <strong>Southpaw Mode</strong> and the figures mirror &mdash; and so does every name that carries a side.</p>
+            <p>The numbering doesn&rsquo;t move, because it was always stance-relative: 3 is your lead hook whichever way you stand, and that&rsquo;s already what the callout engine says out loud. There&rsquo;s more on training left-handed <a href="/blog/southpaw-muay-thai-training-guide.html">in our southpaw guide</a>.</p>
+
+            <h2>A Note On How They Were Made</h2>
+            <p>Worth saying, because it took months longer than the alternative: the figures are cut from real footage, frame by frame. None of them are AI-generated.</p>
+            <p>Image generators produce something worse than obviously wrong &mdash; they produce plausible and wrong. A flat rear foot on a cross. A &ldquo;check&rdquo; that&rsquo;s really a knee. Errors that look fine to exactly the person least equipped to spot them, which is the person using a beginner module. Not a great trade for saving an afternoon.</p>
+
+            <h2>What&rsquo;s Free, And What&rsquo;s Missing</h2>
+            <p>Level 1 of the path is free and the whole ladder is visible. Browsing the shelf is free too &mdash; the figures, the names and the numbers are all there before you pay anything. Opening a full lesson and levels 2 onward are part of Pro.</p>
+            <p>And 37 techniques in the written library still have no figure, all thirteen feints among them. A lesson without one isn&rsquo;t on the shelf at all, because a grid full of placeholders reads as a half-built page where a shelf of real figures reads as a library. Each one appears the moment its footage is shot.</p>
+
+            <div class="verdict">
+                <h3>Start At Level 1, Not At The Timer</h3>
+                <p>If you&rsquo;re new, don&rsquo;t start by picking a style and hitting go &mdash; that&rsquo;s the wall. Open Learn, begin level 1, and let the path hand you the vocabulary two techniques at a time. Ten levels later the entire app is talking a language you speak.</p>
+            </div>
+
+            <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
+        `
+    },
+    {
         filename: 'southpaw-muay-thai-training-guide.html',
         title: 'Training Muay Thai as a Southpaw: The Adjustments Every Left-Handed Fighter Needs',
         desc: 'A guide for left-handed fighters training Muay Thai solo: stance adjustments, common mistakes orthodox-first content misses, and how to drill authentic southpaw combinations.',
@@ -395,6 +762,12 @@ const posts = [
 
             <h2>How Shot Caller Handles It</h2>
             <p>Under <strong>Advanced Settings</strong>, <strong><a href="/">Shot Caller Nak Muay</a></strong> has a dedicated <strong>Southpaw Mode</strong> toggle. Flip it on, and every "Left" and "Right" in the callout engine mirrors automatically — so "Left Hook" becomes your actual lead hook instead of forcing you to translate mid-combo. It's a small switch that removes the single biggest source of hesitation in southpaw solo training.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-training-options.webp" alt="Advanced Settings in Shot Caller Nak Muay showing Training Options: Southpaw Mode, Include Calisthenics and Read Techniques in Order, above the rounds, length and rest controls." loading="lazy" width="840" height="1400">
+                <figcaption>Advanced Settings &rarr; Southpaw Mode. One toggle, and every &ldquo;Left&rdquo; and &ldquo;Right&rdquo; flips.</figcaption>
+            </figure>
+
 
             <div class="verdict">
                 <h3>Turn On Southpaw Mode First</h3>
@@ -460,6 +833,12 @@ const posts = [
 
             <h2>Structuring Rounds for Fat Loss vs. Skill</h2>
             <p>The two goals pull in slightly different directions, and it's worth being deliberate about which one a given session is for:</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-setup.webp" alt="The style selection screen with Muay Mat and Muay Tae selected, above a bar setting rounds, length, rest and difficulty." loading="lazy" width="840" height="1880">
+                <figcaption>Round count, round length and rest are the three dials that decide the session.</figcaption>
+            </figure>
+
             <ul>
                 <li><strong>Fat-loss focused:</strong> Shorter rest periods, a heavier-hands style focus like <em>Muay Mat</em>, and higher round counts at a controlled pace you can sustain.</li>
                 <li><strong>Skill focused:</strong> Longer rest, slower and more deliberate combinations, and a technical style focus like <em>Muay Femur</em> where precision matters more than volume.</li>
@@ -526,6 +905,12 @@ const posts = [
             <h2>How Shot Caller Blends Them</h2>
             <p>Under <strong>Advanced Settings</strong>, the <strong>Include Calisthenics</strong> toggle adds bodyweight exercises like jumping jacks and high knees directly into your combo rounds. Rather than treating strength work as a separate workout bolted onto the end, it's interleaved with striking — so your heart rate never gets the chance to fully settle, and your muscles get a break from throwing strikes without the round actually slowing down.</p>
 
+            <figure class="shot">
+                <img src="/assets/blog/app-training-options.webp" alt="Advanced Settings in Shot Caller Nak Muay showing Training Options: Southpaw Mode, Include Calisthenics and Read Techniques in Order, above the rounds, length and rest controls." loading="lazy" width="840" height="1400">
+                <figcaption>Include Calisthenics mixes bodyweight work into the same callout stream.</figcaption>
+            </figure>
+
+
             <h2>A Sample Hybrid Round Structure</h2>
             <p>Five rounds, alternating focus:</p>
             <ul>
@@ -562,6 +947,12 @@ const posts = [
 
             <h2>Where Most Apps Fall Short</h2>
             <p>If you search the app store for a "heavy bag timer" or "kickboxing combo generator," you'll find dozens of options. However, most of them suffer from the same three problems:</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-callout.webp" alt="A live round in Shot Caller Nak Muay: Round 1 of 5, a 2:52 round clock, and the technique Low Kick called on screen above Pause and Stop." loading="lazy" width="840" height="1440">
+                <figcaption>A live round: what is called, and how long is left.</figcaption>
+            </figure>
+
             <ul>
                 <li><strong>Boxing Bias:</strong> They are built for western boxing first. Kicks and knees are simply tacked onto the end of punch routines.</li>
                 <li><strong>Predictability:</strong> They loop a predefined set of 15 combinations, which you memorize by your third workout.</li>
@@ -655,6 +1046,12 @@ const posts = [
 
             <h2>2. Reactive Training vs. Rote Memorization</h2>
             <p><span class="highlight">Heavy Bag Pro</span> excels if you don't want to think; you just press play on a 30-minute track and follow the coach. The downside is that you are listening to a static MP3 file. Once you've done a track a few times, you anticipate the calls.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-callout.webp" alt="A live round in Shot Caller Nak Muay: Round 1 of 5, a 2:52 round clock, and the technique Low Kick called on screen above Pause and Stop." loading="lazy" width="840" height="1440">
+                <figcaption>One technique at a time, called out loud, against a running round clock.</figcaption>
+            </figure>
+
             <p>Both <span class="highlight">FightFlow</span> and <span class="highlight">Shot Caller</span> use procedural generation, meaning no two rounds are ever the same. However, Shot Caller takes this a step further by grouping combos into actual Thai fighting styles (such as the aggressive, low-kicking <em>Muay Mat</em> or the technical <em>Muay Femur</em>).</p>
 
             <div class="verdict">
@@ -685,6 +1082,12 @@ const posts = [
 
             <h2>Building a Digital Pad-Holder</h2>
             <p>A good Thai pad session has a specific rhythm. It’s not just a barrage of strikes. A good pad-holder will throw a kick at you to test your guard, ask you to teep them away, and then command a heavy roundhouse.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-callout.webp" alt="A live round in Shot Caller Nak Muay: Round 1 of 5, a 2:52 round clock, and the technique Low Kick called on screen above Pause and Stop." loading="lazy" width="840" height="1440">
+                <figcaption>A digital pad-holder: it calls the shot, you throw it.</figcaption>
+            </figure>
+
             <p>I built <strong>Shot Caller Nak Muay</strong> to emulate that rhythm. We threw out the generic boxing templates and mapped out the biomechanics of real Muay Thai.</p>
             
             <ul>
@@ -721,6 +1124,12 @@ const posts = [
 
             <h2>2. Don't Stare at the Screen</h2>
             <p>The entire point of an <em>audio</em> callout timer is to keep your eyes forward. Put your phone on a bench or tripod out of your direct line of sight. Keep your chin tucked, eyes on the "opponent" (the center of the bag), and rely entirely on your hearing to react.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-callout.webp" alt="A live round in Shot Caller Nak Muay: Round 1 of 5, a 2:52 round clock, and the technique Low Kick called on screen above Pause and Stop." loading="lazy" width="840" height="1440">
+                <figcaption>The screen is the fallback &mdash; the callout is audio first.</figcaption>
+            </figure>
+
 
             <h2>3. Treat Defensive Calls as Real Threats</h2>
             <p>When the app calls <strong>"Check"</strong> or <strong>"Slip,"</strong> do it with urgency. Treat the heavy bag as if it is actively fighting back. If the combo is "Check, Lead Hook, Low Kick," envision the incoming kick, physically raise your block to meet it, plant your foot firmly, and explode into the hook.</p>
@@ -764,6 +1173,12 @@ const posts = [
 
             <h2>Outsource the Mental Load</h2>
             <p>When shadowing boxing or hitting the bag outside of class, beginners often "freeze up" because they simply don't know what combinations to throw. This leads to them drilling the same 1-2, 1-2 over and over, stunting their growth.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/roadmap-ladder.webp" alt="The Start Here ladder: ten levels from Stance and the Two Numbers through The Committed Shots, with a progress bar reading 0 of 32 callouts." loading="lazy" width="840" height="1800">
+                <figcaption>The path decides the order, so you don&rsquo;t have to.</figcaption>
+            </figure>
+
             <p>This is exactly why tools like <strong>Shot Caller Nak Muay</strong> are so effective for beginners. By using an audio callout timer in "Nak Muay Newb" mode, the app tells you exactly what to throw. You don't have to invent combinations; you simply listen to the callout (e.g., "Jab, Cross, Teep"), throw the sequence, reset your stance, and wait for the next command. It removes the paralyzing "what do I do next" anxiety.</p>
 
             <h2>Shadow Box in the Mirror</h2>
@@ -794,6 +1209,12 @@ const posts = [
             <h2>1. Use the "Start Here" Guided Path</h2>
             <p>You don't need to learn 50 different strikes on day one. On the app's home screen, you will find a <strong>"Start Here"</strong> section containing a 10-level guided path. Level 1 starts with only the most basic punches and a standard roundhouse kick. As you complete rounds and progress through the levels, the app slowly drip-feeds new vocabulary (like elbows, checks, and parries) into your sessions.</p>
 
+            <figure class="shot">
+                <img src="/assets/blog/roadmap-ladder.webp" alt="The Start Here ladder: ten levels from Stance and the Two Numbers through The Committed Shots, with a progress bar reading 0 of 32 callouts." loading="lazy" width="840" height="1800">
+                <figcaption>Ten levels, and a bar counting how much of the callout vocabulary you can answer to.</figcaption>
+            </figure>
+
+
             <h2>2. Explore the Technique Library</h2>
             <p>If the app calls out a technique and you find yourself freezing because you don't know how to throw it, tap the <strong>"Learn"</strong> button in the bottom navigation bar. Our comprehensive technique library contains an entry for every single callout in the app.</p>
             <p>Tap on a technique to see exactly how it is spelled, hear its audio pronunciation in isolation, and read a breakdown of how the strike or defense should be executed.</p>
@@ -822,6 +1243,12 @@ const posts = [
             <p>One of the beautiful things about Muay Thai is that no two fighters look exactly the same. The sport recognizes several primary "styles" of fighting, which dictate a fighter's strategy and favored weapons.</p>
             <h2>Muay Mat (Heavy Puncher/Low Kicker)</h2>
             <p>A Muay Mat relies on forward pressure, heavy hands, and devastating low kicks. They aim to end the fight early through sheer power and volume. <strong>How to train it:</strong> Sit down on your punches, focus on boxing combinations that end in hard leg kicks, and practice cutting off the ring.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-setup.webp" alt="The style selection screen with Muay Mat and Muay Tae selected, above a bar setting rounds, length, rest and difficulty." loading="lazy" width="840" height="1880">
+                <figcaption>Select one style or stack several &mdash; the callout pool is the union of what you pick.</figcaption>
+            </figure>
+
             <h2>Muay Tae (The Kicker)</h2>
             <p>A Muay Tae controls the distance and scores heavily with roundhouse kicks to the body and arms. They use kicks to break an opponent's guard and drain their stamina. <strong>How to train it:</strong> Volume kicking. Drill double and triple roundhouses off the same leg, and focus on fast retractions.</p>
             <h2>Muay Khao (The Knee Fighter)</h2>
@@ -878,6 +1305,12 @@ const posts = [
             <div class="verdict">
                 <h3>Taking Control in Shot Caller</h3>
                 <p>While dynamic generation is great, sometimes you want to drill a specific fight plan. Shot Caller Nak Muay’s <strong>Technique Editor</strong> allows you to build completely custom combo sets. Select the exact strikes you want to chain together, uncheck the ones you don't want to drill today, and let the app cycle through your personalized playbook.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-manage.webp" alt="The Technique Manager screen, where technique sets can be edited, favourited, or built into a new custom style." loading="lazy" width="840" height="1800">
+                <figcaption>Technique Manager: edit a set, star favourites, or build a style of your own.</figcaption>
+            </figure>
+
             </div>
             <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
         `
@@ -897,6 +1330,12 @@ const posts = [
             <p>This is where gamification becomes a valid psychological tool. By tracking your training days and forcing yourself not to "break the streak," you shift your goal from an arbitrary performance metric to a simple binary outcome: <em>Did I show up today? Yes or no.</em></p>
             <h2>Tracking with Charms and Logs</h2>
             <p>We purposefully built a <strong>Workout Log</strong> and a <strong>Charm (Achievement) System</strong> into Shot Caller Nak Muay for exactly this reason.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-loglist.webp" alt="The Workout Logs summary: current and best streak, earned and locked charms, and a recent workouts list with one logged session." loading="lazy" width="840" height="1280">
+                <figcaption>Streaks, charms and the session list &mdash; all written the moment a workout completes.</figcaption>
+            </figure>
+
             <ul>
                 <li><strong>Visual Accountability:</strong> After every round you complete via the app timer, the session is logged. You can review your history to ensure your volume isn't dropping off over the month.</li>
                 <li><strong>Earning Charms:</strong> As you hit escalating round counts (10, 50, 100, 500 rounds), you earn digital charms. It sounds trivial, but that tiny hit of dopamine can be exactly the push you need to put your wraps on when you don't feel like training.</li>
@@ -927,6 +1366,12 @@ const posts = [
             <div class="verdict">
                 <h3>Using the Muay Khao Mode</h3>
                 <p>Shot Caller Nak Muay has a dedicated <strong>Muay Khao</strong> style focus. By selecting it, the audio engine will heavily bias its combinations toward closing the distance with punches and ending with clinch tie-ups, marching knees, and skip-knees. It's the perfect digital coach for the relentless pressure fighter.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/lesson-knee.webp" alt="The Straight Knee lesson page, showing the technique figure above its written description." loading="lazy" width="840" height="1800">
+                <figcaption>The Straight Knee lesson, with the figure you can step through frame by frame.</figcaption>
+            </figure>
+
             </div>
             <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
         `
@@ -944,6 +1389,12 @@ const posts = [
             <p>This is how fighters develop beautiful, powerful striking combinations that leave them completely exposed to a counter-hook.</p>
             <h2>Simulating Threats with Audio Callouts</h2>
             <p>You have to force your brain to react defensively. If you are shadow boxing, you need an external trigger to tell you when a strike is coming. This is why a digital pad-holder app is practically mandatory for solo work.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/shelf-defense.webp" alt="The Defense and Movement shelf: eleven technique figures including slips, rolls, checks, guards, duck, lean back and pivot." loading="lazy" width="840" height="1800">
+                <figcaption>All eleven defensive figures in one place &mdash; slips, rolls, checks, guards.</figcaption>
+            </figure>
+
             <p>In <strong>Shot Caller Nak Muay</strong>, defense is baked into the combat algorithm. The app doesn't just call out punches; it regularly commands defensive actions mid-combo.</p>
             <ul>
                 <li>When the app calls <strong>"Check"</strong>, elevate your knee to your elbow with a strong frame, hold for a split second, and look for a counter strike.</li>
@@ -971,6 +1422,12 @@ const posts = [
             
             <h2>Round 1: The Warmup (Nak Muay Newb)</h2>
             <p>Set the app focus to <em>Nak Muay Newb</em>. Throw strikes at 30% power. The goal here is solely to establish rhythm, get a sweat going, and ensure you are exhaling sharply on every strike and returning to your guard.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-setup.webp" alt="The style selection screen with Muay Mat and Muay Tae selected, above a bar setting rounds, length, rest and difficulty." loading="lazy" width="840" height="1880">
+                <figcaption>Rounds, length and rest sit on one bar; difficulty sets how dense the callouts get.</figcaption>
+            </figure>
+
             
             <h2>Round 2: Teeps and Distance (Muay Femur)</h2>
             <p>Set the app focus to <em>Muay Femur</em>. Try to stay entirely out of punch range. When the app calls a combination, step in quickly, execute it, and immediately step out or teep the bag away. Focus entirely on footwork and range management.</p>
@@ -1000,6 +1457,12 @@ const posts = [
             <p>A fighter with a fast, heavy, and highly accurate front teep can completely shut down an aggressive puncher by off-balancing them every time they attempt to step forward.</p>
             <h2>How to Execute the Teep</h2>
             <p>Unlike a karate push kick, the Muay Thai teep is heavily reliant on the hips.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/lesson-teep.webp" alt="The Lead Teep lesson page, showing the technique figure held at extension above the written description and key points." loading="lazy" width="840" height="1800">
+                <figcaption>The Lead Teep, held on its extension frame.</figcaption>
+            </figure>
+
             <ul>
                 <li><strong>The Chamber:</strong> Lift your lead knee straight up to your chest. Your foot should remain flexed.</li>
                 <li><strong>The Drive:</strong> Extend your leg directly into the opponent's solar plexus or beltline. As you extend, thrust your hips forward, leaning your torso slightly back to counterbalance the momentum.</li>
@@ -1052,7 +1515,7 @@ const indexContent = `
     ${renderHead('Muay Thai Training Blog - Shot Caller', 'Guides on shadow boxing, heavy bag drills, and combo-calling timers.', 'https://shotcallernakmuay.netlify.app/blog/', 'container--wide')}
     <div class="masthead">
         <span class="masthead-kicker">Shot Caller Nak Muay</span>
-        <h1>The Fight IQ Journal</h1>
+        <h1>The Fight <em>IQ</em> Journal</h1>
         <p>Training breakdowns, app guides, and behind-the-scenes notes for solo Nak Muays.</p>
     </div>
     ${filterBar}
