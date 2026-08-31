@@ -30,6 +30,19 @@ export const AnalyticsEvents = {
   RoadmapLevelComplete: "roadmap_level_complete",
   RoadmapGraduate: "roadmap_graduate",
 
+  // Paywall funnel. `paywall_open` alone cannot tell "nobody reaches the
+  // paywall" apart from "everybody closes it" apart from "the store call
+  // fails", so every exit from the sheet reports itself. Each carries the
+  // `source` that opened it, which is what makes a gate's worth measurable.
+  PaywallOpen: "paywall_open",
+  PaywallDismiss: "paywall_dismiss",
+  PaywallPlanTap: "paywall_plan_tap",
+  PaywallPurchaseSuccess: "paywall_purchase_success",
+  PaywallPurchaseCancelled: "paywall_purchase_cancelled",
+  PaywallPurchaseError: "paywall_purchase_error",
+  PaywallRestore: "paywall_restore",
+  PaywallLegacyClaim: "paywall_legacy_claim",
+
   // PWA events
   PWAInstallPrompt: "pwa_install_prompt",
   PWAInstallAccept: "pwa_install_accept",
@@ -69,8 +82,13 @@ const isIOSNative = () => {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
 };
 
-// Generate or retrieve a client ID for Measurement Protocol
-const getClientId = async (): Promise<string> => {
+// Generate or retrieve a client ID for Measurement Protocol.
+//
+// Exported because it is also the join key between GA4 and RevenueCat: the
+// entitlement layer hands this same value to RevenueCat as a subscriber
+// attribute, which is the only way a purchase in the RevenueCat dashboard can
+// be traced back to the session (and therefore the campaign) that produced it.
+export const getClientId = async (): Promise<string> => {
   const storageKey = "ga_client_id";
   
   try {
@@ -221,6 +239,18 @@ const sendMeasurementProtocolEvent = async (
 // Track if we're using Measurement Protocol
 let usingMeasurementProtocol = false;
 
+// RevenueCat's id for this install, once the entitlement layer has resolved
+// it. Stamped onto every event so a GA4 funnel can be joined to the purchase
+// records in RevenueCat — the other half of the `ga_client_id` subscriber
+// attribute set in EntitlementProvider. Undefined on web and until RevenueCat
+// finishes configuring, which is why it is spread conditionally rather than
+// sent as an empty string GA4 would have to store.
+let revenueCatUserId: string | undefined;
+
+export const setRevenueCatUserId = (id: string | undefined) => {
+  revenueCatUserId = id;
+};
+
 // Initialize GA4
 export const initializeGA4 = () => {
   // Skip if no window
@@ -296,13 +326,17 @@ export const trackEvent = (
 ) => {
   if (typeof window === "undefined") return;
 
+  const identified = revenueCatUserId
+    ? { ...parameters, rc_user_id: revenueCatUserId }
+    : parameters;
+
   // Use Measurement Protocol for iOS native
   if (usingMeasurementProtocol) {
     sendMeasurementProtocolEvent(eventName, {
       event_category: parameters?.["category"] || "engagement",
       event_label: parameters?.["label"] || "",
       value: parameters?.["value"] || 0,
-      ...parameters,
+      ...identified,
     });
     return;
   }
@@ -313,7 +347,7 @@ export const trackEvent = (
       event_category: "engagement",
       event_label: parameters?.["label"] || "",
       value: parameters?.["value"] || 0,
-      ...parameters,
+      ...identified,
     });
   }
 };

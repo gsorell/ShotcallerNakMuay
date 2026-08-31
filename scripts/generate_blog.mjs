@@ -461,6 +461,52 @@ const baseStyle = `
         .hero h1 { margin-top: 0; font-size: 2.1rem; }
         .hero p { color: var(--muted); margin-bottom: 0; }
 
+        /* ------------------------------------------------------ store CTA */
+        /* The reason this block exists: every CTA on this site used to point
+           at "/", the PWA - which cannot sell Pro, because RevenueCat is never
+           configured on web. A reader who wanted the app had to find the
+           stores themselves. These are the only links here that lead to a
+           purchase, so they get the accent and the full width. */
+        .store-cta {
+            background: linear-gradient(160deg, var(--panel-2), var(--card-bg));
+            border: 1px solid var(--edge-2);
+            border-radius: 3px;
+            padding: 30px;
+            margin: 50px 0 10px;
+            text-align: center;
+        }
+        .store-cta h3 {
+            font-family: var(--display);
+            font-size: 1.8rem;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            color: var(--heading);
+            margin: 0 0 10px;
+        }
+        .store-cta p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
+        .store-cta-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .store-cta-button {
+            display: inline-block;
+            padding: 13px 24px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #1a0a12;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .store-cta-button:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+        .store-cta-button--alt { background: transparent; color: var(--accent); }
+        .store-cta-button--alt:hover { background: rgba(255,95,176,0.12); color: var(--accent-hover); }
+        .store-cta-note { color: var(--dim); font-size: 0.82rem; margin: 18px 0 0; }
+
         /* ---------------------------------------------------------- footer */
         .app-footer {
             margin-top: 60px;
@@ -602,6 +648,61 @@ const estimateReadTime = (html) => {
     const words = html.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
     return Math.max(1, Math.round(words / 200));
 };
+
+// ===========================================================================
+// STORE LINKS
+// ---------------------------------------------------------------------------
+// Campaign-tagged, because an untagged install is an install you cannot
+// attribute: the blog is the top of the funnel and there was previously no way
+// to tell whether any of it produced a single download.
+//
+// Play reads `referrer`, which the Play Install Referrer API hands back to the
+// app after install, and which Play Console reports on directly.
+//
+// Apple reads `ct` (campaign token) and `pt` (provider token). Without `pt`,
+// App Analytics cannot attribute the click to a campaign - `ct` alone still
+// tags the URL, but nothing groups it. Get the value by generating a campaign
+// link in App Store Connect -> App Analytics -> Acquisition -> Campaigns and
+// copying the `pt` out of it; see docs/CONVERSION_INSTRUMENTATION.md.
+//
+// SET THIS and re-run `node scripts/generate_blog.mjs`. While it is null the
+// links still work and still carry `ct`, they just are not grouped.
+// ===========================================================================
+const PLAY_APP_ID = 'com.shotcallernakmuay.app';
+const APPLE_APP_ID = '6757487630';
+const APPLE_PROVIDER_TOKEN = null;
+
+const playUrl = (campaign) => {
+    const referrer = encodeURIComponent(
+        `utm_source=blog&utm_medium=organic&utm_campaign=${campaign}`
+    );
+    return `https://play.google.com/store/apps/details?id=${PLAY_APP_ID}&referrer=${referrer}`;
+};
+
+const appleUrl = (campaign) => {
+    const params = [
+        ...(APPLE_PROVIDER_TOKEN ? [`pt=${APPLE_PROVIDER_TOKEN}`] : []),
+        `ct=${encodeURIComponent(campaign)}`,
+        'mt=8',
+    ];
+    return `https://apps.apple.com/us/app/shot-caller-nak-muay/id${APPLE_APP_ID}?${params.join('&')}`;
+};
+
+/**
+ * The download block. `campaign` is the post slug, so a click can be traced
+ * back to the article that earned it rather than to "the blog".
+ */
+const renderStoreCta = (campaign) => `
+    <div class="store-cta">
+        <h3>Train To It Tonight</h3>
+        <p>Shot Caller Nak Muay calls real Muay Thai combinations out loud while you work. Free to start &mdash; the round timer, Freestyle and Nak Muay Newb cost nothing.</p>
+        <div class="store-cta-buttons">
+            <a href="${appleUrl(campaign)}" class="store-cta-button">Download on iPhone &amp; iPad</a>
+            <a href="${playUrl(campaign)}" class="store-cta-button store-cta-button--alt">Get it on Google Play</a>
+        </div>
+        <p class="store-cta-note">Prefer to try it in the browser first? <a href="/">Open the web version</a>.</p>
+    </div>
+`;
 
 const renderPostCard = (post) => `
     <a href="/blog/${post.filename}" class="post-card" data-tag="${post.tag}">
@@ -1523,6 +1624,7 @@ const indexContent = `
     <div class="post-grid">
         ${restPosts.map(renderPostCard).join('')}
     </div>
+    ${renderStoreCta('blog-index')}
     <script>
     (function () {
         var pills = document.querySelectorAll('.filter-pill');
@@ -1564,6 +1666,7 @@ posts.forEach((post, i) => {
         <a href="/blog/index.html" class="back-link-top">&larr; All Articles</a>
         ${renderArticleEyebrow(post)}
         ${body}
+        ${renderStoreCta(post.filename.replace(/\.html$/, ''))}
         ${renderRelated(related)}
         ${renderPrevNext(prev, next)}
         <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>

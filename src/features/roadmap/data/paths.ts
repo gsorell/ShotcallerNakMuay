@@ -62,7 +62,11 @@ export interface RoadmapLevel {
    * missing image.
    */
   art?: string;
-  /** Playable without Pro. Exactly one core level carries this. */
+  /**
+   * Playable without Pro. The opening run of core levels carries this — one
+   * free level let people see the path but never finish anything, which is a
+   * worse advert for it than three levels that end somewhere.
+   */
   free?: boolean;
   /** Sits past graduation — excluded from the `newb` coverage invariant. */
   bonus?: boolean;
@@ -138,6 +142,7 @@ export const FOUNDATIONS: RoadmapPath = {
       art: "/assets/icon_left_hook.png",
       languageNote:
         "Two more numbers: 3 is your left hook, 4 your right. So 1 2 3 is jab, cross, left hook — one syllable each, which is why combinations are called this way.",
+      free: true,
       session: EARLY,
     },
     {
@@ -152,6 +157,7 @@ export const FOUNDATIONS: RoadmapPath = {
         "1 2, Left Teep",
         "Left Teep, 1 2",
       ],
+      free: true,
       session: EARLY,
     },
     {

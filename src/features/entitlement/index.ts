@@ -5,9 +5,11 @@ export {
 } from "./EntitlementProvider";
 export {
   FREE_EMPHASIS_KEYS,
+  FREE_LEARN_SLUGS,
   PRO_ENTITLEMENT_ID,
   PRODUCT_IDS,
   isFreeEmphasis,
+  isFreeLearnSlug,
 } from "./constants";
 export { isLegacyOwner, markLegacyOwner } from "./legacy";
 export {

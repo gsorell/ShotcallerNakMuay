@@ -1,11 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import type { PurchasesPackage } from "@revenuecat/purchases-capacitor";
 
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/constants/storeLinks";
 import { isLegacyClaimAvailable, useEntitlement } from "@/features/entitlement";
-import { trackEvent } from "@/utils/analytics";
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { LegacyClaimSheet } from "./LegacyClaimSheet";
+import {
+  annualSavingsPercent,
+  describeIntroOffer,
+  monthlyEquivalent,
+} from "./pricing";
 
 const TERMS_URL = "https://shotcallernakmuay.netlify.app/terms.html";
 const PRIVACY_URL = "https://shotcallernakmuay.netlify.app/privacy-policy.html";
@@ -20,6 +25,9 @@ interface PackageMeta {
   badge?: string;
   order: number;
 }
+
+/** How the sheet was left. Everything except `purchase` is a lost sale. */
+type DismissReason = "close_button" | "overlay";
 
 // Human-readable labelling derived from the RevenueCat package type.
 function metaFor(pkg: PurchasesPackage): PackageMeta {
@@ -53,11 +61,36 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   // the web build sends people to the app that can actually sell them Pro.
   const isWeb = !Capacitor.isNativePlatform();
 
+  // When the sheet appeared, so a dismissal can report how long it was read.
+  // A paywall closed in under a second is a misfire; one closed after twenty
+  // is a price objection, and the two want opposite fixes.
+  const openedAt = useRef(Date.now());
+  // A purchase also unmounts the sheet, but it is not a dismissal.
+  const purchasedRef = useRef(false);
+
   useEffect(() => {
     try {
-      trackEvent("paywall_open", { source: source ?? "unknown" });
+      trackEvent(AnalyticsEvents.PaywallOpen, { source: source ?? "unknown" });
     } catch {}
   }, [source]);
+
+  const dismiss = useCallback(
+    (reason: DismissReason) => {
+      if (!purchasedRef.current) {
+        try {
+          trackEvent(AnalyticsEvents.PaywallDismiss, {
+            source: source ?? "unknown",
+            reason,
+            seconds_open: Math.round((Date.now() - openedAt.current) / 1000),
+            // Whether they got as far as the store sheet before backing out.
+            plans_loaded: packages !== null && packages.length > 0,
+          });
+        } catch {}
+      }
+      onClose();
+    },
+    [onClose, packages, source]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -78,21 +111,77 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     [packages]
   );
 
+  // The saving is a property of the pair of plans, not of either one, so it is
+  // computed once here rather than per row.
+  const savings = useMemo(() => annualSavingsPercent(sorted), [sorted]);
+
+  // The strongest thing we can say, if the store is offering it: a free trial
+  // on any plan changes the ask from "pay now" to "try it". Surfaced in the
+  // subtitle as well as on the row, because most people never read the rows.
+  const trialOffer = useMemo(
+    () => sorted.map(describeIntroOffer).find((o) => o?.isFreeTrial) ?? null,
+    [sorted]
+  );
+
+  // Which row gets the visual weight. Annual is the one worth recommending —
+  // it is the best value and the best retention — and a paywall where every
+  // option looks identical asks the user to do the comparison themselves.
+  const recommended = useMemo(
+    () =>
+      sorted.find((p) => p.packageType === "ANNUAL")?.identifier ??
+      sorted[0]?.identifier ??
+      null,
+    [sorted]
+  );
+
   const handlePurchase = async (pkg: PurchasesPackage) => {
+    const intro = describeIntroOffer(pkg);
+    try {
+      // The tap itself, so the drop between "chose a plan" and "completed the
+      // store sheet" is visible. That gap is a store problem, not a copy one.
+      trackEvent(AnalyticsEvents.PaywallPlanTap, {
+        source: source ?? "unknown",
+        product: pkg.product.identifier,
+        package_type: pkg.packageType,
+        has_trial: !!intro?.isFreeTrial,
+      });
+    } catch {}
+
     setBusy(pkg.identifier);
     setMessage(null);
     const result = await purchase(pkg);
     setBusy(null);
     if (result.success) {
+      purchasedRef.current = true;
       try {
-        trackEvent("paywall_purchase_success", {
+        trackEvent(AnalyticsEvents.PaywallPurchaseSuccess, {
+          source: source ?? "unknown",
           product: pkg.product.identifier,
+          package_type: pkg.packageType,
+          has_trial: !!intro?.isFreeTrial,
+          // GA4 revenue reporting needs these two names specifically.
+          value: pkg.product.price,
+          currency: pkg.product.currencyCode,
         });
       } catch {}
       onClose();
     } else if (result.cancelled) {
-      // User backed out; no message needed.
+      // User backed out at the store sheet; no message needed, but this is a
+      // different loss from never tapping at all and is counted separately.
+      try {
+        trackEvent(AnalyticsEvents.PaywallPurchaseCancelled, {
+          source: source ?? "unknown",
+          product: pkg.product.identifier,
+        });
+      } catch {}
     } else {
+      try {
+        trackEvent(AnalyticsEvents.PaywallPurchaseError, {
+          source: source ?? "unknown",
+          product: pkg.product.identifier,
+          error: result.error ?? "unknown",
+        });
+      } catch {}
       setMessage(result.error ?? "Something went wrong. Please try again.");
     }
   };
@@ -102,6 +191,9 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     setMessage(null);
     await restore();
     setBusy(null);
+    try {
+      trackEvent(AnalyticsEvents.PaywallRestore, { source: source ?? "unknown" });
+    } catch {}
     setMessage("If you had a purchase, it's been restored.");
   };
 
@@ -112,9 +204,14 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     try {
       // Recorded so the real volume of manual claims is visible — both to spot
       // abuse and to know whether the automatic grandfathering is working.
-      trackEvent("paywall_legacy_claim", { order_id: orderId, source });
+      trackEvent(AnalyticsEvents.PaywallLegacyClaim, {
+        order_id: orderId,
+        source,
+      });
     } catch {}
     setShowLegacyClaim(false);
+    // A claim is an unlock, not an abandonment.
+    purchasedRef.current = true;
     onClose();
   };
 
@@ -123,24 +220,34 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label="Unlock Shotcaller Pro"
-      onClick={onClose}
+      onClick={() => dismiss("overlay")}
       style={styles.overlay}
     >
       <div onClick={(e) => e.stopPropagation()} style={styles.sheet}>
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => dismiss("close_button")}
           aria-label="Close"
           style={styles.close}
         >
           ✕
         </button>
 
-        <h2 style={styles.title}>Unlock Shotcaller Pro</h2>
+        <h2 style={styles.title}>
+          {trialOffer ? "Try Shotcaller Pro free" : "Unlock Shotcaller Pro"}
+        </h2>
         <p style={styles.subtitle}>
           Every fighting style, the technique editor, advanced training options,
           and the full charm progression.
         </p>
+
+        {/* Only ever rendered from a store-provided intro price, so it cannot
+            claim a trial the store will not actually honour. */}
+        {trialOffer && !isWeb && (
+          <p style={styles.trialBanner}>
+            Start with <strong>{trialOffer.label}</strong> — cancel anytime.
+          </p>
+        )}
 
         {isWeb && (
           <>
@@ -187,6 +294,15 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           {sorted.map((pkg) => {
             const meta = metaFor(pkg);
             const loading = busy === pkg.identifier;
+            const intro = describeIntroOffer(pkg);
+            const perMonth = monthlyEquivalent(pkg);
+            const isRecommended = pkg.identifier === recommended;
+            // The annual saving belongs on the annual row, and replaces the
+            // generic "Best value" chip with the number behind it.
+            const badge =
+              pkg.packageType === "ANNUAL" && savings
+                ? `Save ${savings}%`
+                : meta.badge;
             return (
               <button
                 key={pkg.identifier}
@@ -195,18 +311,43 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 onClick={() => handlePurchase(pkg)}
                 style={{
                   ...styles.plan,
+                  ...(isRecommended ? styles.planRecommended : null),
                   opacity: busy && !loading ? 0.5 : 1,
                 }}
               >
-                <div style={{ textAlign: "left" }}>
+                <div style={{ textAlign: "left", minWidth: 0 }}>
                   <div style={styles.planTitle}>{pkg.product.title}</div>
                   <div style={styles.planPeriod}>
                     {pkg.product.priceString} {meta.period}
+                    {perMonth && (
+                      <span style={styles.planPerMonth}>
+                        {" "}
+                        · {perMonth}/mo
+                      </span>
+                    )}
                   </div>
+                  {intro && (
+                    <div style={styles.planIntro}>
+                      {intro.isFreeTrial
+                        ? `${intro.label}, then ${pkg.product.priceString}`
+                        : intro.label}
+                    </div>
+                  )}
                 </div>
                 <div style={styles.planRight}>
-                  {meta.badge && <span style={styles.badge}>{meta.badge}</span>}
-                  <span>{loading ? "…" : "Get"}</span>
+                  {badge && (
+                    <span
+                      style={{
+                        ...styles.badge,
+                        ...(isRecommended ? styles.badgeRecommended : null),
+                      }}
+                    >
+                      {badge}
+                    </span>
+                  )}
+                  <span>
+                    {loading ? "…" : intro?.isFreeTrial ? "Try free" : "Get"}
+                  </span>
                 </div>
               </button>
             );
@@ -220,6 +361,9 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             be started from the browser. */}
         {!isWeb && (
           <p style={styles.finePrint}>
+            {trialOffer
+              ? "Your trial converts to a paid subscription unless cancelled at least 24 hours before it ends. "
+              : ""}
             Subscriptions auto-renew unless cancelled at least 24 hours before
             the period ends. Manage or cancel anytime in your App Store or
             Google Play account settings.
@@ -327,6 +471,17 @@ const styles = {
     margin: "0 0 1.25rem",
     lineHeight: 1.4,
   },
+  trialBanner: {
+    background: "rgba(37,99,235,0.18)",
+    border: "1px solid rgba(96,165,250,0.45)",
+    borderRadius: "0.75rem",
+    color: "#dbeafe",
+    fontSize: "0.9rem",
+    lineHeight: 1.4,
+    margin: "0 0 1rem",
+    padding: "0.7rem 0.9rem",
+    textAlign: "center",
+  },
   list: { display: "flex", flexDirection: "column", gap: "0.75rem" },
   webNote: {
     color: "rgba(255,255,255,0.85)",
@@ -361,6 +516,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: "0.5rem",
     padding: "0.875rem 1rem",
     borderRadius: "0.875rem",
     border: "2px solid rgba(255,255,255,0.15)",
@@ -370,13 +526,27 @@ const styles = {
     transition: "border 0.2s, background 0.2s",
     width: "100%",
   },
+  // The recommended row carries the accent the rest of the app uses for the
+  // primary action, so the eye lands on one option instead of three.
+  planRecommended: {
+    border: "2px solid #ec4899",
+    background: "rgba(236,72,153,0.12)",
+  },
   planTitle: { fontWeight: 700, fontSize: "1rem" },
   planPeriod: { color: "#f9a8d4", fontSize: "0.85rem", marginTop: "0.15rem" },
+  planPerMonth: { color: "rgba(255,255,255,0.55)" },
+  planIntro: {
+    color: "#93c5fd",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    marginTop: "0.2rem",
+  },
   planRight: {
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
     fontWeight: 700,
+    flexShrink: 0,
   },
   badge: {
     background: "#2563eb",
@@ -388,6 +558,7 @@ const styles = {
     textTransform: "uppercase",
     letterSpacing: "0.03em",
   },
+  badgeRecommended: { background: "#ec4899" },
   message: {
     color: "#fca5a5",
     fontSize: "0.85rem",
