@@ -29,6 +29,7 @@ import {
   getFirstInstallTime,
   isGrandfatheredByInstallTime,
 } from "./installInfo";
+import { getClientId, setRevenueCatUserId } from "@/utils/analytics";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
 import { isGrandfatheredByOriginalVersion } from "./originalVersion";
 import { readCachedStatus, writeCachedStatus } from "./statusCache";
@@ -265,12 +266,30 @@ export function EntitlementProvider({
 
       try {
         await Purchases.setLogLevel({ level: LOG_LEVEL.WARN });
+        // Deliberately configured WITHOUT an appUserID. Handing RevenueCat our
+        // own id here would re-key every existing subscriber onto a user that
+        // has no entitlement attached until they restore — i.e. it would lock
+        // real payers out to buy an analytics join. The join is done with a
+        // subscriber attribute below instead, which costs nothing and breaks
+        // nothing.
         await Purchases.configure({ apiKey });
         configuredRef.current = true;
+
+        // The two halves of the attribution join, in both directions:
+        // RevenueCat rows carry the GA4 client id, and GA4 events carry
+        // RevenueCat's user id. Either dashboard can now answer "which
+        // campaign produced this subscriber", which neither could before.
+        try {
+          const clientId = await getClientId();
+          await Purchases.setAttributes({ ga_client_id: clientId });
+        } catch (error) {
+          console.warn("[entitlement] setAttributes failed", error);
+        }
         await Purchases.addCustomerInfoUpdateListener((customerInfo) => {
           if (!cancelled) void evaluate(customerInfo);
         });
         const { customerInfo } = await Purchases.getCustomerInfo();
+        setRevenueCatUserId(customerInfo.originalAppUserId);
         if (!cancelled) await evaluate(customerInfo);
       } catch (error) {
         console.warn("[entitlement] RevenueCat init failed", error);

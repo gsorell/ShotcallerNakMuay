@@ -50,10 +50,18 @@ describe("roadmap structure", () => {
     }
   });
 
-  it("marks exactly one core level free, and it is the first", () => {
+  it("gives away an unbroken run of levels from the first", () => {
+    // The free levels have to be the *opening* ones and have to be
+    // contiguous: the ladder unlocks in order, so a free level with a locked
+    // one before it can never be reached and is worth nothing.
     for (const path of ROADMAP_PATHS) {
-      const free = path.levels.filter((l) => l.free);
-      expect(free.map((l) => l.id), path.id).toEqual([1]);
+      const free = path.levels.filter((l) => l.free).map((l) => l.id);
+      expect(free.length, path.id).toBeGreaterThan(0);
+      expect(free, path.id).toEqual(
+        Array.from({ length: free.length }, (_, i) => i + 1)
+      );
+      // Still a sample, not the product.
+      expect(free.length, path.id).toBeLessThan(path.levels.length / 2);
     }
   });
 

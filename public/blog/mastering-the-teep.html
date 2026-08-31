@@ -476,6 +476,52 @@
         .hero h1 { margin-top: 0; font-size: 2.1rem; }
         .hero p { color: var(--muted); margin-bottom: 0; }
 
+        /* ------------------------------------------------------ store CTA */
+        /* The reason this block exists: every CTA on this site used to point
+           at "/", the PWA - which cannot sell Pro, because RevenueCat is never
+           configured on web. A reader who wanted the app had to find the
+           stores themselves. These are the only links here that lead to a
+           purchase, so they get the accent and the full width. */
+        .store-cta {
+            background: linear-gradient(160deg, var(--panel-2), var(--card-bg));
+            border: 1px solid var(--edge-2);
+            border-radius: 3px;
+            padding: 30px;
+            margin: 50px 0 10px;
+            text-align: center;
+        }
+        .store-cta h3 {
+            font-family: var(--display);
+            font-size: 1.8rem;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            color: var(--heading);
+            margin: 0 0 10px;
+        }
+        .store-cta p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
+        .store-cta-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .store-cta-button {
+            display: inline-block;
+            padding: 13px 24px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #1a0a12;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+        .store-cta-button:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+        .store-cta-button--alt { background: transparent; color: var(--accent); }
+        .store-cta-button--alt:hover { background: rgba(255,95,176,0.12); color: var(--accent-hover); }
+        .store-cta-note { color: var(--dim); font-size: 0.82rem; margin: 18px 0 0; }
+
         /* ---------------------------------------------------------- footer */
         .app-footer {
             margin-top: 60px;
@@ -578,6 +624,17 @@
                 <p>When you are using Shot Caller Nak Muay, the app will constantly command you to <strong>"Teep."</strong> Do not throw it softly. Treat the heavy bag as an encroaching opponent. Jab it with your foot, stop the bag's swing entirely, and re-establish your stance immediately.</p>
             </div>
             
+        
+    <div class="store-cta">
+        <h3>Train To It Tonight</h3>
+        <p>Shot Caller Nak Muay calls real Muay Thai combinations out loud while you work. Free to start &mdash; the round timer, Freestyle and Nak Muay Newb cost nothing.</p>
+        <div class="store-cta-buttons">
+            <a href="https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630?ct=mastering-the-teep&mt=8" class="store-cta-button">Download on iPhone &amp; iPad</a>
+            <a href="https://play.google.com/store/apps/details?id=com.shotcallernakmuay.app&referrer=utm_source%3Dblog%26utm_medium%3Dorganic%26utm_campaign%3Dmastering-the-teep" class="store-cta-button store-cta-button--alt">Get it on Google Play</a>
+        </div>
+        <p class="store-cta-note">Prefer to try it in the browser first? <a href="/">Open the web version</a>.</p>
+    </div>
+
         
     <div class="related-section">
         <h3>You Might Also Like</h3>

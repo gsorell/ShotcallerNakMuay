@@ -31,6 +31,19 @@ export function isFreeEmphasis(key: EmphasisKey): boolean {
   return FREE_EMPHASIS_KEYS.has(key);
 }
 
+// Lessons in the Learn library that open without Pro. These are the two
+// techniques the first guided level teaches, so a free user's path and their
+// library agree with each other rather than one of them dead-ending.
+//
+// A browsable shelf shows how much there is; it does not show what a lesson is
+// actually like, which is the thing being sold. Two open lessons out of the
+// library is a sample, not the product.
+export const FREE_LEARN_SLUGS: ReadonlySet<string> = new Set(["jab", "cross"]);
+
+export function isFreeLearnSlug(slug: string): boolean {
+  return FREE_LEARN_SLUGS.has(slug);
+}
+
 // Persistent flag marking a user who owned the app during its paid era.
 // Stored via Capacitor Preferences → Android SharedPreferences, which Android
 // Auto Backup covers by default, so the flag survives reinstall on the same

@@ -1,6 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { useEntitlement } from "@/features/entitlement";
+import {
+  isFreeEmphasis,
+  isFreeLearnSlug,
+  useEntitlement,
+} from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
 // Direct component imports rather than the roadmap barrel: the barrel pulls in
 // modules that import this feature back.
@@ -68,11 +72,13 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 
   const [view, setView] = useState<View>({ mode: "categories" });
 
-  // Free users can browse the shelf — categories and technique names — so the
-  // depth of what Pro buys is visible. Opening a lesson is where Pro starts.
+  // Free users can browse the whole shelf — categories and technique names —
+  // so the depth of what Pro buys is visible, and can open the sample lessons
+  // in FREE_LEARN_SLUGS so they know what a lesson actually is. Every other
+  // lesson is where Pro starts.
   const openTile = useCallback(
     (tile: GalleryTile) => {
-      if (!isPro) {
+      if (!isPro && !isFreeLearnSlug(tile.entry.slug)) {
         openPaywall("learn_lesson");
         return;
       }
@@ -95,9 +101,9 @@ export function LearnSection({ onBack }: LearnSectionProps) {
   );
 
   /**
-   * Opening a combination, on exactly the terms a lesson opens on: the shelf
-   * is browsable free so the depth of what Pro buys is visible, and playing
-   * something is where Pro starts.
+   * Opening a combination. Unlike a lesson, none of these are free: a
+   * combination is the drilling, which is the thing Pro is for, and the shelf
+   * already shows what there is of it.
    */
   const openCombo = useCallback(
     (combo: string) => {
@@ -132,13 +138,22 @@ export function LearnSection({ onBack }: LearnSectionProps) {
    */
   const drillStyle = useCallback(
     (styleKey: string, slug: string) => {
+      // The free sample lessons made this button reachable without Pro for the
+      // first time, and it selects a style directly — the style gating lives in
+      // the emphasis selector's UI, which this path goes around. Without this
+      // check, a free user reading the free jab lesson could drill it in a Pro
+      // style just by tapping through from here.
+      if (!isPro && !isFreeEmphasis(styleKey as EmphasisKey)) {
+        openPaywall("learn_drill");
+        return;
+      }
       trackEvent("learn_drill_start", { slug, emphasis: styleKey });
       settings.clearAllEmphases();
       settings.toggleEmphasis(styleKey as EmphasisKey, "learn_drill");
       setPage("timer");
       scrollContentToTop("auto");
     },
-    [settings, setPage]
+    [settings, setPage, isPro, openPaywall]
   );
 
   // The guided path renders its own header and back button, so this page steps
@@ -235,11 +250,12 @@ function CategoryList({
       {!isPro && (
         <button className="learn-unlock-banner" onClick={onUnlock}>
           <span className="learn-unlock-banner-title">
-            🔒 Full lessons are part of Pro
+            🔓 Open the Jab and the Cross free
           </span>
           <span className="learn-unlock-banner-body">
-            Browse the whole shelf below. Unlock Pro to open any lesson and
-            drill it straight from here.
+            Two full lessons are yours to read right now. Unlock Pro for the
+            rest of the library, the combinations, and drilling any of it
+            straight from here.
           </span>
         </button>
       )}

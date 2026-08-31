@@ -7,6 +7,8 @@ import {
   type WorkoutStats,
 } from "@/utils/imageUtils";
 import { useEntitlement } from "@/features/entitlement";
+import { useOnboardingState } from "@/features/onboarding";
+import { shouldPromptAfterWorkout, usePaywall } from "@/features/paywall";
 import { useHomeStats } from "../hooks/useHomeStats";
 import { claimNewMilestone } from "../utils/milestones";
 import { claimNewCharms, readWorkoutHistory } from "../utils/charms";
@@ -41,9 +43,13 @@ export default function WorkoutCompleted({
   const workoutSummaryRef = useRef<HTMLDivElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const stats_home = useHomeStats(0);
-  const { isPro } = useEntitlement();
+  const { isPro, ready } = useEntitlement();
+  const { openPaywall } = usePaywall();
+  const { isShowing: onboardingShowing, finishedThisSession } =
+    useOnboardingState();
   const [celebrationQueue, setCelebrationQueue] = useState<Celebration[]>([]);
   const claimedRef = useRef(false);
+  const promptedRef = useRef(false);
 
   useEffect(() => {
     if (claimedRef.current) return;
@@ -73,6 +79,31 @@ export default function WorkoutCompleted({
 
     if (queue.length > 0) setCelebrationQueue(queue);
   }, [stats_home, isPro]);
+
+  /**
+   * The upsell, at the one moment the product has just proved itself. Pro
+   * users are excluded, and so is anyone who met onboarding this session —
+   * two asks in one sitting is how a first impression gets spent.
+   *
+   * The effect runs on mount only; `shouldPromptAfterWorkout` owns the "has
+   * this already fired" question and persists its own answer, so re-entering
+   * this screen cannot re-ask.
+   */
+  useEffect(() => {
+    if (promptedRef.current) return;
+    // Wait for entitlement to resolve. `isPro` is false while the status is
+    // still `unknown`, so acting before `ready` would show a paywall to a
+    // grandfathered owner whose lookup simply hadn't come back yet.
+    if (!ready) return;
+    if (isPro) return;
+    if (onboardingShowing || finishedThisSession) return;
+    promptedRef.current = true;
+    // The just-finished workout is already in the log by the time this screen
+    // renders, so the history length is the total including it.
+    if (shouldPromptAfterWorkout(readWorkoutHistory().length)) {
+      openPaywall("workout_complete");
+    }
+  }, [ready, isPro, onboardingShowing, finishedThisSession, openPaywall]);
 
   // Map internal difficulty values to display labels
   const getDifficultyLabel = (difficulty: string): string => {
