@@ -11,12 +11,16 @@
     <meta property="og:title" content="Overcoming the App Learning Curve: Mastering Thai Callouts">
     <meta property="og:description" content="Intimidated by true Muay Thai terminology? Here is how to use Shot Caller's built-in guided paths and technique library to confidently learn the callouts.">
     <meta property="og:url" content="https://shotcallernakmuay.netlify.app/blog/getting-started-with-shot-caller-callouts.html">
+    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_desktop.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://shotcallernakmuay.netlify.app/assets/hero_desktop.png">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       "headline": "Overcoming the App Learning Curve: Mastering Thai Callouts",
       "description": "Intimidated by true Muay Thai terminology? Here is how to use Shot Caller's built-in guided paths and technique library to confidently learn the callouts.",
+      "image": "https://shotcallernakmuay.netlify.app/assets/hero_desktop.png",
       "author": { "@type": "Organization", "name": "Shot Caller Nak Muay" },
       "publisher": { "@type": "Organization", "name": "Shot Caller Nak Muay" }
     }
@@ -577,6 +581,97 @@
         }
         @media (max-width: 560px) {
             .figure-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* --------------------------------------- technique reference grid */
+        /* The whole sheet library as a lookup table, for the one post that is
+           a reference rather than an essay. The cells are the .tfig/.tfig-cell
+           mechanics above, unchanged - one cell wide, 600% image, six discrete
+           steps - which is what lets the reduced-motion rule at the bottom of
+           this sheet keep holding the extension frame here too. What is new is
+           the density, the per-card text, and the two toggles.
+           It breaks the 720px reading column on purpose. Running prose wants a
+           narrow measure; a table of figures wants to be scanned. */
+        .ref-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 1.6em 0 3em;
+        }
+        @media (min-width: 900px) {
+            .ref-grid {
+                width: 860px;
+                margin-left: -70px;
+                margin-right: -70px;
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 560px) {
+            .ref-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        }
+        .ref-grid .tfig { padding: 8px 8px 13px; }
+        .ref-thai {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            letter-spacing: 0.07em;
+            color: var(--dim);
+            margin-top: 3px;
+        }
+        .ref-cue {
+            display: block;
+            font-size: 0.79rem;
+            line-height: 1.5;
+            color: var(--muted);
+            text-align: left;
+            margin-top: 9px;
+            padding-top: 9px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        /* Southpaw. Every sheet was shot orthodox, so the mirror is a flip of
+           the cell - and the centring nudge has to flip with it, because a
+           figure sitting left of centre sits RIGHT of centre once mirrored.
+           Order is what does that: the flip comes first, so the slide is taken
+           in the mirrored frame and reverses for free. No second value needed.
+           Same composition as .technique-sprite in the app, deliberately.
+           It goes on the CELL rather than the image because the image is busy
+           carrying the frame-stepping animation, and the two cannot share the
+           transform property. */
+        .ref-grid.is-southpaw .tfig-cell {
+            transform: scaleX(-1) translateX(var(--ink, 0%));
+        }
+        /* Freeze holds LANDED_FRAME: -50% of a six-cell sheet is three cells
+           across, so it stops on the fourth - the extension pose. Same number
+           the reduced-motion rule uses, for the same reason. */
+        .ref-grid.is-frozen .tfig-cell img {
+            animation: none;
+            transform: translateX(-50%);
+        }
+        .ref-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel-2);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            padding: 13px;
+            margin: 2.2em 0 1.4em;
+        }
+        @media (min-width: 700px) {
+            /* Parks under the 94px navbar. Worth the stickiness on a page you
+               scroll for several minutes; not worth the screen it would cost
+               on a phone, where the toolbar wraps to two rows. */
+            .ref-tools { position: sticky; top: 94px; z-index: 50; }
+        }
+        .ref-tools-label {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--dim);
         }
 
         .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 3px; margin-bottom: 40px; }
