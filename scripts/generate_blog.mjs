@@ -863,18 +863,18 @@ const posts = [
     {
         filename: 'fighters-in-the-park-technique-library-inspiration.html',
         title: 'The Fighters in the Park: Where Shot Caller\'s Technique Library Came From',
-        desc: 'A statue garden in Thailand \u2014 dozens of concrete Nak Muays frozen mid-technique, each with the name of the technique painted across the shorts \u2014 is the reason the app shows you a figure instead of a paragraph.',
+        desc: 'At Bang Kung Camp in Samut Songkhram, a hundred concrete Nak Muays stand frozen mid-technique with the name of each one painted across the shorts. It is a syllabus in a field, and it is why Shot Caller shows you a figure instead of a paragraph.',
         date: 'Sep 1, 2026',
         tag: 'Behind The Scenes',
         content: `
             <h1>The Fighters in the Park: Where Shot Caller&rsquo;s Technique Library Came From</h1>
             ${renderMeta('Shotcaller Sam', 'September 1, 2026')}
-            <p>I wasn&rsquo;t looking for it. I was walking through a park in Thailand, and there they were &mdash; dozens of concrete fighters standing in the grass, each one on its own low plinth, each one caught in the middle of a technique.</p>
-            <p>Rope-wrapped hands. Head bands. A row of them stretching back under the trees, elbows up, shins turned over, teeps extended into nothing. It took me a minute to work out what I was actually looking at, which is that it isn&rsquo;t a monument. It&rsquo;s a <strong>curriculum</strong>.</p>
+            <p>I wasn&rsquo;t looking for it. I was walking the grounds at <strong>Bang Kung Camp</strong>, an old Ayutthaya-era fort site wrapped around a temple in Samut Songkhram, a couple of hours southwest of Bangkok &mdash; and there they were. Concrete fighters standing in the grass, each on a low plinth, each caught in the middle of a technique, a hundred of them running back under the trees.</p>
+            <p>Rope-wrapped hands. Head bands. Elbows up, shins turned over, teeps extended into nothing. It took me a minute to work out what I was actually looking at, which is that it isn&rsquo;t a monument. It&rsquo;s a <strong>curriculum</strong>.</p>
 
             <figure class="photo photo--wide">
-                <img src="/assets/blog/thailand-statue-park.webp" alt="Dozens of life-size painted concrete statues of Muay Thai fighters standing in a grassy park in Thailand, each frozen mid-technique with rope-wrapped hands and a head band, the name of the technique painted in Thai script across the waistband of the shorts." loading="lazy" width="1720" height="1147">
-                <figcaption>The park in Thailand. Every figure is one technique, held at the moment it reads.</figcaption>
+                <img src="/assets/blog/thailand-statue-park.webp" alt="Life-size painted concrete statues of Muay Thai fighters at Bang Kung Camp in Samut Songkhram, Thailand, standing on grass under trees. Each is frozen mid-technique with rope-wrapped hands and a head band, and the name of the technique is painted in Thai script across the waistband of the shorts." loading="lazy" width="1720" height="1147">
+                <figcaption>Bang Kung Camp, Samut Songkhram. Each pair is one technique, held at the moment it reads.</figcaption>
             </figure>
 
             <h2>A Reference Book You Walk Through</h2>
@@ -883,11 +883,12 @@ const posts = [
             <p>And then, painted by hand across the waistband of every pair of shorts, is its name.</p>
             <p>That&rsquo;s not decoration. That&rsquo;s a catalogue entry. One technique, held at its clearest pose, labelled with what to call it &mdash; and a long row of them you can walk at your own pace, doubling back to the ones you didn&rsquo;t get. Somebody built a technique library out of concrete and stood it in a field, and it works better than most of the ones on the internet.</p>
 
-            <h2>The Problem It Solved, About Six Thousand Miles Away</h2>
-            <p>Shot Caller had the exact opposite problem, and I&rsquo;d been circling it for months.</p>
-            <p>The app shouts <em>&ldquo;1 2 3, Right Low Kick&rdquo;</em> at you while you work. That&rsquo;s the whole product. And it is completely useless to somebody who doesn&rsquo;t yet know what <strong>3</strong> means &mdash; every feature past that point sits behind a wall the beginner cannot get over.</p>
-            <p>We&rsquo;d answered it with words. Descriptions, key points, common mistakes. <em>Turn the hip over and land with the shin, not the instep.</em> Which is true, and which tells you nothing you can put into a body that has never been in that shape before. You cannot read your way into a round kick any more than you can read your way into a swimming stroke.</p>
-            <p>The park had solved it in concrete, long before I turned up, and the solution was: <strong>stop describing it and show me the shape.</strong></p>
+            <h2>The Same Problem, Read From The Other End</h2>
+            <p>Shot Caller was standing at the far end of what that field had worked out, and I&rsquo;d been circling it for months.</p>
+            <p>The app calls <em>&ldquo;1 2 3, Right Low Kick&rdquo;</em> out loud while you work, and for anyone who already speaks that language it does exactly what it should: hands free, eyes off the screen, nothing to decide mid-round. The callouts are the product and they work.</p>
+            <p>What they also do is assume the language. Come to it without knowing what <strong>3</strong> is and the calls arrive faster than you can decode them &mdash; not because anything is broken, but because the app is talking and you haven&rsquo;t been taught the words yet. Everything good about it is on the far side of a vocabulary nobody had handed over.</p>
+            <p>We&rsquo;d been handing it over in prose. Descriptions, key points, common mistakes. <em>Turn the hip over and land with the shin, not the instep.</em> Every word of that is true and worth reading &mdash; and nearly all of it lands better <em>after</em> you have seen the movement than before. Writing is a fine place to keep the detail. It&rsquo;s a hard place to meet a shape for the first time.</p>
+            <p>Bang Kung had settled that question in concrete a long time before I turned up: <strong>stop describing it and show me the shape.</strong></p>
 
             <h2>Why One Frozen Pose Is Exactly The Right Amount</h2>
             <p>The obvious answer is video, and video is worse. This is the part it took the park to teach me.</p>
@@ -919,23 +920,25 @@ const posts = [
             <h2>The Name On The Shorts</h2>
             <p>The other half of what the park got right is the label, and it&rsquo;s the half I nearly missed.</p>
             <p>A figure with no name is a picture. A figure <em>with</em> its name is a lookup &mdash; it closes the gap between the thing you can see and the thing somebody is about to say to you. Those statues carry the technique&rsquo;s name in Thai script right where you cannot avoid reading it, and that is the whole difference between an art installation and a teaching tool.</p>
-            <p>So in the app the label does one extra job. Under every figure is the name, and under the name is <strong>the number the app is going to shout at you</strong>. Jab 1. Cross 2. Left Hook 3.</p>
+            <p>Read the shorts and you find out what the row actually is. One pair is <strong>&#3627;&#3633;&#3585;&#3591;&#3623;&#3591;&#3652;&#3629;&#3618;&#3619;&#3634;</strong> &mdash; <em>hak nguang aiyara</em>, &ldquo;breaking the elephant&rsquo;s trunk&rdquo;. Another is <strong>&#3609;&#3634;&#3588;&#3634;&#3610;&#3636;&#3604;&#3627;&#3634;&#3591;</strong>, <em>naka bit hang</em>, &ldquo;the naga twists its tail&rdquo;. The first is the tenth of the fifteen <em>Mae Mai</em>, the foundational techniques every fighter learns first. The second is the twelfth of the fifteen <em>Luk Mai</em> &mdash; the ones you are meant to reach only once the Mae Mai are already in you.</p>
+            <p>So it isn&rsquo;t a row of statues. It&rsquo;s a <strong>syllabus</strong>, thirty entries long, standing in a field in the order it is meant to be learned. Which is the oldest idea in the art and the one we&rsquo;d arrived at from the other direction: these first, then those.</p>
+            <p>In the app, the label does one extra job. Under every figure is the name, and under the name is <strong>the number the app is going to shout at you</strong>. Jab 1. Cross 2. Left Hook 3.</p>
             <p>The shelf isn&rsquo;t a gallery. It&rsquo;s a decoder for the voice in your headphones.</p>
 
             <h2>What Concrete Can&rsquo;t Do</h2>
             <p>Two things &mdash; and they&rsquo;re the two that made this worth building rather than just admiring.</p>
-            <p>A statue can&rsquo;t tell you where it sits in an order. The park is a row, and a row is not a sequence; a beginner standing in front of forty techniques has the same problem they had standing in front of the app. So every lesson in Shot Caller knows its place in the guided path &mdash; <strong>&ldquo;Taught at level 4 of Start Here&rdquo;</strong> is a link, and it takes you to the level that drills it.</p>
+            <p>A statue can&rsquo;t tell you where <em>you</em> are in the order. The row has one &mdash; Mae Mai, then Luk Mai, first through fifteenth &mdash; but it is cast into the ground, identical for everybody who walks past, and it has no idea which of the thirty you can already do. So every lesson in Shot Caller carries its place in the guided path with it: <strong>&ldquo;Taught at level 4 of Start Here&rdquo;</strong> is a link, and the path keeps count of the vocabulary you have actually covered.</p>
             <p>And a statue can&rsquo;t start a round. <strong>&ldquo;Drill it&rdquo;</strong> loads a style that calls the technique and starts the timer, so looking something up and actually hitting it are two halves of one errand instead of two separate decisions. That&rsquo;s the whole reason the library lives inside the app rather than on this website.</p>
             <p>There&rsquo;s more on how the path and the shelf fit together in <a href="/blog/learn-module-guided-path-technique-library.html">the write-up of the Learn module</a>.</p>
 
             <h2>Not One Of Them Is Generated</h2>
             <p>Worth saying, because it cost months: every figure in the library is cut from real footage, frame by frame, by hand. None of them came out of an image generator.</p>
             <p>The failure mode of a generated technique isn&rsquo;t that it looks wrong. It&rsquo;s that it looks <em>plausible</em> and is wrong &mdash; a flat rear foot on a cross, a &ldquo;check&rdquo; that&rsquo;s really a knee, a guard hand drifting to exactly where the counter comes through. Errors that are invisible to precisely the person least equipped to catch them, who is the beginner the whole module exists for.</p>
-            <p>The fighters in that park were shaped by somebody who knew what they were shaping. It seemed like the wrong lesson to take from them and then ignore.</p>
+            <p>The fighters at Bang Kung were shaped by somebody who knew what they were shaping, and named by somebody who knew what to call it. It seemed like the wrong lesson to take from them and then ignore.</p>
 
             <div class="verdict">
                 <h3>Go And See The Shape</h3>
-                <p>If a callout has ever gone past you because you didn&rsquo;t know the word, that isn&rsquo;t a gap in your fitness &mdash; it&rsquo;s a gap in the vocabulary, and it closes fast once you can see the thing. Open <strong>Learn</strong>, scroll the shelf, and read the number under the name. It&rsquo;s a park full of concrete fighters, in your pocket, that can also start the timer.</p>
+                <p>If a callout has ever gone past you because you didn&rsquo;t know the word, that isn&rsquo;t a gap in your fitness &mdash; it&rsquo;s a gap in the vocabulary, and it closes fast once you can see the thing. Open <strong>Learn</strong>, scroll the shelf, and read the number under the name. It&rsquo;s a field full of concrete fighters, in your pocket, that can also start the timer.</p>
             </div>
 
             <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
