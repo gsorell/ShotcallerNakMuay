@@ -472,6 +472,113 @@
             .shot-pair { grid-template-columns: 1fr; }
         }
 
+        /* ----------------------------------------------- photographs */
+        /* Not a phone capture, so it is NOT held to .shot's 330px - a
+           landscape photo clamped to a phone's width reads as a thumbnail.
+           Full column, and allowed to bleed slightly wider than the 720px
+           text measure on roomy screens because the subject is a crowd. */
+        .photo { margin: 2.8em 0; }
+        .photo img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+        }
+        .photo figcaption {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            text-align: center;
+            margin-top: 14px;
+            line-height: 1.6;
+        }
+        @media (min-width: 900px) {
+            .photo--wide { width: 860px; margin-left: -70px; margin-right: -70px; }
+        }
+
+        /* ------------------------------------------ technique figures */
+        /* The app's own sprite sheets, run at the app's own tempo. Each sheet
+           is 1536x256: six 256px cells laid out left to right. The <img> is
+           sized to 600% of its cell so one cell fills the window, and the
+           animation slides it by exactly its own width over six discrete
+           steps - so every stop lands on a cell boundary. Sub-pixel drift
+           here shows up as a sliver of the next frame down the edge, which is
+           why this is a percentage of the image rather than a pixel count.
+           SPRITE_FRAMES = 6 and the 1.15s period both mirror the app. */
+        .figure-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin: 2.6em 0;
+        }
+        .tfig {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            padding: 10px 10px 14px;
+            text-align: center;
+        }
+        /* --ink is the per-sheet centring nudge, in percent of one cell. Five
+           sheets frame their figure left of centre (see INK_CENTRE in
+           techniqueSprites.ts) and this element is exactly one cell wide, so
+           the number carries over unchanged from the app.
+           It goes on the WINDOW, not on the image, and that is the whole
+           trick: the clip is applied in this element's own coordinates and
+           only then is the result moved, so the cell is never re-cropped.
+           Sliding the image instead would drag 9.8% of the PREVIOUS frame in
+           at the left edge - which is the sliver the app's own note warns
+           about. The image keeps the transform property to itself for the
+           frame-stepping animation, so the two never collide. */
+        .tfig-cell {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            transform: translateX(var(--ink, 0%));
+        }
+        .tfig-cell img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 600%;      /* six frames */
+            max-width: none;
+            animation: sprite-run 1.15s steps(6) infinite;
+        }
+        /* -100% of the IMAGE is six cells across, so steps(6) stops on each. */
+        @keyframes sprite-run {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-100%); }
+        }
+        .tfig-name {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .tfig-num { color: var(--accent); }
+        .figure-row-caption {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            text-align: center;
+            margin: -1.4em 0 2.6em;
+            line-height: 1.6;
+        }
+        @media (max-width: 560px) {
+            .figure-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
         .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 3px; margin-bottom: 40px; }
         .hero h1 { margin-top: 0; font-size: 2.1rem; }
         .hero p { color: var(--muted); margin-bottom: 0; }
@@ -571,6 +678,10 @@
         @media (prefers-reduced-motion: reduce) {
             * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
             .post-card:hover, .post-nav a:hover, .featured-card:hover { transform: none; }
+            /* Hold LANDED_FRAME rather than letting the sheet stop wherever
+               the 0.01ms override leaves it: -50% of a six-cell sheet is three
+               cells across, which is frame 4 - the extension pose. */
+            .tfig-cell img { animation: none; transform: translateX(-50%); }
         }
     </style>
 
