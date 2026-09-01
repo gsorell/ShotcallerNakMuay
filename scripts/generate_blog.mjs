@@ -925,10 +925,10 @@ const posts = [
             <p>In the app, the label does one extra job. Under every figure is the name, and under the name is <strong>the number the app is going to shout at you</strong>. Jab 1. Cross 2. Left Hook 3.</p>
             <p>The shelf isn&rsquo;t a gallery. It&rsquo;s a decoder for the voice in your headphones.</p>
 
-            <h2>What Concrete Can&rsquo;t Do</h2>
-            <p>Two things &mdash; and they&rsquo;re the two that made this worth building rather than just admiring.</p>
-            <p>A statue can&rsquo;t tell you where <em>you</em> are in the order. The row has one &mdash; Mae Mai, then Luk Mai, first through fifteenth &mdash; but it is cast into the ground, identical for everybody who walks past, and it has no idea which of the thirty you can already do. So every lesson in Shot Caller carries its place in the guided path with it: <strong>&ldquo;Taught at level 4 of Start Here&rdquo;</strong> is a link, and the path keeps count of the vocabulary you have actually covered.</p>
-            <p>And a statue can&rsquo;t start a round. <strong>&ldquo;Drill it&rdquo;</strong> loads a style that calls the technique and starts the timer, so looking something up and actually hitting it are two halves of one errand instead of two separate decisions. That&rsquo;s the whole reason the library lives inside the app rather than on this website.</p>
+            <h2>What A Phone Can Carry Home</h2>
+            <p>Two things had to change on the way back, and neither of them is an improvement on that field. They&rsquo;re the parts of it you can&rsquo;t put in your pocket.</p>
+            <p>The order at Bang Kung is cast into the ground, and that is a <em>strength</em> where what&rsquo;s being kept is a canon &mdash; the same thirty, in the same sequence, for everyone who has walked that row for as long as it has stood there. Nothing on a phone is that durable. What a phone can do instead is the one thing a fixed row was never asked to: keep track of which of the thirty <em>you</em> have got. So every lesson carries its place in the path with it &mdash; <strong>&ldquo;Taught at level 4 of Start Here&rdquo;</strong> is a link, and the path counts the vocabulary you have actually covered.</p>
+            <p>And a field stays where it is. You walk it, you leave, and what you keep is whatever you managed to remember. <strong>&ldquo;Drill it&rdquo;</strong> loads a style that calls the technique and starts the timer, so looking something up and hitting it are two halves of one errand. That&rsquo;s the whole reason the library lives inside the app rather than on this website &mdash; not because it beats standing in front of the real thing, but because it&rsquo;s there on a Tuesday night, and the real thing is on the other side of the world.</p>
             <p>There&rsquo;s more on how the path and the shelf fit together in <a href="/blog/learn-module-guided-path-technique-library.html">the write-up of the Learn module</a>.</p>
 
             <h2>Not One Of Them Is Generated</h2>
@@ -938,7 +938,7 @@ const posts = [
 
             <div class="verdict">
                 <h3>Go And See The Shape</h3>
-                <p>If a callout has ever gone past you because you didn&rsquo;t know the word, that isn&rsquo;t a gap in your fitness &mdash; it&rsquo;s a gap in the vocabulary, and it closes fast once you can see the thing. Open <strong>Learn</strong>, scroll the shelf, and read the number under the name. It&rsquo;s a field full of concrete fighters, in your pocket, that can also start the timer.</p>
+                <p>If a callout has ever gone past you because you didn&rsquo;t know the word, that isn&rsquo;t a gap in your fitness &mdash; it&rsquo;s a gap in the vocabulary, and it closes fast once you can see the thing. Open <strong>Learn</strong>, scroll the shelf, and read the number under the name. It&rsquo;s what I managed to carry home from a field full of concrete fighters, and the people who built that field had it right first.</p>
             </div>
 
             <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
