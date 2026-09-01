@@ -674,6 +674,175 @@
             color: var(--dim);
         }
 
+        /* ------------------------------------------- technique viewing mode */
+        /* A looping silhouette shows the shape but not the order. Six frames
+           in 1.15s is under 200ms a pose - the whole point when you want the
+           rhythm, and useless when you want to know where the rear heel is at
+           the moment of extension. So the card opens: bigger figure, and a
+           transport to stop it and step.
+           Same bargain the app strikes in TechniqueViewer.tsx, including the
+           two things that look like quirks and are not. Pausing holds
+           LANDED_FRAME rather than wherever the loop was, because CSS
+           animation position cannot be read back and "pause exactly here" is
+           therefore not on offer; landing on the frame the sheet was built
+           around beats landing on an arbitrary one. And playing restarts from
+           frame one, for the same reason. */
+        .ref-open {
+            display: block;
+            width: 100%;
+            padding: 0;
+            border: 0;
+            background: none;
+            cursor: zoom-in;
+        }
+        .ref-open:focus-visible { outline: 2px solid var(--cold); outline-offset: 3px; }
+
+        .ref-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(6, 2, 10, 0.86);
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+        }
+        /* The hidden attribute is display:none, but the rule above sets
+           display:flex on the same element and wins. Say it again, louder.
+           (No backticks anywhere in this sheet: it lives inside a template
+           literal in generate_blog.mjs, and one would end the string.) */
+        .ref-lightbox[hidden] { display: none; }
+
+        .ref-view {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--edge-2);
+            border-radius: 3px;
+            padding: 22px;
+            max-width: 560px;
+            width: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+            text-align: center;
+        }
+        .ref-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            line-height: 1;
+            font-size: 1.3rem;
+            color: var(--muted);
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .ref-close:hover { color: var(--accent); border-color: var(--edge-2); }
+
+        .ref-view-title {
+            font-family: var(--display);
+            font-weight: 400;
+            color: var(--heading);
+            font-size: 1.5rem;
+            line-height: 1.1;
+            margin: 0 34px 2px;
+        }
+        .ref-view-title .tfig-num { color: var(--accent); }
+        .ref-view-thai {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            color: var(--dim);
+            margin: 0 0 14px;
+        }
+
+        /* The figure is the play/pause target - the thing you are already
+           looking at, rather than a control sitting beside it. */
+        .ref-view-figure {
+            display: block;
+            margin: 0 auto;
+            padding: 0;
+            border: 0;
+            background: none;
+            cursor: pointer;
+            width: min(72vw, 42vh, 380px);
+        }
+        .ref-view-figure:focus-visible { outline: 2px solid var(--cold); outline-offset: 3px; }
+        .ref-lightbox.is-southpaw .ref-view-figure .tfig-cell,
+        .ref-lightbox.is-southpaw .ref-view-thumb .tfig-cell {
+            transform: scaleX(-1) translateX(var(--ink, 0%));
+        }
+
+        /* The filmstrip. Six stills of the sheet, which is what tells you
+           whether the frame you are looking at is the one you wanted. */
+        .ref-view-strip {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin: 14px 0 12px;
+        }
+        .ref-view-thumb {
+            width: 52px;
+            padding: 2px;
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            background: none;
+            cursor: pointer;
+        }
+        .ref-view-thumb:hover { border-color: var(--edge-2); }
+        .ref-view-thumb--on { border-color: var(--accent); }
+
+        .ref-view-transport {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .ref-step, .ref-play {
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text);
+            background: transparent;
+            border: 1px solid var(--edge-2);
+            border-radius: 3px;
+            padding: 8px 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .ref-step:hover, .ref-play:hover { border-color: var(--accent); color: var(--accent); }
+        .ref-view-count {
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            min-width: 4.5em;
+        }
+        .ref-view-cue {
+            font-size: 0.92rem;
+            line-height: 1.55;
+            color: var(--muted);
+            margin: 16px 0 0;
+        }
+        .ref-view-hint {
+            font-family: var(--mono);
+            font-size: 0.64rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin: 12px 0 0;
+        }
+        @media (max-width: 560px) {
+            .ref-view { padding: 18px 14px; }
+            .ref-view-thumb { width: 40px; }
+            .ref-view-hint { display: none; }
+        }
+
         .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 3px; margin-bottom: 40px; }
         .hero h1 { margin-top: 0; font-size: 2.1rem; }
         .hero p { color: var(--muted); margin-bottom: 0; }
