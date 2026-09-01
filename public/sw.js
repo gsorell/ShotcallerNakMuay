@@ -1,7 +1,20 @@
 // Service Worker for Shotcaller Nak Muay PWA
-const CACHE_NAME = 'nak-muay-v1';
-const STATIC_CACHE = 'nak-muay-static-v1';
-const AUDIO_CACHE = 'nak-muay-audio-v1';
+
+// Bump this to evict every cache below. The `activate` handler deletes any
+// cache whose name is not one of the three current ones, so changing the
+// version is the thing that forces returning visitors onto fresh files.
+//
+// It sat at v1 from the day the PWA shipped, and that was the bug. Technique
+// sheets, icons and manifest.json all live at stable paths under /assets/ and
+// were served cache-first with no revalidation, so whichever copy a browser
+// downloaded first was pinned to that URL forever - the retouched sprites
+// never reached anyone who had already visited the site. The strategies below
+// stop that recurring; this bump is what repairs the browsers already holding
+// a stale copy.
+const SW_VERSION = 'v2';
+const CACHE_NAME = `nak-muay-${SW_VERSION}`;
+const STATIC_CACHE = `nak-muay-static-${SW_VERSION}`;
+const AUDIO_CACHE = `nak-muay-audio-${SW_VERSION}`;
 
 // Core files that should always be cached
 const CORE_ASSETS = [
@@ -60,6 +73,58 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+/**
+ * Whether a URL carries a content hash, and so can be cached forever.
+ *
+ * Matches Vite's own build output and nothing else - `<name>-<hash>.js|css`,
+ * as in /assets/index-BRV1O1Ig.js. A fingerprinted URL cannot change meaning:
+ * new contents get a new name. Nothing copied out of public/ is fingerprinted,
+ * which is precisely why everything else has to revalidate.
+ */
+const isFingerprinted = (url) =>
+  /\/assets\/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$/.test(url.pathname);
+
+/** Immutable by construction, so the network is never worth asking. */
+const cacheFirst = (request, cacheName) =>
+  caches.open(cacheName).then((cache) =>
+    cache.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response.status === 200) cache.put(request, response.clone());
+        return response;
+      });
+    })
+  );
+
+/**
+ * Serve the cached copy at once, and refresh it behind the request.
+ *
+ * The revalidation is handed to waitUntil rather than left dangling. A browser
+ * is free to kill an idle worker the moment respondWith settles, and a fetch
+ * nobody is waiting on is exactly the thing that gets killed - so without it
+ * the cache would frequently never update, which is this same bug wearing a
+ * different hat.
+ */
+const staleWhileRevalidate = (event, request, cacheName) =>
+  caches.open(cacheName).then((cache) =>
+    cache.match(request).then((cached) => {
+      const network = fetch(request)
+        .then((response) => {
+          if (response.status === 200) cache.put(request, response.clone());
+          return response;
+        })
+        .catch((err) => {
+          // Offline with a copy in hand is fine. Offline with nothing is a
+          // real miss, and rejecting lets the browser show its own error
+          // rather than handing the page a fabricated empty response.
+          if (cached) return cached;
+          throw err;
+        });
+      event.waitUntil(network.catch(() => {}));
+      return cached || network;
+    })
+  );
+
 // Fetch event - serve from cache with network fallback
 self.addEventListener('fetch', (event) => {
   const { request } = event;
@@ -74,7 +139,10 @@ self.addEventListener('fetch', (event) => {
 
   // Handle same-origin requests
   if (url.origin === self.location.origin) {
-    // Audio files - cache first, then network
+    // Audio files - cache first, and deliberately still cache-first. These
+    // are large, numerous and almost never re-cut, so revalidating every one
+    // on every load would cost megabytes to catch a change that rarely comes.
+    // When one IS re-cut, bump SW_VERSION; that is what the knob is for.
     if (request.url.includes('.mp3') || request.url.includes('.wav')) {
       event.respondWith(
         caches.open(AUDIO_CACHE).then((cache) => {
@@ -96,26 +164,24 @@ self.addEventListener('fetch', (event) => {
       return;
     }
 
-    // Static assets - cache first, then network
-    if (request.url.includes('/assets/') || 
+    // Static assets. Two strategies, and which one applies turns on whether
+    // the URL is capable of changing meaning.
+    //
+    // Vite fingerprints its own bundles, so /assets/index-BRV1O1Ig.js is
+    // immutable and cache-first is both free and correct. Everything else
+    // under /assets/ is copied out of public/ verbatim and keeps a stable
+    // name: /assets/technique/jab.webp is a different picture after a retouch
+    // but the same URL, and cache-first can never find that out. Those get
+    // stale-while-revalidate - instant from cache, refreshed behind the
+    // request - so an updated asset heals itself in one visit instead of
+    // never.
+    if (request.url.includes('/assets/') ||
         request.destination === 'image' ||
         request.destination === 'font') {
       event.respondWith(
-        caches.open(STATIC_CACHE).then((cache) => {
-          return cache.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            return fetch(request).then((networkResponse) => {
-              // Only cache successful responses - clone first
-              if (networkResponse.status === 200) {
-                const responseClone = networkResponse.clone();
-                cache.put(request, responseClone);
-              }
-              return networkResponse;
-            });
-          });
-        })
+        isFingerprinted(url)
+          ? cacheFirst(request, STATIC_CACHE)
+          : staleWhileRevalidate(event, request, STATIC_CACHE)
       );
       return;
     }
