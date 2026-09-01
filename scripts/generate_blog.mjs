@@ -564,6 +564,97 @@ const baseStyle = `
             .figure-row { grid-template-columns: repeat(2, 1fr); }
         }
 
+        /* --------------------------------------- technique reference grid */
+        /* The whole sheet library as a lookup table, for the one post that is
+           a reference rather than an essay. The cells are the .tfig/.tfig-cell
+           mechanics above, unchanged - one cell wide, 600% image, six discrete
+           steps - which is what lets the reduced-motion rule at the bottom of
+           this sheet keep holding the extension frame here too. What is new is
+           the density, the per-card text, and the two toggles.
+           It breaks the 720px reading column on purpose. Running prose wants a
+           narrow measure; a table of figures wants to be scanned. */
+        .ref-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 1.6em 0 3em;
+        }
+        @media (min-width: 900px) {
+            .ref-grid {
+                width: 860px;
+                margin-left: -70px;
+                margin-right: -70px;
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 560px) {
+            .ref-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        }
+        .ref-grid .tfig { padding: 8px 8px 13px; }
+        .ref-thai {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.63rem;
+            letter-spacing: 0.07em;
+            color: var(--dim);
+            margin-top: 3px;
+        }
+        .ref-cue {
+            display: block;
+            font-size: 0.79rem;
+            line-height: 1.5;
+            color: var(--muted);
+            text-align: left;
+            margin-top: 9px;
+            padding-top: 9px;
+            border-top: 1px solid var(--card-border);
+        }
+
+        /* Southpaw. Every sheet was shot orthodox, so the mirror is a flip of
+           the cell - and the centring nudge has to flip with it, because a
+           figure sitting left of centre sits RIGHT of centre once mirrored.
+           Order is what does that: the flip comes first, so the slide is taken
+           in the mirrored frame and reverses for free. No second value needed.
+           Same composition as .technique-sprite in the app, deliberately.
+           It goes on the CELL rather than the image because the image is busy
+           carrying the frame-stepping animation, and the two cannot share the
+           transform property. */
+        .ref-grid.is-southpaw .tfig-cell {
+            transform: scaleX(-1) translateX(var(--ink, 0%));
+        }
+        /* Freeze holds LANDED_FRAME: -50% of a six-cell sheet is three cells
+           across, so it stops on the fourth - the extension pose. Same number
+           the reduced-motion rule uses, for the same reason. */
+        .ref-grid.is-frozen .tfig-cell img {
+            animation: none;
+            transform: translateX(-50%);
+        }
+        .ref-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel-2);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            padding: 13px;
+            margin: 2.2em 0 1.4em;
+        }
+        @media (min-width: 700px) {
+            /* Parks under the 94px navbar. Worth the stickiness on a page you
+               scroll for several minutes; not worth the screen it would cost
+               on a phone, where the toolbar wraps to two rows. */
+            .ref-tools { position: sticky; top: 94px; z-index: 50; }
+        }
+        .ref-tools-label {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--dim);
+        }
+
         .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 3px; margin-bottom: 40px; }
         .hero h1 { margin-top: 0; font-size: 2.1rem; }
         .hero p { color: var(--muted); margin-bottom: 0; }
@@ -671,7 +762,14 @@ const baseStyle = `
     </style>
 `;
 
-const renderHead = (title, metaDesc, url, bodyClass = '') => `<!DOCTYPE html>
+const SITE = 'https://shotcallernakmuay.netlify.app';
+
+// Every post used to ship without an og:image, which is a bare grey box
+// wherever the link is pasted - Reddit, Discord, iMessage, Slack. The hero art
+// is the sane default; a post sets `image` only when it has a card of its own.
+const DEFAULT_OG_IMAGE = '/assets/hero_desktop.png';
+
+const renderHead = (title, metaDesc, url, bodyClass = '', image = DEFAULT_OG_IMAGE) => `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -683,12 +781,16 @@ const renderHead = (title, metaDesc, url, bodyClass = '') => `<!DOCTYPE html>
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${metaDesc}">
     <meta property="og:url" content="${url}">
+    <meta property="og:image" content="${SITE}${image}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="${SITE}${image}">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       "headline": "${title}",
       "description": "${metaDesc}",
+      "image": "${SITE}${image}",
       "author": { "@type": "Organization", "name": "Shot Caller Nak Muay" },
       "publisher": { "@type": "Organization", "name": "Shot Caller Nak Muay" }
     }
@@ -756,7 +858,11 @@ const renderCategoryChip = (tag) => `<span class="category-chip" style="backgrou
 
 // ~200 words/min, estimated off the rendered post body (tags stripped).
 const estimateReadTime = (html) => {
-    const words = html.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    // Script bodies out first. Stripping tags alone leaves the JS *between*
+    // them standing, and it counts as prose - the reference post's toggles
+    // were worth a minute and a half of reading they do not represent.
+    const prose = html.replace(/<script[\s\S]*?<\/script>/gi, ' ');
+    const words = prose.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
     return Math.max(1, Math.round(words / 200));
 };
 
@@ -860,6 +966,316 @@ const renderRelated = (related) => related.length === 0 ? '' : `
 
 
 const posts = [
+    {
+        filename: 'muay-thai-techniques-animated-reference.html',
+        title: 'Muay Thai Techniques, Animated: A Free Visual Reference',
+        desc: 'A visual reference of Muay Thai techniques as looping silhouettes - punches, kicks, knees, elbows and defense, each with the Thai name, the number it is called by, and the one cue that makes it work. Free, no signup, and it flips to southpaw.',
+        date: 'Sep 1, 2026',
+        tag: 'Technique',
+        // Built by scripts/technique-reference-og.mjs: the logo over five of
+        // the sheets this post is about, held on the extension frame.
+        image: '/assets/blog/technique-reference-og.png',
+        content: `
+            <h1>Muay Thai Techniques, Animated: A Free Visual Reference</h1>
+            ${renderMeta('Shotcaller Sam', 'September 1, 2026')}
+            <p>Every technique below is a looping silhouette of somebody actually throwing it &mdash; the punches, the kicks, the knees, the elbows and the defenses &mdash; each with the Thai name where there is one, the number it gets called by, and the single cue that makes it work.</p>
+            <p>It is free. No signup, no email, nothing held back. Bookmark it, link it, or screenshot it for the person in your gym who still doesn&rsquo;t know what <strong>3</strong> means.</p>
+
+            <h2>How To Read The Figures</h2>
+            <p>Each figure is six frames on a loop, a second and a bit end to end &mdash; long enough to carry the tempo, because a technique is a piece of timing as much as it is a shape.</p>
+            <p>But every one is cut around a single frame in particular: <strong>the fourth of the six, the extension</strong>. That is the frame where the shape is legible &mdash; elbow at its arc, shin turned over, knee at the top. Hit <strong>Frozen</strong> in the toolbar below and every figure on the page stops there at once, which turns the page from a set of loops into a set of poses. Do both passes. The loop tells you the rhythm; the freeze tells you where everything actually goes.</p>
+            <p>The figures were <strong>filmed and then keyed down to silhouette</strong>, not generated. That distinction does more work than it sounds like: image models produce plausible-and-wrong Muay Thai &mdash; a flat rear foot on a cross, a round kick landing on the instep, a &ldquo;check&rdquo; that is really a knee &mdash; and if it is wrong in the picture you will learn it wrong. <a href="/blog/fighters-in-the-park-technique-library-inspiration.html">The longer story of where these came from is here.</a></p>
+            <p>Last thing before the toolbar: everything was shot <strong>orthodox</strong>, left foot forward. If you fight southpaw, flip the whole page.</p>
+
+            <h2>The Numbers, First</h2>
+            <p>Most of the punches carry a number as well as a name, and the number is what a coach or a timer app will actually shout at you mid-round. There is no point owning a good hook if <em>&ldquo;three&rdquo;</em> doesn&rsquo;t make you throw one.</p>
+            <table>
+                <thead>
+                    <tr><th>Call</th><th>Name</th><th>Which hand</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>1</strong></td><td>Jab</td><td>Straight, lead hand</td></tr>
+                    <tr><td><strong>2</strong></td><td>Cross</td><td>Straight, rear hand</td></tr>
+                    <tr><td><strong>3</strong></td><td>Left Hook</td><td>Hook, lead hand</td></tr>
+                    <tr><td><strong>4</strong></td><td>Right Hook</td><td>Hook, rear hand</td></tr>
+                    <tr><td><strong>5</strong></td><td>Left Uppercut</td><td>Uppercut, lead hand</td></tr>
+                    <tr><td><strong>6</strong></td><td>Right Uppercut</td><td>Uppercut, rear hand</td></tr>
+                </tbody>
+            </table>
+            <p>Add <em>&ldquo;to the body&rdquo;</em> to any of them and it is the same punch downstairs: <strong>1 to the body</strong> is the jab into the ribs. Kicks, knees and elbows carry no numbers &mdash; those get called by name.</p>
+
+            <div class="verdict">
+                <h3>Southpaws, one warning</h3>
+                <p>The numbers do <em>not</em> mirror. They are stance-relative &mdash; <strong>3</strong> is the lead hook whichever foot is forward &mdash; so a southpaw reading <em>Right Hook &middot; 3</em> is reading it correctly, not reading a typo. Only the names and the pictures flip. That is why the toolbar below changes the words and leaves the digits exactly where they are.</p>
+            </div>
+
+            <div class="ref-tools">
+                <span class="ref-tools-label">Stance</span>
+                <button id="ref-southpaw" class="filter-pill" type="button" aria-pressed="false">Orthodox</button>
+                <span class="ref-tools-label">Motion</span>
+                <button id="ref-freeze" class="filter-pill" type="button" aria-pressed="false">Looping</button>
+            </div>
+
+            <h2>Punches</h2>
+            <p>The six numbered punches, the overhand, the double jab, and the work downstairs.</p>
+            <div class="ref-grid">
+                <figure class="tfig">
+                    <div class="tfig-cell" style="--ink: 9.8%"><img src="/assets/technique/jab.webp" alt="Animated silhouette of a jab" loading="lazy"></div>
+                    <span class="tfig-name">Jab <span class="tfig-num">1</span></span>
+                    <span class="ref-thai">Mat Na</span>
+                    <span class="ref-cue">Fire from where the hand already sits &mdash; no drawing it back first &mdash; and retract on the same line, fast.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell" style="--ink: 10.4%"><img src="/assets/technique/cross.webp" alt="Animated silhouette of a cross" loading="lazy"></div>
+                    <span class="tfig-name">Cross <span class="tfig-num">2</span></span>
+                    <span class="ref-thai">Mat Trong</span>
+                    <span class="ref-cue">Pivot the rear heel out and let the hip turn drive the arm. A flat back foot means all shoulder, no power.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell" style="--ink: 14.5%"><img src="/assets/technique/lead-hook.webp" alt="Animated silhouette of a lead hook" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Right Hook">Left Hook</span> <span class="tfig-num">3</span></span>
+                    <span class="ref-cue">Elbow at the same height as the fist &mdash; a flat, level arc. Turn the lead foot and knee inward.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell" style="--ink: 13.7%"><img src="/assets/technique/rear-hook.webp" alt="Animated silhouette of a rear hook" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Left Hook">Right Hook</span> <span class="tfig-num">4</span></span>
+                    <span class="ref-cue">A follow-up, not a lead. It needs them occupied first, and the whole back side turns through it.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/lead-uppercut.webp" alt="Animated silhouette of a lead uppercut" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Right Uppercut">Left Uppercut</span> <span class="tfig-num">5</span></span>
+                    <span class="ref-cue">Dip at the knees and drive up &mdash; legs first, arm second. The elbow stays underneath the fist.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/rear-uppercut.webp" alt="Animated silhouette of a rear uppercut" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Left Uppercut">Right Uppercut</span> <span class="tfig-num">6</span></span>
+                    <span class="ref-cue">Sit into the rear leg, then extend as the hip turns over. Keep it almost vertical, on your own centreline.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/overhand.webp" alt="Animated silhouette of an overhand" loading="lazy"></div>
+                    <span class="tfig-name">Overhand</span>
+                    <span class="ref-cue">Drop the level first and step the lead foot offline. It comes over the top, so it has to start underneath.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell" style="--ink: 9.8%"><img src="/assets/technique/double-jab.webp" alt="Animated silhouette of a double jab" loading="lazy"></div>
+                    <span class="tfig-name">Double Jab <span class="tfig-num">1 1</span></span>
+                    <span class="ref-cue">First one short and quick to cover the entry, second one long and committed. Step in on the second.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/jab-to-body.webp" alt="Animated silhouette of a jab to the body" loading="lazy"></div>
+                    <span class="tfig-name">Jab to the Body <span class="tfig-num">1 &middot; body</span></span>
+                    <span class="ref-cue">Change level with the legs, not the waist. Bending at the waist puts your head onto a knee.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/cross-to-body.webp" alt="Animated silhouette of a cross to the body" loading="lazy"></div>
+                    <span class="tfig-name">Cross to the Body <span class="tfig-num">2 &middot; body</span></span>
+                    <span class="ref-cue">The same hip and rear foot as the cross upstairs, which makes it the heaviest punch on this page.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/body-hooks.webp" alt="Animated silhouette of hooks to the body" loading="lazy"></div>
+                    <span class="tfig-name">Body Hooks <span class="tfig-num">3 4 &middot; body</span></span>
+                    <span class="ref-cue">Turn through the ribs, never scoop up into them. The lead hook under their right elbow is the liver.</span>
+                </figure>
+            </div>
+
+            <h2>Kicks</h2>
+            <p>Notice how many of these are the same kick aimed somewhere else &mdash; the round kick, the head kick and the low kick are one mechanic at three heights.</p>
+            <div class="ref-grid">
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/roundhouse-kick.webp" alt="Animated silhouette of a roundhouse kick" loading="lazy"></div>
+                    <span class="tfig-name">Round Kick</span>
+                    <span class="ref-thai">Tae Wiang</span>
+                    <span class="ref-cue">Turn the support heel toward the target and swing the shin through, past where they stand. A bat, not a snap.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/head-kick.webp" alt="Animated silhouette of a head kick" loading="lazy"></div>
+                    <span class="tfig-name">Head Kick</span>
+                    <span class="ref-thai">Tae Kor</span>
+                    <span class="ref-cue">Identical mechanics, carried higher. Lean the upper body away as the leg comes up; the two counterbalance.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/low-kick.webp" alt="Animated silhouette of a low kick" loading="lazy"></div>
+                    <span class="tfig-name">Low Kick</span>
+                    <span class="ref-thai">Tae Kha</span>
+                    <span class="ref-cue">Aim through the far side of the thigh. Thrown on its own it just gets checked onto your own shin.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/inside-low-kick.webp" alt="Animated silhouette of an inside low kick" loading="lazy"></div>
+                    <span class="tfig-name">Inside Low Kick</span>
+                    <span class="ref-cue">Off the lead leg, angled up into the inner thigh. A clean one buckles the base and takes their kick away.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/switch-kick.webp" alt="Animated silhouette of a switch kick" loading="lazy"></div>
+                    <span class="tfig-name">Switch Kick</span>
+                    <span class="ref-cue">One beat, not two. The feet change and the kick is already leaving; a visible hop is an announcement.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/teep-lead.webp" alt="Animated silhouette of a lead teep" loading="lazy"></div>
+                    <span class="tfig-name">Lead Teep</span>
+                    <span class="ref-thai">Theep</span>
+                    <span class="ref-cue">Chamber the knee, push with the hip, snap the foot straight back. A range tool, not a finisher.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/teep-rear.webp" alt="Animated silhouette of a rear teep" loading="lazy"></div>
+                    <span class="tfig-name">Rear Teep</span>
+                    <span class="ref-thai">Theep</span>
+                    <span class="ref-cue">The hips are behind this one, so it moves people rather than touching them &mdash; and it has further to travel.</span>
+                </figure>
+            </div>
+
+            <h2>Knees</h2>
+            <p>The difference between the two sides is most of what there is to say about knees.</p>
+            <div class="ref-grid">
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/straight-knee-lead.webp" alt="Animated silhouette of a lead straight knee" loading="lazy"></div>
+                    <span class="tfig-name">Lead Straight Knee</span>
+                    <span class="ref-thai">Khao Trong</span>
+                    <span class="ref-cue">The quick one &mdash; that leg is already there. Toe down, and pull with the hands as the knee goes up.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/straight-knee-rear.webp" alt="Animated silhouette of a rear straight knee" loading="lazy"></div>
+                    <span class="tfig-name">Rear Straight Knee</span>
+                    <span class="ref-thai">Khao Trong</span>
+                    <span class="ref-cue">Drive the back hip through the target and past it. Carries far more, and costs your stance to throw.</span>
+                </figure>
+            </div>
+
+            <h2>Elbows</h2>
+            <p>All of these only exist at close range &mdash; if you can jab it, you cannot elbow it.</p>
+            <div class="ref-grid">
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/horizontal-elbow-lead.webp" alt="Animated silhouette of a lead horizontal elbow" loading="lazy"></div>
+                    <span class="tfig-name">Lead Horizontal Elbow</span>
+                    <span class="ref-thai">Sok Tud</span>
+                    <span class="ref-cue">No set-up needed. Keep it tight enough that the elbow passes close to your own face, and land the point.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/horizontal-elbow-rear.webp" alt="Animated silhouette of a rear horizontal elbow" loading="lazy"></div>
+                    <span class="tfig-name">Rear Horizontal Elbow</span>
+                    <span class="ref-thai">Sok Tud</span>
+                    <span class="ref-cue">Foot, hip, shoulder, elbow last. Heavier than the lead version, and easier for them to see arriving.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/up-elbow-lead.webp" alt="Animated silhouette of a lead up elbow" loading="lazy"></div>
+                    <span class="tfig-name">Lead Up Elbow</span>
+                    <span class="ref-thai">Sok Ngat</span>
+                    <span class="ref-cue">Up the centre like an uppercut, driven from the legs. It fits through the gap a tight guard leaves.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/up-elbow-rear.webp" alt="Animated silhouette of a rear up elbow" loading="lazy"></div>
+                    <span class="tfig-name">Rear Up Elbow</span>
+                    <span class="ref-thai">Sok Ngat</span>
+                    <span class="ref-cue">The rear hip lifts it. Wants somebody already bent forward or held in place &mdash; clinch work, mostly.</span>
+                </figure>
+            </div>
+
+            <h2>Defense</h2>
+            <p>The half of the sport that separates people who spar from people who hit bags. Several come as mirrored pairs, because a slip toward the lead side and a slip toward the rear side set up completely different counters.</p>
+            <div class="ref-grid">
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/high-guard.webp" alt="Animated silhouette of a high guard block" loading="lazy"></div>
+                    <span class="tfig-name">High Guard Block</span>
+                    <span class="ref-cue">Gloves at the temples, elbows on the ribs, eyes through the gap. The position everything else returns to.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/long-guard.webp" alt="Animated silhouette of a long guard" loading="lazy"></div>
+                    <span class="tfig-name">Long Guard</span>
+                    <span class="ref-cue">Lead arm out, palm forward, elbow soft. A frame that breaks their rhythm &mdash; not a place to stand and rest.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/check-lead.webp" alt="Animated silhouette of a lead-leg check" loading="lazy"></div>
+                    <span class="tfig-name">Lead Check</span>
+                    <span class="ref-thai">Bang</span>
+                    <span class="ref-cue">Knee turns out, toe down, shin angled so bone meets the kick. A half-raised leg is worse than none.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/check-rear.webp" alt="Animated silhouette of a rear-leg check" loading="lazy"></div>
+                    <span class="tfig-name">Rear Check</span>
+                    <span class="ref-thai">Bang</span>
+                    <span class="ref-cue">The same shape arrived at the long way round: the hips have to turn or the back leg never gets there.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/slip-left.webp" alt="Animated silhouette of a slip toward the lead side" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Slip Right">Slip Left</span></span>
+                    <span class="ref-cue">Inches, not feet. The weight settles onto the lead leg and the rear hand stays loaded behind it.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/slip-right.webp" alt="Animated silhouette of a slip toward the rear side" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Slip Left">Slip Right</span></span>
+                    <span class="ref-cue">Bend at the waist and the knees; don&rsquo;t lean the neck. This is the one the lead hook comes off.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/roll-left.webp" alt="Animated silhouette of a roll toward the lead side" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Roll Right">Roll Left</span></span>
+                    <span class="ref-cue">Dip with the legs and rotate &mdash; a U underneath the punch, not a duck. Come up already turned into the answer.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/roll-right.webp" alt="Animated silhouette of a roll toward the rear side" loading="lazy"></div>
+                    <span class="tfig-name"><span data-sp="Roll Left">Roll Right</span></span>
+                    <span class="ref-cue">Come up over the back leg with the weight already there to spend. The heavy counter lives on this side.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/duck.webp" alt="Animated silhouette of a duck" loading="lazy"></div>
+                    <span class="tfig-name">Duck</span>
+                    <span class="ref-cue">Knees bent, back straight, eyes up. Come back up immediately and offline &mdash; the bottom is not a place to live.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/lean-back.webp" alt="Animated silhouette of a lean back" loading="lazy"></div>
+                    <span class="tfig-name">Lean Back</span>
+                    <span class="ref-cue">The smallest margin for error of anything here. Hands stay up, and you come forward the instant it misses.</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/pivot.webp" alt="Animated silhouette of a pivot" loading="lazy"></div>
+                    <span class="tfig-name">Pivot</span>
+                    <span class="ref-cue">Turn on the ball of the lead foot. Changes your angle without changing your distance &mdash; the exit from a combination.</span>
+                </figure>
+            </div>
+
+            <h2>How To Actually Use This</h2>
+            <p>Reading a reference is not training, so here is the honest version of what this page is for.</p>
+            <p>Freeze it and copy the extension frame in a mirror, one technique at a time, until your shape matches the figure&rsquo;s. Then let it loop and match the tempo. Then &mdash; and this is the part that matters &mdash; <strong>close the page</strong>, because the last thing you want mid-round is to be looking at a screen. The whole point of learning the vocabulary is that somebody can say <em>&ldquo;1 2 3, right low kick&rdquo;</em> and your body goes and does it while your eyes stay where they belong.</p>
+            <p>Which is exactly why these figures exist. They live inside <strong>Shot Caller Nak Muay</strong>, an app that calls Muay Thai combinations out loud while you work the bag or shadow box &mdash; the figures are there to hand you the words before the voice starts using them.</p>
+
+            <script>
+            (function () {
+                var grids = document.querySelectorAll('.ref-grid');
+                var names = document.querySelectorAll('.tfig-name [data-sp]');
+                names.forEach(function (el) { el.setAttribute('data-ortho', el.textContent); });
+
+                function setState(btn, cls, on) {
+                    btn.classList.toggle('active', on);
+                    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                    grids.forEach(function (g) { g.classList.toggle(cls, on); });
+                }
+
+                var southpaw = false;
+                var stanceBtn = document.getElementById('ref-southpaw');
+                stanceBtn.addEventListener('click', function () {
+                    southpaw = !southpaw;
+                    setState(stanceBtn, 'is-southpaw', southpaw);
+                    stanceBtn.textContent = southpaw ? 'Southpaw' : 'Orthodox';
+                    // Only names carrying a DIRECTION flip, because the picture
+                    // flips under them. The numbers deliberately do not: they are
+                    // stance-relative, so "Right Hook - 3" is what a southpaw
+                    // should read. Lead and Rear do not move either.
+                    names.forEach(function (el) {
+                        el.textContent = southpaw
+                            ? el.getAttribute('data-sp')
+                            : el.getAttribute('data-ortho');
+                    });
+                });
+
+                var frozen = false;
+                var motionBtn = document.getElementById('ref-freeze');
+                motionBtn.addEventListener('click', function () {
+                    frozen = !frozen;
+                    setState(motionBtn, 'is-frozen', frozen);
+                    motionBtn.textContent = frozen ? 'Frozen' : 'Looping';
+                });
+            })();
+            </script>
+        `
+    },
     {
         filename: 'fighters-in-the-park-technique-library-inspiration.html',
         title: 'The Fighters in the Park: Where Shot Caller\'s Technique Library Came From',
@@ -1857,7 +2273,7 @@ posts.forEach((post, i) => {
     );
 
     const html = `
-        ${renderHead(post.title, post.desc, `https://shotcallernakmuay.netlify.app/blog/${post.filename}`)}
+        ${renderHead(post.title, post.desc, `https://shotcallernakmuay.netlify.app/blog/${post.filename}`, '', post.image)}
         <a href="/blog/index.html" class="back-link-top">&larr; All Articles</a>
         ${renderArticleEyebrow(post)}
         ${body}
