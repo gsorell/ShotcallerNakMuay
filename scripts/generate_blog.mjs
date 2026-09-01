@@ -457,6 +457,113 @@ const baseStyle = `
             .shot-pair { grid-template-columns: 1fr; }
         }
 
+        /* ----------------------------------------------- photographs */
+        /* Not a phone capture, so it is NOT held to .shot's 330px - a
+           landscape photo clamped to a phone's width reads as a thumbnail.
+           Full column, and allowed to bleed slightly wider than the 720px
+           text measure on roomy screens because the subject is a crowd. */
+        .photo { margin: 2.8em 0; }
+        .photo img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+        }
+        .photo figcaption {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            text-align: center;
+            margin-top: 14px;
+            line-height: 1.6;
+        }
+        @media (min-width: 900px) {
+            .photo--wide { width: 860px; margin-left: -70px; margin-right: -70px; }
+        }
+
+        /* ------------------------------------------ technique figures */
+        /* The app's own sprite sheets, run at the app's own tempo. Each sheet
+           is 1536x256: six 256px cells laid out left to right. The <img> is
+           sized to 600% of its cell so one cell fills the window, and the
+           animation slides it by exactly its own width over six discrete
+           steps - so every stop lands on a cell boundary. Sub-pixel drift
+           here shows up as a sliver of the next frame down the edge, which is
+           why this is a percentage of the image rather than a pixel count.
+           SPRITE_FRAMES = 6 and the 1.15s period both mirror the app. */
+        .figure-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin: 2.6em 0;
+        }
+        .tfig {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 3px;
+            padding: 10px 10px 14px;
+            text-align: center;
+        }
+        /* --ink is the per-sheet centring nudge, in percent of one cell. Five
+           sheets frame their figure left of centre (see INK_CENTRE in
+           techniqueSprites.ts) and this element is exactly one cell wide, so
+           the number carries over unchanged from the app.
+           It goes on the WINDOW, not on the image, and that is the whole
+           trick: the clip is applied in this element's own coordinates and
+           only then is the result moved, so the cell is never re-cropped.
+           Sliding the image instead would drag 9.8% of the PREVIOUS frame in
+           at the left edge - which is the sliver the app's own note warns
+           about. The image keeps the transform property to itself for the
+           frame-stepping animation, so the two never collide. */
+        .tfig-cell {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            transform: translateX(var(--ink, 0%));
+        }
+        .tfig-cell img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 600%;      /* six frames */
+            max-width: none;
+            animation: sprite-run 1.15s steps(6) infinite;
+        }
+        /* -100% of the IMAGE is six cells across, so steps(6) stops on each. */
+        @keyframes sprite-run {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-100%); }
+        }
+        .tfig-name {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .tfig-num { color: var(--accent); }
+        .figure-row-caption {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--dim);
+            text-align: center;
+            margin: -1.4em 0 2.6em;
+            line-height: 1.6;
+        }
+        @media (max-width: 560px) {
+            .figure-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
         .hero { background: var(--card-bg); border: 1px solid var(--card-border); padding: 30px; border-radius: 3px; margin-bottom: 40px; }
         .hero h1 { margin-top: 0; font-size: 2.1rem; }
         .hero p { color: var(--muted); margin-bottom: 0; }
@@ -556,6 +663,10 @@ const baseStyle = `
         @media (prefers-reduced-motion: reduce) {
             * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
             .post-card:hover, .post-nav a:hover, .featured-card:hover { transform: none; }
+            /* Hold LANDED_FRAME rather than letting the sheet stop wherever
+               the 0.01ms override leaves it: -50% of a six-cell sheet is three
+               cells across, which is frame 4 - the extension pose. */
+            .tfig-cell img { animation: none; transform: translateX(-50%); }
         }
     </style>
 `;
@@ -749,6 +860,87 @@ const renderRelated = (related) => related.length === 0 ? '' : `
 
 
 const posts = [
+    {
+        filename: 'fighters-in-the-park-technique-library-inspiration.html',
+        title: 'The Fighters in the Park: Where Shot Caller\'s Technique Library Came From',
+        desc: 'A statue garden in Thailand \u2014 dozens of concrete Nak Muays frozen mid-technique, each with the name of the technique painted across the shorts \u2014 is the reason the app shows you a figure instead of a paragraph.',
+        date: 'Sep 1, 2026',
+        tag: 'Behind The Scenes',
+        content: `
+            <h1>The Fighters in the Park: Where Shot Caller&rsquo;s Technique Library Came From</h1>
+            ${renderMeta('Shotcaller Sam', 'September 1, 2026')}
+            <p>I wasn&rsquo;t looking for it. I was walking through a park in Thailand, and there they were &mdash; dozens of concrete fighters standing in the grass, each one on its own low plinth, each one caught in the middle of a technique.</p>
+            <p>Rope-wrapped hands. Head bands. A row of them stretching back under the trees, elbows up, shins turned over, teeps extended into nothing. It took me a minute to work out what I was actually looking at, which is that it isn&rsquo;t a monument. It&rsquo;s a <strong>curriculum</strong>.</p>
+
+            <figure class="photo photo--wide">
+                <img src="/assets/blog/thailand-statue-park.webp" alt="Dozens of life-size painted concrete statues of Muay Thai fighters standing in a grassy park in Thailand, each frozen mid-technique with rope-wrapped hands and a head band, the name of the technique painted in Thai script across the waistband of the shorts." loading="lazy" width="1720" height="1147">
+                <figcaption>The park in Thailand. Every figure is one technique, held at the moment it reads.</figcaption>
+            </figure>
+
+            <h2>A Reference Book You Walk Through</h2>
+            <p>What stopped me wasn&rsquo;t the craft, though the craft is real. It was the <em>structure</em>.</p>
+            <p>Every figure is frozen at one instant &mdash; and it is never the wind-up and never the follow-through. It&rsquo;s the moment where the shape of the technique is legible: the elbow at its arc, the knee at the top, the grip closed. Whoever sculpted these picked the single frame at which you can tell what the technique <em>is</em>.</p>
+            <p>And then, painted by hand across the waistband of every pair of shorts, is its name.</p>
+            <p>That&rsquo;s not decoration. That&rsquo;s a catalogue entry. One technique, held at its clearest pose, labelled with what to call it &mdash; and a long row of them you can walk at your own pace, doubling back to the ones you didn&rsquo;t get. Somebody built a technique library out of concrete and stood it in a field, and it works better than most of the ones on the internet.</p>
+
+            <h2>The Problem It Solved, About Six Thousand Miles Away</h2>
+            <p>Shot Caller had the exact opposite problem, and I&rsquo;d been circling it for months.</p>
+            <p>The app shouts <em>&ldquo;1 2 3, Right Low Kick&rdquo;</em> at you while you work. That&rsquo;s the whole product. And it is completely useless to somebody who doesn&rsquo;t yet know what <strong>3</strong> means &mdash; every feature past that point sits behind a wall the beginner cannot get over.</p>
+            <p>We&rsquo;d answered it with words. Descriptions, key points, common mistakes. <em>Turn the hip over and land with the shin, not the instep.</em> Which is true, and which tells you nothing you can put into a body that has never been in that shape before. You cannot read your way into a round kick any more than you can read your way into a swimming stroke.</p>
+            <p>The park had solved it in concrete, long before I turned up, and the solution was: <strong>stop describing it and show me the shape.</strong></p>
+
+            <h2>Why One Frozen Pose Is Exactly The Right Amount</h2>
+            <p>The obvious answer is video, and video is worse. This is the part it took the park to teach me.</p>
+            <p>A statue can&rsquo;t move, and that turns out to be the best thing about it. A clip of a round kick is forty-odd frames of which thirty-nine are transit &mdash; the leg on its way somewhere. You watch it, you get a general impression of speed, and you learn almost nothing about where anything actually goes, because nothing holds still long enough to be studied. To learn from a clip you have to pause it, and to pause it usefully you have to already know which frame matters.</p>
+            <p>The statue does that part for you. It is a video that has already been paused on the right frame, permanently, by somebody who knew which frame that was.</p>
+            <p>So that&rsquo;s what the figures in the app are built around. Each one runs six frames across about 1.15 seconds &mdash; enough to carry the rhythm, because a technique is also a piece of timing &mdash; but every sheet is cut around a single <strong>extension frame</strong>, the fourth of the six. Hit pause anywhere and it lands there. Step through with the arrow keys and that&rsquo;s the one you stop on.</p>
+            <p>It&rsquo;s the statue&rsquo;s pose, with the approach and the recovery added back around it. Here are four &mdash; a fist, a shin, a knee and an elbow, which between them are most of the art:</p>
+
+            <div class="figure-row">
+                <figure class="tfig">
+                    <div class="tfig-cell" style="--ink: 9.8%"><img src="/assets/technique/jab.webp" alt="Animated neon silhouette of the jab, looping through six frames." loading="lazy"></div>
+                    <span class="tfig-name">Jab <span class="tfig-num">1</span></span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/roundhouse-kick.webp" alt="Animated neon silhouette of the roundhouse kick, looping through six frames." loading="lazy"></div>
+                    <span class="tfig-name">Round Kick</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/straight-knee-rear.webp" alt="Animated neon silhouette of the rear straight knee, looping through six frames." loading="lazy"></div>
+                    <span class="tfig-name">Straight Knee</span>
+                </figure>
+                <figure class="tfig">
+                    <div class="tfig-cell"><img src="/assets/technique/horizontal-elbow-lead.webp" alt="Animated neon silhouette of the lead horizontal elbow, looping through six frames." loading="lazy"></div>
+                    <span class="tfig-name">Horizontal Elbow</span>
+                </figure>
+            </div>
+            <p class="figure-row-caption">Six frames, 1.15 seconds, built around the fourth &mdash; the extension</p>
+
+            <h2>The Name On The Shorts</h2>
+            <p>The other half of what the park got right is the label, and it&rsquo;s the half I nearly missed.</p>
+            <p>A figure with no name is a picture. A figure <em>with</em> its name is a lookup &mdash; it closes the gap between the thing you can see and the thing somebody is about to say to you. Those statues carry the technique&rsquo;s name in Thai script right where you cannot avoid reading it, and that is the whole difference between an art installation and a teaching tool.</p>
+            <p>So in the app the label does one extra job. Under every figure is the name, and under the name is <strong>the number the app is going to shout at you</strong>. Jab 1. Cross 2. Left Hook 3.</p>
+            <p>The shelf isn&rsquo;t a gallery. It&rsquo;s a decoder for the voice in your headphones.</p>
+
+            <h2>What Concrete Can&rsquo;t Do</h2>
+            <p>Two things &mdash; and they&rsquo;re the two that made this worth building rather than just admiring.</p>
+            <p>A statue can&rsquo;t tell you where it sits in an order. The park is a row, and a row is not a sequence; a beginner standing in front of forty techniques has the same problem they had standing in front of the app. So every lesson in Shot Caller knows its place in the guided path &mdash; <strong>&ldquo;Taught at level 4 of Start Here&rdquo;</strong> is a link, and it takes you to the level that drills it.</p>
+            <p>And a statue can&rsquo;t start a round. <strong>&ldquo;Drill it&rdquo;</strong> loads a style that calls the technique and starts the timer, so looking something up and actually hitting it are two halves of one errand instead of two separate decisions. That&rsquo;s the whole reason the library lives inside the app rather than on this website.</p>
+            <p>There&rsquo;s more on how the path and the shelf fit together in <a href="/blog/learn-module-guided-path-technique-library.html">the write-up of the Learn module</a>.</p>
+
+            <h2>Not One Of Them Is Generated</h2>
+            <p>Worth saying, because it cost months: every figure in the library is cut from real footage, frame by frame, by hand. None of them came out of an image generator.</p>
+            <p>The failure mode of a generated technique isn&rsquo;t that it looks wrong. It&rsquo;s that it looks <em>plausible</em> and is wrong &mdash; a flat rear foot on a cross, a &ldquo;check&rdquo; that&rsquo;s really a knee, a guard hand drifting to exactly where the counter comes through. Errors that are invisible to precisely the person least equipped to catch them, who is the beginner the whole module exists for.</p>
+            <p>The fighters in that park were shaped by somebody who knew what they were shaping. It seemed like the wrong lesson to take from them and then ignore.</p>
+
+            <div class="verdict">
+                <h3>Go And See The Shape</h3>
+                <p>If a callout has ever gone past you because you didn&rsquo;t know the word, that isn&rsquo;t a gap in your fitness &mdash; it&rsquo;s a gap in the vocabulary, and it closes fast once you can see the thing. Open <strong>Learn</strong>, scroll the shelf, and read the number under the name. It&rsquo;s a park full of concrete fighters, in your pocket, that can also start the timer.</p>
+            </div>
+
+            <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
+        `
+    },
     {
         filename: 'learn-module-guided-path-technique-library.html',
         title: 'From Your First Jab to Every Callout: Inside the New Learn Module',
