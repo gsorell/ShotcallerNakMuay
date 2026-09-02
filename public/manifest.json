@@ -2,12 +2,12 @@
   "name": "Nak Muay Shot Caller - Muay Thai Training Timer",
   "short_name": "Nak Muay Shot Caller",
   "description": "Interactive Muay Thai training timer with spoken technique callouts for shadowboxing and bagwork sessions",
-  "start_url": "/",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#831843",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/app",
   "categories": [
     "health",
     "fitness",
@@ -77,7 +77,7 @@
       "name": "Quick Start Timer",
       "short_name": "Timer",
       "description": "Start a training session immediately",
-      "url": "/?quick=timer",
+      "url": "/app?quick=timer",
       "icons": [
         {
           "src": "/assets/icon.stopwatch.png",
@@ -89,7 +89,7 @@
       "name": "View Workout Logs",
       "short_name": "Logs",
       "description": "Check your training history",
-      "url": "/?quick=logs",
+      "url": "/app?quick=logs",
       "icons": [
         {
           "src": "/assets/icon_progress_active.png",

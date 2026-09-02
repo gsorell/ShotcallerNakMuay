@@ -6,8 +6,46 @@ publish = "dist"
 [build.environment]
 NODE_VERSION = "22"
 
-# SPA routing
+# ---------------------------------------------------------------------------
+# Routing
+#
+# `/` is the marketing page; the app lives at `/app`. Both are served from the
+# same deploy: `home.html` is copied out of public/ verbatim, and `index.html`
+# is the Vite-built SPA.
+#
+# The order below matters, and so does `force`. Netlify skips a rewrite when a
+# real file already sits at the requested path, which is exactly why the SPA
+# fallback has never swallowed `/blog/`. But that same rule would skip the
+# root rewrite too, because `dist/index.html` genuinely exists — so the root
+# rule is the one place that has to opt out of it.
+#
+# `index.html` stays where it is on purpose: Capacitor's `webDir` is `dist`
+# and the native shells load `dist/index.html` directly, so moving the built
+# entry point would break the iOS and Android builds for no gain.
+# ---------------------------------------------------------------------------
+
+# Root -> the sales page. Forced, because a file exists at `/`.
 [[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
+  from = "/"
+  to = "/home.html"
+  status = 200
+  force = true
+
+# The app, and anything under it.
+[[redirects]]
+  from = "/app"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/app/*"
+  to = "/index.html"
+  status = 200
+
+# SPA fallback. Kept last and unforced so every real file — /blog/*,
+# /home.html, /assets/*, the policy pages — is served before it applies. This
+# is also what keeps old inbound links to deep paths landing in the app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

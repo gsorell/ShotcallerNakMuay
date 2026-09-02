@@ -7,13 +7,29 @@
     <title>Shot Caller Nak Muay - Muay Thai Shadow Boxing & Heavy Bag Timer App</title>
     <meta name="description" content="Shot Caller Nak Muay is a Muay Thai combo-calling app with an audio callout timer for shadow boxing and heavy bag training. Get randomized kickboxing combos, custom rounds, and voice-guided drills." />
     <meta name="keywords" content="muay thai app, shadow boxing app, heavy bag audio callout timer, kickboxing combo generator, boxing combo app, muay thai timer" />
-    <link rel="canonical" href="https://shotcallernakmuay.netlify.app/" />
+    <!-- The app is served at /app; `/` is the marketing page. Both resolve to
+         this same file on Netlify, so the canonical has to name the one that
+         should rank, or the two compete. -->
+    <link rel="canonical" href="https://shotcallernakmuay.netlify.app/app" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Shot Caller Nak Muay - Muay Thai Shadow Boxing & Heavy Bag Timer App" />
     <meta property="og:description" content="Randomized Muay Thai combo callouts, custom interval timers, and voice-guided drills for shadow boxing and heavy bag training." />
-    <meta property="og:url" content="https://shotcallernakmuay.netlify.app/" />
+    <meta property="og:url" content="https://shotcallernakmuay.netlify.app/app" />
     <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_desktop.png" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- PWA. These tags used to live in public/index.html, which Vite's own
+         root index.html shadowed - so the served page has never linked a
+         manifest, `beforeinstallprompt` could never fire, and usePWA's
+         `isPWAReady` check has always been false. Nobody has ever been able
+         to install this. They belong here, on the file that actually ships. -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#831843" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Nak Muay Timer" />
+
     <!-- Google tag (gtag.js) -->
     <script
       async

@@ -11,14 +11,19 @@
 // never reached anyone who had already visited the site. The strategies below
 // stop that recurring; this bump is what repairs the browsers already holding
 // a stale copy.
-const SW_VERSION = 'v2';
+const SW_VERSION = 'v3';
 const CACHE_NAME = `nak-muay-${SW_VERSION}`;
 const STATIC_CACHE = `nak-muay-static-${SW_VERSION}`;
 const AUDIO_CACHE = `nak-muay-audio-${SW_VERSION}`;
 
 // Core files that should always be cached
+// `/` is the marketing page now, not the app, so it is deliberately absent -
+// precaching it would put a document this worker has no business serving into
+// the app's own cache. `/index.html` is the app on Netlify AND inside the
+// Capacitor shells, which is why it is named directly rather than as `/app`:
+// the native WebView has no rewrite rules and would 404 on that, failing the
+// whole `addAll` and leaving the worker uninstalled.
 const CORE_ASSETS = [
-  '/',
   '/index.html',
   '/assets/hero_mobile.png',
   '/assets/hero_tablet.png', 
