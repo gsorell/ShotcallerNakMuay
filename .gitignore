@@ -44,3 +44,8 @@ retouch/*.psd
 # The source footage lives here too, at three quarters of a gigabyte. It is the
 # one irreplaceable input and it does not belong in git.
 retouch/*.mp4
+
+# `netlify dev` artifacts. The CLI adds .netlify itself; deno.lock comes from
+# the Edge Functions runtime it boots and is equally local-only.
+.netlify
+deno.lock

@@ -9,7 +9,16 @@ import path from 'path';
 // assets/blog holds the screenshots those posts embed. They live under
 // assets/ so the pages can reference them at a stable path, but they are the
 // same marketing-only content and would otherwise ride into the app bundle.
-const NATIVE_EXCLUDED_PATHS = ['dist/blog', 'dist/assets/blog'];
+//
+// home.html is the same story: it is the site's marketing landing page, served
+// at `/` by a Netlify rewrite. The native shells load dist/index.html directly
+// and never route through Netlify, so it is dead weight in the app bundle.
+const NATIVE_EXCLUDED_PATHS = [
+    'dist/blog',
+    'dist/assets/blog',
+    'dist/assets/landing', // the landing page's cropped captures
+    'dist/home.html',
+];
 
 for (const target of NATIVE_EXCLUDED_PATHS) {
     const resolved = path.resolve(target);

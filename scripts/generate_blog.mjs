@@ -984,7 +984,7 @@ const renderFoot = () => `
             <a href="/">
                 <img src="/assets/logo_icon.png" alt="Logo" class="app-footer-logo">
             </a>
-            <a href="/" class="app-footer-link">App Home</a>
+            <a href="/app" class="app-footer-link">Open the app</a>
             <a href="/privacy-policy.html" class="app-footer-link">Privacy</a>
             <a href="/terms.html" class="app-footer-link">Terms</a>
             <a href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4" target="_blank" rel="noopener noreferrer" class="app-footer-social" aria-label="Instagram">
@@ -1086,7 +1086,7 @@ const renderStoreCta = (campaign) => `
             <a href="${appleUrl(campaign)}" class="store-cta-button">Download on iPhone &amp; iPad</a>
             <a href="${playUrl(campaign)}" class="store-cta-button store-cta-button--alt">Get it on Google Play</a>
         </div>
-        <p class="store-cta-note">Prefer to try it in the browser first? <a href="/">Open the web version</a>.</p>
+        <p class="store-cta-note">Prefer to try it in the browser first? <a href="/app">Open the web version</a>.</p>
     </div>
 `;
 
