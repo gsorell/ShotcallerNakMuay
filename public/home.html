@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Shot Caller Nak Muay — Muay Thai Combo Callouts for Shadow Boxing &amp; Bagwork</title>
+    <meta name="description" content="Combos, defence and movement called out loud while you shadow box, hit the bag, or work pads with a partner. Built on the real Muay Thai styles - Mat, Tae, Khao, Femur - each with its own curated combinations. Free to start on iOS, Android and the web.">
+    <meta name="keywords" content="muay thai app, shadow boxing app, heavy bag audio callout timer, kickboxing combo generator, boxing combo app, muay thai timer">
+    <link rel="canonical" href="https://shotcallernakmuay.netlify.app/">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Shot Caller Nak Muay — Muay Thai Combo Callouts for Shadow Boxing &amp; Bagwork">
+    <meta property="og:description" content="Combos called out loud for shadow boxing, bagwork and pad rounds — organised by the real Muay Thai styles: Mat, Tae, Khao, Femur.">
+    <meta property="og:url" content="https://shotcallernakmuay.netlify.app/">
+    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_desktop.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://shotcallernakmuay.netlify.app/assets/hero_desktop.png">
+    <meta name="theme-color" content="#0a0510">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Shot Caller Nak Muay",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "iOS, Android, Web",
+      "description": "Combos, defence and movement called out loud while you shadow box, hit the bag, or work pads with a partner.",
+      "url": "https://shotcallernakmuay.netlify.app/",
+      "image": "https://shotcallernakmuay.netlify.app/assets/hero_desktop.png",
+      "offers": {
+        "@type": "AggregateOffer",
+        "priceCurrency": "USD",
+        "lowPrice": "0",
+        "highPrice": "39.99",
+        "offerCount": "4",
+        "description": "Free to use. Pro is $3.99 monthly, $24.99 annually, or $39.99 once."
+      },
+      "publisher": { "@type": "Organization", "name": "Shot Caller Nak Muay" }
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;800&display=swap">
+
+    <style>
+        /* ===================================================================
+           Tokens are lifted verbatim from public/blog/index.html so the
+           landing page, the blog and the app read as one property. Same rule
+           applies: deliberately single-theme. The neon silhouettes are hot
+           pink on transparent and only glow against a dark ground, so there
+           is no light palette to switch to.
+           =================================================================== */
+        :root {
+            --bg: #0c0710;
+            --card-bg: #16101f;
+            --panel-2: #1e1629;
+            --card-border: #2e2240;
+            --edge-2: #3d2d54;
+            --accent: #ff5fb0;
+            --accent-hover: #ff8ac6;
+            --cold: #7cc7f2;
+            --heading: #f4eef6;
+            --text: #c7b8d1;
+            --muted: #9d8fa9;
+            --dim: #6d6079;
+
+            /* Anton ships one weight (400). Never ask for a heavier one — the
+               browser synthesises a faux-bold and the condensed face smears. */
+            --display: 'Anton', Impact, 'Arial Narrow Bold', sans-serif;
+            --body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+        }
+        body {
+            font-family: var(--body);
+            line-height: 1.7;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        img { max-width: 100%; height: auto; }
+        :focus-visible { outline: 2px solid var(--cold); outline-offset: 3px; }
+
+        h1, h2, h3 {
+            color: var(--heading);
+            font-family: var(--display);
+            font-weight: 400;
+            letter-spacing: 0.005em;
+            text-wrap: balance;
+        }
+
+        /* ------------------------------------------------------------- nav */
+        .navbar {
+            background-color: #0a0510;
+            border-bottom: 1px solid var(--card-border);
+            padding: env(safe-area-inset-top) 0 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar-inner {
+            max-width: 1160px;
+            margin: 0 auto;
+            height: 94px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 0 20px;
+        }
+        .navbar .logo {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 8px 0;
+            margin-right: auto;
+            text-decoration: none;
+        }
+        .navbar .logo img {
+            height: 100%;
+            max-height: 62px;
+            width: auto;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        .nav-links { display: flex; align-items: center; gap: 26px; }
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--heading); }
+        /* Below the fold-width the links would wrap the logo onto its own
+           line; the section anchors are reachable by scrolling anyway, so
+           they go rather than reflow the header. The CTA stays. */
+        @media (max-width: 860px) { .nav-links { display: none; } }
+
+        /* ---------------------------------------------------------- buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 26px;
+            border-radius: 8px;
+            font-family: var(--body);
+            font-weight: 600;
+            font-size: 1.02rem;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary {
+            background: var(--accent);
+            color: #1a0410;
+            box-shadow: 0 0 28px rgba(255, 95, 176, 0.28);
+        }
+        .btn-primary:hover { background: var(--accent-hover); color: #1a0410; }
+        .btn-ghost {
+            background: transparent;
+            color: var(--heading);
+            border-color: var(--edge-2);
+        }
+        .btn-ghost:hover { border-color: var(--accent); color: var(--accent-hover); }
+        .btn-sm { padding: 10px 18px; font-size: 0.92rem; }
+
+        /* Store buttons are drawn here rather than hotlinking Apple's and
+           Google's badge art — see the note in the deploy summary. Swap in the
+           official artwork before any paid campaign points at this page. */
+        .store-row { display: flex; flex-wrap: wrap; gap: 14px; }
+        .store-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 20px 11px 18px;
+            border-radius: 9px;
+            background: #08040d;
+            border: 1px solid var(--edge-2);
+            text-decoration: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .store-btn:hover { border-color: var(--accent); background: #100819; }
+        .store-btn svg { flex: none; }
+        .store-btn-text { display: flex; flex-direction: column; line-height: 1.15; }
+        .store-btn-text .kicker {
+            font-size: 0.66rem;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-family: var(--mono);
+        }
+        .store-btn-text .name {
+            font-size: 1.06rem;
+            font-weight: 700;
+            color: var(--heading);
+        }
+
+        /* ------------------------------------------------------------ shell */
+        .section { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
+        .section-pad { padding-top: 92px; padding-bottom: 92px; }
+        .rule { border: 0; border-top: 1px solid var(--card-border); margin: 0; }
+
+        .kicker {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 0 0 18px;
+        }
+        .section-head { max-width: 700px; margin: 0 0 54px; }
+        .section-head h2 {
+            font-size: clamp(1.9rem, 4.4vw, 2.75rem);
+            line-height: 1.04;
+            margin: 0 0 16px;
+        }
+        .section-head p { font-size: 1.13rem; margin: 0; color: var(--muted); }
+
+        /* ------------------------------------------------------------- hero */
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--card-border);
+        }
+        /* The app's own screens carry a violet bloom from the top-left. The
+           page borrows it so the hero and the screenshot inside it sit in the
+           same light rather than looking pasted together. */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            left: -10%;
+            width: 70%;
+            height: 130%;
+            background: radial-gradient(closest-side, rgba(146, 51, 204, 0.30), transparent 100%);
+            pointer-events: none;
+        }
+        .hero-inner {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 64px;
+            align-items: center;
+            padding-top: 86px;
+            padding-bottom: 86px;
+        }
+        .hero h1 {
+            font-size: clamp(2.6rem, 6.4vw, 4.15rem);
+            line-height: 0.98;
+            margin: 0 0 24px;
+        }
+        .hero h1 em {
+            font-style: normal;
+            color: var(--accent);
+        }
+        .hero-sub {
+            font-size: 1.22rem;
+            line-height: 1.6;
+            margin: 0 0 34px;
+            max-width: 33em;
+        }
+        .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 26px; }
+        .hero-note {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--dim);
+            letter-spacing: 0.03em;
+            margin: 0 0 34px;
+        }
+        .trust {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 26px;
+            margin: 34px 0 0;
+            padding: 0;
+            list-style: none;
+            font-family: var(--mono);
+            font-size: 0.79rem;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+        }
+        .trust li::before { content: '✓ '; color: var(--accent); }
+
+        /* The screenshots are 840px-wide phone captures with the app's own
+           header banner baked in, so they need no chrome drawn around them —
+           a border and a glow is enough to seat them on the page. */
+        .shot {
+            display: block;
+            width: 100%;
+            /* Not optional. The captures carry width/height attributes so the
+               browser can reserve space before they load, and without this the
+               height attribute wins outright and every screenshot stretches. */
+            height: auto;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+        }
+        .hero-shot { max-width: 350px; margin: 0 auto; }
+
+        @media (max-width: 900px) {
+            .hero-inner { grid-template-columns: 1fr; gap: 46px; padding-top: 58px; padding-bottom: 58px; }
+            .hero-shot { max-width: 310px; }
+            .section-pad { padding-top: 64px; padding-bottom: 64px; }
+        }
+
+        /* --------------------------------------------------------- features */
+        .feature {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            align-items: center;
+            padding: 74px 0;
+            border-top: 1px solid var(--card-border);
+        }
+        .feature:first-of-type { border-top: 0; }
+        /* Every capture is cropped to 840x1150 by scripts/landing-shots.mjs,
+           so one width is all that is needed - the per-ratio widths this used
+           to carry existed only to disguise the fact that they disagreed. */
+        .feature-shot { max-width: 330px; justify-self: center; }
+        /* Alternate the side the capture sits on so the eye zig-zags down the
+           page instead of running a single column of text. */
+        .feature:nth-child(even) .feature-media { order: -1; }
+        .feature h3 {
+            font-size: clamp(1.5rem, 3vw, 2.05rem);
+            line-height: 1.06;
+            margin: 0 0 16px;
+        }
+        .feature p { font-size: 1.1rem; margin: 0 0 18px; }
+        .feature p:last-child { margin-bottom: 0; }
+        .feature-tag {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--cold);
+            border: 1px solid rgba(124, 199, 242, 0.3);
+            border-radius: 999px;
+            padding: 3px 12px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 900px) {
+            .feature { grid-template-columns: 1fr; gap: 34px; padding: 52px 0; }
+            .feature:nth-child(even) .feature-media { order: 0; }
+            .feature-shot { max-width: 300px; }
+        }
+
+        /* ------------------------------------------------------- archetypes */
+        .archetypes {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+        .archetype {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 26px 24px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        .archetype .thai {
+            font-family: var(--display);
+            font-size: 1.7rem;
+            line-height: 1;
+            color: var(--heading);
+            margin: 0 0 6px;
+        }
+        .archetype .gloss {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 0 0 16px;
+        }
+        .archetype .desc {
+            font-size: 0.98rem;
+            line-height: 1.5;
+            margin: 0 0 20px;
+            color: var(--muted);
+            flex: 1;
+        }
+        /* Set like the app sets a callout - dark plate, rounded, centred - so
+           the sample reads as something the app would say rather than as body
+           copy that happens to name techniques. */
+        .archetype .callout {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            line-height: 1.45;
+            color: var(--heading);
+            background: #08040d;
+            border: 1px solid var(--edge-2);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin: 0;
+            text-align: center;
+        }
+        .archetype-note {
+            max-width: 860px;
+            margin: 44px 0 0;
+            font-size: 1.08rem;
+            color: var(--muted);
+        }
+        .archetype-note em { color: var(--heading); font-style: italic; }
+        .archetype-note a {
+            color: var(--cold);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(124, 199, 242, 0.32);
+            white-space: nowrap;
+        }
+        .archetype-note a:hover { color: #a6dcf7; border-bottom-color: var(--cold); }
+        @media (max-width: 1000px) { .archetypes { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 560px) { .archetypes { grid-template-columns: 1fr; } }
+
+        /* ----------------------------------------------------------- styles */
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+            gap: 12px;
+        }
+        .style-chip {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 15px 17px;
+        }
+        .style-chip .name {
+            display: block;
+            color: var(--heading);
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+        .style-chip .desc { font-size: 0.87rem; color: var(--muted); line-height: 1.45; }
+
+        /* ------------------------------------------------------------- claim */
+        .claim { max-width: 900px; margin: 0 auto; text-align: center; }
+        .claim h2 {
+            font-size: clamp(2rem, 5.2vw, 3.2rem);
+            line-height: 1.02;
+            margin: 0 0 22px;
+        }
+        .claim p { font-size: 1.2rem; margin: 0; color: var(--muted); }
+
+        /* --------------------------------------------------------- the card */
+        .card-band { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 60px; align-items: center; }
+        .card-band h2 { font-size: clamp(1.9rem, 4.4vw, 2.75rem); line-height: 1.04; margin: 0 0 16px; }
+        .card-band p { font-size: 1.13rem; margin: 0 0 18px; }
+        .card-band p:last-child { margin-bottom: 0; }
+        /* The card carries its own rounded corners in the alpha channel, so a
+           border or box-shadow would cut square across them. drop-shadow
+           follows the actual silhouette; no radius or frame is added. */
+        .card-shot {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 330px;
+            justify-self: center;
+            filter: drop-shadow(0 22px 48px rgba(0, 0, 0, 0.6));
+        }
+        @media (max-width: 900px) {
+            .card-band { grid-template-columns: 1fr; gap: 34px; }
+            .card-shot { max-width: 300px; }
+        }
+
+        /* ------------------------------------------------------------ steps */
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; counter-reset: step; }
+        .step { border-top: 2px solid var(--accent); padding-top: 22px; }
+        .step::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .step h3 { font-size: 1.35rem; line-height: 1.15; margin: 0 0 10px; }
+        .step p { margin: 0; font-size: 1.02rem; color: var(--muted); }
+        @media (max-width: 760px) { .steps { grid-template-columns: 1fr; gap: 32px; } }
+
+        /* ---------------------------------------------------------- pricing */
+        .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+        .tier {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 30px 28px;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Annual is the one worth recommending, and the paywall inside the app
+           gives it the same accent border - the page should not disagree with
+           the screen it sends people to. */
+        .tier.is-best { border-color: var(--accent); box-shadow: 0 0 44px rgba(255, 95, 176, 0.10); }
+        .tier-badge {
+            position: absolute;
+            top: -11px;
+            left: 28px;
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 0.66rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #1a0410;
+            background: var(--accent);
+            border-radius: 999px;
+            padding: 3px 12px;
+        }
+        .tier-name {
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 0 0 12px;
+        }
+        .tier-price {
+            font-family: var(--display);
+            font-size: 2.6rem;
+            line-height: 1;
+            color: var(--heading);
+            margin: 0 0 14px;
+        }
+        .tier-price span { font-family: var(--body); font-size: 1rem; font-weight: 500; color: var(--muted); }
+        .tier-note { margin: 0; font-size: 0.96rem; line-height: 1.5; color: var(--muted); }
+
+        .price-foot {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 26px 44px;
+            margin-top: 40px;
+        }
+        .price-small {
+            flex: 1 1 380px;
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.65;
+            color: var(--dim);
+        }
+        .price-small a { color: var(--cold); text-decoration: none; border-bottom: 1px solid rgba(124, 199, 242, 0.32); }
+        .price-small a:hover { color: #a6dcf7; border-bottom-color: var(--cold); }
+        @media (max-width: 860px) { .tiers { grid-template-columns: 1fr; } }
+
+        /* -------------------------------------------------------------- faq */
+        .faq { max-width: 780px; }
+        .faq details {
+            border-bottom: 1px solid var(--card-border);
+            padding: 22px 0;
+        }
+        .faq summary {
+            cursor: pointer;
+            list-style: none;
+            color: var(--heading);
+            font-weight: 600;
+            font-size: 1.12rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .faq summary::-webkit-details-marker { display: none; }
+        .faq summary::after {
+            content: '+';
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 1.35rem;
+            line-height: 1;
+            flex: none;
+        }
+        .faq details[open] summary::after { content: '–'; }
+        .faq p { margin: 14px 0 0; color: var(--muted); font-size: 1.05rem; }
+        .faq a { color: var(--cold); text-decoration: none; border-bottom: 1px solid rgba(124, 199, 242, 0.32); }
+        .faq a:hover { color: #a6dcf7; border-bottom-color: var(--cold); }
+
+        /* ---------------------------------------------------------- closing */
+        .closer {
+            text-align: center;
+            border-top: 1px solid var(--card-border);
+            background:
+                radial-gradient(closest-side at 50% 0%, rgba(146, 51, 204, 0.22), transparent 100%);
+        }
+        .closer h2 { font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.02; margin: 0 0 18px; }
+        .closer p { font-size: 1.15rem; color: var(--muted); max-width: 34em; margin: 0 auto 32px; }
+        .closer .hero-cta { justify-content: center; }
+        .closer .store-row { justify-content: center; }
+
+        /* ----------------------------------------------------------- footer */
+        .app-footer {
+            background-color: #0a0510;
+            border-top: 1px solid var(--card-border);
+            padding: 34px 20px calc(34px + env(safe-area-inset-bottom));
+        }
+        .app-footer-content {
+            max-width: 1160px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px 22px;
+        }
+        .app-footer-logo { height: 42px; width: auto; display: block; }
+        .app-footer-link {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.93rem;
+            transition: color 0.2s;
+        }
+        .app-footer-link:hover { color: var(--heading); }
+        .app-footer-social { margin-left: auto; display: flex; }
+        .app-footer-social img { height: 26px; width: auto; display: block; }
+        .app-footer-legal {
+            max-width: 1160px;
+            margin: 20px auto 0;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--dim);
+            line-height: 1.7;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px; height: 1px;
+            margin: -1px; padding: 0;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
+
+    <!-- Google tag (gtag.js) — same property as the app, so a visitor who
+         lands here and opens /app is one session, not two. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5GY5JTX5KZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-5GY5JTX5KZ');
+    </script>
+</head>
+<body>
+
+<header class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="logo" aria-label="Shot Caller Nak Muay — home">
+            <img src="/assets/Logo_Header_Banner_Smooth.png" alt="Shot Caller Nak Muay">
+        </a>
+        <nav class="nav-links" aria-label="Primary">
+            <a href="#features">Features</a>
+            <a href="#tradition">Styles</a>
+            <a href="#card">The card</a>
+            <a href="#how">How it works</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+            <a href="/blog/">Blog</a>
+        </nav>
+        <a href="/app" class="btn btn-primary btn-sm" data-cta="nav">Open the app</a>
+    </div>
+</header>
+
+<main>
+
+    <!-- ================================================================ hero -->
+    <section class="hero">
+        <div class="section hero-inner">
+            <div>
+                <p class="kicker">Muay Thai · Kickboxing · Boxing</p>
+                <h1>Someone in your corner, <em>calling the shots.</em></h1>
+                <p class="hero-sub">
+                    Combos, defence and movement, called out loud while you shadow box, hit the bag,
+                    or hold pads with a partner. Organised the way Muay Thai actually organises
+                    fighters — Mat, Tae, Khao, Femur — each with combinations curated to match.
+                </p>
+                <div class="hero-cta">
+                    <a href="/app" class="btn btn-primary" data-cta="hero_app">Start a round — free</a>
+                    <a href="#how" class="btn btn-ghost">See how it works</a>
+                </div>
+                <p class="hero-note">No sign-up. Nothing to install. It runs in your browser.</p>
+                <div class="store-row">
+                    <a class="store-btn" href="https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630" data-cta="hero_ios">
+                        <svg width="22" height="26" viewBox="0 0 384 512" aria-hidden="true" fill="#f4eef6">
+                            <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                        </svg>
+                        <span class="store-btn-text">
+                            <span class="kicker">Download on the</span>
+                            <span class="name">App Store</span>
+                        </span>
+                    </a>
+                    <a class="store-btn" href="https://play.google.com/store/apps/details?id=com.shotcallernakmuay.app&amp;pcampaignid=web_share" data-cta="hero_android">
+                        <svg width="22" height="26" viewBox="0 0 512 512" aria-hidden="true">
+                            <path fill="#7cc7f2" d="M47 19c-8 5-13 14-13 26v422c0 12 5 21 13 26l243-237z"/>
+                            <path fill="#ff5fb0" d="M370 176 91 15c-11-6-22-7-30-2l243 243z"/>
+                            <path fill="#ffd54f" d="M370 176 304 256l66 80 78-45c19-11 19-59 0-70z"/>
+                            <path fill="#69f0ae" d="M61 499c8 5 19 4 30-2l279-161-66-80z"/>
+                        </svg>
+                        <span class="store-btn-text">
+                            <span class="kicker">Get it on</span>
+                            <span class="name">Google Play</span>
+                        </span>
+                    </a>
+                </div>
+                <ul class="trust">
+                    <li>Shadow boxing</li>
+                    <li>Heavy bag</li>
+                    <li>Pads &amp; partner work</li>
+                    <li>Works offline</li>
+                </ul>
+            </div>
+            <div>
+                <img class="shot hero-shot" src="/assets/landing/app-callout-combo.webp" width="840" height="1150"
+                     alt="The app mid-round: round 1 of 3, a 0:29 countdown, and the callout &quot;1 2, Left Elbow&quot; below it.">
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================================================== claim -->
+    <section class="section section-pad">
+        <div class="claim">
+            <h2>It never calls the same round twice.</h2>
+            <p>
+                The calls are generated fresh every round, so you can train the same style every day
+                for a month and never get to coast. That gap between hearing a shot and throwing it
+                is the thing you're actually training — and you can't shorten it on a sequence you
+                already know is coming.
+            </p>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ============================================================ features -->
+    <section class="section section-pad" id="features">
+        <div class="section-head">
+            <p class="kicker">What you get</p>
+            <h2>Something to make you react.</h2>
+            <p>
+                Whether you're alone in front of a mirror, in the garage with a bag, or holding
+                pads for a training partner — the work is better when you don't know what's coming.
+            </p>
+        </div>
+
+        <div class="feature">
+            <div>
+                <span class="feature-tag">Or run it in order</span>
+                <h3>When you want a sequence in your body, not a surprise.</h3>
+                <p>
+                    Random is the default, not the only way. Switch the calls to sequential and the
+                    app reads a style straight through in order — which is how you take a long
+                    combination and drill it until you stop having to think about it.
+                </p>
+                <p>
+                    Southpaw mode flips every "left" and "right" so you're not translating mid-combo,
+                    and calisthenics drops bodyweight work between strikes when you want the round to
+                    cost you something.
+                </p>
+            </div>
+            <div class="feature-media">
+                <img class="shot feature-shot" src="/assets/landing/app-training-options.webp" width="840" height="1150"
+                     alt="Training options: southpaw mode, include calisthenics, and read techniques in order, above the rounds, length and rest controls.">
+            </div>
+        </div>
+
+        <div class="feature">
+            <div>
+                <span class="feature-tag">Styles</span>
+                <h3>Twenty ways to make a round feel different.</h3>
+                <p>
+                    Train one style for a focused round, or select several and let them blend — a
+                    knee-heavy exchange turning into a low-kick trade is exactly the kind of thing
+                    you want to have practised before it happens to you.
+                </p>
+                <p>
+                    Rounds, length, rest and difficulty are yours to set. Or strip it back to a
+                    plain interval timer with no calls at all.
+                </p>
+            </div>
+            <div class="feature-media">
+                <img class="shot feature-shot" src="/assets/landing/app-setup.webp" width="840" height="1150"
+                     alt="The style picker with Muay Mat and Muay Tae selected, each showing its icon and description.">
+            </div>
+        </div>
+
+        <div class="feature">
+            <div>
+                <span class="feature-tag">Your own combinations</span>
+                <h3>Or write the style yourself.</h3>
+                <p>
+                    Build a style from scratch and put whatever you want in it — the three
+                    combinations your coach has been drilling you on, the setup you keep getting
+                    caught by, a list of nothing but your own weak side. Name it, star the ones you
+                    reach for most, and it sits alongside the built-in styles.
+                </p>
+                <p>
+                    Your sets export to a file and import back, so a phone upgrade doesn't cost you
+                    the work.
+                </p>
+            </div>
+            <div class="feature-media">
+                <img class="shot feature-shot" src="/assets/landing/app-manage.webp" width="840" height="1150"
+                     alt="The Technique Manager: a Create New Style form above the list of existing styles, each with duplicate and expand controls.">
+            </div>
+        </div>
+
+        <div class="feature">
+            <div>
+                <span class="feature-tag">Start Here</span>
+                <h3>Never trained before? Start at the first jab.</h3>
+                <p>
+                    A guided path that assumes you know nothing. It starts with stance and two
+                    punches, and each session adds a couple of techniques while keeping everything
+                    from the last one in play. By the end you can answer any call the beginner
+                    style throws at you.
+                </p>
+                <p>
+                    You're never dropped into a round full of names you don't recognise — which is
+                    the thing that makes most people quit an app like this in the first week.
+                </p>
+            </div>
+            <div class="feature-media">
+                <img class="shot feature-shot" src="/assets/landing/roadmap-ladder.webp" width="840" height="1150"
+                     alt="The Start Here ladder: Level 1 Stance and the Two Numbers, then The Hooks, Owning the Distance and The Round Kick.">
+            </div>
+        </div>
+
+        <div class="feature">
+            <div>
+                <span class="feature-tag">Learn</span>
+                <h3>Heard a call you didn't know? Go look it up.</h3>
+                <p>
+                    Every technique the app can call has a lesson behind it — punches, kicks, knees,
+                    elbows, clinch and defence — each one drawn as a figure you can open and step
+                    through frame by frame to see the actual shape of the movement.
+                </p>
+                <p>
+                    <a href="/blog/muay-thai-techniques-animated-reference.html">Browse the technique reference →</a>
+                </p>
+            </div>
+            <div class="feature-media">
+                <img class="shot feature-shot" src="/assets/landing/learn-shelf.webp" width="840" height="1150"
+                     alt="The technique shelf: punches shown as pink neon silhouettes, each labelled and numbered.">
+            </div>
+        </div>
+
+    </section>
+
+    <hr class="rule">
+
+    <!-- ========================================================== archetypes -->
+    <section class="section section-pad" id="tradition">
+        <div class="section-head">
+            <p class="kicker">Not beginner, intermediate, advanced</p>
+            <h2>The styles are the real ones.</h2>
+            <p>
+                Muay Thai has always sorted fighters by how they win rather than by how long
+                they've trained — the puncher, the kicker, the knee fighter, the technician. That's
+                the framework this is built on, and every one of them carries its own list of
+                combinations. Not one shared pool reshuffled under a different name.
+            </p>
+        </div>
+
+        <div class="archetypes">
+            <div class="archetype">
+                <p class="thai">Muay Mat</p>
+                <p class="gloss">The puncher</p>
+                <p class="desc">Heavy hands, body work, and the low kick that comes off them.</p>
+                <p class="callout">Overhand, 4 to the Body, 3 to the Body</p>
+            </div>
+            <div class="archetype">
+                <p class="thai">Muay Tae</p>
+                <p class="gloss">The kicker</p>
+                <p class="desc">Long range, round kicks in series, teeps to hold the distance.</p>
+                <p class="callout">Right Low Kick, Right High Kick</p>
+            </div>
+            <div class="archetype">
+                <p class="thai">Muay Khao</p>
+                <p class="gloss">The knee fighter</p>
+                <p class="desc">Pressure, the clinch, and knees from every entry into it.</p>
+                <p class="callout">1 2, Clinch, Double Knees</p>
+            </div>
+            <div class="archetype">
+                <p class="thai">Muay Femur</p>
+                <p class="gloss">The technician</p>
+                <p class="desc">Read it, take it, make them pay — catches, sweeps and counters.</p>
+                <p class="callout">Catch Kick, 2 3, Right Knee, Sweep Right</p>
+            </div>
+        </div>
+
+        <p class="archetype-note">
+            It goes past the list. In Muay Tae the lead check comes up three times as often as a
+            normal entry and the rear check twice, because a kicker's round is mostly checking —
+            Muay Femur doubles both, the technician's defining habit. The frequencies are tuned
+            style by style, so a round doesn't just use the right techniques, it <em>feels</em> like
+            the fighter it's named after. Muay Sok is there for the elbows.
+            <a href="/blog/muay-thai-styles-explained.html">More on the styles and where they come from →</a>
+        </p>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ============================================================== styles -->
+    <section class="section section-pad" id="styles">
+        <div class="section-head">
+            <p class="kicker">The full list</p>
+            <h2>Twenty of them, counting the ones we made up.</h2>
+            <p>
+                The traditional styles, plus a few built around a single idea — the low kick, the
+                spinning stuff, the shot you answer with.
+            </p>
+        </div>
+        <div class="style-grid">
+            <div class="style-chip"><span class="name">Timer Only</span><span class="desc">Just a round timer — no shotcalling, no techniques.</span></div>
+            <div class="style-chip"><span class="name">Freestyle</span><span class="desc">You call the shots — just a clack to keep pace.</span></div>
+            <div class="style-chip"><span class="name">Nak Muay Newb</span><span class="desc">Punches, kicks, knees and defence, plus simple combos.</span></div>
+            <div class="style-chip"><span class="name">Meat &amp; Potatoes</span><span class="desc">Classic, high-percentage strikes and combos for all levels.</span></div>
+            <div class="style-chip"><span class="name">Muay Khao</span><span class="desc">Close-range clinch work and knee combinations.</span></div>
+            <div class="style-chip"><span class="name">Muay Mat</span><span class="desc">Blending heavy hands with kicks and knees.</span></div>
+            <div class="style-chip"><span class="name">Muay Tae</span><span class="desc">Kicking specialist with long-range attacks.</span></div>
+            <div class="style-chip"><span class="name">Muay Femur</span><span class="desc">Technical timing and defensive counters.</span></div>
+            <div class="style-chip"><span class="name">Muay Sok</span><span class="desc">Vicious elbows and close-range attacks.</span></div>
+            <div class="style-chip"><span class="name">Boxing</span><span class="desc">Fundamental boxing combinations.</span></div>
+            <div class="style-chip"><span class="name">Two-Piece Combos</span><span class="desc">Short, powerful 2-strike combinations.</span></div>
+            <div class="style-chip"><span class="name">Southpaw</span><span class="desc">Mirrored work for the other stance.</span></div>
+            <div class="style-chip"><span class="name">Buakaw's Corner</span><span class="desc">Aggressive clinch, knees, and sweeps inspired by Buakaw.</span></div>
+            <div class="style-chip"><span class="name">Low Kick Legends</span><span class="desc">Devastating low kicks and classic Dutch-style combinations.</span></div>
+            <div class="style-chip"><span class="name">Elbow Arsenal</span><span class="desc">Sharp elbow strikes and creative close-range attacks.</span></div>
+            <div class="style-chip"><span class="name">KO Setups</span><span class="desc">Explosive knockout setups and finishing combinations.</span></div>
+            <div class="style-chip"><span class="name">Tricky Traps &amp; Spinning Shit</span><span class="desc">Advanced spinning techniques and deceptive setups.</span></div>
+            <div class="style-chip"><span class="name">Feints and Fakeouts</span><span class="desc">Sell the shot you're not throwing.</span></div>
+            <div class="style-chip"><span class="name">Dutch Kickboxing</span><span class="desc">Punch-to-low-kick pressure in the Dutch tradition.</span></div>
+            <div class="style-chip"><span class="name">The Answer Back</span><span class="desc">Defense first — read the strike, then make them pay for it.</span></div>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ============================================================ the card -->
+    <section class="section section-pad" id="card">
+        <div class="card-band">
+            <div>
+                <p class="kicker">When the last bell goes</p>
+                <h2>Finish the round. Send the card.</h2>
+                <p>
+                    Every session ends on a card built from what you actually just did — the styles
+                    you picked, how hard, how many rounds, how long, and how many shots you answered.
+                    Save it, post it, or send it straight to whoever you train with.
+                </p>
+                <p>
+                    That last one is the one that works. Trading cards with a gym buddy on a Tuesday
+                    night is a better reason to get the round in than any streak counter — nobody
+                    wants to be the one who didn't send anything. It holds up whether you're in the
+                    same gym or three time zones apart.
+                </p>
+            </div>
+            <!-- The card itself, not a screen showing the card - so it keeps its
+                 own corners and gets no frame drawn around it. -->
+            <img class="card-shot" src="/assets/landing/completion-card.webp" width="864" height="1444"
+                 alt="A finished workout card: Workout Complete, the date, Muay Khao, Muay Tae, Muay Femur and Dutch Kickboxing, difficulty Amateur, 237 shots called, 5 of 5 rounds, 3 minutes a round.">
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ================================================================= how -->
+    <section class="section section-pad" id="how">
+        <div class="section-head">
+            <p class="kicker">How it works</p>
+            <h2>Three taps and you're working.</h2>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <h3>Choose your styles</h3>
+                <p>
+                    One, or several. New to it? Take the guided path instead and let it choose for
+                    you.
+                </p>
+            </div>
+            <div class="step">
+                <h3>Set the round</h3>
+                <p>
+                    Rounds, length, rest and difficulty. Three minutes with a minute back is a
+                    fine place to start.
+                </p>
+            </div>
+            <div class="step">
+                <h3>Hit start and listen</h3>
+                <p>
+                    Bell, then calls. Phone stays in your pocket. The session writes itself into
+                    your log when the last bell goes.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ============================================================= pricing -->
+    <section class="section section-pad" id="pricing">
+        <div class="section-head">
+            <p class="kicker">Pricing</p>
+            <h2>Start free. Upgrade if it sticks.</h2>
+            <p>
+                The timer and the callouts cost nothing and always will — no account, no card.
+                Pro opens every style, the whole guided path and the full technique library.
+            </p>
+        </div>
+
+        <div class="tiers">
+            <div class="tier">
+                <p class="tier-name">Monthly</p>
+                <p class="tier-price">$3.99<span>/mo</span></p>
+                <p class="tier-note">Cancel whenever. Starts with a 7-day free trial.</p>
+            </div>
+            <div class="tier is-best">
+                <p class="tier-badge">Save 48%</p>
+                <p class="tier-name">Annual</p>
+                <p class="tier-price">$24.99<span>/yr</span></p>
+                <p class="tier-note">Works out at $2.08 a month. Also starts with a 7-day free trial.</p>
+            </div>
+            <div class="tier">
+                <p class="tier-name">Lifetime</p>
+                <p class="tier-price">$39.99<span> once</span></p>
+                <p class="tier-note">Pays for itself against the annual plan in under two years.</p>
+            </div>
+        </div>
+
+        <div class="price-foot">
+            <div class="store-row">
+                    <a class="store-btn" href="https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630" data-cta="pricing_ios">
+                        <svg width="20" height="24" viewBox="0 0 384 512" aria-hidden="true" fill="#f4eef6">
+                            <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                        </svg>
+                        <span class="store-btn-text">
+                            <span class="kicker">Download on the</span>
+                            <span class="name">App Store</span>
+                        </span>
+                    </a>
+                    <a class="store-btn" href="https://play.google.com/store/apps/details?id=com.shotcallernakmuay.app&amp;pcampaignid=web_share" data-cta="pricing_android">
+                        <svg width="20" height="24" viewBox="0 0 512 512" aria-hidden="true">
+                            <path fill="#7cc7f2" d="M47 19c-8 5-13 14-13 26v422c0 12 5 21 13 26l243-237z"/>
+                            <path fill="#ff5fb0" d="M370 176 91 15c-11-6-22-7-30-2l243 243z"/>
+                            <path fill="#ffd54f" d="M370 176 304 256l66 80 78-45c19-11 19-59 0-70z"/>
+                            <path fill="#69f0ae" d="M61 499c8 5 19 4 30-2l279-161-66-80z"/>
+                        </svg>
+                        <span class="store-btn-text">
+                            <span class="kicker">Get it on</span>
+                            <span class="name">Google Play</span>
+                        </span>
+                    </a>
+            </div>
+            <p class="price-small">
+                US prices; the stores convert and may round for your region, and the price you're
+                charged is always the one the store shows you at checkout. Pro is bought through
+                the App Store or Google Play, so it can't be purchased from the browser version —
+                but <a href="/app">the free rounds run there</a> with nothing to install.
+            </p>
+        </div>
+    </section>
+
+    <hr class="rule">
+
+    <!-- ================================================================= faq -->
+    <section class="section section-pad" id="faq">
+        <div class="section-head">
+            <p class="kicker">Questions</p>
+            <h2>The things people ask first.</h2>
+        </div>
+        <div class="faq">
+            <details>
+                <summary>Do I need the app, or can I just use the website?</summary>
+                <p>
+                    Either. <a href="/app">The web version</a> is the same app and needs no install
+                    or account — open it and start a round. The store builds handle audio better on a
+                    locked phone, which matters once you're mid-round with the screen off.
+                </p>
+            </details>
+            <details>
+                <summary>Are the styles just names, or is the content actually different?</summary>
+                <p>
+                    Different. Muay Khao is built around entries to the clinch and knees off them;
+                    Muay Tae runs kicks in series and teeps to hold range; Muay Mat is hands and the
+                    low kick that comes off them; Muay Femur is catches, sweeps and counters. The
+                    frequencies differ too — a Muay Tae round calls the lead check three times as
+                    often as a normal entry, because that's what a kicker's round is mostly made of.
+                </p>
+            </details>
+            <details>
+                <summary>Does it work without a signal?</summary>
+                <p>
+                    Yes. The native apps are fully offline. The web version caches itself on first
+                    visit, so once you've loaded it once, a dead gym basement is fine.
+                </p>
+            </details>
+            <details>
+                <summary>Will it talk over my music?</summary>
+                <p>
+                    It plays alongside whatever you're listening to rather than stopping it. On
+                    Android, some device and headphone combinations handle the ducking better than
+                    others — if the balance is off, turn the call speed and volume up in settings.
+                </p>
+            </details>
+            <details>
+                <summary>Shadow boxing, the bag, or pad work?</summary>
+                <p>
+                    All three. Shadow boxing suits faster calls and more movement; bagwork suits
+                    slower calls and longer combinations; on pads it calls for both of you, so the
+                    person holding isn't the one deciding what comes next either.
+                    <a href="/blog/shadow-boxing-vs-heavy-bag.html">There's a write-up on the difference</a>.
+                </p>
+            </details>
+            <details>
+                <summary>I don't know any of these techniques yet. Is that a problem?</summary>
+                <p>
+                    No — that's what the Start Here path is for. It begins at stance and the jab,
+                    introduces a couple of techniques at a time, and every one of them has a lesson
+                    with a reference figure attached. Start at level one and go.
+                </p>
+            </details>
+            <details>
+                <summary>I bought the app back when it was paid. What happens to me?</summary>
+                <p>
+                    You keep everything. Open the app and it restores your access on its own; if
+                    it doesn't, there's a manual claim on the plan screen.
+                </p>
+            </details>
+            <details>
+                <summary>Is my training data sent anywhere?</summary>
+                <p>
+                    Your logs, streaks and progress live on your device. See the
+                    <a href="/privacy-policy.html">privacy policy</a> for the full detail.
+                </p>
+            </details>
+        </div>
+    </section>
+
+    <!-- ============================================================= closing -->
+    <section class="closer section-pad">
+        <div class="section">
+            <h2>Three minutes. One round. Right now.</h2>
+            <p>
+                You don't need to download anything or make an account to find out whether this is
+                for you. Open it, pick Nak Muay Newb, and see if you can keep up.
+            </p>
+            <div class="hero-cta">
+                <a href="/app" class="btn btn-primary" data-cta="closer_app">Start a round — free</a>
+            </div>
+            <div class="store-row">
+                <a class="store-btn" href="https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630" data-cta="closer_ios">
+                    <svg width="20" height="24" viewBox="0 0 384 512" aria-hidden="true" fill="#f4eef6">
+                        <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+                    </svg>
+                    <span class="store-btn-text">
+                        <span class="kicker">Download on the</span>
+                        <span class="name">App Store</span>
+                    </span>
+                </a>
+                <a class="store-btn" href="https://play.google.com/store/apps/details?id=com.shotcallernakmuay.app&amp;pcampaignid=web_share" data-cta="closer_android">
+                    <svg width="20" height="24" viewBox="0 0 512 512" aria-hidden="true">
+                        <path fill="#7cc7f2" d="M47 19c-8 5-13 14-13 26v422c0 12 5 21 13 26l243-237z"/>
+                        <path fill="#ff5fb0" d="M370 176 91 15c-11-6-22-7-30-2l243 243z"/>
+                        <path fill="#ffd54f" d="M370 176 304 256l66 80 78-45c19-11 19-59 0-70z"/>
+                        <path fill="#69f0ae" d="M61 499c8 5 19 4 30-2l279-161-66-80z"/>
+                    </svg>
+                    <span class="store-btn-text">
+                        <span class="kicker">Get it on</span>
+                        <span class="name">Google Play</span>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="app-footer">
+    <div class="app-footer-content">
+        <a href="/" aria-label="Shot Caller Nak Muay — home">
+            <img src="/assets/logo_icon.png" alt="" class="app-footer-logo">
+        </a>
+        <a href="/app" class="app-footer-link">Open the app</a>
+        <a href="/blog/" class="app-footer-link">Blog</a>
+        <a href="/blog/muay-thai-techniques-animated-reference.html" class="app-footer-link">Technique reference</a>
+        <a href="/privacy-policy.html" class="app-footer-link">Privacy</a>
+        <a href="/terms.html" class="app-footer-link">Terms</a>
+        <a href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4" target="_blank" rel="noopener noreferrer" class="app-footer-social" aria-label="Instagram">
+            <img src="/assets/icon.instagram.png" alt="Instagram">
+        </a>
+    </div>
+    <p class="app-footer-legal">
+        Apple and the Apple logo are trademarks of Apple Inc. Google Play and the Google Play logo
+        are trademarks of Google LLC.
+    </p>
+</footer>
+
+<script>
+    /* Every outbound path off this page reports itself, so a paid click can
+       finally be told apart from a bounce. `data-cta` names the button, not
+       just its destination — "which CTA earned the install" is the question
+       the ad spend has been unable to answer. */
+    document.addEventListener('click', function (event) {
+        var el = event.target.closest ? event.target.closest('[data-cta]') : null;
+        if (!el || typeof gtag !== 'function') return;
+        var cta = el.getAttribute('data-cta');
+        gtag('event', cta.indexOf('_app') > -1 || cta === 'nav' ? 'open_web_app' : 'store_click', {
+            event_category: 'landing',
+            event_label: cta,
+            transport_type: 'beacon'
+        });
+    });
+</script>
+
+</body>
+</html>
