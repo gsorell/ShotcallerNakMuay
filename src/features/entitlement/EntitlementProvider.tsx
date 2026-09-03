@@ -18,6 +18,7 @@ import {
 import type { EmphasisKey } from "@/types";
 
 import { PRO_ENTITLEMENT_ID, isFreeEmphasis } from "./constants";
+import { isUserCancellation } from "./purchaseErrors";
 import {
   ANDROID_FREE_TRANSITION_DATE,
   IOS_FREE_TRANSITION_BUILD,
@@ -211,8 +212,8 @@ export function EntitlementProvider({
           success: !!customerInfo.entitlements.active[PRO_ENTITLEMENT_ID],
         };
       } catch (error) {
-        const err = error as { userCancelled?: boolean; message?: string };
-        if (err?.userCancelled) return { success: false, cancelled: true };
+        if (isUserCancellation(error)) return { success: false, cancelled: true };
+        const err = error as { message?: string };
         console.warn("[entitlement] purchase failed", error);
         return { success: false, error: err?.message ?? "Purchase failed." };
       }
