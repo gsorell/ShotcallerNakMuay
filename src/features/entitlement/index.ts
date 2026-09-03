@@ -20,6 +20,7 @@ export {
   validateOrderId,
 } from "./legacyClaim";
 export { getFirstInstallTime } from "./installInfo";
+export { isUserCancellation } from "./purchaseErrors";
 export {
   ANDROID_FREE_TRANSITION_DATE,
   IOS_FREE_TRANSITION_BUILD,
