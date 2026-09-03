@@ -1,6 +1,6 @@
 # Privacy Policy for Nak Muay Shot Caller
 
-**Last Updated: October 22, 2025**
+**Last Updated: September 3, 2026**
 
 ## Overview
 
@@ -74,10 +74,17 @@ Nak Muay Shot Caller ("we," "our," or "the app") is a Muay Thai training timer a
 - Voice data is processed locally on your device
 - No voice data is transmitted to our servers or third parties
 
+**Advertising Measurement (via Meta)**
+- We advertise the app on Instagram and Facebook. So that we can tell whether an ad actually led to a subscription, RevenueCat sends Meta a record of subscription events - which product was bought, the amount, and your device's advertising identifier.
+- On Android that identifier is the Google Advertising ID. On iOS it would be Apple's advertising identifier, which is only available if you grant tracking permission - the app never asks, so no advertising identifier is sent from iOS.
+- Your name, email address and payment details are never sent to Meta.
+- You can reset or delete the advertising identifier at any time: on Android under Settings > Google > Ads, and on iOS under Settings > Privacy & Security > Tracking.
+- See [Meta's privacy policy](https://www.facebook.com/privacy/policy/) for how they handle it.
+
 **No Sale of Personal Data**
 - We do not sell, rent, or trade any personal information
-- We do not share personal data with advertising networks
-- We do not use your data for marketing purposes
+- The only advertising network we share anything with is Meta, and only the advertising identifier and subscription events described under "Advertising Measurement" above, and only to measure our own ads. We do not share your data for anyone else's advertising.
+- We do not build profiles of you, and we do not use your data for marketing beyond measuring whether our own ads worked
 
 ## Your Rights and Controls
 

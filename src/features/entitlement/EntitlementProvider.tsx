@@ -285,6 +285,26 @@ export function EntitlementProvider({
         } catch (error) {
           console.warn("[entitlement] setAttributes failed", error);
         }
+
+        // The third join, and the one paid acquisition actually needs. Meta
+        // only matches a purchase to an ad click if the event carries an
+        // identifier it recognises, so RevenueCat's Meta integration delivers
+        // events and Meta silently discards them until this runs.
+        //
+        // On Android this collects $gpsAdId, which is what makes that
+        // integration work at all - and it needs the AD_ID permission in the
+        // manifest, or the value comes back as all zeros. On iOS it collects
+        // $idfa only once ATT consent has been granted; we never show that
+        // prompt, so iOS purchases stay unmatched by design rather than by
+        // accident.
+        //
+        // Kept in its own try so a failure here cannot cost us the
+        // ga_client_id join above, which is the more valuable of the two.
+        try {
+          await Purchases.collectDeviceIdentifiers();
+        } catch (error) {
+          console.warn("[entitlement] collectDeviceIdentifiers failed", error);
+        }
         await Purchases.addCustomerInfoUpdateListener((customerInfo) => {
           if (!cancelled) void evaluate(customerInfo);
         });
