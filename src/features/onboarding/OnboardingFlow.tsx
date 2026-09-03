@@ -10,6 +10,12 @@ import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
 
 // Derived from the path itself so the pitch can't drift as levels are added.
 const FOUNDATIONS_LEVEL_COUNT = coreLevels(FOUNDATIONS).length;
+// The free count was typed out as "First level free" and went stale the moment
+// levels 2 and 3 were opened up - the exact drift the line above exists to
+// prevent. Read it off the data too.
+const FOUNDATIONS_FREE_LEVEL_COUNT = coreLevels(FOUNDATIONS).filter(
+  (level) => level.free
+).length;
 
 /**
  * The six numbered punches, read off the library rather than typed out here.
@@ -70,8 +76,10 @@ const PRO_ITEMS: Item[] = [
   {
     iconPath: "/assets/icon_newb.png",
     label: "The Start Here path",
-    // Level 1 is free on purpose — say so rather than overselling the lock.
-    desc: `${FOUNDATIONS_LEVEL_COUNT} guided levels that teach the strikes a few at a time. First level free.`,
+    // The opening levels are free on purpose - say so rather than overselling
+    // the lock. Understating it is the worse error: this is the moment someone
+    // decides whether the free tier is worth their time at all.
+    desc: `${FOUNDATIONS_LEVEL_COUNT} guided levels that teach the strikes a few at a time. First ${FOUNDATIONS_FREE_LEVEL_COUNT} levels free.`,
   },
   {
     iconPath: "/assets/icon_mat.png",
