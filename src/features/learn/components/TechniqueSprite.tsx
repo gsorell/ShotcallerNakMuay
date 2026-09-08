@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 // The module rather than the workout barrel: the barrel reaches back into this
 // feature, and a figure only needs to know which way round the user stands.
@@ -11,6 +11,7 @@ import {
   spritesFor,
   type SpriteVariant,
 } from "../data/techniqueSprites";
+import { activate } from "./ViewerShell";
 import "./TechniqueSprite.css";
 
 interface TechniqueSpriteProps {
@@ -29,6 +30,17 @@ interface TechniqueSpriteProps {
    * there a level teaches both halves at once.
    */
   variantIndex?: number | null;
+  /**
+   * Make each figure a target that opens the viewing mode, and say which one
+   * was used — by its position in `spritesFor`, and by the element itself so
+   * the host can hand it to `ViewerShell` as the thing focus returns to.
+   *
+   * Per figure rather than per lesson because a paired lesson shows two, and
+   * tapping the rear teep should enlarge the rear teep. Omitted, the figures
+   * are not targets at all: a host that shows them inside a larger control —
+   * the roadmap's closed lesson card — wants the tap to reach that instead.
+   */
+  onOpen?: (variantIndex: number, opener: HTMLElement) => void;
   className?: string;
 }
 
@@ -49,16 +61,27 @@ export function TechniqueSprite({
   name,
   frame = null,
   variantIndex = null,
+  onOpen,
   className,
 }: TechniqueSpriteProps) {
   const sheets = spritesFor(slug);
   // An out-of-range index is treated as "no such sheet" rather than clamped: a
   // page asking for the rear teep should not quietly draw the lead one.
+  //
+  // Carried with its position in the full list rather than its position here,
+  // because that is what `onOpen` has to report and the two come apart twice
+  // over — once when a single sheet was asked for, and again when a broken one
+  // drops out below.
   const variants =
-    variantIndex === null ? sheets : sheets.slice(variantIndex, variantIndex + 1);
+    variantIndex === null
+      ? sheets.map((variant, index) => ({ variant, index }))
+      : sheets
+          .slice(variantIndex, variantIndex + 1)
+          .map((variant) => ({ variant, index: variantIndex }));
   const [broken, setBroken] = useState<string[]>([]);
+  const southpaw = useSouthpaw();
 
-  const usable = variants.filter((v) => !broken.includes(v.src));
+  const usable = variants.filter(({ variant }) => !broken.includes(variant.src));
 
   // No sheet for this lesson yet, or none of them loaded: show nothing rather
   // than an empty slot, so the copy simply takes the full width.
@@ -71,17 +94,49 @@ export function TechniqueSprite({
         (className ? ` ${className}` : "")
       }
     >
-      {usable.map((variant) => (
-        <SpriteFigure
-          key={variant.src}
-          variant={variant}
-          name={name}
-          frame={frame}
-          // Only worth naming when there is another one to tell it apart from.
-          showLabel={usable.length > 1}
-          onBroken={() => setBroken((b) => [...b, variant.src])}
-        />
-      ))}
+      {usable.map(({ variant, index }) => {
+        const figure = (
+          <SpriteFigure
+            variant={variant}
+            name={name}
+            frame={frame}
+            // Only worth naming when there is another one to tell it apart from.
+            showLabel={usable.length > 1}
+            onBroken={() => setBroken((b) => [...b, variant.src])}
+          />
+        );
+
+        if (!onOpen) return <Fragment key={variant.src}>{figure}</Fragment>;
+
+        // A div rather than a button for the reason `activate` exists: the
+        // figure it wraps is a <figure>, which a <button> may not contain.
+        //
+        // The click is stopped here. This target sits inside a larger one on
+        // the roadmap — the lesson card, which toggles — and a press that ran
+        // both would open the viewer and shut the card behind it.
+        const side = sideLabel(variant.label, southpaw);
+        return (
+          <div
+            key={variant.src}
+            className="technique-sprite-open"
+            role="button"
+            tabIndex={0}
+            aria-haspopup="dialog"
+            aria-label={
+              side
+                ? `Open ${name}, ${side.toLowerCase()} side, larger`
+                : `Open ${name} larger`
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(index, e.currentTarget);
+            }}
+            onKeyDown={activate((e) => onOpen(index, e.currentTarget))}
+          >
+            {figure}
+          </div>
+        );
+      })}
     </div>
   );
 }

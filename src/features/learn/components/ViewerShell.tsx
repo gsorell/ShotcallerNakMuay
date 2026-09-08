@@ -36,12 +36,17 @@ interface ViewerShellProps {
  * `<figure>` — flow content, which a real `<button>` may not contain. So they
  * are divs with the button role, and a div does not fire click on a keypress
  * the way a button does. This puts that back.
+ *
+ * The event is passed on for the one caller that needs it: a roadmap card
+ * holds a pair of openers and identifies which was used by its `currentTarget`,
+ * the same way its click handler does. Callers that do not care take no
+ * argument and are assignable unchanged.
  */
-export function activate(fn: () => void) {
-  return (e: React.KeyboardEvent) => {
+export function activate(fn: (e: React.KeyboardEvent<HTMLElement>) => void) {
+  return (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      fn();
+      fn(e);
     }
   };
 }

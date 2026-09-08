@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useEntitlement } from "@/features/entitlement";
 // The data module, not the Learn barrel: LearnSection hosts this component, and
@@ -6,7 +6,9 @@ import { useEntitlement } from "@/features/entitlement";
 import { getEntryForCallout } from "@/features/learn/data/techniqueIndex";
 // Direct path rather than the Learn barrel, for the same reason as above.
 import { TechniqueSprite } from "@/features/learn/components/TechniqueSprite";
-import { displayName } from "@/features/learn/data/techniqueSprites";
+import { TechniqueViewerScreen } from "@/features/learn/components/TechniqueViewer";
+import { lessonCard } from "@/features/learn/data/techniqueLibrary";
+import { displayName, spritesFor } from "@/features/learn/data/techniqueSprites";
 import { usePaywall } from "@/features/paywall";
 import { ImageWithFallback, useUIContext } from "@/features/shared";
 import { useWorkoutContext } from "@/features/workout";
@@ -349,6 +351,25 @@ function LevelDetail({
       return next;
     });
   }, []);
+
+  // Which figure is enlarged, if any — the same viewing mode the technique
+  // library opens, reached from the card that is already showing the figure.
+  //
+  // Kept after closing rather than cleared, and `open` carried alongside it.
+  // ViewerShell puts focus back on the element that opened it as it closes,
+  // which it cannot do if the whole screen is unmounted on the same render.
+  const [zoom, setZoom] = useState<{
+    entry: NonNullable<ReturnType<typeof getEntryForCallout>>;
+    variantIndex: number;
+    open: boolean;
+  } | null>(null);
+  // Whichever of a card's figures was tapped. A ref rather than state because
+  // nothing renders from it — it exists only to be focused again on close.
+  const zoomOpener = useRef<HTMLElement | null>(null);
+  const closeZoom = useCallback(
+    () => setZoom((z) => (z ? { ...z, open: false } : null)),
+    []
+  );
   const rounds = Array.from(
     { length: level.session.roundsCount },
     (_, i) => i + 1
@@ -378,6 +399,18 @@ function LevelDetail({
     }
     return [...byLesson.values()];
   }, [level]);
+
+  // The enlarged figure's own lesson. A card is one entry, but a paired lesson
+  // shows two sheets under it and each has a name and a summary of its own —
+  // so the side is looked up by the sheet's raw label, which is how
+  // `entry.sides` is keyed. The NAME then goes through the mirror and the prose
+  // never does, the same rule the library's detail page follows: a side is
+  // named "Lead Teep", which is the other leg for a southpaw, while the copy is
+  // written in lead and rear so it reads true from either stance.
+  const zoomSheet = zoom
+    ? spritesFor(zoom.entry.slug)[zoom.variantIndex]
+    : undefined;
+  const zoomCard = zoom ? lessonCard(zoom.entry, zoomSheet?.label) : null;
 
   return (
     <article className="roadmap-detail">
@@ -453,12 +486,27 @@ function LevelDetail({
                 </button>
 
                 {/* Nothing renders for a lesson with no sheet, and the row
-                    simply has no figure in it. Click-through, so the figure is
-                    part of the same target as the name behind it. */}
+                    simply has no figure in it.
+
+                    Shut, the figure is click-through: it is part of the same
+                    target as the name behind it, and the first tap anywhere on
+                    the row opens the lesson. Open, the figure becomes a target
+                    of its own and the second tap enlarges it — the same
+                    viewing mode the technique library opens, rather than
+                    collapsing the card the reader has just opened. The name,
+                    the copy's edges and the chevron still close it. */}
                 {entry && (
                   <TechniqueSprite
                     slug={entry.slug}
                     name={displayName(entry.name, southpaw)}
+                    onOpen={
+                      open
+                        ? (variantIndex, opener) => {
+                            zoomOpener.current = opener;
+                            setZoom({ entry, variantIndex, open: true });
+                          }
+                        : undefined
+                    }
                   />
                 )}
 
@@ -495,6 +543,26 @@ function LevelDetail({
           })}
         </div>
       </section>
+
+      {/* One screen for the whole level rather than one per card. It portals
+          to the body wherever it is written, and only one figure can be
+          enlarged at a time — so this belongs outside the cards, where a click
+          on it cannot bubble into the card that opened it.
+
+          Named per SHEET, not per lesson: a paired lesson is two sides with
+          two names and two summaries, and enlarging the rear teep from a card
+          titled "Teep" should say Rear Teep, exactly as the library does. */}
+      {zoom && zoomCard && (
+        <TechniqueViewerScreen
+          open={zoom.open}
+          onClose={closeZoom}
+          openerRef={zoomOpener}
+          slug={zoom.entry.slug}
+          name={displayName(zoomCard.name, southpaw)}
+          variantIndex={zoom.variantIndex}
+          summary={zoomCard.summary}
+        />
+      )}
 
       {level.languageNote && (
         <section className="roadmap-panel roadmap-panel--note">

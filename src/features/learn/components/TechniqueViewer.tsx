@@ -1,11 +1,23 @@
-import { useCallback, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
 import { LANDED_FRAME, SPRITE_FRAMES, spritesFor } from "../data/techniqueSprites";
 import { SpriteFigure, TechniqueSprite } from "./TechniqueSprite";
 import { ViewerShell, activate, keepOpen } from "./ViewerShell";
 import "./TechniqueViewer.css";
 
-interface TechniqueViewerProps {
+interface TechniqueViewerScreenProps {
+  /** Whether the viewing mode is up. */
+  open: boolean;
+  onClose: () => void;
+  /** The element focus returns to on close — whatever was tapped to open it. */
+  openerRef: RefObject<HTMLElement | null>;
   /** Lesson slug. A lesson with no sheet renders nothing at all. */
   slug: string;
   /** Technique name, already mirrored for a southpaw by the caller. */
@@ -21,6 +33,12 @@ interface TechniqueViewerProps {
    */
   summary?: string;
 }
+
+/** The framed opener owns the open state, so it takes none of it as props. */
+type TechniqueViewerProps = Omit<
+  TechniqueViewerScreenProps,
+  "open" | "onClose" | "openerRef"
+>;
 
 /**
  * The first sentence of a lesson summary.
@@ -39,22 +57,15 @@ function openingLine(summary: string): string {
 }
 
 /**
- * The figure on a lesson page: framed where it sits, and openable.
+ * The viewing mode: one silhouette as large as the screen allows, a filmstrip,
+ * and a transport.
  *
  * A looping silhouette shows the shape but not the order. At 1.15s for six
  * frames each pose is on screen for under 200ms, which is the whole point when
  * you want the rhythm and useless when you want to know where the rear heel is
  * at the moment of extension. So: stop it, and step.
  *
- * That control used to live on the lesson page as three buttons under a figure
- * floating on the page background. Both halves of that were wrong. The figure
- * had no edge, so it read as decoration rather than as the subject; and a
- * transport under a 150px silhouette asks you to study something too small to
- * study. Now the page shows the figure in a plain frame at a glance-able size,
- * and the frame opens a viewing mode where the silhouette is as large as the
- * screen allows and the controls are worth having.
- *
- * In that mode the figure itself is the play/pause target — the thing you are
+ * In here the figure itself is the play/pause target — the thing you are
  * already looking at, rather than a control beside it. Pausing holds the
  * landed frame rather than wherever the loop happened to be: CSS animation
  * position cannot be read back, so "pause here" is not available, and landing
@@ -68,17 +79,34 @@ function openingLine(summary: string): string {
  * Nothing inside the viewing mode closes it; everything around it does, and
  * there is an ✕ for anyone who would rather not find that out by trying — see
  * `ViewerShell`, which owns both and the reasons for them.
+ *
+ * Split out of `TechniqueViewer` when the roadmap wanted the same screen. A
+ * roadmap lesson card already shows the silhouette in its own row, so it has
+ * an opener without needing a second framed one; it says which figure was
+ * tapped and owns nothing else about this.
  */
-export function TechniqueViewer({
+export function TechniqueViewerScreen({
+  open,
+  onClose,
+  openerRef,
   slug,
   name,
   variantIndex = null,
   summary,
-}: TechniqueViewerProps) {
-  const [open, setOpen] = useState(false);
+}: TechniqueViewerScreenProps) {
   const [frame, setFrame] = useState<number | null>(null);
   const titleId = useId();
-  const openerRef = useRef<HTMLDivElement>(null);
+
+  // Always opens playing. The reader tapped a looping figure; it should keep
+  // looping until they ask it not to, whatever they left it on last time.
+  //
+  // Cleared on the way OUT rather than on the way in. Effects run after paint,
+  // so clearing it on open would show the frame last held for a beat before
+  // the loop restarted; clearing it on close costs one render of a screen
+  // nobody is looking at.
+  useEffect(() => {
+    if (!open) setFrame(null);
+  }, [open]);
 
   const step = useCallback((delta: number) => {
     setFrame((f) => {
@@ -87,15 +115,6 @@ export function TechniqueViewer({
       return (from + delta + SPRITE_FRAMES) % SPRITE_FRAMES;
     });
   }, []);
-
-  const openViewer = useCallback(() => {
-    // Always opens playing. The reader tapped a looping figure; it should keep
-    // looping until they ask it not to, whatever they left it on last time.
-    setFrame(null);
-    setOpen(true);
-  }, []);
-
-  const close = useCallback(() => setOpen(false), []);
 
   const togglePlay = useCallback(
     () => setFrame((f) => (f === null ? LANDED_FRAME : null)),
@@ -107,11 +126,131 @@ export function TechniqueViewer({
 
   const playing = frame === null;
 
-  // The one sheet this page is showing, which the filmstrip needs by hand —
+  // The one sheet this screen is showing, which the filmstrip needs by hand —
   // TechniqueSprite does the picking internally and hands back nothing. An
   // out-of-range index means no such sheet rather than "clamp to the first",
   // the same rule TechniqueSprite follows, so the strip simply does not draw.
   const sheet = variantIndex === null ? sheets[0] : sheets[variantIndex];
+
+  return (
+    <ViewerShell
+      open={open}
+      onClose={onClose}
+      onStep={step}
+      openerRef={openerRef}
+      labelledBy={titleId}
+    >
+      <div
+        className="viewer-figure"
+        role="button"
+        tabIndex={0}
+        aria-pressed={!playing}
+        aria-label={playing ? `Hold ${name} still` : `Play ${name}`}
+        onClick={(e) => {
+          keepOpen(e);
+          togglePlay();
+        }}
+        onKeyDown={activate(togglePlay)}
+      >
+        <TechniqueSprite
+          slug={slug}
+          name={name}
+          frame={frame}
+          variantIndex={variantIndex}
+        />
+      </div>
+
+      {/* The whole movement laid out at once. The port shows you one
+          instant; this shows you the shape of the thing either side of it,
+          which is what tells you whether the frame you are looking at is the
+          one you wanted. Picking one holds it, so it is a scrubber as much
+          as an index. */}
+      {sheet && (
+        <div
+          className="viewer-strip"
+          role="group"
+          aria-label={`${name} frames`}
+          onClick={keepOpen}
+        >
+          {Array.from({ length: SPRITE_FRAMES }, (_, i) => (
+            <div
+              key={i}
+              className={
+                "viewer-thumb" + (frame === i ? " viewer-thumb--on" : "")
+              }
+              role="button"
+              tabIndex={0}
+              aria-pressed={frame === i}
+              aria-label={`Frame ${i + 1} of ${SPRITE_FRAMES}`}
+              onClick={() => setFrame(i)}
+              onKeyDown={activate(() => setFrame(i))}
+            >
+              <SpriteFigure variant={sheet} name={name} frame={i} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="viewer-controls" onClick={keepOpen}>
+        <button
+          type="button"
+          className="viewer-step"
+          aria-label="Previous frame"
+          onClick={() => step(-1)}
+        >
+          <span aria-hidden="true">◀</span>
+        </button>
+
+        <span className="viewer-count" aria-hidden="true">
+          {playing ? "—" : `${(frame ?? 0) + 1} / ${SPRITE_FRAMES}`}
+        </span>
+
+        <button
+          type="button"
+          className="viewer-step"
+          aria-label="Next frame"
+          onClick={() => step(1)}
+        >
+          <span aria-hidden="true">▶</span>
+        </button>
+      </div>
+
+      {/* The label, under the exhibit. It sat above the port first and read
+          as a page heading floating over a picture; down here the figure
+          opens the screen and the words settle what you just watched. */}
+      <div className="viewer-caption">
+        <h2 className="viewer-title" id={titleId}>
+          {name}
+        </h2>
+        {summary && <p className="viewer-summary">{openingLine(summary)}</p>}
+      </div>
+    </ViewerShell>
+  );
+}
+
+/**
+ * The figure on a lesson page: framed where it sits, and openable.
+ *
+ * The viewing mode used to live on the lesson page as three buttons under a
+ * figure floating on the page background. Both halves of that were wrong. The
+ * figure had no edge, so it read as decoration rather than as the subject; and
+ * a transport under a 150px silhouette asks you to study something too small
+ * to study. Now the page shows the figure in a plain frame at a glance-able
+ * size, and the frame opens the screen above.
+ */
+export function TechniqueViewer({
+  slug,
+  name,
+  variantIndex = null,
+  summary,
+}: TechniqueViewerProps) {
+  const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLDivElement>(null);
+
+  const openViewer = useCallback(() => setOpen(true), []);
+  const close = useCallback(() => setOpen(false), []);
+
+  if (spritesFor(slug).length === 0) return null;
 
   return (
     <div className="viewer">
@@ -135,98 +274,15 @@ export function TechniqueViewer({
         Tap to enlarge
       </p>
 
-      <ViewerShell
+      <TechniqueViewerScreen
         open={open}
         onClose={close}
-        onStep={step}
         openerRef={openerRef}
-        labelledBy={titleId}
-      >
-        <div
-          className="viewer-figure"
-          role="button"
-          tabIndex={0}
-          aria-pressed={!playing}
-          aria-label={playing ? `Hold ${name} still` : `Play ${name}`}
-          onClick={(e) => {
-            keepOpen(e);
-            togglePlay();
-          }}
-          onKeyDown={activate(togglePlay)}
-        >
-          <TechniqueSprite
-            slug={slug}
-            name={name}
-            frame={frame}
-            variantIndex={variantIndex}
-          />
-        </div>
-
-        {/* The whole movement laid out at once. The port shows you one
-            instant; this shows you the shape of the thing either side of it,
-            which is what tells you whether the frame you are looking at is the
-            one you wanted. Picking one holds it, so it is a scrubber as much
-            as an index. */}
-        {sheet && (
-          <div
-            className="viewer-strip"
-            role="group"
-            aria-label={`${name} frames`}
-            onClick={keepOpen}
-          >
-            {Array.from({ length: SPRITE_FRAMES }, (_, i) => (
-              <div
-                key={i}
-                className={
-                  "viewer-thumb" + (frame === i ? " viewer-thumb--on" : "")
-                }
-                role="button"
-                tabIndex={0}
-                aria-pressed={frame === i}
-                aria-label={`Frame ${i + 1} of ${SPRITE_FRAMES}`}
-                onClick={() => setFrame(i)}
-                onKeyDown={activate(() => setFrame(i))}
-              >
-                <SpriteFigure variant={sheet} name={name} frame={i} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="viewer-controls" onClick={keepOpen}>
-          <button
-            type="button"
-            className="viewer-step"
-            aria-label="Previous frame"
-            onClick={() => step(-1)}
-          >
-            <span aria-hidden="true">◀</span>
-          </button>
-
-          <span className="viewer-count" aria-hidden="true">
-            {playing ? "—" : `${(frame ?? 0) + 1} / ${SPRITE_FRAMES}`}
-          </span>
-
-          <button
-            type="button"
-            className="viewer-step"
-            aria-label="Next frame"
-            onClick={() => step(1)}
-          >
-            <span aria-hidden="true">▶</span>
-          </button>
-        </div>
-
-        {/* The label, under the exhibit. It sat above the port first and read
-            as a page heading floating over a picture; down here the figure
-            opens the screen and the words settle what you just watched. */}
-        <div className="viewer-caption">
-          <h2 className="viewer-title" id={titleId}>
-            {name}
-          </h2>
-          {summary && <p className="viewer-summary">{openingLine(summary)}</p>}
-        </div>
-      </ViewerShell>
+        slug={slug}
+        name={name}
+        variantIndex={variantIndex}
+        summary={summary}
+      />
     </div>
   );
 }

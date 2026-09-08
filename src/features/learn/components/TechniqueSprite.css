@@ -33,6 +33,32 @@
   gap: 0.25rem;
 }
 
+/* The figure as its own tap target, where a host asks for one. Transparent and
+   the same shape as what it wraps, so a figure that becomes openable does not
+   move or change size when it does.
+
+   `pointer-events` is set back on deliberately. The roadmap turns it off for
+   the whole group so a closed card takes the tap; this is the exception it has
+   to be able to make for one element inside it.
+
+   Selection and tap highlight go for the same reason they do on the viewer's
+   own targets: this wraps an image and gets tapped repeatedly, which a browser
+   otherwise reads as an attempt to select it. */
+.technique-sprite-open {
+  display: flex;
+  pointer-events: auto;
+  cursor: zoom-in;
+  border-radius: 0.5rem;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.technique-sprite-open:focus-visible {
+  outline: 2px solid rgba(236, 72, 153, 0.8);
+  outline-offset: 3px;
+}
+
 .technique-sprite {
   width: var(--sprite-size);
   height: var(--sprite-size);
