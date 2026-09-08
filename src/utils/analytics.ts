@@ -341,12 +341,22 @@ export const trackEvent = (
     return;
   }
 
-  // Use gtag for web/Android
+  // Use gtag for web/Android.
+  //
+  // `platform` has to be stamped here, not just on the Measurement Protocol
+  // path above. The Android app is a Capacitor webview reporting to the same
+  // measurement ID as the website, so without this every Android session is
+  // indistinguishable from a browser session in GA4 — which made "how do web
+  // visitors compare to app users" an unanswerable question, and quietly
+  // inflated every web number with app traffic. Capacitor returns "web",
+  // "android" or "ios", so the browser labels itself too.
   if (window.gtag) {
     window.gtag("event", eventName, {
       event_category: "engagement",
       event_label: parameters?.["label"] || "",
       value: parameters?.["value"] || 0,
+      platform: Capacitor.getPlatform(),
+      app_version: APP_VERSION,
       ...identified,
     });
   }

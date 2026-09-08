@@ -281,6 +281,21 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       active ? roadmapLogRef(active.path, active.level) : null
     );
 
+    // The counterpart to WorkoutStart, which has been firing alone: the event
+    // existed in AnalyticsEvents but nothing ever sent it, so GA4 recorded
+    // every round that began and none that finished, and the completion rate
+    // was unanswerable. Params mirror WorkoutStart so the two can be compared
+    // on the same cuts — style, difficulty, round count.
+    const finishedEmphases = Object.keys(settingsRef.current.selectedEmphases)
+      .filter((k) => settingsRef.current.selectedEmphases[k as EmphasisKey]);
+    trackEvent(AnalyticsEvents.WorkoutComplete, {
+      selected_emphases: finishedEmphases.join(","),
+      emphasis_count: finishedEmphases.length,
+      difficulty: settingsRef.current.difficulty,
+      rounds: settingsRef.current.roundsCount,
+      guided: active != null,
+    });
+
     // A guided level clears by being finished — the app cannot see the student,
     // so attendance is the only honest measure. Replays bump the session count
     // but never re-earn the charm; see features/roadmap/storage.
