@@ -22,6 +22,7 @@ import {
 
 import { LearnSection } from "@/features/learn";
 import { hasOnboarded, useOnboardingState } from "@/features/onboarding";
+import { usePaywall } from "@/features/paywall";
 import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
 import { roundDescription, roundTitle } from "@/features/roadmap/session";
 import { TechniqueEditor } from "@/features/technique-editor";
@@ -135,31 +136,20 @@ export default function App() {
     isEditorRef.current = page === "editor";
   }, [page]);
 
-  const { userEngagement, setUserEngagement } = useUserEngagement(isEditorRef);
+  const { userEngagement, setUserEngagement, recordCompletedWorkout } =
+    useUserEngagement(isEditorRef);
+
+  // A session that has already been asked to buy has had its one interruption.
+  // On web the post-workout paywall carries the store buttons itself, so
+  // following it with an install modal is the same ask twice in a row.
+  const { isOpen: paywallIsOpen } = usePaywall();
+  const paywallShownThisSession = useRef(false);
+  useEffect(() => {
+    if (paywallIsOpen) paywallShownThisSession.current = true;
+  }, [paywallIsOpen]);
 
   // Track if user has dismissed the prompt this session
   const hasUserDismissedPrompt = useRef(false);
-
-  // Show app install prompt based on user engagement (only for web visitors)
-  useEffect(() => {
-    // Don't show if already running as native app
-    if (Capacitor.isNativePlatform()) return;
-
-    // Never stack this on the onboarding, and never chase it the moment the
-    // onboarding closes. A first-time visitor should get one thing to read,
-    // not two — the install ask now lives on the onboarding's own last step,
-    // and this prompt is for people who come back.
-    if (onboarding.isShowing || onboarding.finishedThisSession) return;
-    if (!hasOnboarded()) return;
-
-    // Don't show if user already dismissed this session
-    if (hasUserDismissedPrompt.current) return;
-
-    // Check if we should show the prompt based on engagement
-    if (shouldShowPrompt(userEngagement) && !showPWAPrompt) {
-      setShowPWAPrompt(true);
-    }
-  }, [userEngagement, shouldShowPrompt, showPWAPrompt, setShowPWAPrompt, onboarding]);
 
   const {
     voices: unifiedVoices,
@@ -198,6 +188,59 @@ export default function App() {
   });
 
   const isActive = timer.running || timer.isPreRound;
+
+  // Count a finished workout. The completion screen is the one place that can
+  // only mean a round actually ended; the ref stops re-renders of that screen
+  // from counting the same workout more than once.
+  const countedCompletionRef = useRef(false);
+  useEffect(() => {
+    if (page !== "completed") {
+      countedCompletionRef.current = false;
+      return;
+    }
+    if (countedCompletionRef.current) return;
+    countedCompletionRef.current = true;
+    recordCompletedWorkout();
+  }, [page, recordCompletedWorkout]);
+
+  // Show app install prompt based on user engagement (only for web visitors)
+  useEffect(() => {
+    // Don't show if already running as native app
+    if (Capacitor.isNativePlatform()) return;
+
+    // Never over a live round. `timeOnSite >= 120` is satisfied part-way
+    // through a first workout, so without this the modal lands on top of the
+    // callouts the visitor came to hear.
+    if (isActive) return;
+
+    // Not on the completion screen either. That moment already belongs to the
+    // post-workout paywall, which on web is a store hand-off in its own right.
+    if (page === "completed") return;
+    if (paywallShownThisSession.current) return;
+
+    // Never stack this on the onboarding, and never chase it the moment the
+    // onboarding closes. A first-time visitor should get one thing to read,
+    // not two — the install ask now lives on the onboarding's own last step,
+    // and this prompt is for people who come back.
+    if (onboarding.isShowing || onboarding.finishedThisSession) return;
+    if (!hasOnboarded()) return;
+
+    // Don't show if user already dismissed this session
+    if (hasUserDismissedPrompt.current) return;
+
+    // Check if we should show the prompt based on engagement
+    if (shouldShowPrompt(userEngagement) && !showPWAPrompt) {
+      setShowPWAPrompt(true);
+    }
+  }, [
+    userEngagement,
+    shouldShowPrompt,
+    showPWAPrompt,
+    setShowPWAPrompt,
+    onboarding,
+    isActive,
+    page,
+  ]);
 
   const TechniqueEditorAny =
     TechniqueEditor as unknown as React.ComponentType<any>;

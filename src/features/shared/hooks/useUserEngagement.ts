@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const STORAGE_KEY = "user_engagement_stats";
 
 export function useUserEngagement(
   isEditorRef: React.MutableRefObject<boolean>
@@ -6,7 +8,7 @@ export function useUserEngagement(
   const [sessionStartTime] = useState(Date.now());
 
   const [userEngagement, setUserEngagement] = useState(() => {
-    const stored = localStorage.getItem("user_engagement_stats");
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -43,7 +45,7 @@ export function useUserEngagement(
     setUserEngagement(newEngagement);
 
     localStorage.setItem(
-      "user_engagement_stats",
+      STORAGE_KEY,
       JSON.stringify({
         ...newEngagement,
         lastVisit: newEngagement.lastVisit.toISOString(),
@@ -64,5 +66,32 @@ export function useUserEngagement(
     return () => clearInterval(interval);
   }, [sessionStartTime, isEditorRef]);
 
-  return { userEngagement, setUserEngagement };
+  /**
+   * Count a finished workout.
+   *
+   * `completedWorkouts` is the criterion the install prompt most wants — the
+   * product just did its job in front of the user — but nothing ever
+   * incremented it, so the counter sat at 0 forever and the prompt fell
+   * through to the 120-second `timeOnSite` rule instead. Two minutes into a
+   * visit is usually the middle of round one, which is the worst possible
+   * moment to put a modal over the callouts.
+   */
+  const recordCompletedWorkout = useCallback(() => {
+    setUserEngagement((prev) => {
+      const next = { ...prev, completedWorkouts: prev.completedWorkouts + 1 };
+      try {
+        const lastVisit =
+          next.lastVisit instanceof Date ? next.lastVisit : new Date();
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ ...next, lastVisit: lastVisit.toISOString() })
+        );
+      } catch {
+        /* ignore - a lost count costs at most a delayed prompt */
+      }
+      return next;
+    });
+  }, []);
+
+  return { userEngagement, setUserEngagement, recordCompletedWorkout };
 }
