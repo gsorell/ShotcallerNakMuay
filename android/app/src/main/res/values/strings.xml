@@ -12,11 +12,14 @@
         out of any published build. They live here, in the clear, because that
         is where Meta's SDK looks and because hiding them would buy nothing.
 
-        Both are still PLACEHOLDERS. Get the real values from
-        developers.facebook.com -> the app -> Settings -> Basic (App ID at the
-        top, Client Token under Advanced). Until they are replaced, a release
-        build fails on purpose - see checkMetaCredentials in build.gradle.
+        The App ID doubles as the Events Manager dataset ID - the same
+        2148781392653981 the RevenueCat Conversions API integration reports
+        to. That is how Meta's app datasets work, and it is the reason both
+        halves of the funnel land in one place rather than two.
+
+        checkMetaCredentials in build.gradle fails a release build if these
+        ever go back to placeholders.
     -->
-    <string name="facebook_app_id">REPLACE_WITH_META_APP_ID</string>
-    <string name="facebook_client_token">REPLACE_WITH_META_CLIENT_TOKEN</string>
+    <string name="facebook_app_id">2148781392653981</string>
+    <string name="facebook_client_token">2127b0106bd424f2060397fd91770eca</string>
 </resources>
