@@ -20,6 +20,37 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Meta's SDK reads all four of these at startup; there is no init call
+            in MainActivity and there should not be. facebook-core registers a
+            ContentProvider (FacebookInitProvider) that initialises the SDK
+            before onCreate runs, and AppEventsLogger.activateApp is deprecated
+            precisely because the launch event is now logged for us.
+
+            AutoLogAppEventsEnabled is what actually buys install attribution:
+            it logs MobileAppInstall on first launch and fb_mobile_activate_app
+            after that. Without it the SDK is inert and installs stay invisible.
+
+            It ALSO auto-logs in-app purchases, which we do not want - purchases
+            already reach this dataset through RevenueCat's Conversions API,
+            net of store commission and with sandbox excluded, and a second
+            unmatched copy from the SDK would double-count revenue and teach
+            Meta to optimise on a number twice its real size. The SDK has no
+            manifest flag for purchases alone, so that one event is turned off
+            in the App Dashboard instead (Automatic Event Logging -> In-App
+            Purchase). The dashboard toggle wins over this flag when they
+            disagree, which is exactly why it is the right place to do it.
+
+            AdvertiserIDCollectionEnabled lets the SDK read the Google
+            Advertising ID, which is the identifier Meta matches an install
+            against. The AD_ID permission below is what makes it readable at
+            all on API 33+; we target 36.
+        -->
+        <meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id" />
+        <meta-data android:name="com.facebook.sdk.ClientToken" android:value="@string/facebook_client_token" />
+        <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="true" />
+        <meta-data android:name="com.facebook.sdk.AdvertiserIDCollectionEnabled" android:value="true" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -42,4 +73,19 @@
         the Advertising Measurement section of the privacy policy.
     -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
+    <!--
+        Package visibility for the Meta Install Referrer. On Android 11+ an app
+        cannot see another package unless it declares it here, and the referrer
+        is fetched from a ContentProvider inside the Facebook or Instagram app.
+        facebook-core does NOT declare these itself - checked against the SDK's
+        own manifest - so without this block the referrer lookup is filtered
+        out and view-through installs, plus click-through installs that happen
+        in a later session, never get attributed.
+    -->
+    <queries>
+        <package android:name="com.facebook.katana" />
+        <package android:name="com.instagram.android" />
+        <package android:name="com.facebook.lite" />
+    </queries>
 </manifest>

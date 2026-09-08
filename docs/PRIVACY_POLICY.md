@@ -1,6 +1,6 @@
 # Privacy Policy for Nak Muay Shot Caller
 
-**Last Updated: September 3, 2026**
+**Last Updated: September 8, 2026**
 
 ## Overview
 
@@ -76,6 +76,7 @@ Nak Muay Shot Caller ("we," "our," or "the app") is a Muay Thai training timer a
 
 **Advertising Measurement (via Meta)**
 - We advertise the app on Instagram and Facebook. So that we can tell whether an ad actually led to a subscription, RevenueCat sends Meta a record of subscription events - which product was bought, the amount, and your device's advertising identifier.
+- The Android app also includes Meta's own measurement library, which reports when the app is first installed and when it is opened, together with your device's advertising identifier. This is what lets us tell that an install came from one of our ads rather than from someone finding the app on their own. It reports nothing about what you do inside the app - not your workouts, your settings, or anything you have logged.
 - On Android that identifier is the Google Advertising ID. On iOS it would be Apple's advertising identifier, which is only available if you grant tracking permission - the app never asks, so no advertising identifier is sent from iOS.
 - Your name, email address and payment details are never sent to Meta.
 - You can reset or delete the advertising identifier at any time: on Android under Settings > Google > Ads, and on iOS under Settings > Privacy & Security > Tracking.
@@ -83,7 +84,7 @@ Nak Muay Shot Caller ("we," "our," or "the app") is a Muay Thai training timer a
 
 **No Sale of Personal Data**
 - We do not sell, rent, or trade any personal information
-- The only advertising network we share anything with is Meta, and only the advertising identifier and subscription events described under "Advertising Measurement" above, and only to measure our own ads. We do not share your data for anyone else's advertising.
+- The only advertising network we share anything with is Meta, and only the advertising identifier and the install, app-open and subscription events described under "Advertising Measurement" above, and only to measure our own ads. We do not share your data for anyone else's advertising.
 - We do not build profiles of you, and we do not use your data for marketing beyond measuring whether our own ads worked
 
 ## Your Rights and Controls

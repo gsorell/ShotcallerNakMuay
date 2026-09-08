@@ -13,4 +13,8 @@ ext {
     androidxJunitVersion = '1.2.1'
     androidxEspressoCoreVersion = '3.6.1'
     cordovaAndroidVersion = '10.1.1'
+    // Meta's SDK, for ad attribution. Pinned like everything else here so a
+    // fresh clone builds the same bytes; `latest.release` is what Meta's own
+    // docs suggest and it makes the build non-reproducible.
+    facebookCoreVersion = '18.3.0'
 }
