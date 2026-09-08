@@ -131,6 +131,22 @@ Also includes measurement changes for our own advertising. See the updated
 privacy policy for what is collected and how to reset your advertising ID.
 ```
 
+### App Store Connect "What's New"
+
+Deliberately different from the Play text below — and it must stay that way.
+iOS ships no Meta SDK and no advertising identifier, so a note claiming ad
+measurement would describe something this build does not do on that platform.
+
+```
+The figures in Start Here now open. Tap a lesson to expand it, then tap the
+technique's figure to enlarge it and step through the movement frame by frame
+— the same viewer the technique library uses, without leaving the path you're
+working through.
+
+Paired techniques name each side properly, so enlarging the rear teep says
+Rear Teep. Everything respects your stance if you train southpaw.
+```
+
 ---
 
 ## Still not true of iOS
