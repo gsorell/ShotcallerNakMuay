@@ -44,6 +44,33 @@ android {
     }
 }
 
+// The Meta integration's characteristic failure is looking configured and
+// delivering nothing: a wrong identifier is not an error, it is an event Meta
+// accepts and silently drops as unmatched. A placeholder App ID would do
+// exactly that, and the only symptom would be a campaign that never learns.
+// So a release build refuses to produce an artefact until the real values are
+// in. Debug builds are left alone - they are what the Pixel runs.
+tasks.register('checkMetaCredentials') {
+    description = 'Fails a release build while the Meta credentials are placeholders.'
+    doLast {
+        def strings = file('src/main/res/values/strings.xml').text
+        if (strings.contains('REPLACE_WITH_META_')) {
+            throw new GradleException(
+                "Meta credentials are still placeholders in " +
+                "android/app/src/main/res/values/strings.xml. " +
+                "Fill in facebook_app_id and facebook_client_token from " +
+                "developers.facebook.com -> your app -> Settings -> Basic, " +
+                "then build again.")
+        }
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'assembleRelease' || task.name == 'bundleRelease') {
+        task.dependsOn 'checkMetaCredentials'
+    }
+}
+
 repositories {
     flatDir{
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
@@ -60,6 +87,13 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // facebook-core only, not the `facebook-android-sdk` umbrella: we want app
+    // events and install attribution, not Login, Share or the Audience Network.
+    // It pulls com.android.installreferrer:installreferrer transitively, which
+    // is how a Play install gets matched back to the click that caused it -
+    // do not add that dependency again by hand.
+    implementation "com.facebook.android:facebook-core:$facebookCoreVersion"
 }
 
 apply from: 'capacitor.build.gradle'

@@ -4,4 +4,22 @@
     <string name="title_activity_main">Shotcaller Nak Muay</string>
     <string name="package_name">com.shotcallernakmuay.app</string>
     <string name="custom_url_scheme">com.shotcallernakmuay.app</string>
+
+    <!--
+        Meta app credentials, read by the SDK out of the manifest at startup.
+
+        Neither is a secret: both ship inside the APK by design and can be read
+        out of any published build. They live here, in the clear, because that
+        is where Meta's SDK looks and because hiding them would buy nothing.
+
+        The App ID doubles as the Events Manager dataset ID - the same
+        2148781392653981 the RevenueCat Conversions API integration reports
+        to. That is how Meta's app datasets work, and it is the reason both
+        halves of the funnel land in one place rather than two.
+
+        checkMetaCredentials in build.gradle fails a release build if these
+        ever go back to placeholders.
+    -->
+    <string name="facebook_app_id">2148781392653981</string>
+    <string name="facebook_client_token">2127b0106bd424f2060397fd91770eca</string>
 </resources>
