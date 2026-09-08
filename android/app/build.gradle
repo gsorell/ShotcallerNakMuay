@@ -34,7 +34,20 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            // Play Console flags "App optimization is below our threshold"
+            // (Obfuscation 5%, fix by Feb 2027) while this is false. See
+            // proguard-rules.pro for what has to be kept and why.
+            //
+            // `proguard-android.txt` rather than `-optimize.txt` on purpose:
+            // the optimizing variant turns on aggressive inlining and class
+            // merging, and this app's whole risk is a reflective lookup that
+            // fails at runtime in release only. The obfuscation percentage
+            // Play measures does not need it.
+            //
+            // shrinkResources stays off: 62 MB of the 70 MB bundle is
+            // assets/public, which resource shrinking does not touch, so it
+            // would add a failure mode and save almost nothing.
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.release
         }
