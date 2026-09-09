@@ -208,7 +208,7 @@ export default function CharmCelebrationModal({
                 letterSpacing: "0.08em",
               }}
             >
-              NAK MUAY SHOT CALLER
+              SHOT CALLER
             </span>
           </div>
         </div>

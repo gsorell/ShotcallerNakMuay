@@ -5,7 +5,15 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  padding: 0;
+  box-sizing: border-box;
+  /* Gutter either side of the logo. The old two-line logo got its breathing
+     room by accident: it was 3.27:1, so the img's max-height:120px capped it
+     on any viewport wider than 392px and object-fit letterboxed in the margins.
+     The current lockup is 4.62:1, so that cap does not bind until 555px and the
+     logo ran edge to edge on every phone. (The old one did too below 392px -
+     it only looked right on larger handsets.) An explicit gutter is not
+     dependent on the logo's aspect ratio, so it survives the next re-cut. */
+  padding: 0 5%;
   margin: 0;
   background-color: #0a0019;
   /* Add safe area padding for Android/iOS status bar */

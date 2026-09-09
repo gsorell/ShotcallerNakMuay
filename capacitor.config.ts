@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.shotcallernakmuay.app",
-  appName: "Shotcaller Nak Muay",
+  appName: "Shot Caller",
   webDir: "dist",
   server: {
     // Allow loading external scripts (needed for Google Analytics on iOS)

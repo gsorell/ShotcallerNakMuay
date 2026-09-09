@@ -223,7 +223,7 @@ export const shareCharmImage = async (
   const filename = `shotcaller-charm-${safeName || "achievement"}.png`;
   const shareText = `I just earned the "${charm.name}"${
     charm.thaiName ? ` (${charm.thaiName})` : ""
-  } charm in Nak Muay Shot Caller! 🥊 #NakMuay #ShotcallerNakMuay #MuayThai`;
+  } charm in Shot Caller! 🥊 #NakMuay #ShotcallerNakMuay #MuayThai`;
 
   try {
     if (Capacitor.isNativePlatform()) {
@@ -354,7 +354,7 @@ export const shareWorkoutImage = async (
 
       // Share the file
       await Share.share({
-        title: "Shotcaller Nak Muay Workout Complete!",
+        title: "Shot Caller Workout Complete!",
         text: shareText,
         url: result.uri,
         dialogTitle: "Share your workout",
@@ -371,14 +371,14 @@ export const shareWorkoutImage = async (
       // Check if we can share files
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: "Shotcaller Nak Muay Workout Complete!",
+          title: "Shot Caller Workout Complete!",
           text: shareText,
           files: [file],
         });
       } else {
         // Fallback: try sharing without files (text only)
         await navigator.share({
-          title: "Shotcaller Nak Muay Workout Complete!",
+          title: "Shot Caller Workout Complete!",
           text: shareText,
         });
       }

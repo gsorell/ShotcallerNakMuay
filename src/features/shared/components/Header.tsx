@@ -248,7 +248,7 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
         >
           <img
             src="/assets/Logo_Header_Banner_Smooth.png"
-            alt="Shotcaller Nak Muay"
+            alt="Shot Caller"
             style={{
               cursor: onLogoClick ? "pointer" : "default",
               width: "100%",

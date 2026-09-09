@@ -372,7 +372,7 @@ export default function WorkoutCompleted({
               fontWeight: 500,
             }}
           >
-            NAK MUAY SHOT CALLER
+            SHOT CALLER
           </span>
         </div>
       </div>
