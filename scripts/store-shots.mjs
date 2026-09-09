@@ -42,7 +42,12 @@ const CHROME = [
 // Store slots. The CSS viewport times the scale factor is what the store
 // actually receives, so these are chosen to land on the required pixel sizes
 // exactly rather than being resized afterwards.
+// App Store Connect validates against the slot the listing already uses, not
+// against the newest device. This listing's iPhone slot is 6.5", which accepts
+// 1242x2688 or 1284x2778 and rejects 1290x2796 - so 6.9" alone is not enough.
+// Both are generated; fill whichever slots Media Manager shows.
 const PROFILES = [
+  { name: "appstore-6.5", width: 428, height: 926, scale: 3 }, // -> 1284x2778
   { name: "appstore-6.9", width: 430, height: 932, scale: 3 }, // -> 1290x2796
   { name: "play-phone", width: 360, height: 640, scale: 3 }, //   -> 1080x1920
 ];
