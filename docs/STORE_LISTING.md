@@ -34,7 +34,7 @@ callout, and the work.
 
 TRAIN THE WAY THE SPORT IS ACTUALLY FOUGHT
 
-Nine styles, each with its own vocabulary:
+Eighteen styles, each with its own vocabulary:
 
 - Nak Muay Newb - free, and where most people start
 - Muay Mat - heavy hands and low kicks
@@ -43,10 +43,13 @@ Nine styles, each with its own vocabulary:
 - Muay Femur - the technician
 - Muay Sok - elbows
 - Meat & Potatoes - the high-percentage basics
-- Boxing and Dutch Kickboxing for cross-training
+- Buakaw's Corner - pressure and the left kick
+- Low Kick Legends, Elbow Arsenal and KO Setups
+- Feints and Fakeouts, The Answer Back and Two-Piece Combos
+- Boxing, Dutch Kickboxing and Southpaw for cross-training
 
 Pick one or stack several, and the callouts change with them. Nak Muay Newb and
-freestyle are free; the other eight styles come with Pro.
+freestyle are free; the rest come with Pro.
 
 START FROM ZERO
 
@@ -72,7 +75,7 @@ FREE TO START
 The round timer, freestyle callouts, the Nak Muay Newb style and the first level
 of the guided path are free, and always will be. No account, no card, no ads.
 
-Pro opens the rest: the other eight styles, all ten levels, the full technique
+Pro opens the rest: the other seventeen styles, all ten levels, the full technique
 library, the training options, and styles you build yourself.
 ```
 
@@ -91,9 +94,9 @@ Shot Caller Pro
 - Pro Annual - $24.99 per year ($2.08 per month)
 - Lifetime - $39.99, one time, no subscription
 
-Pro unlocks the other eight fighting styles, the full ten-level guided path, the
-technique library, the training options, and styles you build yourself. The round
-timer, freestyle callouts, the Nak Muay Newb style and the first level stay free.
+Pro unlocks the other seventeen fighting styles, the full ten-level guided path,
+the technique library, the training options, and styles you build yourself. The
+round timer, freestyle callouts, Nak Muay Newb and the first level stay free.
 
 Both subscription plans start with a 7-day free trial. Payment is charged to
 your Apple ID account at confirmation of purchase. Subscriptions renew automatically unless
@@ -138,7 +141,7 @@ Set your rounds, pick a style, and put the phone down. The timer runs the round
 and calls the next technique out loud, so you train hands-free with your guard
 up instead of stopping to read a screen.
 
-NINE MUAY THAI AND KICKBOXING STYLES
+EIGHTEEN MUAY THAI AND KICKBOXING STYLES
 
 The callouts follow how the sport is really fought:
 
@@ -149,10 +152,13 @@ The callouts follow how the sport is really fought:
 - Muay Femur - the technician
 - Muay Sok - elbows
 - Meat & Potatoes - the high-percentage basics
-- Boxing and Dutch Kickboxing for cross-training
+- Buakaw's Corner - pressure and the left kick
+- Low Kick Legends, Elbow Arsenal and KO Setups
+- Feints and Fakeouts, The Answer Back and Two-Piece Combos
+- Boxing, Dutch Kickboxing and Southpaw for cross-training
 
 Pick one or combine several and the combo generator draws from all of them.
-Nak Muay Newb and freestyle are free; the other eight styles come with Pro.
+Nak Muay Newb and freestyle are free; the rest come with Pro.
 
 A GUIDED PATH FOR BEGINNERS
 
@@ -186,7 +192,7 @@ FREE TO START
 The round timer, freestyle callouts, the Nak Muay Newb style and the first level
 of the guided path are free, with no account and no ads.
 
-Pro opens the other eight styles, all ten levels, the full technique library,
+Pro opens the other seventeen styles, all ten levels, the full technique library,
 the training options, and styles you build yourself.
 ```
 
@@ -205,6 +211,19 @@ Placed to read naturally, not stuffed. Rough counts:
 | kickboxing | 2 |
 | technique(s) | 5 |
 | beginner | 2 |
+
+---
+
+## One style deliberately omitted from both descriptions
+
+`emphasisConfig.ts` defines **20 emphases**: 18 named fighting styles plus the
+`timer_only` and `freestyle` modes. Seventeen of the eighteen are Pro.
+
+One is left out of the store copy on purpose: **"Tricky Traps and Spinning
+Shit"**. Apple's metadata guideline 1.1.3 and Play's listing policy both bar
+profanity in store text, and it is a needless rejection risk. It stays in the
+app, where it is fine - this only affects what the listing says. Counting it is
+why the copy claims eighteen styles but names seventeen.
 
 ---
 
