@@ -1,0 +1,11 @@
+Draft v2 - bolt gradient  (saved 2026-09-09)
+
+Subtitle carrying a gradient sampled from the lightning bolt: BOLT_YELLOW
+(247,212,56) to BOLT_BURNT (248,119,88), the burnt orange taken from the
+middle-right of the bolt. Superseded by the flat-amber version only on the
+judgement that three gradients in one lockup leaves no point of rest - the
+gradient itself was sound, and this is a taste call, not a correction.
+
+To restore, in scripts/build_logo_banner.py:
+  SUB_FILL  = "own"
+  SUB_STOPS = [(0.0, BOLT_YELLOW), (1.0, BOLT_BURNT)]

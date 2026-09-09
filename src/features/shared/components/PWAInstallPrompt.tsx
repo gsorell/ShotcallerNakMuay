@@ -52,7 +52,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
           <div className="pwa-prompt-icon">
             <img
               src="/assets/logo_icon.png"
-              alt="Nak Muay Shot Caller"
+              alt="Shot Caller"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
@@ -104,7 +104,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
           <div className="pwa-prompt-icon">
             <img
               src="/assets/logo_icon.png"
-              alt="Nak Muay Shot Caller"
+              alt="Shot Caller"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.style.display = "none";
@@ -155,7 +155,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
         <div className="pwa-prompt-icon">
           <img
             src="/assets/logo_icon.png"
-            alt="Nak Muay Shot Caller"
+            alt="Shot Caller"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = "none";

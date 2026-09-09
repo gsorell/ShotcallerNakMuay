@@ -1,6 +1,6 @@
 {
-  "name": "Nak Muay Shot Caller - Muay Thai Training Timer",
-  "short_name": "Nak Muay Shot Caller",
+  "name": "Shot Caller: Muay Thai Timer",
+  "short_name": "Shot Caller",
   "description": "Interactive Muay Thai training timer with spoken technique callouts for shadowboxing and bagwork sessions",
   "start_url": "/app",
   "display": "standalone",

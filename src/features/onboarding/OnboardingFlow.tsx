@@ -168,7 +168,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
         <div style={styles.logoFrame}>
           <img
             src="/assets/Logo_Header_Banner_Smooth1.png"
-            alt="Nak Muay Shot Caller"
+            alt="Shot Caller"
             style={styles.banner}
           />
         </div>
@@ -177,7 +177,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <>
             <h2 style={styles.title}>Meet your new padholder</h2>
             <p style={styles.body}>
-              Nak Muay Shot Caller turns shadowboxing, bagwork, and pad or
+              Shot Caller turns shadowboxing, bagwork, and pad or
               partner drills into guided sessions — <strong>spoken technique
               callouts</strong> over timed rounds, so you can drill reaction and
               flow anytime.

@@ -1,0 +1,11 @@
+Draft v3 - flat amber  ** APPROVED, shipping **  (2026-09-09)
+
+The lockup as shipped. Title carries the brand gradient; subtitle is a flat
+BOLT_AMBER (247,176,62) sampled from the lightning bolt, so the mark's warm
+range is picked up by the wordmark instead of being orphaned in the bolt.
+
+Regenerate with:  python scripts/build_logo_banner.py
+
+v1 and v2 in this folder are the earlier approved-then-superseded versions,
+each with the constants needed to restore it. v2 (bolt gradient) was set aside
+on a judgement call about gradient count, not because it was wrong.

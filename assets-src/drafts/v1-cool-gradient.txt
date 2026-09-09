@@ -1,0 +1,16 @@
+Draft v1 - cool gradient  (saved 2026-09-09)
+
+The version approved as "favorite so far": centred brand ramp on the title,
+subtitle carrying the first 55% of the same ramp (magenta -> periwinkle) so it
+stops short of the title's cyan and the CALLER/TIMER "ER over ER" pairing stays
+broken.
+
+Settings in scripts/build_logo_banner.py:
+  TITLE_CAP        = 233.0
+  SUB_RATIO        = 0.4
+  GAP_RATIO        = 0.22647   (1.4x the original gutter)
+  MARK_RATIO       = 1.6
+  SUB_FILL         = 'own'
+  SUB_RANGE        = (0.0, 0.55)
+  SUB_WORD_EXTRA_EM= 0.55
+  STOPS            = [(0.0, (248, 56, 248)), (0.12, (248, 56, 248)), (0.3, (214, 96, 248)), (0.5, (136, 152, 248)), (0.7, (74, 204, 248)), (0.88, (24, 248, 248)), (1.0, (24, 248, 248))]
