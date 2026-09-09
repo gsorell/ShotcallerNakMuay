@@ -45,11 +45,13 @@ const CHROME = [
 // App Store Connect validates against the slot the listing already uses, not
 // against the newest device. This listing's iPhone slot is 6.5", which accepts
 // 1242x2688 or 1284x2778 and rejects 1290x2796 - so 6.9" alone is not enough.
-// Both are generated; fill whichever slots Media Manager shows.
+// Both are generated. The folder name carries the pixel size because "6.5" and
+// "6.9" differ by one character and only one of them is accepted - reading the
+// folder should be enough to know, without opening a file and checking Details.
 const PROFILES = [
-  { name: "appstore-6.5", width: 428, height: 926, scale: 3 }, // -> 1284x2778
-  { name: "appstore-6.9", width: 430, height: 932, scale: 3 }, // -> 1290x2796
-  { name: "play-phone", width: 360, height: 640, scale: 3 }, //   -> 1080x1920
+  { name: "appstore-6.5in-1284x2778", width: 428, height: 926, scale: 3 },
+  { name: "appstore-6.9in-1290x2796", width: 430, height: 932, scale: 3 },
+  { name: "play-phone-1080x1920", width: 360, height: 640, scale: 3 },
 ];
 
 // `?pro=1` is the dev-only entitlement override (see devOverride.ts). It is
