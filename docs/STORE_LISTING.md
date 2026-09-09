@@ -36,15 +36,17 @@ TRAIN THE WAY THE SPORT IS ACTUALLY FOUGHT
 
 Nine styles, each with its own vocabulary:
 
+- Nak Muay Newb - free, and where most people start
 - Muay Mat - heavy hands and low kicks
 - Muay Tae - the kicking specialist
 - Muay Khao - clinch work and knees
 - Muay Femur - the technician
 - Muay Sok - elbows
-- Boxing and Dutch Kickboxing
-- Nak Muay Newb and Meat & Potatoes, for everyone still finding their footing
+- Meat & Potatoes - the high-percentage basics
+- Boxing and Dutch Kickboxing for cross-training
 
-Pick one or stack several. The callouts change with them.
+Pick one or stack several, and the callouts change with them. Nak Muay Newb and
+freestyle are free; the other eight styles come with Pro.
 
 START FROM ZERO
 
@@ -67,9 +69,11 @@ BUILT FOR REAL SESSIONS
 
 FREE TO START
 
-The timer, the callouts, all nine styles and the first level are free. No
-account, no ads, nothing to sign up for. Pro opens the full ten-level path, the
-technique library and custom combinations.
+The round timer, freestyle callouts, the Nak Muay Newb style and the first level
+of the guided path are free, and always will be. No account, no card, no ads.
+
+Pro opens the rest: the other eight styles, all ten levels, the full technique
+library, the training options, and styles you build yourself.
 ```
 
 ### Subscription block — append verbatim to the App Store description
@@ -87,12 +91,12 @@ Shot Caller Pro
 - Pro Annual - $24.99 per year ($2.08 per month)
 - Lifetime - $39.99, one time, no subscription
 
-Pro unlocks the full ten-level guided path, the technique library, and custom
-combinations. The round timer, the callouts, all nine styles and the first level
-stay free.
+Pro unlocks the other eight fighting styles, the full ten-level guided path, the
+technique library, the training options, and styles you build yourself. The round
+timer, freestyle callouts, the Nak Muay Newb style and the first level stay free.
 
-New subscribers start with a 7-day free trial. Payment is charged to your Apple
-ID account at confirmation of purchase. Subscriptions renew automatically unless
+Both subscription plans start with a 7-day free trial. Payment is charged to
+your Apple ID account at confirmation of purchase. Subscriptions renew automatically unless
 auto-renew is turned off at least 24 hours before the end of the current period,
 and your account is charged for renewal within 24 hours of the end of that
 period. You can manage your subscription and turn off auto-renewal in your
@@ -105,16 +109,12 @@ Terms of Use: https://shotcallernakmuay.netlify.app/terms
 
 Both URLs verified live (HTTP 200) on 2026-09-09.
 
-> **One number to confirm before pasting: the annual price.** The app hardcodes
-> no prices — the paywall reads `priceString` from the store through RevenueCat
-> at runtime, so the repo cannot answer this. `$24.99` is inferred from a $25
-> gross figure in RevenueCat, which is tax-inclusive and so may not be the list
-> price. Check App Store Connect → Subscriptions and correct it if it differs;
-> the derived "$2.08 per month" changes with it.
->
-> The other two are solid: **$3.99 monthly** is what your current live
-> description says, and **$39.99 lifetime** is an actual settled transaction in
-> Play's Financial reports.
+All three prices, the per-month equivalent and the trial verified 2026-09-09
+against the live pricing section at
+`https://shotcallernakmuay.netlify.app/#pricing`, which is the canonical public
+statement of them. The 7-day trial runs on **both** the monthly and annual
+plans; Lifetime is a one-time purchase and has no trial. Note the site's own
+caveat: these are US prices and the stores convert and may round by region.
 
 For **Play**, this block is not required in the description — Play shows
 subscription terms from the console itself. Keep the Play description clean and
@@ -142,15 +142,17 @@ NINE MUAY THAI AND KICKBOXING STYLES
 
 The callouts follow how the sport is really fought:
 
+- Nak Muay Newb - free, and where most people start
 - Muay Mat - heavy hands and low kicks
 - Muay Tae - the kicking specialist
 - Muay Khao - clinch work and knees
 - Muay Femur - the technician
 - Muay Sok - elbows
+- Meat & Potatoes - the high-percentage basics
 - Boxing and Dutch Kickboxing for cross-training
-- Nak Muay Newb and Meat & Potatoes for beginners
 
-Pick one or combine several, and the combo generator draws from all of them.
+Pick one or combine several and the combo generator draws from all of them.
+Nak Muay Newb and freestyle are free; the other eight styles come with Pro.
 
 A GUIDED PATH FOR BEGINNERS
 
@@ -181,9 +183,11 @@ the reason drilling with a coach beats drilling alone.
 
 FREE TO START
 
-The round timer, the callouts, all nine styles and the first level are free. No
-account, no ads. Pro unlocks the full ten-level path, the technique library and
-custom combinations.
+The round timer, freestyle callouts, the Nak Muay Newb style and the first level
+of the guided path are free, with no account and no ads.
+
+Pro opens the other eight styles, all ten levels, the full technique library,
+the training options, and styles you build yourself.
 ```
 
 ### Keyword coverage in the Play copy
