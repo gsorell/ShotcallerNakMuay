@@ -72,11 +72,53 @@ account, no ads, nothing to sign up for. Pro opens the full ten-level path, the
 technique library and custom combinations.
 ```
 
-**Then append your existing subscription block verbatim** — product names,
-durations, prices, and the Terms of Use and Privacy Policy links. Apple's
-guideline 3.1.2 requires that information in the metadata for auto-renewable
-subscriptions, and removing it risks a rejection. It is the one part of the
-current description that must survive the rewrite.
+### Subscription block — append verbatim to the App Store description
+
+Apple's guideline 3.1.2 requires, in the metadata, the **title** and **length**
+of each auto-renewing subscription, its **price** (and per-unit price where
+useful), plus working links to the **Privacy Policy** and **Terms of Use**. A
+description that drops any of it invites a rejection, so this is not optional
+prose.
+
+```
+Shot Caller Pro
+
+- Pro Monthly - $3.99 per month
+- Pro Annual - $24.99 per year ($2.08 per month)
+- Lifetime - $39.99, one time, no subscription
+
+Pro unlocks the full ten-level guided path, the technique library, and custom
+combinations. The round timer, the callouts, all nine styles and the first level
+stay free.
+
+New subscribers start with a 7-day free trial. Payment is charged to your Apple
+ID account at confirmation of purchase. Subscriptions renew automatically unless
+auto-renew is turned off at least 24 hours before the end of the current period,
+and your account is charged for renewal within 24 hours of the end of that
+period. You can manage your subscription and turn off auto-renewal in your
+Account Settings after purchase. Any unused portion of a free trial is forfeited
+when you buy a subscription.
+
+Privacy Policy: https://shotcallernakmuay.netlify.app/privacy-policy
+Terms of Use: https://shotcallernakmuay.netlify.app/terms
+```
+
+Both URLs verified live (HTTP 200) on 2026-09-09.
+
+> **One number to confirm before pasting: the annual price.** The app hardcodes
+> no prices — the paywall reads `priceString` from the store through RevenueCat
+> at runtime, so the repo cannot answer this. `$24.99` is inferred from a $25
+> gross figure in RevenueCat, which is tax-inclusive and so may not be the list
+> price. Check App Store Connect → Subscriptions and correct it if it differs;
+> the derived "$2.08 per month" changes with it.
+>
+> The other two are solid: **$3.99 monthly** is what your current live
+> description says, and **$39.99 lifetime** is an actual settled transaction in
+> Play's Financial reports.
+
+For **Play**, this block is not required in the description — Play shows
+subscription terms from the console itself. Keep the Play description clean and
+let the store surface pricing.
 
 ---
 
