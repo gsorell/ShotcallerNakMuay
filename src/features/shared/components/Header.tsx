@@ -253,7 +253,7 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
               cursor: onLogoClick ? "pointer" : "default",
               width: "100%",
               height: "auto",
-              maxHeight: "120px",
+              maxHeight: "96px",
               objectFit: "contain",
               display: "block",
               // Prevent mobile focus/active states on image

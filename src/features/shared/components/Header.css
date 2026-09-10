@@ -6,18 +6,18 @@
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  /* Gutter either side of the logo. The old two-line logo got its breathing
-     room by accident: it was 3.27:1, so the img's max-height:120px capped it
-     on any viewport wider than 392px and object-fit letterboxed in the margins.
-     The current lockup is 4.62:1, so that cap does not bind until 555px and the
-     logo ran edge to edge on every phone. (The old one did too below 392px -
-     it only looked right on larger handsets.) An explicit gutter is not
-     dependent on the logo's aspect ratio, so it survives the next re-cut. */
-  padding: 0 5%;
+  /* Gutter around the logo. The old two-line logo got its breathing room by
+     accident: it was 3.27:1, so the img's max-height capped it on any viewport
+     wider than 392px and object-fit letterboxed in the margins. The current
+     lockup is 4.62:1, so that cap does not bind on any phone and a 5% gutter
+     left the logo all but edge to edge, with nothing above or below it. The
+     gutter is explicit on all four sides now: it does not depend on the logo's
+     aspect ratio, so it survives the next re-cut. */
+  padding: 0.625rem 11%;
   margin: 0;
   background-color: #0a0019;
-  /* Add safe area padding for Android/iOS status bar */
-  padding-top: env(safe-area-inset-top);
+  /* Add safe area padding for Android/iOS status bar, on top of the gutter */
+  padding-top: calc(env(safe-area-inset-top) + 0.625rem);
   /* Prevent any focus styles on the header itself */
   outline: none !important;
   -webkit-tap-highlight-color: transparent !important;
@@ -35,6 +35,7 @@
   border-radius: 8px;
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   min-height: 0;
