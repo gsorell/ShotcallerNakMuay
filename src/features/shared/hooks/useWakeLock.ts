@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { KeepAwake } from "@capacitor-community/keep-awake";
+import { Capacitor } from "@capacitor/core";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useVisibilityManager } from "./useVisibilityManager";
 
-type Method = "wakeLock" | "nosleep" | "none";
+type Method = "native" | "wakeLock" | "nosleep" | "none";
 
 /**
  * A custom React hook to manage a screen wake lock.
@@ -21,6 +23,12 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
   const isRequestingRef = useRef(false);
   enabledRef.current = enabled;
 
+  // The visibility manager keys handlers by id, so two hook instances sharing a
+  // literal id would clobber each other in its Map -- and one unmounting would
+  // delete the other's handler. App mounts a disabled instance alongside the
+  // workout's real one, so the id has to be per-instance.
+  const instanceId = useId();
+
   const debug = (...args: any[]) => {
     if (log) console.log("[WakeLock]", ...args);
   };
@@ -34,6 +42,13 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
     isRequestingRef.current = false;
 
     try {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await KeepAwake.allowSleep();
+          debug("Native keep-awake released");
+        } catch {}
+      }
+
       if (sentinelRef.current) {
         try {
           await sentinelRef.current.release();
@@ -66,6 +81,26 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
     isRequestingRef.current = true;
 
     try {
+      // On a native shell, ask the OS directly instead of going through the web
+      // APIs. WKWebView does not reliably expose the Screen Wake Lock API, and
+      // the NoSleep fallback below plays a hidden <video>, which iOS only allows
+      // inside a user gesture -- long gone by the time the timer flips this on.
+      // isIdleTimerDisabled has neither problem.
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await KeepAwake.keepAwake();
+          setActive(true);
+          setMethod("native");
+          setError(null);
+          debug("Native keep-awake is active.");
+          return;
+        } catch (e: any) {
+          debug("Native keep-awake failed:", e?.message || e);
+          setError(String(e?.message || e));
+          // fall through to the web paths
+        }
+      }
+
       // Try Screen Wake Lock API first (preferred method)
       if ("wakeLock" in navigator && (navigator as any).wakeLock?.request) {
         try {
@@ -167,6 +202,11 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
       // Proper cleanup on component unmount - destroy NoSleep instance
       const cleanup = async () => {
         try {
+          if (Capacitor.isNativePlatform()) {
+            try {
+              await KeepAwake.allowSleep();
+            } catch {}
+          }
           if (sentinelRef.current) {
             await sentinelRef.current.release();
             sentinelRef.current = null;
@@ -214,7 +254,11 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
     }
   }, []);
 
-  useVisibilityManager("wake-lock", onVisibleCallback, onHiddenCallback);
+  useVisibilityManager(
+    `wake-lock-${instanceId}`,
+    onVisibleCallback,
+    onHiddenCallback
+  );
 
   return { active, method, error };
 }
