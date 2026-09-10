@@ -26,9 +26,4 @@ export default defineConfig({
       ignored: ["**/android/**", "**/ios/**"],
     },
   },
-  build: {
-    rollupOptions: {
-      external: ["nosleep.js"],
-    },
-  },
 });
