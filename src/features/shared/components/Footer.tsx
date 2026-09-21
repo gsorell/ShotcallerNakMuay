@@ -21,7 +21,7 @@ export const Footer = ({
   <footer className="app-footer">
     <div className="app-footer-content">
       <img
-        src="/assets/logo_icon.png"
+        src="/assets/logo_icon.webp"
         alt="Logo"
         className="app-footer-logo"
         onClick={() => {
@@ -70,7 +70,7 @@ export const Footer = ({
         aria-label="Instagram"
       >
         <img
-          src="/assets/icon.instagram.png"
+          src="/assets/icon.instagram.webp"
           alt="Instagram"
         />
       </a>

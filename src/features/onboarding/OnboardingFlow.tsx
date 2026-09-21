@@ -74,7 +74,7 @@ const CUSTOMIZE_ITEMS: { label: string; desc: string }[] = [
 
 const PRO_ITEMS: Item[] = [
   {
-    iconPath: "/assets/icon_newb.png",
+    iconPath: "/assets/icon_newb.webp",
     label: "The Start Here path",
     // The opening levels are free on purpose - say so rather than overselling
     // the lock. Understating it is the worse error: this is the moment someone
@@ -82,12 +82,12 @@ const PRO_ITEMS: Item[] = [
     desc: `${FOUNDATIONS_LEVEL_COUNT} guided levels that teach the strikes a few at a time. First ${FOUNDATIONS_FREE_LEVEL_COUNT} levels free.`,
   },
   {
-    iconPath: "/assets/icon_mat.png",
+    iconPath: "/assets/icon_mat.webp",
     label: "Every fighting style",
     desc: "Mat, Tae, Khao, Sok, Femur, Boxing, and the whole roster.",
   },
   {
-    iconPath: "/assets/icon.muaytech.png",
+    iconPath: "/assets/icon.muaytech.webp",
     label: "Learn the Techniques",
     // No count. It read "all 63" from the library, which stopped being true
     // the moment Learn narrowed to the techniques that have been filmed — and
@@ -95,12 +95,12 @@ const PRO_ITEMS: Item[] = [
     desc: "How to throw the techniques the app calls out.",
   },
   {
-    iconPath: "/assets/icon_edit.png",
+    iconPath: "/assets/icon_edit.webp",
     label: "Technique Editor",
     desc: "Build your own combos and custom styles.",
   },
   {
-    iconPath: "/assets/icon_trophy1.png",
+    iconPath: "/assets/icon_trophy1.webp",
     label: "Charm progression",
     desc: "Earn charms for streaks and milestones as you train.",
   },
@@ -167,7 +167,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
         <div style={styles.logoFrame}>
           <img
-            src="/assets/Logo_Header_Banner_Smooth1.png"
+            src="/assets/Logo_Header_Banner_Smooth1.webp"
             alt="Shot Caller"
             style={styles.banner}
           />

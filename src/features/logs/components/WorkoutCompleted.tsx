@@ -173,7 +173,7 @@ export default function WorkoutCompleted({
         {/* Header Section */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <img
-            src="/assets/icon_stacked.png"
+            src="/assets/icon_stacked.webp"
             alt="Logo"
             style={{
               maxWidth: 180,
@@ -357,7 +357,7 @@ export default function WorkoutCompleted({
           }}
         >
           <img
-            src="/assets/logo_icon.png"
+            src="/assets/logo_icon.webp"
             alt=""
             style={{
               width: 16,
@@ -390,7 +390,7 @@ export default function WorkoutCompleted({
         }}
       >
         <img
-          src="/assets/icon_restart.png"
+          src="/assets/icon_restart.webp"
           alt="Restart"
           title="Restart"
           onClick={onRestart}
@@ -414,7 +414,7 @@ export default function WorkoutCompleted({
         />
 
         <img
-          src="/assets/icon_home.png"
+          src="/assets/icon_home.webp"
           alt="Home"
           title="Home"
           onClick={onReset}
@@ -438,7 +438,7 @@ export default function WorkoutCompleted({
         />
 
         <img
-          src="/assets/icon_view_log.png"
+          src="/assets/icon_view_log.webp"
           alt="View Log"
           title="View Log"
           onClick={onViewLog}
@@ -462,7 +462,7 @@ export default function WorkoutCompleted({
         />
 
         <img
-          src="/assets/icon_download_updated.png"
+          src="/assets/icon_download_updated.webp"
           alt="Download"
           title="Download"
           onClick={isCapturing ? undefined : handleDownload}
@@ -491,7 +491,7 @@ export default function WorkoutCompleted({
         />
 
         <img
-          src="/assets/icon_share.png"
+          src="/assets/icon_share.webp"
           alt="Share"
           title="Share"
           onClick={isCapturing ? undefined : handleShare}

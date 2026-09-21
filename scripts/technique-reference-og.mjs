@@ -135,7 +135,7 @@ for (const { slug, box } of cells) {
     cursor += box.width * scale + gap;
 }
 
-const logo = await sharp(path.join(root, "public/assets/Logo_Header_Banner_Smooth.png"))
+const logo = await sharp(path.join(root, "public/assets/Logo_Header_Banner_Smooth.webp"))
     .resize({ width: LOGO_W })
     .toBuffer();
 const logoHeight = (await sharp(logo).metadata()).height;

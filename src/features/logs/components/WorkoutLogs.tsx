@@ -4,16 +4,19 @@ import CharmTrophyCase from "./CharmTrophyCase";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
 const EMPHASIS_ICONS: Record<string, string> = {
-  khao: "/assets/icon_knee.png",
-  mat: "/assets/icon_mat.png",
-  tae: "/assets/icon_tae.png",
-  femur: "/assets/icon_femur.png",
-  sok: "/assets/icon_sok.png",
-  boxing: "/assets/icon_boxing.png",
-  newb: "/assets/icon_newb.png",
-  two_piece: "/assets/icon_two_piece.png",
-  southpaw: "/assets/icon_southpaw.png",
-  timer_only: "/assets/icon_timer.png",
+  khao: "/assets/icon_knee.webp",
+  mat: "/assets/icon_mat.webp",
+  tae: "/assets/icon_tae.webp",
+  femur: "/assets/icon_femur.webp",
+  sok: "/assets/icon_sok.webp",
+  boxing: "/assets/icon_boxing.webp",
+  newb: "/assets/icon_newb.webp",
+  two_piece: "/assets/icon_two_piece.webp",
+  southpaw: "/assets/icon_southpaw.webp",
+  // icon_timer.png has never existed - not on disk, not in git history - so
+  // this silently fell through to the emoji. emphasisConfig and the editor's
+  // constants both point timer_only at the stopwatch.
+  timer_only: "/assets/icon.stopwatch.webp",
 };
 
 type WorkoutEntry = {

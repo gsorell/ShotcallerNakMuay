@@ -115,56 +115,56 @@ export const CATEGORY_META: readonly CategoryMeta[] = [
     key: "punches",
     label: "Punches",
     icon: "🥊",
-    iconPath: "/assets/icon_boxing.png", // boxing glove
+    iconPath: "/assets/icon_boxing.webp", // boxing glove
     blurb: "The numbered hands — your range-finders and your finishers.",
   },
   {
     key: "kicks",
     label: "Kicks",
     icon: "🦵",
-    iconPath: "/assets/icon_tae.png", // Muay Tae — the kicker
+    iconPath: "/assets/icon_tae.webp", // Muay Tae — the kicker
     blurb: "Shin-first power, and the push kick that owns the distance.",
   },
   {
     key: "knees",
     label: "Knees",
     icon: "🙏",
-    iconPath: "/assets/icon.feintsandfakes.png", // fighter driving a knee up
+    iconPath: "/assets/icon.feintsandfakes.webp", // fighter driving a knee up
     blurb: "Khao — the close-range weapon Muay Khao fighters live on.",
   },
   {
     key: "elbows",
     label: "Elbows",
     icon: "💠",
-    iconPath: "/assets/icon_sok.png", // Muay Sok — elbow strike
+    iconPath: "/assets/icon_sok.webp", // Muay Sok — elbow strike
     blurb: "Sok — shortest, sharpest, and the reason Muay Thai cuts.",
   },
   {
     key: "defense",
     label: "Defense & Movement",
     icon: "🛡️",
-    iconPath: "/assets/icon_femur.png", // Muay Femur — the technician's ring IQ
+    iconPath: "/assets/icon_femur.webp", // Muay Femur — the technician's ring IQ
     blurb: "Not getting hit, and being somewhere useful afterward.",
   },
   {
     key: "clinch",
     label: "Clinch",
     icon: "🤝",
-    iconPath: "/assets/icon_khao.png", // Muay Khao — the clinch fighter's wai
+    iconPath: "/assets/icon_khao.webp", // Muay Khao — the clinch fighter's wai
     blurb: "Pam — the grappling range that makes Muay Thai its own sport.",
   },
   {
     key: "feints",
     label: "Feints & Setups",
     icon: "🎭",
-    iconPath: "/assets/icon.trickytraps.png", // a baited trap — sell the lie
+    iconPath: "/assets/icon.trickytraps.webp", // a baited trap — sell the lie
     blurb: "Selling a lie so the real strike lands on an open target.",
   },
   {
     key: "conditioning",
     label: "Conditioning",
     icon: "🔥",
-    iconPath: "/assets/icon.buakaw.png", // flexed arm — work capacity
+    iconPath: "/assets/icon.buakaw.webp", // flexed arm — work capacity
     blurb: "The non-technique callouts — burnouts that spike the heart rate.",
   },
 ] as const;

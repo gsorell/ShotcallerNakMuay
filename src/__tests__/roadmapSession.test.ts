@@ -460,7 +460,7 @@ describe("level artwork", () => {
   it("prefers the level's own art over the category picture", () => {
     const learnKicks = CATEGORY_META.find((m) => m.key === "kicks")!;
     const art = artworkForLevel(level(4));
-    expect(art.iconPath).toBe("/assets/icon_round_kick.png");
+    expect(art.iconPath).toBe("/assets/icon_round_kick.webp");
     expect(art.iconPath).not.toBe(learnKicks.iconPath);
   });
 

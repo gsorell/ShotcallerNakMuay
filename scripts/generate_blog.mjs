@@ -936,7 +936,7 @@ const SITE = 'https://shotcallernakmuay.netlify.app';
 // Every post used to ship without an og:image, which is a bare grey box
 // wherever the link is pasted - Reddit, Discord, iMessage, Slack. The hero art
 // is the sane default; a post sets `image` only when it has a card of its own.
-const DEFAULT_OG_IMAGE = '/assets/hero_desktop.png';
+const DEFAULT_OG_IMAGE = '/assets/hero_og.jpg';
 
 const renderHead = (title, metaDesc, url, bodyClass = '', image = DEFAULT_OG_IMAGE) => `<!DOCTYPE html>
 <html lang="en">
@@ -969,7 +969,7 @@ const renderHead = (title, metaDesc, url, bodyClass = '', image = DEFAULT_OG_IMA
 <body>
     <div class="navbar app-header">
         <a href="/" class="logo">
-            <img src="/assets/Logo_Header_Banner_Smooth.png" alt="Shot Caller Nak Muay">
+            <img src="/assets/Logo_Header_Banner_Smooth.webp" alt="Shot Caller Nak Muay">
         </a>
     </div>
     <div class="page-wrapper">
@@ -982,13 +982,13 @@ const renderFoot = () => `
     <footer class="app-footer">
         <div class="app-footer-content">
             <a href="/">
-                <img src="/assets/logo_icon.png" alt="Logo" class="app-footer-logo">
+                <img src="/assets/logo_icon.webp" alt="Logo" class="app-footer-logo">
             </a>
             <a href="/app" class="app-footer-link">Open the app</a>
             <a href="/privacy-policy.html" class="app-footer-link">Privacy</a>
             <a href="/terms.html" class="app-footer-link">Terms</a>
             <a href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4" target="_blank" rel="noopener noreferrer" class="app-footer-social" aria-label="Instagram">
-                <img src="/assets/icon.instagram.png" alt="Instagram">
+                <img src="/assets/icon.instagram.webp" alt="Instagram">
             </a>
         </div>
     </footer>

@@ -25,11 +25,11 @@ const AUDIO_CACHE = `nak-muay-audio-${SW_VERSION}`;
 // whole `addAll` and leaving the worker uninstalled.
 const CORE_ASSETS = [
   '/index.html',
-  '/assets/hero_mobile.png',
-  '/assets/hero_tablet.png', 
-  '/assets/hero_desktop.png',
-  '/assets/logo_icon.png',
-  '/assets/Logo_Header_Banner_Smooth.png'
+  '/assets/hero_mobile.webp',
+  '/assets/hero_tablet.webp', 
+  '/assets/hero_desktop.webp',
+  '/assets/logo_icon.webp',
+  '/assets/Logo_Header_Banner_Smooth.webp'
 ];
 
 // Audio files for offline functionality

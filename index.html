@@ -2,7 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- Built by scripts/build_favicons.py from resources/icon.png, the same
+         master @capacitor/assets builds the store icons from. This was
+         `/vite.svg` from the day the project was scaffolded, so every tab and
+         bookmark showed Vite's logo instead of the app's. apple-touch-icon is
+         what iOS reads when the PWA is added to the home screen; without it
+         Safari screenshots the page. It has to be PNG - iOS ignores WebP
+         here, which is why the WebP manifest icons cannot cover this. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Shot Caller - Muay Thai Shadow Boxing & Heavy Bag Timer App</title>
     <meta name="description" content="Shot Caller is a Muay Thai combo-calling app with an audio callout timer for shadow boxing and heavy bag training. Get randomized kickboxing combos, custom rounds, and voice-guided drills." />
@@ -15,7 +24,7 @@
     <meta property="og:title" content="Shot Caller - Muay Thai Shadow Boxing & Heavy Bag Timer App" />
     <meta property="og:description" content="Randomized Muay Thai combo callouts, custom interval timers, and voice-guided drills for shadow boxing and heavy bag training." />
     <meta property="og:url" content="https://shotcallernakmuay.netlify.app/app" />
-    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_desktop.png" />
+    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_og.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- PWA. These tags used to live in public/index.html, which Vite's own

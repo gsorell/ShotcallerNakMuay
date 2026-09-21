@@ -51,7 +51,7 @@ export function useEmphasisList(techniques: TechniquesShape) {
       return {
         key,
         label,
-        iconPath: config.iconPath || "/assets/icon_user.png",
+        iconPath: config.iconPath || "/assets/icon_user.webp",
         emoji: config.icon || "🎯",
         desc: config.desc || technique?.description || `Custom style: ${key}`,
       };
@@ -83,7 +83,7 @@ export function useEmphasisList(techniques: TechniquesShape) {
       return {
         key,
         label,
-        iconPath: config.iconPath || "/assets/icon_user.png",
+        iconPath: config.iconPath || "/assets/icon_user.webp",
         emoji: config.icon || "🎯",
         desc: config.desc || technique?.description || `Custom style: ${key}`,
       };
@@ -109,7 +109,7 @@ export function useEmphasisList(techniques: TechniquesShape) {
         return {
           key,
           label,
-          iconPath: "/assets/icon_user.png",
+          iconPath: "/assets/icon_user.webp",
           emoji: "🎯",
           desc: technique?.description || `Custom style: ${key}`,
         };

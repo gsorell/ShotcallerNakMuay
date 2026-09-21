@@ -33,6 +33,8 @@ import numpy as np
 import base64
 import io
 import os
+import subprocess
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONT = os.path.join(ROOT, "assets-src", "fonts", "Poppins-Black.ttf")
@@ -351,6 +353,17 @@ if __name__ == "__main__":
     for name in ("Logo_Header_Banner_Smooth1.png", "Logo_Header_Banner_Transparency.png"):
         Image.open(primary).save(os.path.join(OUTDIR, name))
     render_svg(L, size, mw, os.path.join(OUTDIR, "logo-shotcaller.svg"))
+    # The app loads the WebP, not these PNGs - see scripts/optimize_assets.py.
+    # Without this, a re-render would land a fresh banner in public/assets and
+    # nothing would pick it up, because every reference points at .webp and the
+    # stale one would still be sitting there. Re-deriving it here keeps the two
+    # from drifting; the PNGs stay as the full-size intermediate.
+    subprocess.run(
+        [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      "optimize_assets.py"), "--keep"],
+        check=True, stdout=subprocess.DEVNULL,
+    )
+    print("re-derived the WebP banners via optimize_assets.py")
     print("%dx%d (%.2f:1)  title_cap=%.0f sub_cap=%.0f gap=%.0f  sub_tracking=%+.1fpx"
           % (size[0], size[1], size[0] / size[1],
              L["tcap"], L["scap"], L["gap"], L["strack"]))
