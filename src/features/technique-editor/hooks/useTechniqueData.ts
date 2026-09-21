@@ -12,7 +12,7 @@ import { normalizeKey } from "@/utils/techniqueUtils";
 // The bump is what carries a shipped-content change to existing installs:
 // untouched groups take the new copy, customised ones keep the user's version
 // (and the old string still resolves to its lesson — see techniqueLibrary).
-const TECHNIQUES_VERSION = "v38";
+const TECHNIQUES_VERSION = "v39";
 
 type GroupMap = Record<string, any>;
 

@@ -71,14 +71,40 @@ export const INITIAL_TECHNIQUES: Record<
       "Long Guard",
       "High Guard Block",
     ],
+    // Weighted 2 across the board. Singles and combos share one flat pool, so
+    // against 32 singles even a 20-combo list would only be called about a
+    // third of the time — a beginner's round came out as mostly one-word barks
+    // while every other style reads like shadowboxing. Doubling them evens it
+    // to roughly half and half without inflating the vocabulary a newb has to
+    // hold. Combos are not checked by `findUncoveredCallouts`, but every
+    // element below is still drawn from this style's own `singles`.
     combos: [
-      "1, Right Low Kick",
-      "1 2",
-      "1 1 2",
-      "1 2 3",
-      "1 2, Right Body Kick",
-      "1 2, Left Body Kick",
-      "1 2 3, Right Low Kick",
+      // Straight punches into kicks.
+      { text: "1, Right Low Kick", weight: 2 },
+      { text: "1 2", weight: 2 },
+      { text: "1 1 2", weight: 2 },
+      { text: "1 2 3", weight: 2 },
+      { text: "1 2, Right Body Kick", weight: 2 },
+      { text: "1 2, Left Body Kick", weight: 2 },
+      { text: "1 2 3, Right Low Kick", weight: 2 },
+      // Teep. Both teeps were singles, but no combo had ever used one.
+      { text: "1, Left Teep", weight: 2 },
+      { text: "1 2, Right Teep", weight: 2 },
+      { text: "Left Teep, 1 2", weight: 2 },
+      // Lead hook leading and finishing, not only buried inside "1 2 3".
+      { text: "3 2", weight: 2 },
+      { text: "2 3", weight: 2 },
+      { text: "3, Right Low Kick", weight: 2 },
+      // Knees. Same story as the teep — singles, never combined.
+      { text: "1, Right Knee", weight: 2 },
+      { text: "1 2, Left Knee", weight: 2 },
+      { text: "Long Guard, Right Knee", weight: 2 },
+      // Defence into counter. Ten of the singles are defensive and not one of
+      // them was ever connected to an answer.
+      { text: "Left Check, 2", weight: 2 },
+      { text: "Roll Left, 3", weight: 2 },
+      { text: "Lean Back, Left Teep", weight: 2 },
+      { text: "High Guard Block, 1 2", weight: 2 },
     ],
     exclusive: true,
   },
