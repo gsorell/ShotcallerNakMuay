@@ -196,7 +196,7 @@ export default function CharmCelebrationModal({
             }}
           >
             <img
-              src="/assets/logo_icon.png"
+              src="/assets/logo_icon.webp"
               alt=""
               style={{ width: 16, height: 16, opacity: 0.7 }}
             />
@@ -224,7 +224,7 @@ export default function CharmCelebrationModal({
           }}
         >
           <img
-            src="/assets/icon_download_updated.png"
+            src="/assets/icon_download_updated.webp"
             alt="Save"
             title="Save"
             onClick={isCapturing ? undefined : handleDownload}
@@ -244,7 +244,7 @@ export default function CharmCelebrationModal({
           />
 
           <img
-            src="/assets/icon_share.png"
+            src="/assets/icon_share.webp"
             alt="Share"
             title="Share"
             onClick={isCapturing ? undefined : handleShare}

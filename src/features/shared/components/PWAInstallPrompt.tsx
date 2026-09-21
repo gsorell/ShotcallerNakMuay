@@ -51,7 +51,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
         <div className="pwa-prompt-card" onClick={(e) => e.stopPropagation()}>
           <div className="pwa-prompt-icon">
             <img
-              src="/assets/logo_icon.png"
+              src="/assets/logo_icon.webp"
               alt="Shot Caller"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -103,7 +103,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
         <div className="pwa-prompt-card" onClick={(e) => e.stopPropagation()}>
           <div className="pwa-prompt-icon">
             <img
-              src="/assets/logo_icon.png"
+              src="/assets/logo_icon.webp"
               alt="Shot Caller"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -154,7 +154,7 @@ const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
       <div className="pwa-prompt-card" onClick={(e) => e.stopPropagation()}>
         <div className="pwa-prompt-icon">
           <img
-            src="/assets/logo_icon.png"
+            src="/assets/logo_icon.webp"
             alt="Shot Caller"
             onError={(e) => {
               const target = e.target as HTMLImageElement;

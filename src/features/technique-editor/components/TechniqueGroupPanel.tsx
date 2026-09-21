@@ -48,7 +48,7 @@ export default function TechniqueGroupPanel({
   const singles = normalizeArray(group.singles);
   const combos = normalizeArray(group.combos);
   const thumbnail = !isCoreStyle
-    ? "/assets/icon_user.png"
+    ? "/assets/icon_user.webp"
     : GROUP_THUMBNAILS[keyName];
 
   return (

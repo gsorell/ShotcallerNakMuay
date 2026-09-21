@@ -60,13 +60,13 @@
   ],
   "screenshots": [
     {
-      "src": "/assets/hero_mobile.png",
+      "src": "/assets/hero_mobile.webp",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/assets/hero_tablet.png",
+      "src": "/assets/hero_tablet.webp",
       "sizes": "1024x768",
       "type": "image/png",
       "form_factor": "wide"
@@ -80,7 +80,7 @@
       "url": "/app?quick=timer",
       "icons": [
         {
-          "src": "/assets/icon.stopwatch.png",
+          "src": "/assets/icon.stopwatch.webp",
           "sizes": "96x96"
         }
       ]
@@ -92,7 +92,7 @@
       "url": "/app?quick=logs",
       "icons": [
         {
-          "src": "/assets/icon_progress_active.png",
+          "src": "/assets/icon_progress_active.webp",
           "sizes": "96x96"
         }
       ]

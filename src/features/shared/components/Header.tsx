@@ -247,7 +247,7 @@ const Header: React.FC<HeaderProps> = ({ onHelp, onLogoClick }) => {
           }}
         >
           <img
-            src="/assets/Logo_Header_Banner_Smooth.png"
+            src="/assets/Logo_Header_Banner_Smooth.webp"
             alt="Shot Caller"
             style={{
               cursor: onLogoClick ? "pointer" : "default",
