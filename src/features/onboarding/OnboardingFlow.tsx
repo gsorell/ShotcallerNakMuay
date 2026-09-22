@@ -7,6 +7,7 @@ import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 // LearnSection, which reaches back into half the app.
 import { TECHNIQUE_LIBRARY } from "@/features/learn/data/techniqueLibrary";
 import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
+import { isDevNativeBranchForced } from "./devPreview";
 
 // Derived from the path itself so the pitch can't drift as levels are added.
 const FOUNDATIONS_LEVEL_COUNT = coreLevels(FOUNDATIONS).length;
@@ -134,7 +135,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [step, setStep] = useState(0);
   const isLast = step === TOTAL_STEPS - 1;
 
-  const isWeb = !Capacitor.isNativePlatform();
+  // `?native=1` in dev renders the native branch in a browser so it can be
+  // reviewed without a device build — see devPreview.ts. Dead code in a
+  // production bundle.
+  const isWeb = isDevNativeBranchForced() ? false : !Capacitor.isNativePlatform();
   const openStore = () => {
     const ua = typeof navigator === "undefined" ? "" : navigator.userAgent;
     const url = /iPad|iPhone|iPod/.test(ua) ? APP_STORE_URL : PLAY_STORE_URL;
@@ -352,13 +356,31 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     zIndex: 9990,
-    padding: "1rem",
+    // `inset: 0` plus `viewport-fit=cover` and StatusBar.overlaysWebView means
+    // this box is the WHOLE screen on Android — the bottom 48dp of it sits
+    // behind the navigation buttons. A flat 1rem here put "Maybe later — start
+    // free" 21px under the nav bar on a 360x800 phone (the most common Android
+    // viewport), where it could not be tapped and, per the card below, could
+    // not be scrolled to either. Same pattern the footer already uses.
+    padding:
+      "calc(1rem + env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px))",
   },
   card: {
     position: "relative",
     width: "100%",
     maxWidth: "380px",
-    maxHeight: "90vh",
+    // border-box is load-bearing, not tidying. Nothing sets a global
+    // border-box reset, so the old `max-height: 90vh` capped the CONTENT box
+    // and then added this element's 81.6px of vertical padding on top — an
+    // effective ceiling of `90vh + 82px`, i.e. taller than the screen on any
+    // phone under ~820px. The cap therefore never bound, scrollHeight equalled
+    // clientHeight, and `overflowY: auto` produced no scrollbar: the content
+    // that overflowed the screen was unreachable by any means.
+    boxSizing: "border-box",
+    // 100% of the backdrop's content box, which the safe-area padding above has
+    // already shrunk to the reachable area. Whatever doesn't fit now genuinely
+    // scrolls.
+    maxHeight: "100%",
     overflowY: "auto",
     background: "#1a1a2e",
     color: "white",
@@ -509,14 +531,20 @@ const styles = {
     fontSize: "0.95rem",
     cursor: "pointer",
   },
+  // The free path, and for most first-run users the RIGHT path — someone who
+  // has just installed the app should be able to go and use it. As transparent
+  // grey-on-dark it read as fine print next to a filled pink button, so when
+  // the nav bar clipped it the screen looked like it offered one action, and
+  // that action left for the paywall. Given a surface of its own it reads as a
+  // real choice; the pink fill still carries the primary weight.
   secondary: {
-    padding: "0.55rem",
+    padding: "0.7rem 1rem",
     borderRadius: "10px",
-    border: "none",
-    background: "transparent",
-    color: "#9ca3af",
-    fontWeight: 600,
-    fontSize: "0.9rem",
+    border: "1px solid rgba(255,255,255,0.22)",
+    background: "rgba(255,255,255,0.08)",
+    color: "#e5e7eb",
+    fontWeight: 700,
+    fontSize: "0.95rem",
     cursor: "pointer",
   },
 } satisfies Record<string, React.CSSProperties>;
