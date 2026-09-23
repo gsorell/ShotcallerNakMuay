@@ -1,4 +1,4 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 // All sounds use Web Audio API to avoid:
@@ -61,6 +61,31 @@ const decodeInto = async (
 // still wins; the deployment target is iOS 15.0, so that is a real group today.
 // MUST be set before the AudioContext is constructed.
 const PAGE_AUDIO_SESSION_TYPE = "playback";
+
+// The native half of the same problem. "playback" above gets WebKit off the
+// mute-switch-silenced ambient category, but WebKit's mapping takes no options,
+// so it lands on a bare MediaPlayback that interrupts whatever the user is
+// listening to - a round would stop their music. There is no web spelling for
+// "playback AND mix with others", so the native side re-applies the category
+// with that option right after WebKit has taken the session. See
+// AudioSessionPlugin in ios/App/App/AppDelegate.swift.
+const NativeAudioSession = registerPlugin<{
+  apply(): Promise<{ category: string; mixesWithOthers: boolean }>;
+}>("AudioSession");
+
+const reclaimNativeAudioSession = async () => {
+  if (Capacitor.getPlatform() !== "ios") return;
+  try {
+    const result = await NativeAudioSession.apply();
+    // Logged on purpose: this is the one place that shows whether the option
+    // actually stuck, which Safari Web Inspector can read off a real device.
+    console.log("[WebAudio] native audio session ->", result);
+  } catch (error) {
+    // An older build without the plugin, or the call failed. The app still
+    // makes sound; it just may interrupt other audio.
+    console.warn("[WebAudio] could not re-apply the native session:", error);
+  }
+};
 
 const claimPageAudioSession = () => {
   try {
@@ -168,6 +193,10 @@ export function useSoundEffects(_iosAudioSession: any) {
         const ctx: AudioContext = new AudioCtx();
         audioContextRef.current = ctx;
 
+        // WebKit has just claimed the session for this page; add back the
+        // mixWithOthers option it has no way to express.
+        await reclaimNativeAudioSession();
+
         const encoded = await (encodedRef.current ?? Promise.resolve([]));
         const [bell, warning, clack] = await Promise.all(
           encoded.map((bytes) => decodeInto(bytes, ctx))
@@ -188,6 +217,10 @@ export function useSoundEffects(_iosAudioSession: any) {
       const ctx = audioContextRef.current;
       if (ctx && needsResume(ctx)) {
         await ctx.resume();
+        // A resume follows an interruption, and whatever interrupted us will
+        // have left the session on its own terms. Rare, so this costs nothing
+        // per cue - it is not on the path every clack takes.
+        await reclaimNativeAudioSession();
       }
     } catch {
       // Context resume failed
