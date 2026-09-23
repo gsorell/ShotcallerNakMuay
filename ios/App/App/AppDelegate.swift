@@ -28,17 +28,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // underneath at full volume, rather than dipping every time a technique
         // is called. Cooperative mixing is the long-standing intent here; the
         // plugin's .duckOthers was working against it.
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            try audioSession.setActive(true)
-            print("✅ iOS audio session: .playback + .mixWithOthers")
-        } catch {
-            print("⚠️ Failed to configure audio session: \(error.localizedDescription)")
-        }
+        //
+        // NOTE: setting this at launch is necessary but NOT sufficient. WebKit
+        // overwrites the category for web content - see AudioSessionPlugin at
+        // the bottom of this file - so the web layer calls back in to re-apply
+        // it once its AudioContext exists. This is the same code both times.
+        AppDelegate.applyAudioSessionCategory()
 
         // Override point for customization after application launch.
         return true
+    }
+
+    /// `.playback` so the Ring/Silent switch cannot mute a round timer, and
+    /// `.mixWithOthers` so the user's music keeps playing underneath instead of
+    /// being interrupted every time a round starts. Those two together are the
+    /// whole requirement, and no web API can express them - see
+    /// AudioSessionPlugin.
+    static func applyAudioSessionCategory() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setActive(true)
+        } catch {
+            print("⚠️ Failed to configure audio session: \(error.localizedDescription)")
+        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -56,6 +69,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        // Coming back from a call, Siri, or another app can leave the session
+        // on someone else's terms. Cheap to re-apply, and it costs nothing when
+        // the category is already what we want.
+        AppDelegate.applyAudioSessionCategory()
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
     }
 
@@ -76,4 +93,49 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+}
+
+/// Puts the `.mixWithOthers` option back after WebKit has taken the session.
+///
+/// WebKit does not give web content the app's AVAudioSession category. It keeps
+/// its own page-level session and maps `navigator.audioSession.type` onto a
+/// category itself (WebCore's `fromDOMAudioSessionType`). That mapping takes no
+/// options, and every type that WOULD mix - "transient", "ambient" - maps to
+/// AmbientSound, which the Ring/Silent switch mutes. So from web code alone the
+/// choice is audible-on-silent OR mixing, never both:
+///
+///     playback       -> MediaPlayback      audible, interrupts other audio
+///     transient      -> AmbientSound       muted by the switch, mixes
+///     ambient        -> AmbientSound       muted by the switch, mixes
+///     transient-solo -> SoloAmbientSound   muted by the switch, exclusive
+///
+/// The combination this app needs - playback WITH mixWithOthers - has no web
+/// spelling at all. So the web layer sets type = "playback" (which gets WebKit
+/// to MediaPlayback, defeating the mute switch) and then calls this straight
+/// after building its AudioContext, and we add back the one option WebKit
+/// dropped. Without it, starting a round stops the user's music.
+///
+/// Lives in AppDelegate.swift rather than its own file on purpose: a new file
+/// has to be registered in project.pbxproj, and that cannot be compile-checked
+/// from the Windows box this is usually edited on. Capacitor finds the class
+/// through the ObjC runtime, so which file it sits in does not matter.
+@objc(AudioSessionPlugin)
+public class AudioSessionPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "AudioSessionPlugin"
+    public let jsName = "AudioSession"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "apply", returnType: CAPPluginReturnPromise)
+    ]
+
+    @objc func apply(_ call: CAPPluginCall) {
+        AppDelegate.applyAudioSessionCategory()
+
+        // Report what actually stuck, not what we asked for. If WebKit wins a
+        // future round of this, these two values are what will show it.
+        let session = AVAudioSession.sharedInstance()
+        call.resolve([
+            "category": session.category.rawValue,
+            "mixesWithOthers": session.categoryOptions.contains(.mixWithOthers)
+        ])
+    }
 }
