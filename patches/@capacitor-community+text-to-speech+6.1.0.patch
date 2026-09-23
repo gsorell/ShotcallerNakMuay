@@ -1,5 +1,5 @@
 diff --git a/node_modules/@capacitor-community/text-to-speech/Package.swift b/node_modules/@capacitor-community/text-to-speech/Package.swift
-index d0d24fb..31a4c28 100644
+index d0d24fb..0391b52 100644
 --- a/node_modules/@capacitor-community/text-to-speech/Package.swift
 +++ b/node_modules/@capacitor-community/text-to-speech/Package.swift
 @@ -10,7 +10,7 @@ let package = Package(
@@ -11,3 +11,33 @@ index d0d24fb..31a4c28 100644
      ],
      targets: [
          .target(
+diff --git a/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift b/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
+index 90444f4..bbe7e83 100644
+--- a/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
++++ b/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
+@@ -13,16 +13,15 @@ enum QUEUE_STRATEGY: Int {
+     override init() {
+         super.init()
+         self.synthesizer.delegate = self
+-        // set session in background to avoid UI hangs.
+-        queue.async {
+-            do {
+-                let avAudioSessionCategory: AVAudioSession.Category = .playback
+-                try AVAudioSession.sharedInstance().setCategory(avAudioSessionCategory, mode: .default, options: .duckOthers)
+-                try AVAudioSession.sharedInstance().setActive(true)
+-            } catch {
+-                print("Error setting up AVAudioSession: \(error)")
+-            }
+-        }
++        // PATCHED (patch-package). This init used to set .playback with
++        // .duckOthers here, on a background queue. The host app configures its
++        // own session once, in AppDelegate.swift, so the two writes raced and
++        // whichever landed last won - leaving the effective category
++        // nondeterministic. When the app's .ambient won, the whole app was
++        // silenced by the Ring/Silent switch; when this one won, it ducked the
++        // user's music on every spoken callout. Leaving the session alone makes
++        // AppDelegate the single owner. AVSpeechSynthesizer plays fine under
++        // the .playback + .mixWithOthers session AppDelegate installs.
+     }
+ 
+     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {

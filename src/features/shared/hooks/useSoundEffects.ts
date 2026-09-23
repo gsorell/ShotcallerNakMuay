@@ -39,6 +39,19 @@ const decodeInto = async (
   }
 };
 
+// WebKit parks an AudioContext in one of two states, and only one of them is
+// in the spec. "suspended" is the familiar one - a context built outside a user
+// gesture. "interrupted" is iOS-only and arrives AFTER an audio session
+// interruption: a phone call, Siri, another app taking the session. An
+// interrupted context still accepts start() calls and still plays nothing, and
+// it stays that way until something resumes it - so checking only for
+// "suspended" meant a single interruption silenced the app for the rest of its
+// life, with every cue firing into a dead graph.
+const needsResume = (ctx: AudioContext): boolean => {
+  const state = ctx.state as string;
+  return state === "suspended" || state === "interrupted";
+};
+
 // The session keepalive runs a tone the speaker cannot reproduce audibly, at a
 // gain far below anything a listener resolves. Its only job is to keep frames
 // flowing so the output path never reaches standby.
@@ -134,7 +147,7 @@ export function useSoundEffects(_iosAudioSession: any) {
     // iOS still parks a freshly created context until a gesture resumes it.
     try {
       const ctx = audioContextRef.current;
-      if (ctx && ctx.state === "suspended") {
+      if (ctx && needsResume(ctx)) {
         await ctx.resume();
       }
     } catch {
@@ -175,8 +188,8 @@ export function useSoundEffects(_iosAudioSession: any) {
       try {
         const ctx = audioContextRef.current;
 
-        // Resume context if suspended (iOS requirement) - MUST await
-        if (ctx.state === "suspended") {
+        // Resume a parked context (iOS requirement) - MUST await
+        if (needsResume(ctx)) {
           await ctx.resume();
         }
 
