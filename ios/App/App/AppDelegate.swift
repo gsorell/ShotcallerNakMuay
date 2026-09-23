@@ -8,13 +8,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Configure audio session for background music compatibility
-        // Use .ambient category to allow mixing with other audio apps (Spotify, Apple Music, etc.)
+        // The one and only place this app's audio session is configured.
+        //
+        // The bundled TTS plugin used to set it too, from a background queue in
+        // its own init, so the effective category was a race between the two
+        // writers and nondeterministic. patches/@capacitor-community+text-to-
+        // speech+6.1.0.patch takes that second writer out; do not add another.
+        //
+        // .playback, NOT .ambient. Ambient is silenced by the Ring/Silent
+        // switch, so every time it won that race the app went completely mute
+        // on a phone set to silent - no bell, no clack, no callouts. That is
+        // not a state a round timer can ever be in: the user starts a round and
+        // hears nothing, with no indication why. Ambient also cannot play in
+        // the background, which quietly contradicted the UIBackgroundModes:
+        // audio entitlement in Info.plist and stopped the round bell firing
+        // once the screen locked mid-round.
+        //
+        // .mixWithOthers, NOT .duckOthers: Spotify and Apple Music keep playing
+        // underneath at full volume, rather than dipping every time a technique
+        // is called. Cooperative mixing is the long-standing intent here; the
+        // plugin's .duckOthers was working against it.
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.ambient, mode: .default)
+            try audioSession.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try audioSession.setActive(true)
-            print("✅ iOS Audio Session configured: Background music will play simultaneously with TTS")
+            print("✅ iOS audio session: .playback + .mixWithOthers")
         } catch {
             print("⚠️ Failed to configure audio session: \(error.localizedDescription)")
         }

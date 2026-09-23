@@ -32,10 +32,21 @@ const CORE_ASSETS = [
   '/assets/Logo_Header_Banner_Smooth.webp'
 ];
 
-// Audio files for offline functionality
+// Audio files for offline functionality. This is every sound the app plays
+// through Web Audio, so it has to stay in step with SOUND_URLS in
+// useSoundEffects. The clapperboard was missing: the bell and the ten-second
+// warning came from this cache while a freestyle round went to the network for
+// its one and only sound, and with no network it degraded to the synthesized
+// fallback chime instead.
+//
+// No SW_VERSION bump for this - adding a file is not re-cutting one. Any byte
+// change to this worker re-runs `install`, and `addAll` fills the gap in the
+// existing audio cache, where a bump would evict every static asset to repair
+// one missing entry.
 const AUDIO_ASSETS = [
   '/big-bell-330719.mp3',
-  '/interval.mp3'
+  '/interval.mp3',
+  '/clapperboard.mp3'
 ];
 
 // Install event - cache core assets
