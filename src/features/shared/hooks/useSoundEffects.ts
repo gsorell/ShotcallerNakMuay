@@ -39,6 +39,41 @@ const decodeInto = async (
   }
 };
 
+// WebKit does NOT hand web content the app's AVAudioSession category. It keeps
+// its own page-level audio session and decides the category itself, so the
+// native category set in AppDelegate is only the outer container - which is why
+// setting .playback there did not stop the Ring/Silent switch muting the app.
+//
+// That page session defaults to "auto", and Safari resolves auto to *ambient*
+// for a page whose only audio is Web Audio - which is exactly this app, every
+// sound goes through the graph below. Ambient is the category the mute switch
+// silences, so a phone set to silent got no bell, no clack and no callouts.
+//
+// "playback" is the value documented to survive the switch. It has a cost: the
+// spec calls it exclusive - playback audio "should not mix with other playback
+// audio" - so it may pause the user's music instead of layering over it. If
+// that is how it behaves on device and mixing matters more, "transient" is the
+// next thing to try; it is described as playing on top of playback audio, but
+// its mute-switch behaviour is not documented anywhere, so it needs testing on
+// a real phone rather than reasoning about.
+//
+// Safari 16.4+. Below that navigator.audioSession does not exist and the switch
+// still wins; the deployment target is iOS 15.0, so that is a real group today.
+// MUST be set before the AudioContext is constructed.
+const PAGE_AUDIO_SESSION_TYPE = "playback";
+
+const claimPageAudioSession = () => {
+  try {
+    const session = (navigator as any).audioSession;
+    if (session) {
+      session.type = PAGE_AUDIO_SESSION_TYPE;
+    }
+  } catch {
+    // Unsupported, or a browser that refuses the assignment. Nothing to do:
+    // the platform's default session stands.
+  }
+};
+
 // WebKit parks an AudioContext in one of two states, and only one of them is
 // in the spec. "suspended" is the familiar one - a context built outside a user
 // gesture. "interrupted" is iOS-only and arrives AFTER an audio session
@@ -125,6 +160,10 @@ export function useSoundEffects(_iosAudioSession: any) {
         const AudioCtx =
           (window as any).AudioContext || (window as any).webkitAudioContext;
         if (!AudioCtx) return;
+
+        // Before construction, not after: WebKit fixes the page's session type
+        // when the context is created.
+        claimPageAudioSession();
 
         const ctx: AudioContext = new AudioCtx();
         audioContextRef.current = ctx;
