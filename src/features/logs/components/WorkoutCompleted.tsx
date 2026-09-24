@@ -54,6 +54,14 @@ const BRAND = {
   heading: "#f4eef6",
   accent: "#ff5fb0",
   muted: "#9d8fa9",
+  border: "#2e2240",
+  /**
+   * The card surface, straight from `social-cards.mjs`. The lift toward plum
+   * at the centre is what keeps a near-black panel from reading as a hole in
+   * the screen — it gives the trophy something to sit on.
+   */
+  surface:
+    "radial-gradient(ellipse 70% 45% at 50% 40%, #2a1030 0%, #0c0710 70%)",
   /**
    * The wordmark's own ramp, stop for stop from `build_logo_banner.py`. The
    * magenta-to-cyan run is the logo's signature, and the flat opening 12% is
@@ -158,9 +166,9 @@ function ChallengeCard({ stats }: { stats: WorkoutStats }) {
         }}
       >
         <img
-          src="/assets/logo_icon.webp"
+          src="/assets/logo_mark.webp"
           alt=""
-          style={{ width: 16, height: 16, opacity: 0.7 }}
+          style={{ width: 28, height: 28 }}
         />
         <span
           style={{ fontSize: "0.75rem", color: BRAND.muted, fontWeight: 500 }}
@@ -292,11 +300,13 @@ export default function WorkoutCompleted({
       {/* Workout Summary - This will be captured for download/sharing */}
       <div
         style={{
-          background:
-            "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+          // Same palette as the card that leaves the app. The two are read by
+          // different people for different reasons, so they are not the same
+          // layout — but they should look like the same product.
+          background: BRAND.surface,
           borderRadius: 20,
           padding: "2rem",
-          color: "white",
+          color: BRAND.heading,
           boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
           marginBottom: "1.5rem",
         }}
@@ -304,22 +314,29 @@ export default function WorkoutCompleted({
         {/* Header Section */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <img
-            src="/assets/icon_stacked.webp"
-            alt="Logo"
+            src="/assets/icon_belt.webp"
+            alt=""
             style={{
-              maxWidth: 180,
+              // The asset is trimmed to the artwork, so this is the belt's real
+              // width rather than a box it sits somewhere inside. Landscape,
+              // which is why it takes twice the width of the trophy it replaced
+              // and still costs the card less height.
+              width: 200,
               height: "auto",
-              marginBottom: 20,
+              marginBottom: 12,
             }}
           />
 
           <h1
             style={{
               margin: 0,
-              color: "#f9a8d4",
               fontSize: "2rem",
-              fontWeight: 700,
+              fontWeight: 800,
               marginBottom: 8,
+              backgroundImage: BRAND.ramp,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
             }}
           >
             Training Complete
@@ -330,7 +347,7 @@ export default function WorkoutCompleted({
         <div
           style={{
             fontSize: "0.9rem",
-            color: "#94a3b8",
+            color: BRAND.muted,
             marginBottom: 16,
             textAlign: "center",
           }}
@@ -355,7 +372,7 @@ export default function WorkoutCompleted({
               margin: 0,
               fontSize: "1.5rem",
               fontWeight: 700,
-              color: "#f9a8d4",
+              color: BRAND.accent,
               marginBottom: 24,
             }}
           >
@@ -368,7 +385,7 @@ export default function WorkoutCompleted({
           <div
             style={{
               fontSize: "0.7rem",
-              color: "#94a3b8",
+              color: BRAND.muted,
               textTransform: "uppercase",
               letterSpacing: "0.18em",
               marginBottom: 12,
@@ -389,7 +406,7 @@ export default function WorkoutCompleted({
               <div
                 style={{
                   fontSize: "0.75rem",
-                  color: "#94a3b8",
+                  color: BRAND.muted,
                   marginBottom: 4,
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
@@ -399,9 +416,9 @@ export default function WorkoutCompleted({
               </div>
               <div
                 style={{
-                  fontSize: "1.2rem",
-                  fontWeight: 700,
-                  color: "white",
+                  fontSize: "1.6rem",
+                  fontWeight: 800,
+                  color: BRAND.heading,
                 }}
               >
                 {getDifficultyLabel(stats.difficulty)}
@@ -412,7 +429,7 @@ export default function WorkoutCompleted({
               <div
                 style={{
                   fontSize: "0.75rem",
-                  color: "#94a3b8",
+                  color: BRAND.muted,
                   marginBottom: 4,
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
@@ -422,12 +439,12 @@ export default function WorkoutCompleted({
               </div>
               <div
                 style={{
-                  fontSize: "1.2rem",
-                  fontWeight: 700,
-                  color: "white",
+                  fontSize: "1.6rem",
+                  fontWeight: 800,
+                  color: BRAND.heading,
                 }}
               >
-                {stats.roundsCompleted} × {stats.roundLengthMin} min
+                {stats.roundsCompleted} × {formatRoundLength(stats.roundLengthMin)}
               </div>
             </div>
           </div>
@@ -436,13 +453,13 @@ export default function WorkoutCompleted({
             style={{
               textAlign: "center",
               paddingTop: 16,
-              borderTop: "1px solid rgba(255,255,255,0.08)",
+              borderTop: `1px solid ${BRAND.border}`,
             }}
           >
             <div
               style={{
                 fontSize: "0.75rem",
-                color: "#94a3b8",
+                color: BRAND.muted,
                 marginBottom: 4,
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
@@ -454,7 +471,7 @@ export default function WorkoutCompleted({
               style={{
                 fontSize: "1.2rem",
                 fontWeight: 700,
-                color: "white",
+                color: BRAND.heading,
               }}
             >
               {stats.shotsCalledOut}
@@ -469,7 +486,7 @@ export default function WorkoutCompleted({
             textAlign: "center",
             marginTop: 24,
             paddingTop: 16,
-            borderTop: "1px solid rgba(255,255,255,0.1)",
+            borderTop: `1px solid ${BRAND.border}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -477,18 +494,17 @@ export default function WorkoutCompleted({
           }}
         >
           <img
-            src="/assets/logo_icon.webp"
+            src="/assets/logo_mark.webp"
             alt=""
             style={{
-              width: 16,
-              height: 16,
-              opacity: 0.7,
+              width: 28,
+              height: 28,
             }}
           />
           <span
             style={{
               fontSize: "0.75rem",
-              color: "#94a3b8",
+              color: BRAND.muted,
               fontWeight: 500,
             }}
           >
