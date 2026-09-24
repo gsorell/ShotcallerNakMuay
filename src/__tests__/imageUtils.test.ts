@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WorkoutStats } from "../utils/imageUtils";
+import { SITE_URL } from "../constants/storeLinks";
 import {
   buildChallengeText,
   formatRoundLength,
@@ -70,8 +71,23 @@ describe("Image Utils", () => {
     it("leads with the setup a friend can repeat", () => {
       expect(buildChallengeText(mockStats)).toBe(
         "5 × 3 min · Amateur · Two-Piece Combos, Kicks. 258 shots called. " +
-          "Same setup — your move. #NakMuay #ShotcallerNakMuay #MuayThai"
+          "Same setup — your move.\n" +
+          "https://shotcallernakmuay.netlify.app/\n" +
+          "#NakMuay #ShotcallerNakMuay #MuayThai"
       );
+    });
+
+    it("links to the plain address, with nothing appended", () => {
+      // A caption is read before it is clicked, and a query string in the
+      // middle of one is noise. The setup is spelled out above it already.
+      const url = buildChallengeText({
+        ...mockStats,
+        emphasisKeys: ["two_piece", "tae"],
+      })
+        .split("\n")
+        .find((l) => l.startsWith("http"))!;
+      expect(url).toBe(SITE_URL);
+      expect(url).not.toContain("?");
     });
 
     it("shows the user's difficulty label, not the internal value", () => {

@@ -1,6 +1,16 @@
 // Public store listings for the native apps. Shared by every web-only surface
 // that needs to send a browser visitor to a real install (the PWA install
 // prompt, the onboarding's final step), so the IDs live in exactly one place.
+/**
+ * The site itself, which is where a shared card sends a reader.
+ *
+ * The root rather than `/app`: it is the sales page (see the forced redirect
+ * in `netlify.toml`), and someone arriving from a friend's post has no idea
+ * what this is yet. The card already spells the setup out in words, so nothing
+ * needs to be carried in the address.
+ */
+export const SITE_URL = "https://shotcallernakmuay.netlify.app/";
+
 export const APP_STORE_URL =
   "https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630";
 export const PLAY_STORE_URL =

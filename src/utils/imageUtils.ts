@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import html2canvas from "html2canvas";
+import { SITE_URL } from "@/constants/storeLinks";
 
 export interface WorkoutStats {
   timestamp: string;
@@ -71,7 +72,15 @@ export const buildChallengeText = (stats: WorkoutStats): string => {
     .filter((part) => part.length > 0)
     .join(" · ");
 
-  return `${setup}. ${stats.shotsCalledOut} shots called. Same setup — your move. #NakMuay #ShotcallerNakMuay #MuayThai`;
+  // The plain address, with nothing appended. A caption is read before it
+  // is clicked, and a line of query string is noise in the middle of one.
+  // The setup is already spelled out above it, in words a person can act
+  // on without a machine parsing anything.
+  return (
+    `${setup}. ${stats.shotsCalledOut} shots called. Same setup — your move.\n` +
+    `${SITE_URL}\n` +
+    "#NakMuay #ShotcallerNakMuay #MuayThai"
+  );
 };
 
 /**
