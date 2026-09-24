@@ -14,6 +14,67 @@ export interface WorkoutStats {
 }
 
 /**
+ * Internal difficulty values to the labels the user actually sees. Lives here
+ * rather than in the completion screen because the card and the share caption
+ * have to agree — a card reading "Amateur" beside a caption reading "medium"
+ * is the kind of seam that makes a share look machine-made.
+ */
+export const getDifficultyLabel = (difficulty: string): string => {
+  switch (difficulty) {
+    case "easy":
+      return "Novice";
+    case "medium":
+      return "Amateur";
+    case "hard":
+      return "Pro";
+    default:
+      return difficulty;
+  }
+};
+
+/**
+ * Round length as a person would say it. Whole minutes stay minutes; anything
+ * else becomes clock time, because "0.25 min" is a number nobody has ever used
+ * to describe a round and the shortest rounds are exactly where the card gets
+ * read most literally.
+ */
+export const formatRoundLength = (minutes: number): string => {
+  if (Number.isInteger(minutes)) return `${minutes} min`;
+  const whole = Math.floor(minutes);
+  const seconds = Math.round((minutes - whole) * 60);
+  return `${whole}:${String(seconds).padStart(2, "0")}`;
+};
+
+/**
+ * The caption that travels with a shared card.
+ *
+ * Deliberately flat: the numbers do the bragging so the words don't have to.
+ * No exclamation mark, no emoji in the body, and never the word "workout" —
+ * see `docs/SOCIAL_VOICE.md`. The speaker here is the user rather than the
+ * brand, but the brand's restraint is what keeps a boast from reading as an ad.
+ *
+ * The challenge is "match this setup", never "beat my score". The app cannot
+ * see the user and does not judge the work (SOCIAL_VOICE rule 9), and shots
+ * called is a function of round length and difficulty rather than of effort,
+ * so it is not a number anyone could fairly beat. The setup is the part a
+ * friend can actually repeat, which is why the setup leads.
+ *
+ * Single seam on purpose: when a setup becomes a deep link, the URL is
+ * appended here and nothing else in the app has to change.
+ */
+export const buildChallengeText = (stats: WorkoutStats): string => {
+  const setup = [
+    `${stats.roundsCompleted} × ${formatRoundLength(stats.roundLengthMin)}`,
+    getDifficultyLabel(stats.difficulty),
+    stats.emphases.join(", "),
+  ]
+    .filter((part) => part.length > 0)
+    .join(" · ");
+
+  return `${setup}. ${stats.shotsCalledOut} shots called. Same setup — your move. #NakMuay #ShotcallerNakMuay #MuayThai`;
+};
+
+/**
  * Captures a DOM element as a canvas and downloads it as an image
  * @param element - The DOM element to capture
  * @param filename - The filename for the downloaded image
@@ -228,11 +289,15 @@ export const shareCharmImage = async (
   try {
     if (Capacitor.isNativePlatform()) {
       const base64Data = await blobToBase64(blob);
+      const cachePath = freshCardPath(
+        `shotcaller-charm-${safeName || "achievement"}`
+      );
       const result = await Filesystem.writeFile({
-        path: filename,
+        path: cachePath,
         data: base64Data,
         directory: Directory.Cache,
       });
+      await pruneSharedCards(cachePath);
       await Share.share({
         title: "New Charm Earned!",
         text: shareText,
@@ -261,6 +326,48 @@ export const shareCharmImage = async (
     if (error instanceof Error && error.name !== "AbortError") {
       alert("Unable to share. Try using the Download button instead.");
     }
+  }
+};
+
+/**
+ * A cache path no earlier share has used.
+ *
+ * Android thumbnails a shared file by its content URI and holds on to that
+ * thumbnail. Both card names were deterministic — the workout one derives from
+ * the session timestamp, the charm one from the charm — so re-sharing wrote a
+ * new card over a path the share sheet had already previewed, and the sheet
+ * kept showing the older image beside the newer file. The bytes were always
+ * current; only the preview lied. Uniqueness per share is what stops it.
+ *
+ * The download filename stays deterministic on purpose: that one the user
+ * sees and files away, and it is not what the share sheet keys on.
+ */
+const freshCardPath = (base: string): string => `${base}-${Date.now()}.png`;
+
+/**
+ * Best-effort tidy-up. Every share now leaves a card behind under a name
+ * nothing will reuse, so earlier ones are dropped once the new one is safely
+ * written. A cache that cannot be listed is a cache that needs no tidying, and
+ * none of this is worth failing a share over.
+ */
+const pruneSharedCards = async (keep: string): Promise<void> => {
+  try {
+    const { files } = await Filesystem.readdir({
+      path: "",
+      directory: Directory.Cache,
+    });
+    await Promise.all(
+      files
+        .filter((f) => f.name !== keep && /^shotcaller-.+\.png$/.test(f.name))
+        .map((f) =>
+          Filesystem.deleteFile({
+            path: f.name,
+            directory: Directory.Cache,
+          }).catch(() => undefined)
+        )
+    );
+  } catch {
+    // Nothing to do, and nothing worth surfacing.
   }
 };
 
@@ -306,13 +413,7 @@ export const shareWorkoutImage = async (
   blob: Blob,
   stats: WorkoutStats
 ): Promise<void> => {
-  const shareText = `Just completed a ${stats.difficulty} workout with ${
-    stats.shotsCalledOut
-  } shots called out! 🥊 ${stats.roundsCompleted}/${
-    stats.roundsPlanned
-  } rounds of ${stats.emphases.join(
-    ", "
-  )} training. #NakMuay #ShotcallerNakMuay #MuayThai`;
+  const shareText = buildChallengeText(stats);
 
   try {
     // Check if running in native app
@@ -343,21 +444,22 @@ export const shareWorkoutImage = async (
 
       const base64Data = canvas.toDataURL("image/png", 0.95);
       const base64String = base64Data.replace(/^data:image\/png;base64,/, "");
-      const filename = `${generateWorkoutFilename(stats)}.png`;
+      const cachePath = freshCardPath(generateWorkoutFilename(stats));
 
       // Save to cache directory temporarily
       const result = await Filesystem.writeFile({
-        path: filename,
+        path: cachePath,
         data: base64String,
         directory: Directory.Cache,
       });
+      await pruneSharedCards(cachePath);
 
       // Share the file
       await Share.share({
-        title: "Shot Caller Workout Complete!",
+        title: "Shot Caller — your move",
         text: shareText,
         url: result.uri,
-        dialogTitle: "Share your workout",
+        dialogTitle: "Send the challenge",
       });
 
       // Optionally clean up the temp file after sharing
@@ -371,14 +473,14 @@ export const shareWorkoutImage = async (
       // Check if we can share files
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: "Shot Caller Workout Complete!",
+          title: "Shot Caller — your move",
           text: shareText,
           files: [file],
         });
       } else {
         // Fallback: try sharing without files (text only)
         await navigator.share({
-          title: "Shot Caller Workout Complete!",
+          title: "Shot Caller — your move",
           text: shareText,
         });
       }
@@ -387,7 +489,7 @@ export const shareWorkoutImage = async (
       if (typeof navigator !== "undefined" && "clipboard" in navigator) {
         await (navigator as any).clipboard.writeText(shareText);
         alert(
-          "Workout details copied to clipboard!\n\nNote: Your browser doesn't support sharing. The image has been downloaded separately."
+          "Challenge copied to clipboard.\n\nNote: Your browser doesn't support sharing. The image has been downloaded separately."
         );
       } else {
         alert(
