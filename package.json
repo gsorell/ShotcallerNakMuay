@@ -1,6 +1,6 @@
 {
   "name": "shotcaller-nak-muay",
-  "version": "1.19.3",
+  "version": "1.19.4",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -11,6 +11,7 @@
     "cap:sync:ios": "node scripts/strip-native-assets.mjs && npx cap sync ios",
     "cap:sync:android": "node scripts/strip-native-assets.mjs && npx cap sync android",
     "postinstall": "patch-package",
+    "social:cards": "node scripts/social-cards.mjs",
     "assets:optimize": "python scripts/optimize_assets.py",
     "assets:favicons": "python scripts/build_favicons.py"
   },
