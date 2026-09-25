@@ -934,9 +934,14 @@ const baseStyle = `
 const SITE = 'https://shotcallernakmuay.netlify.app';
 
 // Every post used to ship without an og:image, which is a bare grey box
-// wherever the link is pasted - Reddit, Discord, iMessage, Slack. The hero art
-// is the sane default; a post sets `image` only when it has a card of its own.
-const DEFAULT_OG_IMAGE = '/assets/hero_og.jpg';
+// wherever the link is pasted - Reddit, Discord, iMessage, Slack. The default
+// answers that; a post sets `image` only when it has a card of its own.
+//
+// This was /assets/hero_og.jpg, which turned out to be the hero's BACKGROUND
+// PLATE - a bare gradient carrying no logo, no wordmark and no title. It fixed
+// the grey box by replacing it with an empty purple one. og-card.jpg is the
+// real card, built by scripts/site-og-card.mjs.
+const DEFAULT_OG_IMAGE = '/assets/og-card.jpg';
 
 const renderHead = (title, metaDesc, url, bodyClass = '', image = DEFAULT_OG_IMAGE) => `<!DOCTYPE html>
 <html lang="en">

@@ -24,8 +24,21 @@
     <meta property="og:title" content="Shot Caller - Muay Thai Shadow Boxing & Heavy Bag Timer App" />
     <meta property="og:description" content="Randomized Muay Thai combo callouts, custom interval timers, and voice-guided drills for shadow boxing and heavy bag training." />
     <meta property="og:url" content="https://shotcallernakmuay.netlify.app/app" />
-    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_og.jpg" />
+    <!-- og-card.jpg, NOT hero_og.jpg. hero_og is the hero's background plate -
+         a bare gradient with nothing on it - so every link preview the site
+         ever produced was an empty purple wash with no logo or wordmark. The
+         card is built by scripts/site-og-card.mjs; re-run it if the logo, the
+         gradient or the tagline change. Dimensions are declared so a scraper
+         can lay the preview out before it has finished fetching the image. -->
+    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/og-card.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Shot Caller - Muay Thai Timer. Someone in your corner, calling the shots." />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- Twitter falls back to og:image, but only after failing to find this
+         one; naming it explicitly is what keeps the card off the summary
+         (small square) layout in clients that check for it first. -->
+    <meta name="twitter:image" content="https://shotcallernakmuay.netlify.app/assets/og-card.jpg" />
 
     <!-- PWA. These tags used to live in public/index.html, which Vite's own
          root index.html shadowed - so the served page has never linked a

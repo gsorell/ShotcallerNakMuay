@@ -12,9 +12,18 @@
     <meta property="og:title" content="Shot Caller — Muay Thai Combo Callouts for Shadow Boxing &amp; Bagwork">
     <meta property="og:description" content="Combos called out loud for shadow boxing, bagwork and pad rounds — organised by the real Muay Thai styles: Mat, Tae, Khao, Femur.">
     <meta property="og:url" content="https://shotcallernakmuay.netlify.app/">
-    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/hero_og.jpg">
+    <!-- This is the preview for the ROOT url - netlify.toml force-rewrites `/`
+         to this file - so it is the one that shows when the site is pasted
+         into a DM, and it is the tag that was wrong. It pointed at
+         hero_og.jpg, which is the hero's background PLATE: a bare gradient
+         with no logo, no wordmark and no title on it. og-card.jpg is the
+         actual card; scripts/site-og-card.mjs builds it. -->
+    <meta property="og:image" content="https://shotcallernakmuay.netlify.app/assets/og-card.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Shot Caller - Muay Thai Timer. Someone in your corner, calling the shots.">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://shotcallernakmuay.netlify.app/assets/hero_og.jpg">
+    <meta name="twitter:image" content="https://shotcallernakmuay.netlify.app/assets/og-card.jpg">
     <meta name="theme-color" content="#0a0510">
 
     <script type="application/ld+json">
