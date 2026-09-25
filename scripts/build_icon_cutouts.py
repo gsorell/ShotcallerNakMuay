@@ -142,10 +142,19 @@ if __name__ == "__main__":
         alpha_quality=80,
     )
 
-    # The same belt with the gloves-and-bolt mark in its medallion, which is
-    # what the completion screen actually draws — see build_belt_medallion.py,
-    # which writes that source from this one. Identical settings, because it is
-    # the same artwork with a mark drawn in the same neon.
+    # The belt the completion screen actually draws: the gloves-and-bolt mark in
+    # the medallion, a sunburst behind it, shaped side plates. Drawn as one
+    # piece rather than assembled — an earlier version composited the mark into
+    # the old belt's oval and always read as two drawings, because scaling the
+    # mark down to fit thinned its strokes to a third of the belt's.
+    #
+    # Same settings as the belt above, and it needs them more: this art glows
+    # where the other is flat (27% of its pixels are full-strength core against
+    # 86%), and soft alpha is what makes these files big. 75KB against 40KB is
+    # that glow, and is the reason alpha_quality stays at 80 here.
+    #
+    # Note it is squarer than the plain belt — 1.44:1 against 1.88:1, because
+    # the sunburst adds height — so it is not a drop-in swap at the same width.
     cutout(
         "icon_belt_logo",
         max_edge=480,

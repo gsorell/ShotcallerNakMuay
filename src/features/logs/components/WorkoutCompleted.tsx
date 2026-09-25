@@ -343,12 +343,17 @@ export default function WorkoutCompleted({
               // which is why it takes twice the width of the trophy it replaced
               // and still costs the card less height.
               //
-              // Wider than the 140 the reordered card started at: the medallion
-              // now carries the gloves-and-bolt mark rather than a generic
-              // bolt, and the mark has to be legible to be worth putting there.
-              // The medallion is about a third of the belt's width, so the mark
-              // lands near the size the footer drew it at.
-              width: 168,
+              // Wider than the 140 the reordered card started at, and wider
+              // again than 168: the medallion carries the gloves-and-bolt mark
+              // now, and the mark has to be legible to be worth putting there.
+              // Checked at 1x as well as 3x — the gloves survive 168 on a
+              // desktop browser, but only just, and this is the one piece of
+              // art on the screen that is meant to be looked at.
+              //
+              // The art is also squarer than the belt it replaced (1.44:1
+              // against 1.88:1, because of the sunburst), so this is ~139px
+              // tall rather than the ~106 the old belt took at the same width.
+              width: 200,
               height: "auto",
               marginBottom: 10,
             }}
