@@ -74,6 +74,19 @@ const BRAND = {
 };
 
 /**
+ * Total time trained, as a clock rather than a phrase.
+ *
+ * `formatRoundLength` answers "how long is one round", and says "3 min" for
+ * whole numbers because that is how a setup is spoken. This answers "how long
+ * was the session", where mm:ss reads as the timer the number came off — the
+ * receipt for a round timer should look like the thing that produced it.
+ */
+const formatTotalTime = (minutes: number): string => {
+  const total = Math.round(minutes * 60);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
+
+/**
  * The card as a stranger meets it.
  *
  * Not the completion screen with a challenge appended — a different artifact
@@ -311,8 +324,15 @@ export default function WorkoutCompleted({
           marginBottom: "1.5rem",
         }}
       >
-        {/* Header Section */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        {/* Header: what this was, in the order it is asked.
+
+            The belt and the headline say "finished"; the line under them says
+            "which session". Style, level and time are three answers to that
+            one question, so they sit together at one size rather than being
+            spread down the card at three — the date in particular had been
+            occupying the third-most prominent slot on a screen read four
+            seconds after the last bell. */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <img
             src="/assets/icon_belt.webp"
             alt=""
@@ -321,18 +341,22 @@ export default function WorkoutCompleted({
               // width rather than a box it sits somewhere inside. Landscape,
               // which is why it takes twice the width of the trophy it replaced
               // and still costs the card less height.
-              width: 200,
+              width: 140,
               height: "auto",
-              marginBottom: 12,
+              marginBottom: 10,
             }}
           />
 
           <h1
             style={{
               margin: 0,
-              fontSize: "2rem",
+              // Clamped rather than fixed, and held to one line. At a flat 2rem
+              // this broke across two lines inside the card's padding on a
+              // phone, and a headline that wraps mid-phrase reads as a bug
+              // rather than a beat.
+              fontSize: "clamp(1.35rem, 6.5vw, 1.75rem)",
+              whiteSpace: "nowrap",
               fontWeight: 800,
-              marginBottom: 8,
               backgroundImage: BRAND.ramp,
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
@@ -341,175 +365,91 @@ export default function WorkoutCompleted({
           >
             Training Complete
           </h1>
+
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: "0.75rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: BRAND.muted,
+            }}
+          >
+            <span style={{ color: BRAND.accent, fontWeight: 700 }}>
+              {stats.emphases.join(" · ")}
+            </span>
+            {" · "}
+            {getDifficultyLabel(stats.difficulty)}
+            {" · "}
+            {new Date(stats.timestamp).toLocaleString("en-US", {
+              weekday: "short",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </div>
         </div>
 
-        {/* Date & Time */}
+        {/* The one number worth being large.
+
+            Rounds and length are the reproducible setup, but the time is what
+            was actually spent, and it is the only figure here that grows with
+            the work. Four stats at competing sizes gave the card no subject;
+            this gives it one. */}
         <div
           style={{
+            textAlign: "center",
+            padding: "20px 0",
+            borderTop: `1px solid ${BRAND.border}`,
+            borderBottom: `1px solid ${BRAND.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "3rem",
+              fontWeight: 800,
+              lineHeight: 1,
+              color: BRAND.heading,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {formatTotalTime(stats.roundsCompleted * stats.roundLengthMin)}
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: "0.8rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: BRAND.muted,
+            }}
+          >
+            {stats.roundsCompleted}{" "}
+            {stats.roundsCompleted === 1 ? "round" : "rounds"} ×{" "}
+            {formatRoundLength(stats.roundLengthMin)}
+            {/* Only when they stopped early. Saying "of 6" after six rounds
+                turns a finished session into a quota met. */}
+            {stats.roundsCompleted < stats.roundsPlanned &&
+              ` · of ${stats.roundsPlanned}`}
+          </div>
+        </div>
+
+        {/* The outcome, deliberately left as a sentence. It is not a score —
+            the app never saw the work — so it is not given a number's
+            typography. Previously it had a divider and a full-width row of its
+            own while being set smaller than the stats above it, which is the
+            layout and the type arguing about what it is. */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 16,
             fontSize: "0.9rem",
             color: BRAND.muted,
-            marginBottom: 16,
-            textAlign: "center",
           }}
         >
-          {new Date(stats.timestamp).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}{" "}
-          •{" "}
-          {new Date(stats.timestamp).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </div>
-
-        {/* Workout Type */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: BRAND.accent,
-              marginBottom: 24,
-            }}
-          >
-            {stats.emphases.join(" • ")}
-          </h2>
-
-          {/* The setup, framed as something to repeat rather than a
-              scoreboard. Level and rounds are the reproducible part, so they
-              lead; shots called is the outcome and sits apart from them. */}
-          <div
-            style={{
-              fontSize: "0.7rem",
-              color: BRAND.muted,
-              textTransform: "uppercase",
-              letterSpacing: "0.18em",
-              marginBottom: 12,
-            }}
-          >
-            The Setup
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "24px",
-              marginBottom: 20,
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  color: BRAND.muted,
-                  marginBottom: 4,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Level
-              </div>
-              <div
-                style={{
-                  fontSize: "1.6rem",
-                  fontWeight: 800,
-                  color: BRAND.heading,
-                }}
-              >
-                {getDifficultyLabel(stats.difficulty)}
-              </div>
-            </div>
-
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  color: BRAND.muted,
-                  marginBottom: 4,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Rounds
-              </div>
-              <div
-                style={{
-                  fontSize: "1.6rem",
-                  fontWeight: 800,
-                  color: BRAND.heading,
-                }}
-              >
-                {stats.roundsCompleted} × {formatRoundLength(stats.roundLengthMin)}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              textAlign: "center",
-              paddingTop: 16,
-              borderTop: `1px solid ${BRAND.border}`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: BRAND.muted,
-                marginBottom: 4,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-              }}
-            >
-              Shots Called
-            </div>
-            <div
-              style={{
-                fontSize: "1.2rem",
-                fontWeight: 700,
-                color: BRAND.heading,
-              }}
-            >
-              {stats.shotsCalledOut}
-            </div>
-          </div>
-        </div>
-
-
-        {/* Brand Footer */}
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: 24,
-            paddingTop: 16,
-            borderTop: `1px solid ${BRAND.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <img
-            src="/assets/logo_mark.webp"
-            alt=""
-            style={{
-              width: 28,
-              height: 28,
-            }}
-          />
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: BRAND.muted,
-              fontWeight: 500,
-            }}
-          >
-            SHOT CALLER
-          </span>
+          <strong style={{ color: BRAND.heading, fontWeight: 700 }}>
+            {stats.shotsCalledOut}
+          </strong>{" "}
+          shots called
         </div>
       </div>
 
