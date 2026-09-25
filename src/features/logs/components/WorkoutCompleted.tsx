@@ -16,6 +16,7 @@ import { claimNewMilestone } from "../utils/milestones";
 import { claimNewCharms, readWorkoutHistory } from "../utils/charms";
 import type { CharmVisual } from "../constants/charms";
 import CharmCelebrationModal from "./CharmCelebrationModal";
+import "./WorkoutCompleted.css";
 
 interface Celebration {
   charm: CharmVisual;
@@ -488,145 +489,46 @@ export default function WorkoutCompleted({
 
       {primaryAction}
 
-      {/* Action Buttons - Outside capture area */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "nowrap",
-        }}
-      >
-        <img
-          src="/assets/icon_restart.webp"
-          alt="Restart"
-          title="Restart"
-          onClick={onRestart}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.filter = "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.filter = "brightness(1)";
-          }}
-        />
+      {/* Actions — outside the capture area. See WorkoutCompleted.css for why
+          this is a hierarchy rather than a row of five equals. */}
+      <div className="completed-actions">
+        <button
+          type="button"
+          className="completed-share"
+          onClick={handleShare}
+          disabled={isCapturing}
+        >
+          {isCapturing ? "Preparing…" : "Share your round"}
+        </button>
 
-        <img
-          src="/assets/icon_home.webp"
-          alt="Home"
-          title="Home"
-          onClick={onReset}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.filter = "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.filter = "brightness(1)";
-          }}
-        />
+        <button type="button" className="completed-again" onClick={onRestart}>
+          Train again
+        </button>
 
-        <img
-          src="/assets/icon_view_log.webp"
-          alt="View Log"
-          title="View Log"
-          onClick={onViewLog}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.filter = "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.filter = "brightness(1)";
-          }}
-        />
-
-        <img
-          src="/assets/icon_download_updated.webp"
-          alt="Download"
-          title="Download"
-          onClick={isCapturing ? undefined : handleDownload}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: isCapturing ? "not-allowed" : "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            opacity: isCapturing ? 0.5 : 1,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1.1)";
-              e.currentTarget.style.filter = "brightness(1.2)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.filter = "brightness(1)";
-            }
-          }}
-        />
-
-        <img
-          src="/assets/icon_share.webp"
-          alt="Share"
-          title="Share"
-          onClick={isCapturing ? undefined : handleShare}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: isCapturing ? "not-allowed" : "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            opacity: isCapturing ? 0.5 : 1,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1.1)";
-              e.currentTarget.style.filter = "brightness(1.2)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.filter = "brightness(1)";
-            }
-          }}
-        />
+        <div className="completed-quiet">
+          <button
+            type="button"
+            className="completed-quiet-link"
+            onClick={onReset}
+          >
+            Home
+          </button>
+          <button
+            type="button"
+            className="completed-quiet-link"
+            onClick={onViewLog}
+          >
+            View log
+          </button>
+          <button
+            type="button"
+            className="completed-quiet-link"
+            onClick={handleDownload}
+            disabled={isCapturing}
+          >
+            Save image
+          </button>
+        </div>
       </div>
     </div>
   );
