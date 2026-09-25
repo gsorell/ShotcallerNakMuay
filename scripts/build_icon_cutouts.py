@@ -131,10 +131,23 @@ if __name__ == "__main__":
     # WebP alpha losslessly by default, and on art that is mostly soft glow the
     # alpha channel, not the colour, is the file: 800px with lossless alpha came
     # to 97KB, which is larger than any other asset in the project and half
-    # again the header banner. 480px at alpha_quality 80 is 39KB and still 2.4x
-    # the 200px it is drawn at, which soft neon edges absorb without showing.
+    # again the header banner. 480px at alpha_quality 80 is 39KB and comfortably
+    # over the size it is drawn at, which soft neon edges absorb without showing.
     cutout(
         "icon_belt",
+        max_edge=480,
+        trim=True,
+        unpremultiply=True,
+        quality=88,
+        alpha_quality=80,
+    )
+
+    # The same belt with the gloves-and-bolt mark in its medallion, which is
+    # what the completion screen actually draws — see build_belt_medallion.py,
+    # which writes that source from this one. Identical settings, because it is
+    # the same artwork with a mark drawn in the same neon.
+    cutout(
+        "icon_belt_logo",
         max_edge=480,
         trim=True,
         unpremultiply=True,

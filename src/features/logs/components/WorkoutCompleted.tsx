@@ -335,14 +335,20 @@ export default function WorkoutCompleted({
             seconds after the last bell. */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <img
-            src="/assets/icon_belt.webp"
+            src="/assets/icon_belt_logo.webp"
             alt=""
             style={{
               // The asset is trimmed to the artwork, so this is the belt's real
               // width rather than a box it sits somewhere inside. Landscape,
               // which is why it takes twice the width of the trophy it replaced
               // and still costs the card less height.
-              width: 140,
+              //
+              // Wider than the 140 the reordered card started at: the medallion
+              // now carries the gloves-and-bolt mark rather than a generic
+              // bolt, and the mark has to be legible to be worth putting there.
+              // The medallion is about a third of the belt's width, so the mark
+              // lands near the size the footer drew it at.
+              width: 168,
               height: "auto",
               marginBottom: 10,
             }}
@@ -367,12 +373,19 @@ export default function WorkoutCompleted({
             Training Complete
           </h1>
 
+          {/* This wraps, and has to: "Amateur" is longer than "Pro" and two or
+              three selected styles are longer again, so there is no width at
+              which one line is guaranteed. Given that, it is set to wrap
+              well — balanced lines rather than one orphaned word, and leading
+              loose enough that two lines read as a block instead of a break. */}
           <div
             style={{
               marginTop: 10,
               fontSize: "0.75rem",
               textTransform: "uppercase",
-              letterSpacing: "0.14em",
+              letterSpacing: "0.12em",
+              lineHeight: 1.6,
+              textWrap: "balance",
               color: BRAND.muted,
             }}
           >
