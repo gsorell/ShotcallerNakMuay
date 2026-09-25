@@ -16,6 +16,7 @@ import { claimNewMilestone } from "../utils/milestones";
 import { claimNewCharms, readWorkoutHistory } from "../utils/charms";
 import type { CharmVisual } from "../constants/charms";
 import CharmCelebrationModal from "./CharmCelebrationModal";
+import "./WorkoutCompleted.css";
 
 interface Celebration {
   charm: CharmVisual;
@@ -71,6 +72,19 @@ const BRAND = {
   ramp:
     "linear-gradient(90deg, #f838f8 0%, #f838f8 12%, #d660f8 30%, " +
     "#8898f8 50%, #4accf8 70%, #18f8f8 88%, #18f8f8 100%)",
+};
+
+/**
+ * Total time trained, as a clock rather than a phrase.
+ *
+ * `formatRoundLength` answers "how long is one round", and says "3 min" for
+ * whole numbers because that is how a setup is spoken. This answers "how long
+ * was the session", where mm:ss reads as the timer the number came off — the
+ * receipt for a round timer should look like the thing that produced it.
+ */
+const formatTotalTime = (minutes: number): string => {
+  const total = Math.round(minutes * 60);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 };
 
 /**
@@ -311,28 +325,50 @@ export default function WorkoutCompleted({
           marginBottom: "1.5rem",
         }}
       >
-        {/* Header Section */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        {/* Header: what this was, in the order it is asked.
+
+            The belt and the headline say "finished"; the line under them says
+            "which session". Style, level and time are three answers to that
+            one question, so they sit together at one size rather than being
+            spread down the card at three — the date in particular had been
+            occupying the third-most prominent slot on a screen read four
+            seconds after the last bell. */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <img
-            src="/assets/icon_belt.webp"
+            src="/assets/icon_belt_logo.webp"
             alt=""
             style={{
               // The asset is trimmed to the artwork, so this is the belt's real
               // width rather than a box it sits somewhere inside. Landscape,
               // which is why it takes twice the width of the trophy it replaced
               // and still costs the card less height.
+              //
+              // Wider than the 140 the reordered card started at, and wider
+              // again than 168: the medallion carries the gloves-and-bolt mark
+              // now, and the mark has to be legible to be worth putting there.
+              // Checked at 1x as well as 3x — the gloves survive 168 on a
+              // desktop browser, but only just, and this is the one piece of
+              // art on the screen that is meant to be looked at.
+              //
+              // The art is also squarer than the belt it replaced (1.44:1
+              // against 1.88:1, because of the sunburst), so this is ~139px
+              // tall rather than the ~106 the old belt took at the same width.
               width: 200,
               height: "auto",
-              marginBottom: 12,
+              marginBottom: 10,
             }}
           />
 
           <h1
             style={{
               margin: 0,
-              fontSize: "2rem",
+              // Clamped rather than fixed, and held to one line. At a flat 2rem
+              // this broke across two lines inside the card's padding on a
+              // phone, and a headline that wraps mid-phrase reads as a bug
+              // rather than a beat.
+              fontSize: "clamp(1.35rem, 6.5vw, 1.75rem)",
+              whiteSpace: "nowrap",
               fontWeight: 800,
-              marginBottom: 8,
               backgroundImage: BRAND.ramp,
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
@@ -341,175 +377,98 @@ export default function WorkoutCompleted({
           >
             Training Complete
           </h1>
+
+          {/* This wraps, and has to: "Amateur" is longer than "Pro" and two or
+              three selected styles are longer again, so there is no width at
+              which one line is guaranteed. Given that, it is set to wrap
+              well — balanced lines rather than one orphaned word, and leading
+              loose enough that two lines read as a block instead of a break. */}
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: "0.75rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              lineHeight: 1.6,
+              textWrap: "balance",
+              color: BRAND.muted,
+            }}
+          >
+            <span style={{ color: BRAND.accent, fontWeight: 700 }}>
+              {stats.emphases.join(" · ")}
+            </span>
+            {" · "}
+            {getDifficultyLabel(stats.difficulty)}
+            {" · "}
+            {new Date(stats.timestamp).toLocaleString("en-US", {
+              weekday: "short",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </div>
         </div>
 
-        {/* Date & Time */}
+        {/* The one number worth being large.
+
+            Rounds and length are the reproducible setup, but the time is what
+            was actually spent, and it is the only figure here that grows with
+            the work. Four stats at competing sizes gave the card no subject;
+            this gives it one. */}
         <div
           style={{
+            textAlign: "center",
+            padding: "20px 0",
+            borderTop: `1px solid ${BRAND.border}`,
+            borderBottom: `1px solid ${BRAND.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "3rem",
+              fontWeight: 800,
+              lineHeight: 1,
+              color: BRAND.heading,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {formatTotalTime(stats.roundsCompleted * stats.roundLengthMin)}
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: "0.8rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: BRAND.muted,
+            }}
+          >
+            {stats.roundsCompleted}{" "}
+            {stats.roundsCompleted === 1 ? "round" : "rounds"} ×{" "}
+            {formatRoundLength(stats.roundLengthMin)}
+            {/* Only when they stopped early. Saying "of 6" after six rounds
+                turns a finished session into a quota met. */}
+            {stats.roundsCompleted < stats.roundsPlanned &&
+              ` · of ${stats.roundsPlanned}`}
+          </div>
+        </div>
+
+        {/* The outcome, deliberately left as a sentence. It is not a score —
+            the app never saw the work — so it is not given a number's
+            typography. Previously it had a divider and a full-width row of its
+            own while being set smaller than the stats above it, which is the
+            layout and the type arguing about what it is. */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 16,
             fontSize: "0.9rem",
             color: BRAND.muted,
-            marginBottom: 16,
-            textAlign: "center",
           }}
         >
-          {new Date(stats.timestamp).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}{" "}
-          •{" "}
-          {new Date(stats.timestamp).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </div>
-
-        {/* Workout Type */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: BRAND.accent,
-              marginBottom: 24,
-            }}
-          >
-            {stats.emphases.join(" • ")}
-          </h2>
-
-          {/* The setup, framed as something to repeat rather than a
-              scoreboard. Level and rounds are the reproducible part, so they
-              lead; shots called is the outcome and sits apart from them. */}
-          <div
-            style={{
-              fontSize: "0.7rem",
-              color: BRAND.muted,
-              textTransform: "uppercase",
-              letterSpacing: "0.18em",
-              marginBottom: 12,
-            }}
-          >
-            The Setup
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "24px",
-              marginBottom: 20,
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  color: BRAND.muted,
-                  marginBottom: 4,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Level
-              </div>
-              <div
-                style={{
-                  fontSize: "1.6rem",
-                  fontWeight: 800,
-                  color: BRAND.heading,
-                }}
-              >
-                {getDifficultyLabel(stats.difficulty)}
-              </div>
-            </div>
-
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  color: BRAND.muted,
-                  marginBottom: 4,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Rounds
-              </div>
-              <div
-                style={{
-                  fontSize: "1.6rem",
-                  fontWeight: 800,
-                  color: BRAND.heading,
-                }}
-              >
-                {stats.roundsCompleted} × {formatRoundLength(stats.roundLengthMin)}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              textAlign: "center",
-              paddingTop: 16,
-              borderTop: `1px solid ${BRAND.border}`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.75rem",
-                color: BRAND.muted,
-                marginBottom: 4,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-              }}
-            >
-              Shots Called
-            </div>
-            <div
-              style={{
-                fontSize: "1.2rem",
-                fontWeight: 700,
-                color: BRAND.heading,
-              }}
-            >
-              {stats.shotsCalledOut}
-            </div>
-          </div>
-        </div>
-
-
-        {/* Brand Footer */}
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: 24,
-            paddingTop: 16,
-            borderTop: `1px solid ${BRAND.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <img
-            src="/assets/logo_mark.webp"
-            alt=""
-            style={{
-              width: 28,
-              height: 28,
-            }}
-          />
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: BRAND.muted,
-              fontWeight: 500,
-            }}
-          >
-            SHOT CALLER
-          </span>
+          <strong style={{ color: BRAND.heading, fontWeight: 700 }}>
+            {stats.shotsCalledOut}
+          </strong>{" "}
+          shots called
         </div>
       </div>
 
@@ -548,145 +507,46 @@ export default function WorkoutCompleted({
 
       {primaryAction}
 
-      {/* Action Buttons - Outside capture area */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "nowrap",
-        }}
-      >
-        <img
-          src="/assets/icon_restart.webp"
-          alt="Restart"
-          title="Restart"
-          onClick={onRestart}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.filter = "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.filter = "brightness(1)";
-          }}
-        />
+      {/* Actions — outside the capture area. See WorkoutCompleted.css for why
+          this is a hierarchy rather than a row of five equals. */}
+      <div className="completed-actions">
+        <button
+          type="button"
+          className="completed-share"
+          onClick={handleShare}
+          disabled={isCapturing}
+        >
+          {isCapturing ? "Preparing…" : "Share your round"}
+        </button>
 
-        <img
-          src="/assets/icon_home.webp"
-          alt="Home"
-          title="Home"
-          onClick={onReset}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.filter = "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.filter = "brightness(1)";
-          }}
-        />
+        <button type="button" className="completed-again" onClick={onRestart}>
+          Train again
+        </button>
 
-        <img
-          src="/assets/icon_view_log.webp"
-          alt="View Log"
-          title="View Log"
-          onClick={onViewLog}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "scale(1.1)";
-            e.currentTarget.style.filter = "brightness(1.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.filter = "brightness(1)";
-          }}
-        />
-
-        <img
-          src="/assets/icon_download_updated.webp"
-          alt="Download"
-          title="Download"
-          onClick={isCapturing ? undefined : handleDownload}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: isCapturing ? "not-allowed" : "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            opacity: isCapturing ? 0.5 : 1,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1.1)";
-              e.currentTarget.style.filter = "brightness(1.2)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.filter = "brightness(1)";
-            }
-          }}
-        />
-
-        <img
-          src="/assets/icon_share.webp"
-          alt="Share"
-          title="Share"
-          onClick={isCapturing ? undefined : handleShare}
-          style={{
-            width: 48,
-            height: 48,
-            cursor: isCapturing ? "not-allowed" : "pointer",
-            transition: "all 0.2s",
-            borderRadius: 12,
-            opacity: isCapturing ? 0.5 : 1,
-            padding: 4,
-            boxSizing: "border-box",
-          }}
-          onMouseEnter={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1.1)";
-              e.currentTarget.style.filter = "brightness(1.2)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isCapturing) {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.filter = "brightness(1)";
-            }
-          }}
-        />
+        <div className="completed-quiet">
+          <button
+            type="button"
+            className="completed-quiet-link"
+            onClick={onReset}
+          >
+            Home
+          </button>
+          <button
+            type="button"
+            className="completed-quiet-link"
+            onClick={onViewLog}
+          >
+            View log
+          </button>
+          <button
+            type="button"
+            className="completed-quiet-link"
+            onClick={handleDownload}
+            disabled={isCapturing}
+          >
+            Save image
+          </button>
+        </div>
       </div>
     </div>
   );

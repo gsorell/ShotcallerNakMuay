@@ -1,6 +1,6 @@
 {
   "name": "shotcaller-nak-muay",
-  "version": "1.19.4",
+  "version": "1.20.0",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

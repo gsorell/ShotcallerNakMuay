@@ -131,10 +131,32 @@ if __name__ == "__main__":
     # WebP alpha losslessly by default, and on art that is mostly soft glow the
     # alpha channel, not the colour, is the file: 800px with lossless alpha came
     # to 97KB, which is larger than any other asset in the project and half
-    # again the header banner. 480px at alpha_quality 80 is 39KB and still 2.4x
-    # the 200px it is drawn at, which soft neon edges absorb without showing.
+    # again the header banner. 480px at alpha_quality 80 is 39KB and comfortably
+    # over the size it is drawn at, which soft neon edges absorb without showing.
     cutout(
         "icon_belt",
+        max_edge=480,
+        trim=True,
+        unpremultiply=True,
+        quality=88,
+        alpha_quality=80,
+    )
+
+    # The belt the completion screen actually draws: the gloves-and-bolt mark in
+    # the medallion, a sunburst behind it, shaped side plates. Drawn as one
+    # piece rather than assembled — an earlier version composited the mark into
+    # the old belt's oval and always read as two drawings, because scaling the
+    # mark down to fit thinned its strokes to a third of the belt's.
+    #
+    # Same settings as the belt above, and it needs them more: this art glows
+    # where the other is flat (27% of its pixels are full-strength core against
+    # 86%), and soft alpha is what makes these files big. 75KB against 40KB is
+    # that glow, and is the reason alpha_quality stays at 80 here.
+    #
+    # Note it is squarer than the plain belt — 1.44:1 against 1.88:1, because
+    # the sunburst adds height — so it is not a drop-in swap at the same width.
+    cutout(
+        "icon_belt_logo",
         max_edge=480,
         trim=True,
         unpremultiply=True,

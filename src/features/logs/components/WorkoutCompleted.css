@@ -1,0 +1,145 @@
+/* What you can do once the bell has stopped.
+   ---------------------------------------------------------------------------
+   This was five 48px bitmaps in a row, all the same size, none labelled. Three
+   things were wrong with it and only one of them was taste.
+
+   It had no primary. Share is the only action here that does anything for the
+   user once they have put the phone down, and it sat fifth, dressed exactly
+   like the four beside it. So people tapped the glyph they recognised — home —
+   and never found the others.
+
+   It asked people to guess. A page icon for "view log" and a circular arrow
+   for "restart" are not conventions, and the `title` tooltips that explained
+   them do nothing on a touchscreen, which is the only place this screen ships.
+
+   And they were `<img onClick>`, so none of it was reachable by keyboard or
+   announced as a control. These are buttons now, and they say what they do in
+   words, which is also why no new artwork was needed to fix any of this.
+
+   The order is share, again, then the quiet three: the thing that carries the
+   app outward, the thing a person reaches for on purpose, and navigation. */
+
+.completed-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+/* ---------------------------------------------------------------- primary -- */
+
+/* The wordmark's ramp with dark type on it — the same reversal the export card
+   closes with, and the only thing on this screen that is not light type on
+   near-black. That contrast is what makes it the primary, rather than size. */
+.completed-share {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 0.85rem;
+  background-image: linear-gradient(
+    90deg,
+    #f838f8 0%,
+    #f838f8 12%,
+    #d660f8 30%,
+    #8898f8 50%,
+    #4accf8 70%,
+    #18f8f8 88%,
+    #18f8f8 100%
+  );
+  color: #0c0710;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-align: center;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.completed-share:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 22px rgba(248, 56, 248, 0.25);
+}
+
+.completed-share:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* -------------------------------------------------------------- secondary -- */
+
+.completed-again {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 2px solid #2e2240;
+  color: #f4eef6;
+  font-size: 0.98rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.completed-again:hover:not(:disabled) {
+  border-color: rgba(255, 95, 176, 0.5);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ------------------------------------------------------------------ quiet -- */
+
+/* Navigation and a file download. None of the three is why anyone is on this
+   screen, so they are text, and the separators are drawn by the row rather
+   than typed between the buttons — a middot is not a control. */
+.completed-quiet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.completed-quiet-link {
+  all: unset;
+  cursor: pointer;
+  padding: 0.5rem 0.4rem;
+  color: #9d8fa9;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.completed-quiet-link:hover:not(:disabled) {
+  color: #f4eef6;
+}
+
+.completed-quiet-link + .completed-quiet-link::before {
+  content: "·";
+  margin-right: 0.55rem;
+  color: #2e2240;
+}
+
+/* ------------------------------------------------------------------ both -- */
+
+.completed-actions button:focus-visible {
+  outline: 2px solid rgba(255, 95, 176, 0.9);
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+/* Capture takes a moment on a mid-range phone. Both capture buttons dim
+   together, because either one starting means the other cannot run. */
+.completed-actions button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
