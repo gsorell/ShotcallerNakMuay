@@ -394,7 +394,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     | "paused"
     | "resting"
     | "pre-round" => {
-    if (timer.isPreRound) return "pre-round";
+    // A paused countdown has to say so. Otherwise it reads as "Get Ready!"
+    // above a number that has stopped moving — which is indistinguishable
+    // from the freeze this pause was added to give people a way out of.
+    if (timer.isPreRound) return timer.paused ? "paused" : "pre-round";
     if (!timer.running) return "ready";
     if (timer.paused) return "paused";
     if (timer.isResting) return "resting";
@@ -402,7 +405,8 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   }, [timer.isPreRound, timer.running, timer.paused, timer.isResting]);
 
   // Wake Lock
-  const shouldKeepAwake = (timer.running && !timer.paused) || timer.isPreRound;
+  const shouldKeepAwake =
+    (timer.running || timer.isPreRound) && !timer.paused;
   useWakeLock({ enabled: shouldKeepAwake, log: false });
 
   // Stats
@@ -552,7 +556,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   );
 
   const pauseSession = useCallback(() => {
-    if (!timer.running) return;
+    // Pre-round too: the button is on screen during "Get Ready" and used to do
+    // nothing there, because `running` stays false until the countdown ends.
+    if (!timer.running && !timer.isPreRound) return;
 
     // If currently paused, we're resuming
     if (timer.paused) {
