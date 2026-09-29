@@ -9,6 +9,8 @@ interface TechniqueGroupPanelProps {
   group: TechniqueShape;
   isCoreStyle: boolean;
   onDuplicate?: () => void;
+  /** Absent for styles that cannot be shared (the timer-only mode). */
+  onShare?: () => void;
   expanded: boolean;
   toggleGroupExpanded: (key: string) => void;
   updateGroupLabel: (label: string) => void;
@@ -30,6 +32,7 @@ export default function TechniqueGroupPanel({
   group,
   isCoreStyle,
   onDuplicate,
+  onShare,
   expanded,
   toggleGroupExpanded,
   updateGroupLabel,
@@ -59,6 +62,7 @@ export default function TechniqueGroupPanel({
         isCoreStyle={isCoreStyle}
         thumbnail={thumbnail}
         onDuplicate={onDuplicate}
+        onShare={onShare}
         expanded={expanded}
         toggleGroupExpanded={toggleGroupExpanded}
         updateGroupLabel={updateGroupLabel}

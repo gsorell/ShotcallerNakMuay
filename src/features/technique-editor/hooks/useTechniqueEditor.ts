@@ -4,6 +4,7 @@ import {
   humanizeKey,
   normalizeArray,
   normalizeTechniques,
+  prependGroup,
   type TechniqueShape,
 } from "@/utils/techniqueUtils";
 import { downloadJSON } from "@/utils/fileUtils";
@@ -39,7 +40,7 @@ export function useTechniqueEditor({
           if (v.label === k) v.label = human;
           if (v.title === k) v.title = human;
         }
-      } catch (e) {
+      } catch {
         /* noop */
       }
     });
@@ -47,7 +48,7 @@ export function useTechniqueEditor({
     try {
       // Ensure the app-level techniques state receives the normalized shape
       setTechniques(normalized as Record<string, TechniqueShape>);
-    } catch (e) {
+    } catch {
       // swallow to avoid breaking the editor UI
     }
   }
@@ -137,15 +138,14 @@ export function useTechniqueEditor({
       alert(`Group "${k}" already exists.`);
       return { ok: false };
     }
-    // Insert new group at the top of the user groups (before all others)
-    const next: Record<string, TechniqueShape> = {};
-    // Add the new group first
-    next[k] = { label: k, title: humanizeKey(k), singles: [], combos: [] };
-    // Then add all existing groups
-    Object.entries(local).forEach(([groupKey, value]) => {
-      next[groupKey] = value;
-    });
-    persist(next);
+    persist(
+      prependGroup(local, k, {
+        label: k,
+        title: humanizeKey(k),
+        singles: [],
+        combos: [],
+      })
+    );
     return { ok: true, key: k };
   }
 
@@ -158,13 +158,15 @@ export function useTechniqueEditor({
       newKey = key + `_copy${i++}`;
     }
     const baseTitle = base.title ?? base.label ?? humanizeKey(key);
-    const next = { ...local };
-    next[newKey] = {
-      ...base,
-      label: `${base.label} (Copy)`,
-      title: `${baseTitle} (Copy)`,
-    };
-    persist(next);
+    // Prepended, not appended: a copy is a brand new style of the user's and
+    // belongs next to the original's replacement at the top, not buried.
+    persist(
+      prependGroup(local, newKey, {
+        ...base,
+        label: `${base.label} (Copy)`,
+        title: `${baseTitle} (Copy)`,
+      })
+    );
     return { ok: true, key: newKey };
   }
 

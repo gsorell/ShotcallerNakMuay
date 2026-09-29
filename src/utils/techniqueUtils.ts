@@ -38,6 +38,28 @@ export function normalizeTechniques(
   return out;
 }
 
+/**
+ * Add a style so it lands at the *front* of the map.
+ *
+ * Styles are one flat object and the editor renders the user's own in
+ * insertion order, so "newest first" is carried entirely by where a key is
+ * inserted. Spreading (`{ ...groups, [key]: value }`) appends, which is why
+ * create, duplicate and import all have to go through here rather than each
+ * doing its own thing — they used to disagree, and only newly *created* styles
+ * came out on top.
+ */
+export function prependGroup<T>(
+  groups: Record<string, T>,
+  key: string,
+  value: T
+): Record<string, T> {
+  const next: Record<string, T> = { [key]: value };
+  for (const [k, v] of Object.entries(groups)) {
+    if (k !== key) next[k] = v;
+  }
+  return next;
+}
+
 export function normalizeArray(
   arr: any[] | undefined
 ): { text: string; favorite?: boolean; weight?: number }[] {
@@ -88,7 +110,7 @@ const FAVORITE_WEIGHT = 2;
  * Ceiling on any single entry. A typo (`weight: 500`) would otherwise flood the
  * pool so completely that nothing else is ever called.
  */
-const MAX_WEIGHT = 6;
+export const MAX_WEIGHT = 6;
 
 export function entryWeight(entry: unknown): number {
   if (typeof entry === "string" || !entry) return 1;

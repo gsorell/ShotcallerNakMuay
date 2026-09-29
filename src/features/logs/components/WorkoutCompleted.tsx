@@ -170,24 +170,45 @@ function ChallengeCard({ stats }: { stats: WorkoutStats }) {
         </div>
       </div>
 
+      {/* The domain, not the wordmark.
+
+          Facebook and Instagram drop a share's caption entirely (verified on
+          device, 2026-09-24), so on those two surfaces this image is the whole
+          message — and it used to say "SHOT CALLER", which tells a stranger
+          nothing about where to find it. The address is the one thing that
+          works everywhere: in a feed, in a screenshot, cropped, or typed in by
+          hand from across a room.
+
+          It replaces the wordmark rather than joining it, because
+          "SHOT CALLER" above "shotcallernakmuay.netlify.app" is the same word
+          twice. A QR was tried here too and removed: at the size a card is
+          viewed in a chat it works out to ~0.25mm per module, under what a
+          camera can resolve, so it was a fifth of the card spent on something
+          that would mostly fail. See the challenge-cards note for the
+          measurements. */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 8,
+          gap: 9,
           padding: "16px 0 20px",
         }}
       >
         <img
           src="/assets/logo_mark.webp"
           alt=""
-          style={{ width: 28, height: 28 }}
+          style={{ width: 26, height: 26 }}
         />
         <span
-          style={{ fontSize: "0.75rem", color: BRAND.muted, fontWeight: 500 }}
+          style={{
+            fontSize: "0.85rem",
+            color: BRAND.heading,
+            fontWeight: 600,
+            letterSpacing: "0.01em",
+          }}
         >
-          SHOT CALLER
+          shotcallernakmuay.netlify.app
         </span>
       </div>
     </div>
@@ -272,7 +293,7 @@ export default function WorkoutCompleted({
     try {
       const filename = generateWorkoutFilename(stats);
       await captureAndDownloadElement(exportRef.current, filename);
-    } catch (error) {
+    } catch {
       // Download failed
       alert("Failed to download workout image. Please try again.");
     } finally {

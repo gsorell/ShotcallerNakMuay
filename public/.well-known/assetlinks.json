@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.shotcallernakmuay.app",
+      "sha256_cert_fingerprints": [
+        "E2:2A:8B:53:20:BF:E0:A0:7B:19:EC:6C:D3:FC:A8:CF:E5:1D:2A:2A:7C:54:67:C9:5B:B8:21:8D:6E:33:D5:48",
+        "26:D4:17:66:8C:45:61:68:6B:B7:F0:8B:04:10:3B:BA:07:84:B0:2D:98:21:0B:6E:D6:67:FB:31:82:C4:D3:39"
+      ]
+    }
+  }
+]

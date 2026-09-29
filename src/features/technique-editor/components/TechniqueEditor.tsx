@@ -6,10 +6,12 @@ import { scrollContentToTop } from "@/utils/scroll";
 import React, { useRef, useState } from "react";
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
+import { requestShareStyle } from "@/features/style-share";
 import { useUIContext } from "../../shared";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
 import { getSortedGroups } from "../utils/groupSorting";
 import "./TechniqueEditor.css";
+import StyleActions from "./StyleActions";
 import TechniqueGroupPanel from "./TechniqueGroupPanel";
 
 type TechniqueDetail = {
@@ -75,7 +77,7 @@ export default function TechniqueEditor({
     [isPro, openPaywall]
   );
 
-  const [newGroupName, setNewGroupName] = useState("");
+  const [showManageData, setShowManageData] = useState(false);
 
   // --- NEW: Scroll to top on group creation/duplication ---
   const topRef = useRef<HTMLDivElement>(null);
@@ -90,19 +92,22 @@ export default function TechniqueEditor({
   }, [topRef]);
 
   // --- MODIFIED: Add group and scroll to top ---
-  const handleAddGroup = (key: string) => {
+  // Returns whether the style was created, so the dialog can stay open with
+  // the typed name intact when it was not.
+  const handleAddGroup = (key: string): boolean => {
     if (!isPro) {
       openPaywall("technique_editor");
-      return;
+      return false;
     }
     const result = addGroup(key);
     if (result.ok && result.key) {
       // Expand the newly created group so user can immediately start adding techniques
       setExpandedGroups((prev) => ({ ...prev, [result.key!]: true }));
-      setNewGroupName("");
       scrollToTop();
       trackEvent("custom_group_created", { group_name: key });
+      return true;
     }
+    return false;
   };
 
   // Optional: allow Escape to return to main page
@@ -180,10 +185,25 @@ export default function TechniqueEditor({
     [duplicateGroup, setExpandedGroups, scrollToTop, isPro, openPaywall]
   );
 
+  // The Pro gate and the first-share name confirmation live in ShareStyleFlow,
+  // which the home screen's share button also raises requests to — so neither
+  // button carries its own copy of that decision.
+  const handleShareGroup = React.useCallback(
+    (key: string) => {
+      const group = local[key];
+      if (group) requestShareStyle(group);
+    },
+    [local]
+  );
+
   // Memoized callback factories to prevent re-renders
   const getDuplicateHandler = React.useCallback(
     (key: string) => () => handleDuplicateGroup(key),
     [handleDuplicateGroup]
+  );
+  const getShareHandler = React.useCallback(
+    (key: string) => () => handleShareGroup(key),
+    [handleShareGroup]
   );
   const getToggleHandler = React.useCallback(
     (key: string) => () => toggleGroupExpanded(key),
@@ -213,10 +233,10 @@ export default function TechniqueEditor({
         {/* Page Title */}
         <h1 className="tech-editor-page-title">Technique Manager</h1>
 
-        {/* Subtitle */}
+        {/* One line that says what the page is, rather than three clauses
+            naming features the page already shows. */}
         <p className="tech-editor-subtitle">
-          Customize your training routines • Star favorites • Manage technique
-          sets
+          Your styles, and the techniques in them.
         </p>
       </div>
 
@@ -245,27 +265,7 @@ export default function TechniqueEditor({
         </div>
       )}
 
-      {/* --- Move Create New Emphasis block to the top --- */}
-      <div className="add-emphasis-panel tech-editor-panel">
-        <h3 className="tech-editor-panel-title">Create New Style</h3>
-        <div>
-          <input
-            id="new-group-name"
-            type="text"
-            placeholder="Title (e.g., My Style)"
-            value={newGroupName}
-            onChange={(e) => setNewGroupName(e.target.value)}
-            className="tech-editor-input"
-            aria-label="New technique style name"
-          />
-          <button
-            onClick={() => handleAddGroup(newGroupName)}
-            className="tech-editor-btn--create"
-          >
-            Create Style
-          </button>
-        </div>
-      </div>
+      <StyleActions onCreate={handleAddGroup} />
 
       {/* --- Render all groups using TechniqueGroupPanel --- */}
       {sortedGroups.map(([key, group]) => {
@@ -279,6 +279,10 @@ export default function TechniqueEditor({
             isCoreStyle={isCoreStyle}
             onDuplicate={
               key !== "timer_only" ? getDuplicateHandler(key) : undefined
+            }
+            onShare={
+              // timer_only carries no techniques, so there is nothing to send.
+              key !== "timer_only" ? getShareHandler(key) : undefined
             }
             expanded={expanded}
             toggleGroupExpanded={getToggleHandler(key)}
@@ -310,44 +314,65 @@ export default function TechniqueEditor({
         );
       })}
 
-      {/* Backup Actions - Moved to end of interface */}
-      <div className="tech-editor-backup-actions">
-        <button onClick={handleExport} className="tech-editor-export-btn">
-          Export Backup
-        </button>
+      {/* Whole-library operations, behind a disclosure.
 
+          These are not the page's job — they act on everything at once, and
+          two of the three cannot be undone. Kept off screen by default mostly
+          because of the name clash they used to create: "Import Backup" sat a
+          scroll away from "Import", one adding a single style and the other
+          replacing every custom style the user has. It is "Restore" now, and
+          it says what it costs. */}
+      <div className="tech-editor-manage-data">
         <button
-          onClick={() => fileInputRef.current?.click()}
-          className="tech-editor-import-btn"
+          type="button"
+          className="tech-editor-disclosure"
+          onClick={() => setShowManageData((open) => !open)}
+          aria-expanded={showManageData}
         >
-          Import Backup
+          Manage data {showManageData ? "▲" : "▼"}
         </button>
-      </div>
 
-      {/* Hidden file input for import */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleImportChange}
-        style={{ display: "none" }}
-      />
+        {showManageData && (
+          <div className="tech-editor-manage-body">
+            <p className="tech-editor-hint">
+              These act on your whole library, not one style.
+            </p>
 
-      {/* Reset Data - Moved to bottom */}
-      <div className="tech-editor-reset-panel">
-        <h3>Reset Data</h3>
-        <p>
-          This will restore the original set of techniques and remove any custom
-          ones you have added. This action cannot be undone.
-        </p>
-        <div>
-          <button
-            onClick={guard(resetToDefault)}
-            className="tech-editor-btn--reset"
-          >
-            Reset to Default Techniques
-          </button>
-        </div>
+            <button onClick={handleExport} className="tech-editor-export-btn">
+              Export Backup
+            </button>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="tech-editor-import-btn"
+            >
+              Restore from Backup
+            </button>
+            <p className="tech-editor-hint">
+              Replaces every style you have made or imported.
+            </p>
+
+            <button
+              onClick={guard(resetToDefault)}
+              className="tech-editor-btn--reset"
+            >
+              Reset to Default Techniques
+            </button>
+            <p className="tech-editor-hint">
+              Restores the shipped styles and removes your own. Cannot be
+              undone.
+            </p>
+          </div>
+        )}
+
+        {/* Hidden file input for restore */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImportChange}
+          style={{ display: "none" }}
+        />
       </div>
     </div>
   );

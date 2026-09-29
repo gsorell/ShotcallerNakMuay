@@ -18,6 +18,41 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+                Android App Links for shared custom styles: tapping a /s/ link
+                in a text message opens the app directly, with no disambiguation
+                dialog and no browser hop.
+
+                pathPrefix is "/s/" and deliberately NOT "/". Claiming the whole
+                host would hijack every link to the site - the privacy policy,
+                the blog, the sales page - into the app.
+
+                autoVerify only takes effect if Digital Asset Links verification
+                succeeds, which means public/.well-known/assetlinks.json must
+                list the SHA-256 of the certificate that signs the INSTALLED
+                app. With Play App Signing enabled that is Play's app-signing
+                certificate (Play Console -> Setup -> App signing), not the
+                local upload key - they are different, and the upload key is the
+                one that looks right. The debug keystore's fingerprint belongs
+                there too, or links will never verify on a device carrying a
+                debug build. Unverified links still work, but only after the
+                user picks the app from a chooser.
+
+                MainActivity is already launchMode="singleTask", so a link
+                arriving while the app is running comes through onNewIntent and
+                reaches Capacitor's appUrlOpen rather than starting a second
+                copy mid-round.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="shotcallernakmuay.netlify.app"
+                    android:pathPrefix="/s/" />
+            </intent-filter>
         </activity>
 
         <!--

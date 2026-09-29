@@ -24,6 +24,29 @@ NODE_VERSION = "22"
 # entry point would break the iOS and Android builds for no gain.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Deep-link domain verification
+#
+# Apple and Google both fetch a file under /.well-known/ to decide whether this
+# site is allowed to open the native apps. Neither request comes from a browser
+# and neither follows a redirect, so these files have to be served as plain
+# 200s from the real path — which they are, because the SPA fallback at the
+# bottom is unforced and a real file always wins.
+#
+# apple-app-site-association has no file extension, so Netlify would otherwise
+# serve it as application/octet-stream and Apple's CDN would reject it. That is
+# the whole reason for the header block below.
+# ---------------------------------------------------------------------------
+[[headers]]
+  for = "/.well-known/apple-app-site-association"
+  [headers.values]
+    Content-Type = "application/json"
+
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+
 # Root -> the sales page. Forced, because a file exists at `/`.
 [[redirects]]
   from = "/"

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		Universal Links for shared custom styles.
+
+		This entitlement is the whole reason a link in a text message opens the
+		app instead of Safari. It is NOT self-contained: the App ID in the
+		Apple Developer portal must have the Associated Domains capability
+		enabled, and the distribution provisioning profile must be regenerated
+		afterwards. The iOS workflow signs manually against a profile stored as
+		the IOS_PROVISIONING_PROFILE secret (see .github/workflows/ios-build.yml),
+		so that secret has to be replaced with the regenerated profile or the
+		build fails at codesign with a missing-entitlement error.
+
+		Apple fetches the matching apple-app-site-association from
+		public/.well-known/ through its own CDN and caches it hard. Append
+		`?mode=developer` to the domain below ONLY for local debugging on a
+		device with Associated Domains Development enabled — never ship it.
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:shotcallernakmuay.netlify.app</string>
+	</array>
+</dict>
+</plist>

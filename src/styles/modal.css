@@ -1,0 +1,184 @@
+/* modal.css - the app's dialog surface.
+   Shared by every sheet that overlays the app: the shared-style import
+   prompt, the sharing-name sheet, the paste-a-link dialog and the
+   new-style dialog. Kept out of any one feature folder because four
+   features answer to it. */
+
+/* ImportStyleModal.css — the confirmation a shared style passes before it is
+   written. Follows the app's panel language: dark translucent card, pink
+   accents, matching GlossaryModal. */
+
+.sc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Above the glossary and the PWA prompt: an incoming link is the reason the
+     app opened, so nothing should be able to sit on top of it. */
+  z-index: 9998;
+  padding: 1rem;
+  /* Cleared by the OS status bar on a notched phone, where this modal is the
+     first thing drawn after a cold launch from a message. */
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.sc-modal-card {
+  width: 100%;
+  max-width: 28rem;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: #1a1a2e;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.sc-modal-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f9a8d4;
+}
+
+.sc-modal-heading {
+  margin: 0 0 0.5rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.2;
+  /* A sender picks this name; long ones must not push the buttons off-screen. */
+  overflow-wrap: anywhere;
+}
+
+.sc-modal-desc {
+  margin: 0 0 0.6rem;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.75);
+  overflow-wrap: anywhere;
+}
+
+.sc-modal-counts {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sc-modal-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.sc-modal-chip {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.sc-modal-chip--combo {
+  background: rgba(236, 72, 153, 0.12);
+  border-color: rgba(236, 72, 153, 0.3);
+  color: #f9a8d4;
+}
+
+.sc-modal-chip--more {
+  background: transparent;
+  border-style: dashed;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sc-modal-note {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sc-modal-note--blocked {
+  color: #f9a8d4;
+}
+
+.sc-modal-error {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.sc-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.sc-modal-btn {
+  flex: 1 1 auto;
+  min-width: 8rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-radius: 0.65rem;
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.sc-modal-btn--primary {
+  background: #ec4899;
+  border-color: #ec4899;
+  color: #fff;
+}
+
+.sc-modal-btn:active {
+  transform: translateY(1px);
+}
+
+/* --- Shared bits for the name sheet and the paste dialog ---------------- */
+
+.sc-modal-field {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.7rem 0.8rem;
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  margin-bottom: 0.5rem;
+}
+
+.sc-modal-field:focus {
+  outline: none;
+  border-color: rgba(236, 72, 153, 0.6);
+}
+
+/* The "Sharing as Jake · Change" caption in the editor panel. Deliberately a
+   caption and not a form field: a name is set once and then forgotten. */
+.style-share-identity {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.style-share-identity button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.35rem;
+  color: #f9a8d4;
+  font-size: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
