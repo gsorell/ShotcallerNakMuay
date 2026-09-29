@@ -18,7 +18,7 @@ import {
       }
 
       // Emergency TTS cleanup applied on module load
-    } catch (error) {
+    } catch {
       // Emergency TTS cleanup failed
     }
   }
@@ -153,7 +153,7 @@ export const useTTS = (): UseTTSReturn => {
             ttsService.setVoice(defaultVoice);
           }
         }
-      } catch (error) {
+      } catch {
         setVoiceCompatibilityWarning("Failed to load text-to-speech voices.");
       }
     };
@@ -255,7 +255,7 @@ export const useTTS = (): UseTTSReturn => {
       } else {
         return null;
       }
-    } catch (error) {
+    } catch {
       return null;
     }
   }, []);
@@ -285,7 +285,7 @@ export const useTTS = (): UseTTSReturn => {
           options.onError?.(error);
         },
       });
-    } catch (error) {
+    } catch {
       setIsSpeaking(false);
     }
   }, []);
@@ -391,7 +391,7 @@ export const useTTS = (): UseTTSReturn => {
         onDone: () => setIsSpeaking(false),
         onError: () => setIsSpeaking(false),
       });
-    } catch (error) {
+    } catch {
       setIsSpeaking(false);
       // Error testing voice
     }

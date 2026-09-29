@@ -75,7 +75,7 @@ class TTSService {
           ) {
             window.speechSynthesis.cancel();
           }
-        } catch (error) {
+        } catch {
           // Ignore cleanup errors
         }
       }, 60000); // Every 60 seconds
@@ -191,7 +191,7 @@ class TTSService {
           if (this.availableVoices.length === 0) {
             this.addFallbackVoice();
           }
-        } catch (error) {
+        } catch {
           // Fallback to browser TTS if available
           this.initializeBrowserTTS();
 
@@ -206,7 +206,7 @@ class TTSService {
         // Use browser TTS for web
         this.initializeBrowserTTS();
       }
-    } catch (error) {
+    } catch {
       // Ensure we always have at least a fallback voice
       this.addFallbackVoice();
     }
@@ -554,7 +554,7 @@ class TTSService {
 
       // Reset busy flag
       this.isBusy = false;
-    } catch (error) {
+    } catch {
       this.isBusy = false; // Ensure we reset the flag even on error
     }
   }
@@ -593,7 +593,7 @@ class TTSService {
         return window.speechSynthesis.speaking;
       }
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -604,7 +604,7 @@ class TTSService {
       if ("speechSynthesis" in window) {
         window.speechSynthesis.pause();
       }
-    } catch (error) {
+    } catch {
       // Error pausing TTS
     }
   }
@@ -615,7 +615,7 @@ class TTSService {
       if ("speechSynthesis" in window) {
         window.speechSynthesis.resume();
       }
-    } catch (error) {
+    } catch {
       // Error resuming TTS
     }
   }
@@ -712,7 +712,7 @@ class TTSService {
 
       this.pendingQueue = [];
       this.isBusy = false;
-    } catch (error) {
+    } catch {
       // Error during TTS cleanup
     }
   }

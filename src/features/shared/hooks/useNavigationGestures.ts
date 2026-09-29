@@ -43,7 +43,7 @@ export function useNavigationGestures({
           if (debugLog) {
             // Hardware back button listener registered
           }
-        } catch (error) {
+        } catch {
           // Failed to register hardware back button listener
         }
       }

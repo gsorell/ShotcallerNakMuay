@@ -71,7 +71,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   useEffect(() => {
     try {
       trackEvent(AnalyticsEvents.PaywallOpen, { source: source ?? "unknown" });
-    } catch {}
+    } catch { /* analytics must never break the purchase it measures */ }
   }, [source]);
 
   const dismiss = useCallback(
@@ -85,7 +85,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             // Whether they got as far as the store sheet before backing out.
             plans_loaded: packages !== null && packages.length > 0,
           });
-        } catch {}
+        } catch { /* analytics must never break the purchase it measures */ }
       }
       onClose();
     },
@@ -145,7 +145,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         package_type: pkg.packageType,
         has_trial: !!intro?.isFreeTrial,
       });
-    } catch {}
+    } catch { /* analytics must never break the purchase it measures */ }
 
     setBusy(pkg.identifier);
     setMessage(null);
@@ -163,7 +163,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           value: pkg.product.price,
           currency: pkg.product.currencyCode,
         });
-      } catch {}
+      } catch { /* analytics must never break the purchase it measures */ }
       onClose();
     } else if (result.cancelled) {
       // User backed out at the store sheet; no message needed, but this is a
@@ -173,7 +173,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           source: source ?? "unknown",
           product: pkg.product.identifier,
         });
-      } catch {}
+      } catch { /* analytics must never break the purchase it measures */ }
     } else {
       try {
         trackEvent(AnalyticsEvents.PaywallPurchaseError, {
@@ -181,7 +181,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           product: pkg.product.identifier,
           error: result.error ?? "unknown",
         });
-      } catch {}
+      } catch { /* analytics must never break the purchase it measures */ }
       setMessage(result.error ?? "Something went wrong. Please try again.");
     }
   };
@@ -193,7 +193,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     setBusy(null);
     try {
       trackEvent(AnalyticsEvents.PaywallRestore, { source: source ?? "unknown" });
-    } catch {}
+    } catch { /* analytics must never break the purchase it measures */ }
     setMessage("If you had a purchase, it's been restored.");
   };
 
@@ -208,7 +208,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         order_id: orderId,
         source,
       });
-    } catch {}
+    } catch { /* analytics must never break the purchase it measures */ }
     setShowLegacyClaim(false);
     // A claim is an unlock, not an abandonment.
     purchasedRef.current = true;

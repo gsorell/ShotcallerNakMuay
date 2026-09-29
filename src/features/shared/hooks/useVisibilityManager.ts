@@ -38,7 +38,7 @@ class VisibilityManager {
         } else {
           handler.onHidden();
         }
-      } catch (error) {
+      } catch {
         // Error in visibility handler
       }
     });

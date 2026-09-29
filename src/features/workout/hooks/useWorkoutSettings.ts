@@ -144,7 +144,7 @@ export function useWorkoutSettings(
             : AnalyticsEvents.EmphasisDeselect,
           { emphasis: k, source }
         );
-      } catch (e) {}
+      } catch { /* analytics must never break the selection it measures */ }
 
       if (k === "timer_only" || k === "freestyle") {
         const allOff = {

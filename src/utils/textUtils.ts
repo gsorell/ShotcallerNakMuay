@@ -22,7 +22,7 @@ export const mirrorTechnique = (
     mirrored = mirrored.replace(/\bLeft\b/gi, "|||TEMP_LEFT|||");
     mirrored = mirrored.replace(/\bRight\b/gi, "Left");
     mirrored = mirrored.replace(/\|\|\|TEMP_LEFT\|\|\|/gi, "Right");
-  } catch (error) {
+  } catch {
     return technique; // Return original on error
   }
 

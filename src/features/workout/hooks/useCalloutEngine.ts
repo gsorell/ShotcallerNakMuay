@@ -84,14 +84,14 @@ export function useCalloutEngine({
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
-    } catch {}
+    } catch { /* a throwing speechSynthesis must not kill the round */ }
   }, []);
 
   const stopAllNarration = useCallback(() => {
     stopTechniqueCallouts();
     try {
       window.speechSynthesis.cancel();
-    } catch {}
+    } catch { /* a throwing speechSynthesis must not kill the round */ }
   }, [stopTechniqueCallouts]);
 
   const startTechniqueCallouts = useCallback(
@@ -157,7 +157,7 @@ export function useCalloutEngine({
           finalPhrase = settings.southpawModeRef.current
             ? mirrorTechnique(selectedTechnique.text, selectedTechnique.style)
             : selectedTechnique.text;
-        } catch (e) {
+        } catch {
           finalPhrase = selectedTechnique.text || "";
         }
 
@@ -290,7 +290,7 @@ export function useCalloutEngine({
 
       try {
         window.speechSynthesis.resume();
-      } catch {}
+      } catch { /* a throwing speechSynthesis must not kill the round */ }
       lastCalloutAtRef.current = Date.now();
       startCalloutsRef.current?.(0);
     }, 2000);
@@ -334,7 +334,7 @@ export function useCalloutEngine({
         if (typeof window !== "undefined" && "speechSynthesis" in window) {
           try {
             window.speechSynthesis.pause();
-          } catch {}
+          } catch { /* a throwing speechSynthesis must not kill the round */ }
         }
         return;
       }
@@ -348,7 +348,7 @@ export function useCalloutEngine({
       if (!isHidden && typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.resume();
-        } catch {}
+        } catch { /* a throwing speechSynthesis must not kill the round */ }
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
