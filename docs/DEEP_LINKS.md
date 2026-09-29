@@ -60,10 +60,12 @@ Both platforms need credentials that do not live in git. **Until these are
 done, links open in the browser instead of the app** — everything else works,
 so the failure is silent.
 
-> **Status: both done, 2026-09-29.** Team ID and both Android fingerprints are
-> filled in, and the regenerated iOS profile is in the
-> `IOS_PROVISIONING_PROFILE` secret. What remains is to **deploy** so the
-> `.well-known` files go live, and to ship builds that carry the entitlement.
+> **Status, 2026-09-29.** Credentials are done: Team ID and both Android
+> fingerprints are filled in, the regenerated iOS profile is in the
+> `IOS_PROVISIONING_PROFILE` secret, and this is merged to `main` and
+> deployed. What remains is to **ship builds** — an App Store build carrying
+> the entitlement, and a Play build for Android verification to run against.
+>
 > The procedure below is kept because it has to be repeated whenever the
 > distribution certificate expires (2027-01-08) or the upload key is reset.
 
@@ -128,6 +130,44 @@ Asset Links verifier** whether Android will accept the site — which is the onl
 check that proves links will open the app rather than a chooser dialog.
 
 ---
+
+## Testing it on an Android device
+
+Verification runs **at install time**, so the order matters: a build installed
+before `.well-known/assetlinks.json` is live will fail to verify and will not
+retry on its own. Deploy first, then install.
+
+```bash
+adb shell pm get-app-links --user 0 com.shotcallernakmuay.app
+```
+
+`Domain verification state: verified` is the goal. `1024` is
+`STATE_NO_RESPONSE` — the file was not reachable. This also prints the
+device's signing key, which is the quickest way to confirm the fingerprint in
+`assetlinks.json` matches the build actually installed.
+
+To re-run verification without reinstalling, and to fire a link by hand:
+
+```bash
+adb shell pm set-app-links --package com.shotcallernakmuay.app 0 all
+adb shell pm verify-app-links --re-verify com.shotcallernakmuay.app
+adb shell am force-stop com.shotcallernakmuay.app     # forces the cold path
+adb shell "am start -a android.intent.action.VIEW -d 'https://…/s/#p=…'"
+```
+
+To test the flow *before* the file is live, the association can be forced by
+hand — useful, but remember it proves the intent filter and the in-app
+handling, **not** that verification works:
+
+```bash
+adb shell pm set-app-links-user-selection --user 0 \
+  --package com.shotcallernakmuay.app true shotcallernakmuay.netlify.app
+```
+
+Turn it back off (`false`) before testing real verification, or a pass means
+nothing. Verified 2026-09-29 on a Pixel 9 Pro XL: both the cold path
+(`getLaunchUrl`) and delivery to a running instance (`appUrlOpen`) reach the
+import sheet.
 
 ## Gotchas worth keeping
 
