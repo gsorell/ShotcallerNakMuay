@@ -130,7 +130,7 @@
 
 .tech-editor-buttons-row-inline {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   justify-content: flex-end;
   margin-left: auto;
@@ -253,10 +253,19 @@
 }
 
 .tech-editor-btn--copy,
+.tech-editor-btn--share,
 .tech-editor-btn--expand,
 .tech-editor-btn--action {
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.75rem;
+  /* Square, because each holds a single glyph. They were padded like text
+     buttons, which on a 390px phone left the style's name 90px of a 292px row
+     — so "Nak Muay Newb" wrapped onto three lines while the buttons took more
+     width than the thing they act on. */
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 0.65rem;
   border: none;
   background-color: transparent;
   color: #f9a8d4;
@@ -270,6 +279,7 @@
   opacity: 0.8;
 }
 .tech-editor-btn--copy:hover,
+.tech-editor-btn--share:hover,
 .tech-editor-btn--expand:hover,
 .tech-editor-btn--action:hover {
   opacity: 1;
@@ -360,13 +370,14 @@
 }
 
 .tech-editor-thumbnail {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border-radius: 9px;
   object-fit: cover;
   box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.18);
   background: #18181b;
-  margin-right: 8px;
+  margin-right: 4px;
+  flex-shrink: 0;
 }
 
 /* Additional classes for remaining styles */
@@ -420,4 +431,113 @@
 .tech-editor-import-btn:hover {
   opacity: 1;
   background-color: rgba(249, 168, 212, 0.1);
+}
+/* --- Style sharing ------------------------------------------------------ */
+
+.tech-editor-hint {
+  margin: 0.25rem 0 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tech-editor-error {
+  margin: 0.35rem 0 0.6rem;
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
+.tech-editor-btn--create:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* --- Style actions -------------------------------------------------------
+   The two ways a style enters the library. Equal weight on purpose: creating
+   one and importing one are the same intent from different sources. */
+
+.tech-editor-actions {
+  margin-bottom: 1rem;
+}
+
+.tech-editor-actions-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* The secondary of the pair: a solid dark surface, not a translucent pink
+   wash. Two low-alpha pink buttons over a purple gradient read as muddy and
+   as equally important, which they are not. */
+.tech-editor-action {
+  flex: 1 1 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #e9e2ee;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tech-editor-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* The page's one confident action. Equal width to its neighbour — the
+   hierarchy is carried by the fill alone, which is enough, and an uneven pair
+   of buttons reads as a mistake rather than as emphasis. */
+.tech-editor-action--primary {
+  background: #ec4899;
+  border-color: #ec4899;
+  color: #fff;
+}
+
+.tech-editor-action--primary:hover {
+  background: #f0579f;
+  border-color: #f0579f;
+}
+
+.tech-editor-action:active {
+  transform: translateY(1px);
+}
+
+/* --- Manage data ---------------------------------------------------------
+   Whole-library operations, collapsed by default. Two of the three cannot be
+   undone, and none of them are why anyone opened this page. */
+
+.tech-editor-manage-data {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tech-editor-disclosure {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+.tech-editor-disclosure:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tech-editor-manage-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.tech-editor-manage-body .tech-editor-hint {
+  margin: 0 0 0.5rem;
 }

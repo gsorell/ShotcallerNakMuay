@@ -219,7 +219,7 @@ export function usePWA(): PWAHook {
           setState((prev) => ({ ...prev, showInstallPrompt: false }));
           return false;
         }
-      } catch (error) {
+      } catch {
         return false;
       }
     }

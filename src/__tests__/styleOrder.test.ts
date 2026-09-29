@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import { CORE_ORDER } from "@/features/technique-editor/constants";
 import { getSortedGroups } from "@/features/technique-editor/utils/groupSorting";
-import type { TechniqueShape } from "@/utils/techniqueUtils";
+import { prependGroup, type TechniqueShape } from "@/utils/techniqueUtils";
 
 // Modes rather than fighting styles: they carry no technique data of their own.
 const MODES = new Set(["timer_only", "freestyle"]);
@@ -50,7 +50,10 @@ describe("canonical style order", () => {
   });
 });
 
-describe("Manage Techniques matches the home screen", () => {
+describe("Manage Techniques ordering", () => {
+  const custom = (label: string) =>
+    ({ label, singles: ["Jab"], combos: [] }) as TechniqueShape;
+
   it("orders shipped groups exactly as CORE_ORDER does", () => {
     const sorted = getSortedGroups(shippedGroups()).map(([key]) => key);
     const expected = CORE_ORDER.filter(
@@ -61,22 +64,55 @@ describe("Manage Techniques matches the home screen", () => {
     expect(sorted.filter((k) => expected.includes(k))).toEqual(expected);
   });
 
-  it("leads with Nak Muay Newb, like the home screen does", () => {
+  it("leads with Nak Muay Newb when the user has no styles of their own", () => {
     const sorted = getSortedGroups(shippedGroups()).map(([key]) => key);
     expect(sorted[0]).toBe("newb");
   });
 
-  it("keeps user-created groups after the shipped ones", () => {
-    const withCustom = {
+  it("puts the user's own styles ahead of the shipped ones", () => {
+    // Deliberately unlike the home grid, which still leads with Nak Muay Newb:
+    // this page is for editing your own styles, so burying a style you just
+    // made under eighteen shipped ones is the wrong default here.
+    const sorted = getSortedGroups({
       ...shippedGroups(),
-      my_own_style: { label: "My Own", singles: ["Jab"], combos: [] },
-    } as Record<string, TechniqueShape>;
-    const sorted = getSortedGroups(withCustom).map(([key]) => key);
-    expect(sorted[sorted.length - 1]).toBe("my_own_style");
+      my_own_style: custom("My Own"),
+    }).map(([key]) => key);
+
+    expect(sorted[0]).toBe("my_own_style");
+  });
+
+  it("shows the user's own styles newest first", () => {
+    // Carried by insertion order, which is why every path that adds a style
+    // goes through prependGroup rather than spreading.
+    let groups = shippedGroups();
+    groups = prependGroup(groups, "older", custom("Older"));
+    groups = prependGroup(groups, "newer", custom("Newer"));
+
+    const sorted = getSortedGroups(groups).map(([key]) => key);
+    expect(sorted.slice(0, 2)).toEqual(["newer", "older"]);
   });
 
   it("never lists the timer as an editable group", () => {
     const sorted = getSortedGroups(shippedGroups()).map(([key]) => key);
     expect(sorted).not.toContain("timer_only");
+  });
+});
+
+describe("prependGroup", () => {
+  it("puts the new key first and keeps the rest in order", () => {
+    const next = prependGroup({ a: 1, b: 2 }, "c", 3);
+    expect(Object.keys(next)).toEqual(["c", "a", "b"]);
+  });
+
+  it("moves an existing key to the front rather than duplicating it", () => {
+    const next = prependGroup({ a: 1, b: 2, c: 3 }, "c", 9);
+    expect(Object.keys(next)).toEqual(["c", "a", "b"]);
+    expect(next["c"]).toBe(9);
+  });
+
+  it("does not mutate the original", () => {
+    const original = { a: 1 };
+    prependGroup(original, "b", 2);
+    expect(Object.keys(original)).toEqual(["a"]);
   });
 });

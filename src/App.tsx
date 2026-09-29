@@ -20,11 +20,18 @@ import {
   useUserEngagement,
 } from "@/features/shared";
 
+import { useEntitlement } from "@/features/entitlement";
 import { LearnSection } from "@/features/learn";
 import { hasOnboarded, useOnboardingState } from "@/features/onboarding";
 import { usePaywall } from "@/features/paywall";
 import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
 import { roundDescription, roundTitle } from "@/features/roadmap/session";
+import {
+  ImportStyleModal,
+  ShareStyleFlow,
+  recordImport,
+  useIncomingShare,
+} from "@/features/style-share";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -35,13 +42,19 @@ import {
 } from "@/features/workout";
 
 // Utilities
-import { initializeGA4 } from "@/utils/analytics";
+import { initializeGA4, trackEvent } from "@/utils/analytics";
 import { displayInAppBrowserWarning } from "@/utils/inAppBrowserDetector";
 import {
   pageScrollKey,
   restoreOnNextPage,
   scrollContentToTop,
 } from "@/utils/scroll";
+import {
+  importKeyFor,
+  toTechniqueGroup,
+  type SharedStyle,
+} from "@/utils/styleShare";
+import { prependGroup } from "@/utils/techniqueUtils";
 import { fmtTime } from "@/utils/timeUtils";
 
 // CSS
@@ -123,7 +136,56 @@ export default function App() {
     setShowGlossary,
     showPWAPrompt,
     setShowPWAPrompt,
+    setEditorFocusKey,
   } = useUIContext();
+
+  // --- 3b. Shared styles arriving from outside the app ---
+  //
+  // A link tapped in a text message lands here: on native the app opens
+  // straight to the confirmation below, and nothing is written until the
+  // recipient says yes.
+  const { incoming: incomingShare, dismiss: dismissIncomingShare } =
+    useIncomingShare();
+  const { isPro } = useEntitlement();
+
+  const handleImportSharedStyle = useCallback(
+    (style: SharedStyle) => {
+      // `importKeyFor` guarantees this cannot land on a core style, which the
+      // editor refuses to delete — an overwrite there would be unrecoverable.
+      const key = importKeyFor(style.title, techniques);
+      // Prepended so an imported style lands at the top of the editor next to
+      // anything else the user made, rather than below every shipped style.
+      persistTechniques(
+        prependGroup(
+          techniques as Record<string, unknown>,
+          key,
+          toTechniqueGroup(style)
+        ) as typeof techniques
+      );
+
+      if (!isPro) recordImport();
+      trackEvent("style_import_confirmed", {
+        platform: Capacitor.getPlatform(),
+        singles: style.singles.length,
+        combos: style.combos.length,
+        is_pro: isPro,
+      });
+
+      dismissIncomingShare();
+      // Drop them on the new style rather than leaving them to hunt for it.
+      setEditorFocusKey(key);
+      setPage("editor");
+      scrollContentToTop();
+    },
+    [
+      techniques,
+      persistTechniques,
+      isPro,
+      dismissIncomingShare,
+      setEditorFocusKey,
+      setPage,
+    ]
+  );
 
   // --- 3a. PWA / App Install Prompt ---
   const { shouldShowPrompt, dismissPrompt } = usePWA();
@@ -142,7 +204,9 @@ export default function App() {
   // A session that has already been asked to buy has had its one interruption.
   // On web the post-workout paywall carries the store buttons itself, so
   // following it with an install modal is the same ask twice in a row.
-  const { isOpen: paywallIsOpen } = usePaywall();
+  // `openPaywall` is also what the shared-style sheet falls back to once a free
+  // user has spent their imports.
+  const { isOpen: paywallIsOpen, openPaywall } = usePaywall();
   const paywallShownThisSession = useRef(false);
   useEffect(() => {
     if (paywallIsOpen) paywallShownThisSession.current = true;
@@ -357,6 +421,21 @@ export default function App() {
         isVisible={showPWAPrompt}
         onDismiss={handleDismissPWAPrompt}
         onDismissPermanently={handleDismissPWAPromptPermanently}
+      />
+
+      {/* Outgoing shares: one Pro gate and one name prompt for every button
+          that can share, wherever it lives. */}
+      <ShareStyleFlow />
+
+      <ImportStyleModal
+        incoming={incomingShare}
+        isPro={isPro}
+        onImport={handleImportSharedStyle}
+        onUnlockPro={() => {
+          dismissIncomingShare();
+          openPaywall("shared_style_import");
+        }}
+        onDismiss={dismissIncomingShare}
       />
 
       <GlossaryModal

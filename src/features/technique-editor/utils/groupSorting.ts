@@ -27,9 +27,20 @@ export function getSortedGroups(
       k !== "timer_only"
   );
 
-  // Same order as the home-screen grid: shipped styles in CORE_ORDER, then the
-  // user's own groups. This page used to lead with the user's groups, which
-  // meant hunting for Muay Mat in a different place depending on which screen
-  // you were on.
-  return [...coreGroups, ...otherCoreGroups, ...userGroups];
+  // The user's own styles lead, newest first; shipped styles follow in
+  // CORE_ORDER.
+  //
+  // This page did briefly match the home grid's order instead (shipped first),
+  // so that a given style sat in the same place on both screens. That is the
+  // wrong trade here, because the two screens are for different jobs: the home
+  // grid is for picking a workout, where Nak Muay Newb should lead for a
+  // beginner, while this page is for editing your own styles — and burying a
+  // style you just created under eighteen shipped ones means scrolling to find
+  // the thing you are already looking at. `handleAddGroup` scrolling to the top
+  // after a create only makes sense under this order, too.
+  //
+  // "Newest first" within the user's own styles is carried by insertion order,
+  // which `Object.entries` preserves — see `prependGroup`, which every path
+  // that adds a style (create, duplicate, import) goes through.
+  return [...userGroups, ...coreGroups, ...otherCoreGroups];
 }

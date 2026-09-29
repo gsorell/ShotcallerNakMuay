@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["5Z2HT9TQNK.com.shotcallernakmuay.app"],
+        "components": [
+          {
+            "/": "/s/*",
+            "comment": "A shared custom style. The payload rides in the URL fragment, which iOS hands to the app but never sends to the server."
+          },
+          {
+            "/": "/s/",
+            "comment": "Same path with no trailing segment, which is the shape the share sheet actually produces."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -7,6 +7,7 @@ interface TechniqueGroupHeaderProps {
   isCoreStyle: boolean;
   thumbnail?: string;
   onDuplicate?: () => void;
+  onShare?: () => void;
   expanded: boolean;
   toggleGroupExpanded: (key: string) => void;
   updateGroupLabel: (label: string) => void;
@@ -18,6 +19,7 @@ export default function TechniqueGroupHeader({
   isCoreStyle,
   thumbnail,
   onDuplicate,
+  onShare,
   expanded,
   toggleGroupExpanded,
   updateGroupLabel,
@@ -89,6 +91,16 @@ export default function TechniqueGroupHeader({
         </div>
         {/* Buttons row - inline with icon/title */}
         <div className="tech-editor-buttons-row-inline">
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="tech-editor-btn tech-editor-btn--share"
+              title="Share this style"
+              aria-label={`Share ${currentTitle}`}
+            >
+              ↗
+            </button>
+          )}
           {onDuplicate && (
             <button
               onClick={onDuplicate}

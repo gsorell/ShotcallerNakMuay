@@ -30,7 +30,7 @@ export function loadUserSettings(): UserSettings {
         Math.max(1, parsed.roundsCount || DEFAULT_USER_SETTINGS.roundsCount)
       ),
     };
-  } catch (error) {
+  } catch {
     return DEFAULT_USER_SETTINGS;
   }
 }
@@ -40,7 +40,7 @@ export function saveUserSettings(settings: Partial<UserSettings>): void {
     const current = loadUserSettings();
     const updated = { ...current, ...settings };
     localStorage.setItem(USER_SETTINGS_STORAGE_KEY, JSON.stringify(updated));
-  } catch (error) {
+  } catch {
     // Failed to save user settings to localStorage
   }
 }

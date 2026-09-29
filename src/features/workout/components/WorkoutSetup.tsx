@@ -108,7 +108,7 @@ export default function WorkoutSetup() {
               trackEvent("technique_editor_open", {
                 source: groupKey ? "tile_inline" : "manage_button",
               });
-            } catch {}
+            } catch { /* analytics must never break the navigation it measures */ }
             setEditorFocusKey(groupKey ?? null);
             setPage("editor");
           }}
@@ -156,7 +156,7 @@ export default function WorkoutSetup() {
                 trackEvent("technique_editor_open", {
                   source: "manage_button",
                 });
-              } catch {}
+              } catch { /* analytics must never break the navigation it measures */ }
               setEditorFocusKey(null);
               setPage("editor");
             }}

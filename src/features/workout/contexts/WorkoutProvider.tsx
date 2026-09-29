@@ -567,7 +567,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.resume();
-        } catch {}
+        } catch { /* a throwing speechSynthesis must not kill the round */ }
       }
     } else {
       // Currently running, so pause
@@ -575,7 +575,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.pause();
-        } catch {}
+        } catch { /* a throwing speechSynthesis must not kill the round */ }
       }
     }
   }, [timer]);

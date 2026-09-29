@@ -7,6 +7,11 @@ import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 // LearnSection, which reaches back into half the app.
 import { TECHNIQUE_LIBRARY } from "@/features/learn/data/techniqueLibrary";
 import { FOUNDATIONS, coreLevels } from "@/features/roadmap/data/paths";
+import {
+  markSenderNameConfirmed,
+  setSenderName,
+} from "@/features/style-share";
+import { SHARE_LIMITS } from "@/utils/styleShare";
 import { isDevNativeBranchForced } from "./devPreview";
 
 // Derived from the path itself so the pitch can't drift as levels are added.
@@ -125,7 +130,9 @@ const HOWTO_STEPS = [
   },
 ];
 
-const TOTAL_STEPS = 5;
+// 0-3 explain the app, 4 collects a sharing name, 5 is the Pro/store step —
+// which stays last so the ask is the final thing, not a mid-flow interruption.
+const TOTAL_STEPS = 6;
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onSkip,
@@ -133,7 +140,23 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onOpenLearn,
 }) => {
   const [step, setStep] = useState(0);
+  const [name, setName] = useState("");
   const isLast = step === TOTAL_STEPS - 1;
+
+  /**
+   * Save the sharing name, if they typed one.
+   *
+   * A name they actually chose is marked confirmed, so the first share goes
+   * out in a single tap. Leaving it blank deliberately saves nothing: one gets
+   * assigned lazily at first share instead, and stays unconfirmed so they get
+   * a chance to correct it at the moment it matters.
+   */
+  const commitName = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSenderName(trimmed);
+    markSenderNameConfirmed();
+  };
 
   // `?native=1` in dev renders the native branch in a browser so it can be
   // reviewed without a device build — see devPreview.ts. Dead code in a
@@ -252,6 +275,37 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
         {step === 4 && (
           <>
+            <h2 style={styles.title}>What should we call you?</h2>
+            <p style={{ ...styles.note, marginBottom: "0.9rem" }}>
+              Only used when you share one of your styles with a training
+              partner — they&rsquo;ll see it was from you. Stored on this phone,
+              never sent anywhere else.
+            </p>
+            <input
+              type="text"
+              value={name}
+              maxLength={SHARE_LIMITS.senderName}
+              placeholder="e.g. Jake"
+              aria-label="Your name"
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitName();
+                  setStep((s) => s + 1);
+                }
+              }}
+              style={styles.nameInput}
+            />
+            <p style={{ ...styles.note, fontSize: "0.78rem" }}>
+              Leave it blank and we&rsquo;ll pick one for you. You can change it
+              any time from Manage Techniques.
+            </p>
+          </>
+        )}
+
+        {step === 5 && (
+          <>
             <h2 style={styles.title}>
               {isWeb ? "Everything is in the app" : "Start free — or go Pro"}
             </h2>
@@ -330,7 +384,12 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
           <div style={styles.actions}>
             <button
               type="button"
-              onClick={() => setStep((s) => s + 1)}
+              onClick={() => {
+                // Harmless on every other step; the name step is the only one
+                // with anything to save.
+                commitName();
+                setStep((s) => s + 1);
+              }}
               style={styles.primary}
             >
               Next
@@ -433,6 +492,18 @@ const styles = {
     lineHeight: 1.5,
     color: "#9ca3af",
     margin: 0,
+  },
+  nameInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(0, 0, 0, 0.35)",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    borderRadius: "0.5rem",
+    padding: "0.7rem 0.8rem",
+    color: "#fff",
+    fontSize: "1rem",
+    fontFamily: "inherit",
+    marginBottom: "0.6rem",
   },
   link: {
     background: "transparent",

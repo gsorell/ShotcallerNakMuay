@@ -46,14 +46,14 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
         try {
           await KeepAwake.allowSleep();
           debug("Native keep-awake released");
-        } catch {}
+        } catch { /* best-effort release; the OS may have revoked it already */ }
       }
 
       if (sentinelRef.current) {
         try {
           await sentinelRef.current.release();
           debug("Wake Lock released");
-        } catch {}
+        } catch { /* best-effort release; the OS may have revoked it already */ }
         sentinelRef.current = null;
       }
 
@@ -64,7 +64,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
           noSleepRef.current.disable();
           debug("NoSleep disabled (keeping instance for reuse)");
           // Don't set noSleepRef.current = null here - keep the instance for reuse
-        } catch {}
+        } catch { /* best-effort release; the OS may have revoked it already */ }
       }
     } finally {
       setActive(false);
@@ -108,7 +108,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
           if (sentinelRef.current) {
             try {
               await sentinelRef.current.release();
-            } catch {}
+            } catch { /* best-effort release; the OS may have revoked it already */ }
             sentinelRef.current = null;
           }
 
@@ -205,7 +205,7 @@ export function useWakeLock(opts: { enabled: boolean; log?: boolean }) {
           if (Capacitor.isNativePlatform()) {
             try {
               await KeepAwake.allowSleep();
-            } catch {}
+            } catch { /* best-effort release; the OS may have revoked it already */ }
           }
           if (sentinelRef.current) {
             await sentinelRef.current.release();

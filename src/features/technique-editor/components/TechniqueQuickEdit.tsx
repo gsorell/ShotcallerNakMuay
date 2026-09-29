@@ -1,5 +1,6 @@
 import React from "react";
 import { normalizeArray, type TechniqueShape } from "@/utils/techniqueUtils";
+import { requestShareStyle } from "@/features/style-share";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
 
 interface TechniqueQuickEditProps {
@@ -32,6 +33,8 @@ export const TechniqueQuickEdit: React.FC<TechniqueQuickEditProps> = ({
 
   const singles = normalizeArray(group.singles);
   const combos = normalizeArray(group.combos);
+  // The two modes carry no techniques, so there is nothing to send.
+  const canShare = groupKey !== "timer_only" && groupKey !== "freestyle";
 
   const stop = (e: React.SyntheticEvent) => e.stopPropagation();
 
@@ -66,6 +69,21 @@ export const TechniqueQuickEdit: React.FC<TechniqueQuickEditProps> = ({
         onRemove={(idx) => removeCombo(groupKey, idx)}
         onAdd={() => addCombo(groupKey)}
       />
+
+      {canShare && (
+        <button
+          type="button"
+          onClick={(e) => {
+            stop(e);
+            // Pro gating and the first-share name prompt are handled centrally
+            // by ShareStyleFlow, the same as the editor's ↗ button.
+            requestShareStyle(group);
+          }}
+          style={shareBtnStyle}
+        >
+          ↗ Share this style
+        </button>
+      )}
 
       {onOpenFullEditor && (
         <button
@@ -223,4 +241,13 @@ const openEditorBtnStyle: React.CSSProperties = {
   fontSize: "0.8rem",
   fontWeight: 500,
   textAlign: "center",
+};
+
+// The app's pink accent rather than the blue of "Open in full editor", so the
+// two stacked buttons do not read as the same action twice.
+const shareBtnStyle: React.CSSProperties = {
+  ...openEditorBtnStyle,
+  border: "1px solid rgba(236,72,153,0.4)",
+  background: "rgba(236,72,153,0.1)",
+  color: "#f9a8d4",
 };

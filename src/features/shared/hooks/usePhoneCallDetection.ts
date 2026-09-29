@@ -300,7 +300,7 @@ export const usePhoneCallDetection = (
       );
       try {
         audioContextRef.current.close();
-      } catch (error) {
+      } catch {
         // Audio context cleanup failed
       }
       audioContextRef.current = null;
