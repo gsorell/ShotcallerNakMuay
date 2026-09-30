@@ -33,6 +33,8 @@ dist-ssr
 *-base64.txt
 *api-key*.txt
 *certificate*.txt
+.env
+.env.*
 
 # Sprite retouching. Plates are regenerated from the footage by
 # `technique-sprites.mjs --export-masks`, so they are never worth committing.

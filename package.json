@@ -14,6 +14,8 @@
     "postinstall": "patch-package",
     "social:cards": "node scripts/social-cards.mjs",
     "verify:deeplinks": "node scripts/verify-deeplinks.mjs",
+    "revenuecat:report": "node scripts/revenuecat-report.mjs",
+    "revenuecat:snapshot": "node scripts/revenuecat-snapshot.mjs",
     "assets:optimize": "python scripts/optimize_assets.py",
     "assets:favicons": "python scripts/build_favicons.py"
   },
