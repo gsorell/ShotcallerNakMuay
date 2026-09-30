@@ -1141,6 +1141,87 @@ const renderRelated = (related) => related.length === 0 ? '' : `
 
 const posts = [
     {
+        filename: 'share-custom-styles-with-training-partners.html',
+        title: 'Send Your Training Partner Your Rounds: Style Sharing Is Here',
+        desc: 'Shot Caller can now send any style to a friend as a single link. They tap it, the app opens, and your exact combos are ready to drill. No accounts, no uploads.',
+        date: 'Sep 30, 2026',
+        tag: 'App Guides',
+        image: '/assets/blog/style-share-og.png',
+        content: `
+            <h1>Send Your Training Partner Your Rounds: Style Sharing Is Here</h1>
+            ${renderMeta('Shotcaller Sam', 'September 30, 2026')}
+            <p>You spent an evening building the perfect style. Every kick gets answered, every combo finishes on the low kick your coach keeps nagging you about. Then your training partner asks what you were drilling, and the only way to tell them used to be reading out twenty combos over text while they typed them back in by hand.</p>
+            <p>Not anymore. As of <strong>Shot Caller 1.21</strong>, any style can be sent to a friend as <strong>one link</strong>. They tap it, the app opens, and your exact rounds are sitting in their library ready to drill.</p>
+
+            <h2>Sending One: One Tap, Then Pick A Name</h2>
+            <p>Open <strong>Manage Techniques</strong>. Every style now has a <strong>&nearr;</strong> button next to it. That covers the built-in ones too, but it&rsquo;s your own creations that are worth sending. Tap it and your phone&rsquo;s normal share sheet opens, so you can send it wherever you already talk to your gym: Messages, WhatsApp, Signal, Discord.</p>
+            <p>The first time, the app asks what name to send it under. That&rsquo;s the name your friend sees at the top of the style, so &ldquo;Jake&rdquo; beats the placeholder it gives you. It&rsquo;s stored on your phone and nowhere else, and you can change it any time from the <strong>Sharing as</strong> line under the buttons. After that first time, sharing is a single tap.</p>
+
+            <figure class="shot">
+                <div class="shot-pair">
+                    <img src="/assets/blog/style-share-manage.webp" alt="The Technique Manager screen. A custom style called Friday Bag Finisher sits at the top of the list, above the built-in styles, each with a share button, a duplicate button and an expand button. Under the New Style and Import buttons a line reads Sharing as Jake, Change." loading="lazy" width="840" height="1800">
+                    <img src="/assets/blog/style-share-name.webp" alt="A dialog titled Share as, reading: This is the name your friend sees on the style you send them. The name field contains Jake, with the note Stored on this phone only, and buttons for Cancel and Save and Share." loading="lazy" width="840" height="1800">
+                </div>
+                <figcaption>Tap &nearr; on any style. The first share asks for your name, and never again.</figcaption>
+            </figure>
+
+            <h2>What Your Friend Actually Gets</h2>
+            <p>A bare link would be a wall of random characters, and nobody taps a wall of random characters from a friend without a second thought. So every share comes with a card: who sent it, what it&rsquo;s called, your description, and how big it is.</p>
+
+            <figure class="photo" style="max-width: 560px; margin-left: auto; margin-right: auto;">
+                <img src="/assets/blog/style-share-card.webp" alt="The share card. Small caps reading Jake Shares, above the title Friday Bag Finisher and the description Everything ends on a low kick. Answer every kick with one back. Below it, 6 techniques, 8 combos, a gradient band reading Train it with me, and the Shot Caller web address." loading="lazy" width="1000" height="670">
+                <figcaption>The card that rides along with the link</figcaption>
+            </figure>
+
+            <p>Under the card comes a line of text (&ldquo;Jake shared a Muay Thai style with you&rdquo;) and then the link itself. The card is deliberately a summary, not a listing. It tells your friend what they&rsquo;re being handed; the link is what hands it over.</p>
+
+            <h2>Receiving One: Tap, Check, Add</h2>
+            <p>When your friend taps the link, <strong>Shot Caller opens straight to the style</strong>. No browser detour, no hunting for an import button. The first thing they see is who sent it, what&rsquo;s in it, and a preview of the actual techniques and combos.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/style-share-receive.webp" alt="A confirmation sheet reading Jake shared a style with you, Friday Bag Finisher, with its description, 6 singles and 8 combos, and a preview of chips such as Left Check, Right Low Kick, Check the Low Kick 2 3 Right Low Kick, and plus 4 more. Buttons read Not now and Add to my styles." loading="lazy" width="840" height="1800">
+                <figcaption>Nothing is saved until they say yes</figcaption>
+            </figure>
+
+            <p><strong>Nothing gets saved until they tap &ldquo;Add to my styles.&rdquo;</strong> A link from someone else shouldn&rsquo;t quietly change your app, so the preview is there to make &ldquo;yes&rdquo; an informed answer. Once added, the style lands at the top of their list and the editor opens on it. From there it&rsquo;s theirs: trim a combo, star the ones they want called more often, or just pick it and hit go.</p>
+            <p>An imported style always arrives as a <em>new</em> style. It can never overwrite one of the built-in styles, so accepting a link can&rsquo;t cost anyone the styles they already have.</p>
+
+            <h2>If The Link Doesn&rsquo;t Open The App</h2>
+            <p>If your friend doesn&rsquo;t have Shot Caller yet, the link opens the web version of the app instead, with the same confirmation. And if they go and install it from the App Store or Google Play, that&rsquo;s where the link loses the thread: neither store passes it through the install. The fix takes ten seconds. Go back to the message and tap the link again, or copy it and paste it in:</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/style-share-paste.webp" alt="A dialog titled Import a style, reading Paste a link someone shared with you, with a field for the link and buttons for Cancel and Import." loading="lazy" width="840" height="1800">
+                <figcaption>Manage Techniques &rarr; Import &rarr; paste</figcaption>
+            </figure>
+
+            <p>It&rsquo;s the <strong>Import</strong> button next to New Style in Manage Techniques. A pasted link goes through exactly the same confirmation as a tapped one.</p>
+
+            <h2>The Style Lives Inside The Link</h2>
+            <p>This part is a little unusual, and it&rsquo;s on purpose. There&rsquo;s no account and no upload, and there&rsquo;s no server holding your style somewhere. <strong>The link <em>is</em> the style</strong>, packed down small enough to text. The one in these screenshots, fourteen entries with a description, is 339 characters long.</p>
+            <p>That buys you a few things:</p>
+            <ul>
+                <li><strong>It never expires.</strong> There&rsquo;s nothing on our end to go down or get deleted. The link works for as long as the message exists.</li>
+                <li><strong>It&rsquo;s private.</strong> The style is in the part of the web address that browsers never send to a server, so it doesn&rsquo;t even land in our logs. Only the person you send it to sees it.</li>
+                <li><strong>You only ever get what someone chose to send you.</strong> There&rsquo;s no public gallery of strangers&rsquo; styles, and that&rsquo;s deliberate. Everything in a style gets read aloud by the app&rsquo;s voice mid-round, so sharing works like a text message and not like a public feed.</li>
+            </ul>
+            <p>The trade-off is that there&rsquo;s no browsable library of community styles. If that&rsquo;s something you&rsquo;d use, tell us. It&rsquo;s a different project, but not an unthinkable one.</p>
+
+            <h2>Where To Send It (And Where Not To)</h2>
+            <p>Send it in a message: Messages, WhatsApp, Signal, Discord, your gym&rsquo;s group chat. Those carry the card <em>and</em> the link together in one message.</p>
+            <p>Don&rsquo;t post it to Instagram or Facebook and expect it to work. Both drop the text that comes with a shared image, and the text is where the link lives. The card still says where to find the app, but the style itself only travels with the link.</p>
+
+            <h2>What&rsquo;s Free And What&rsquo;s Pro</h2>
+            <p><strong>Sending a style is part of Pro</strong>, along with building your own styles in the first place. <strong>Receiving one isn&rsquo;t</strong>: anyone on the free version can add <strong>two</strong> shared styles before they hit the upgrade screen. If you&rsquo;re the one in your gym who builds the rounds, everyone you train with can use them without paying a thing.</p>
+
+            <div class="verdict">
+                <h3>Build It Once, Train It Together</h3>
+                <p>The best use of this is the obvious one. Whoever builds the good rounds in your gym builds them once, and everyone else taps a link. If you haven&rsquo;t built a style of your own yet, <a href="/blog/building-custom-combinations.html">start with our guide to building custom combinations</a>, then send it to the person who holds your pads.</p>
+            </div>
+
+            <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
+        `
+    },
+    {
         filename: 'muay-thai-techniques-animated-reference.html',
         title: 'Muay Thai Techniques, Animated: A Free Visual Reference',
         desc: 'A visual reference of Muay Thai techniques as looping silhouettes - punches, kicks, knees, elbows and defense, each with the Thai name, the number it is called by, and the one cue that makes it work. Free, no signup, and it flips to southpaw.',
