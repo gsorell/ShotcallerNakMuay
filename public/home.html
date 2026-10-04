@@ -525,6 +525,70 @@
         }
         .claim p { font-size: 1.2rem; margin: 0; color: var(--muted); }
 
+        /* ------------------------------------------------------------ voices */
+        /* Sits directly under the claim on purpose: the claim says the round
+           makes you react instead of plan, and these are three people saying
+           the same thing without having read it. The first card is the widest
+           because it is the strongest - a title-winning camp, not a first
+           impression. */
+        .voices {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1fr;
+            gap: 20px;
+            align-items: stretch;
+            margin-top: 64px;
+        }
+        .voice {
+            margin: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 30px 28px 26px;
+            display: flex;
+            flex-direction: column;
+        }
+        .voice.is-lead { border-color: var(--edge-2); }
+        .voice blockquote {
+            margin: 0 0 24px;
+            flex: 1;
+            color: var(--heading);
+            font-size: 1.08rem;
+            line-height: 1.6;
+        }
+        .voice.is-lead blockquote { font-size: 1.2rem; line-height: 1.55; }
+        .voice blockquote::before {
+            content: '\201C';
+            display: block;
+            font-family: var(--display);
+            font-size: 3rem;
+            line-height: 0.7;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .voice figcaption {
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            letter-spacing: 0.06em;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+        .voice figcaption .who { display: block; color: var(--heading); }
+        .voice .stars { color: var(--accent); letter-spacing: 0.12em; }
+        .voices-foot {
+            margin: 26px 0 0;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.79rem;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+        }
+        .voices-foot a { color: var(--cold); text-decoration: none; border-bottom: 1px solid rgba(124, 199, 242, 0.32); }
+        .voices-foot a:hover { color: #a6dcf7; border-bottom-color: var(--cold); }
+        @media (max-width: 900px) {
+            .voices { grid-template-columns: 1fr; margin-top: 44px; }
+            .voice.is-lead blockquote { font-size: 1.12rem; }
+        }
+
         /* --------------------------------------------------------- the card */
         .card-band { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 60px; align-items: center; }
         .card-band h2 { font-size: clamp(1.9rem, 4.4vw, 2.75rem); line-height: 1.04; margin: 0 0 16px; }
@@ -812,6 +876,49 @@
                 know is coming.
             </p>
         </div>
+
+        <!-- Real messages, quoted as sent - trimmed, never reworded. The two
+             Instagram ones arrived as DMs, so they carry no name or handle.
+             The App Store one is a public review under the reviewer's own
+             store nickname. -->
+        <div class="voices" aria-label="What people who train with it say">
+            <figure class="voice is-lead">
+                <blockquote>
+                    I've actually used Shot Caller in my training camp for that title. It was so
+                    good for drilling responses I could use subconsciously rather than consciously
+                    thinking about everything I was doing. Helped my flow dramatically.
+                </blockquote>
+                <figcaption>
+                    <span class="who">Fighter, after a title-winning camp</span>
+                    Instagram message
+                </figcaption>
+            </figure>
+            <figure class="voice">
+                <blockquote>
+                    I was on Amateur and it kicked my ass. I love that I don't have to think, I can
+                    work on reaction with what it calls out.
+                </blockquote>
+                <figcaption>
+                    <span class="who">After a first Dutch Kickboxing session</span>
+                    Instagram message
+                </figcaption>
+            </figure>
+            <figure class="voice">
+                <blockquote>
+                    This app is perfect for bagwork or shadowboxing.
+                </blockquote>
+                <figcaption>
+                    <span class="who">BigDaddyDZL</span>
+                    App Store review · <span class="stars" role="img" aria-label="5 out of 5 stars">★★★★★</span>
+                </figcaption>
+            </figure>
+        </div>
+        <!-- Typed in by hand from the App Store page on 2026-10-04. Nothing
+             updates it - recheck it whenever this section is touched. -->
+        <p class="voices-foot">
+            Rated 4.6 out of 5 on the
+            <a href="https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630" data-cta="voices_ios">App Store</a>.
+        </p>
     </section>
 
     <hr class="rule">
