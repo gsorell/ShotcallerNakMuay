@@ -1,7 +1,7 @@
 # Release Notes — v1.22.0
 
 **Date:** 2026-10-06
-**versionCode:** 108
+**versionCode:** 109 (108 was refused by Play: automatic protection needs minSdk 24, so minSdk went 23 → 24)
 **Type:** Feature. Round structure and Session Settings, a jab or check between
 callouts, a new app menu, a decluttered home screen, and rebuilt Workout Logs.
 This release **does** change the callout engine and how a session's pool is
