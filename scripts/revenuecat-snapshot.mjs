@@ -90,6 +90,11 @@ const OVERVIEW_KEY_MAP = {
   'Active Users': 'activeUsers',
 };
 
+// RevenueCat sends timestamps as epoch milliseconds.
+function toIso(ms) {
+  return typeof ms === 'number' ? new Date(ms).toISOString() : null;
+}
+
 async function main() {
   const overviewRaw = await fetchOverview();
   const overview = {};
@@ -118,6 +123,9 @@ async function main() {
           status: sub.status,
           product: sub.product_id,
           proceeds: sub.total_revenue_in_usd?.proceeds ?? 0,
+          startedAt: toIso(sub.starts_at),
+          periodEndsAt: toIso(sub.current_period_ends_at),
+          autoRenew: sub.auto_renewal_status ?? null,
         });
       }
     }
