@@ -1141,6 +1141,121 @@ const renderRelated = (related) => related.length === 0 ? '' : `
 
 const posts = [
     {
+        filename: 'plan-your-rounds-session-settings.html',
+        title: 'Give Every Round A Job: Round Structure Is Here',
+        desc: 'Shot Caller 1.22 lets you plan a session round by round: one style per round, a warm-up round, a pace that builds, a calisthenics finisher, and a jab or a check between callouts.',
+        date: 'Oct 6, 2026',
+        tag: 'App Guides',
+        content: `
+            <h1>Give Every Round A Job: Round Structure Is Here</h1>
+            ${renderMeta('Shotcaller Sam', 'October 6, 2026')}
+            <p>Until now, a Shot Caller session was one big pool. Pick three styles, hit go, and all five rounds drew from the same mix. Round one sounded like round five. That&rsquo;s fine for a quick bag session, but it isn&rsquo;t how anyone actually trains. A real session has a shape: you warm up, you work on one thing at a time, the pace climbs, and somewhere near the end somebody makes you do burpees.</p>
+            <p><strong>Shot Caller 1.22</strong> lets you build that shape. A session now runs off a plan with one entry per round, and you set the plan in a single new sheet called <strong>Session Settings</strong>. This release also tidies up how you get around the app and rebuilds Workout Logs, which we&rsquo;ll get to further down.</p>
+
+            <h2>One Line Under The Difficulty Buttons</h2>
+            <p>Pick your styles the way you always have. Under the Novice / Amateur / Pro buttons there&rsquo;s a new line that starts <strong>Session settings</strong>. It sums up whatever is set behind it, and tapping it opens the sheet.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/session-settings-start-bar.webp" alt="The home screen with Muay Mat, Muay Khao and Muay Sok selected. The start bar shows 5 rounds, 3 minute length, 1 minute rest, the Amateur difficulty selected, and a line reading Session settings: One style per round, Warm-up round, Buil, cut off with an ellipsis, above the Let's Go button." loading="lazy" width="840" height="1800">
+                <figcaption>One line, however much is set behind it</figcaption>
+            </figure>
+
+            <p>If you never tap it, nothing changes. Every round runs the way it always has. The old Advanced Settings panel at the bottom of the home screen is gone, and everything that lived in it (reading techniques in order, southpaw mode, the voice) now lives in this sheet too.</p>
+
+            <h2>One Style Per Round</h2>
+            <p>With two or more styles selected, the first choice in the sheet is how they share the session: <strong>Blended</strong> or <strong>By round</strong>.</p>
+            <p><strong>By round</strong> gives each round to one style, in the order you picked them. Pick Muay Mat, Muay Khao and Muay Sok for five rounds and you get hands, then knees, then elbows, then back around to hands and knees. Any round can be changed by hand, including to &ldquo;Blend all&rdquo; if you want the last round to be everything at once.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/session-settings-plan.webp" alt="The Session Settings sheet. Under Styles, By round is selected, with a picker for each of five rounds reading Muay Mat, Muay Khao, Muay Sok, Muay Mat, Muay Khao. Below, a section titled Your session lists the five rounds with notes: round 1 is Single techniques only, Calisthenics finisher, Easier pace; rounds 4 and 5 read Faster pace. Under Pace, Build is selected." loading="lazy" width="840" height="1800">
+                <figcaption>&ldquo;Your session&rdquo; shows the plan as you build it</figcaption>
+            </figure>
+
+            <p>The <strong>Your session</strong> list underneath is the plan itself, updated as you change things, so you can see exactly what round four holds before you start.</p>
+            <p>Two edge cases, since somebody will ask. If you pick more styles than you have rounds, nothing gets dropped: the last round blends whatever hasn&rsquo;t had a round of its own. And if you have rounds to spare, the rotation just starts again from the top.</p>
+
+            <h3>Blended Got Fairer</h3>
+            <p>This one changes even if you never open the sheet. Blending used to pull from one combined list, so a style with sixty entries would drown out one with ten. Now <strong>every selected style gets an equal share of the callouts</strong>, whatever its size. If you&rsquo;ve built a small custom style and wondered why you hardly ever heard it next to Muay Mat, that&rsquo;s why, and it&rsquo;s fixed.</p>
+
+            <h2>A Warm-Up Round, And A Pace That Moves</h2>
+            <p>Tick <strong>Round 1 calls single techniques only</strong> and the first round is singles: a jab, a teep, a knee. Combinations come in from round two. It&rsquo;s the round where you find your range before anyone asks you for a four-piece.</p>
+            <p><strong>Pace</strong> decides how the gap between callouts moves across the session:</p>
+            <ul>
+                <li><strong>Steady.</strong> The same pace in every round. This is how it&rsquo;s always worked.</li>
+                <li><strong>Build.</strong> Starts easier and gets a little faster each round.</li>
+                <li><strong>Pyramid.</strong> Builds to the middle rounds, then eases back off.</li>
+            </ul>
+            <p>Pace sits on top of your difficulty setting; it doesn&rsquo;t replace it. Amateur with Build is still Amateur, with a gentler first round and a busier last one.</p>
+
+            <h2>Three Places To Put The Calisthenics</h2>
+            <p>Calisthenics used to be a single switch that sprinkled push-ups and squats among the techniques. Now you choose where they go:</p>
+            <ul>
+                <li><strong>Mixed in.</strong> The old behaviour. Bodyweight exercises turn up among the techniques.</li>
+                <li><strong>Finisher.</strong> The last 30 seconds of every round are bodyweight exercises, marked by a bell so you know the switch has happened. Shorter rounds get a shorter finisher, and a round too short to split doesn&rsquo;t get one at all.</li>
+                <li><strong>Last round.</strong> Your striking rounds stay clean, and the final round is bodyweight only. It needs at least two rounds, for obvious reasons.</li>
+            </ul>
+            <p>If you&rsquo;ve been following our <a href="/blog/hybrid-muay-thai-calisthenics-workout.html">hybrid Muay Thai and calisthenics plan</a>, Finisher is the setting that matches how a conditioning round feels in a gym.</p>
+
+            <h2>A Jab Or A Check Between Callouts</h2>
+            <p>This is the one we&rsquo;ve been using the most. In a real round you don&rsquo;t throw a combination and then stand there waiting for the next instruction. You stay busy: a jab to keep them honest, a check because the kick is coming back.</p>
+            <p>Under <strong>Between callouts</strong>, choose <strong>Jab</strong>, <strong>Check</strong>, or <strong>Jab/Check</strong> (one or the other at random), and the app calls it in the gap after every callout.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/session-settings-callouts.webp" alt="The lower half of the Session Settings sheet. Calisthenics is set to Finisher, with the note The last 30 seconds of every round are bodyweight exercises. Under Callouts, Round 1 calls single techniques only is ticked. Between callouts is set to Jab, with the note A jab is called after every callout. Below are the voice picker, voice speed, and Reset and Done buttons." loading="lazy" width="840" height="1800">
+                <figcaption>Callouts, calisthenics and the voice, all in one sheet</figcaption>
+            </figure>
+
+            <p>The important detail is that <strong>it doesn&rsquo;t take a combination&rsquo;s place</strong>. The next callout still lands when it would have. The jab or check is fitted into the pause before it, so the round keeps all its combinations and adds work on top.</p>
+            <p>Two things worth knowing before you turn it on:</p>
+            <ul>
+                <li><strong>It stays out of the calisthenics.</strong> Nobody needs &ldquo;Jab&rdquo; shouted at them halfway through a burpee.</li>
+                <li><strong>It won&rsquo;t repeat itself.</strong> If the round has just called a plain jab or a plain check, the extra one is skipped that time.</li>
+            </ul>
+
+            <h2>The Rest Screen Tells You What&rsquo;s Coming</h2>
+            <p>Once rounds differ from each other, you need to know which one is next. So the rest screen now shows it: the round number, the style, and anything else that round carries. The ten-second warning says it out loud as well, so you don&rsquo;t have to walk back to the phone.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/session-rest-up-next.webp" alt="The rest screen after round 1 of 5, with 59 seconds of rest remaining. A card reads Up next, Round 2, Muay Khao, Calisthenics finisher, Easier pace, above the Pause and Stop buttons and the three selected styles." loading="lazy" width="840" height="1800">
+                <figcaption>Sixty seconds to breathe, and to know what round two is</figcaption>
+            </figure>
+
+            <p>The plan is saved with the session. Stop halfway and resume it later from Workout Logs, and you pick up the same plan from the round you left, even if you&rsquo;ve changed your styles on the home screen in the meantime.</p>
+
+            <h2>One Menu, Everywhere</h2>
+            <p>Getting around the app used to depend on where you were. There was a footer, a stats chip, and a couple of links tucked under the style grid. All of that is now one menu, in the top corner of every page: <strong>Train, Learn, Technique Manager, Workout Logs, Help</strong>. It disappears during a live round, because that is not the moment to be browsing.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/app-menu.webp" alt="The app menu open over the home screen, listing Train, Pick your styles and start a round; Learn, Guided path and technique library; Technique Manager, Edit styles or build your own; Workout Logs, Your history and streak, with a flame and the number 5; and Help, How the app works." loading="lazy" width="840" height="1800">
+                <figcaption>Five destinations, same corner on every page</figcaption>
+            </figure>
+
+            <p>The home screen is lighter for it. <strong>Timer Only</strong> and <strong>Freestyle</strong> are now two switches at the top of the page, not tiles in the grid, so the grid is only styles. And if you&rsquo;re on Pro you can <strong>reorder the styles</strong> so the ones you use every week sit at the top. The Technique Manager follows the same order.</p>
+
+            <h2>Workout Logs, Rebuilt</h2>
+            <p>The logs page now opens with a card that&rsquo;s about you: your name, your most-trained style, and your day streak, best streak, total workouts and total rounds in a single row, with your charms underneath.</p>
+
+            <figure class="shot">
+                <img src="/assets/blog/workout-logs-fighter-card.webp" alt="The Workout Logs page. A card at the top shows the name Jake with a pencil to edit it, Favorite style Muay Khao, a 5 day streak, best streak 5, 11 workouts and 47 rounds, and a row of charms. Below, Recent workouts are grouped under Today and Yesterday. Today's session of Muay Mat, Muay Khao and Muay Sok shows 2 of 5 rounds with a Resume action; yesterday's Boxing session shows Completed with a View result action." loading="lazy" width="840" height="1800">
+                <figcaption>Your record first, then every session behind it</figcaption>
+            </figure>
+
+            <p>Below it, sessions are grouped by day (Today, Yesterday, then dates) and every row does one thing, written out in words: <strong>Resume</strong> for a session you didn&rsquo;t finish, <strong>View result</strong> for one you did. Delete has moved into the three-dot menu, where you won&rsquo;t hit it by accident with a glove on.</p>
+            <p>If streaks are what get you to the bag, <a href="/blog/gamifying-the-grind-workout-logs.html">our post on workout logs and charms</a> covers how those work.</p>
+
+            <h2>What&rsquo;s Free And What&rsquo;s Pro</h2>
+            <p><strong>Round structure is part of Pro</strong>: styles by round, the warm-up round, pace, calisthenics placement and the jab or check between callouts, plus reordering your styles. On the free version you can open Session Settings and see every control; choosing one brings up the upgrade screen.</p>
+            <p><strong>Everything else here is free</strong>: the new menu, the cleaner home screen, the rebuilt Workout Logs, the fairer blending and the voice settings.</p>
+
+            <div class="verdict">
+                <h3>A Session To Try Tonight</h3>
+                <p>Five rounds, three minutes, one minute rest. Pick Muay Mat, Muay Khao and Muay Sok in that order. In Session Settings: <strong>By round</strong>, pace on <strong>Build</strong>, calisthenics on <strong>Finisher</strong>, warm-up round ticked, and <strong>Jab</strong> between callouts. Hands, knees, elbows, then hands and knees again at a faster clip, with thirty seconds of bodyweight work closing every round. If you want the reasoning behind laying rounds out like that, <a href="/blog/structuring-5-round-heavy-bag-workout.html">our guide to structuring five rounds on the heavy bag</a> has it.</p>
+            </div>
+
+            <a href="/blog/index.html" class="back-link">&larr; Back to all posts</a>
+        `
+    },
+    {
         filename: 'share-custom-styles-with-training-partners.html',
         title: 'Send Your Training Partner Your Rounds: Style Sharing Is Here',
         desc: 'Shot Caller can now send any style to a friend as a single link. They tap it, the app opens, and your exact combos are ready to drill. No accounts, no uploads.',
