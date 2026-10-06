@@ -25,6 +25,10 @@ type SpeakWithDurationFn = (
 const SPEECH_DEFERRAL_MS = 150;
 /** ...and how many times, before speaking anyway (about four seconds). */
 const MAX_SPEECH_DEFERRALS = 26;
+/** How far into the gap after a callout the between-callout is spoken. */
+const BETWEEN_CALLOUT_AT = 0.4;
+/** The least room left after it, so it never runs into the next callout. */
+const MIN_GAP_AFTER_BETWEEN_MS = 300;
 
 interface UseCalloutEngineProps {
   timer: {
@@ -53,6 +57,10 @@ export function useCalloutEngine({
   // rather than straight off the pool. Null everywhere else, including every
   // guided level. See utils/roundPlan.
   const poolSharesRef = useRef<PoolShare[] | null>(null);
+  // A technique called after every callout from the pool — "Jab", say — or
+  // null for none. Set per round alongside the pool; see utils/roundPlan.
+  const betweenCalloutRef = useRef<readonly string[] | null>(null);
+  const betweenDueRef = useRef(false);
   const ttsGuardRef = useRef(false);
 
   // Watchdog state. The scheduling loop is a chain: each callout schedules the
@@ -119,6 +127,9 @@ export function useCalloutEngine({
       baseDelayRef.current = baseDelayMs;
 
       let deferrals = 0;
+      // When the next callout from the pool is due, while a between-callout
+      // is being fitted in ahead of it.
+      let nextPoolAt = 0;
 
       const scheduleNext = (delay: number) => {
         if (calloutRef.current) {
@@ -172,7 +183,17 @@ export function useCalloutEngine({
         // switch between sequential and random at a round boundary without
         // restarting the callout loop — see useWorkoutSettings.
         let selectedTechnique: TechniqueWithStyle;
-        if (settings.readInOrderRef.current) {
+        const between = betweenCalloutRef.current;
+        const isBetween = Boolean(between?.length && betweenDueRef.current);
+        if (between && isBetween) {
+          // Slipped in after a callout, without touching the pool or an
+          // in-order walk's place in it.
+          betweenDueRef.current = false;
+          selectedTechnique = {
+            text: between[Math.floor(Math.random() * between.length)]!,
+            style: "",
+          };
+        } else if (settings.readInOrderRef.current) {
           selectedTechnique = pool[orderedIndexRef.current % pool.length]!;
           orderedIndexRef.current += 1;
         } else {
@@ -180,6 +201,10 @@ export function useCalloutEngine({
             (poolSharesRef.current &&
               pickFromShares(poolSharesRef.current)) ||
             pool[Math.floor(Math.random() * pool.length)]!;
+        }
+        // The pool calling it anyway is the one time it is not repeated.
+        if (!isBetween && !between?.includes(selectedTechnique.text)) {
+          betweenDueRef.current = true;
         }
 
         shotsCalledOutRef.current += 1;
@@ -222,6 +247,16 @@ export function useCalloutEngine({
           finalPhrase,
           settings.voiceSpeedRef.current,
           (actualDurationMs: number) => {
+            // The between-callout rides inside the gap its callout already
+            // earned, so the next one from the pool lands when it would have
+            // anyway — more work in the round, not fewer combinations.
+            if (isBetween) {
+              scheduleNext(
+                Math.max(MIN_GAP_AFTER_BETWEEN_MS, nextPoolAt - Date.now())
+              );
+              return;
+            }
+
             // Calculate Wait Time for Next Shot
             const isPro = settings.difficulty === "hard";
             const bufferMultiplier = isPro ? 0.12 : 0.2;
@@ -280,11 +315,18 @@ export function useCalloutEngine({
               );
             }
 
+            if (betweenCalloutRef.current?.length && betweenDueRef.current) {
+              nextPoolAt = Date.now() + nextDelayMs;
+              scheduleNext(nextDelayMs * BETWEEN_CALLOUT_AT);
+              return;
+            }
             scheduleNext(nextDelayMs);
           }
         );
       };
 
+      // A round, or a resume, opens on a callout from the pool.
+      betweenDueRef.current = false;
       scheduleNext(initialDelay);
     },
     [
@@ -415,5 +457,6 @@ export function useCalloutEngine({
     orderedIndexRef,
     currentPoolRef,
     poolSharesRef,
+    betweenCalloutRef,
   };
 }

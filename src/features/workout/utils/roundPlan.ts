@@ -17,6 +17,20 @@ import { generateTechniquePool } from "@/utils/techniqueUtils";
 export type MixMode = "blend" | "by_round";
 export type CalisthenicsPlacement = "sprinkled" | "finisher" | "final_round";
 export type IntensityShape = "steady" | "ramp" | "pyramid";
+export type BetweenCallouts = "off" | "jab" | "check" | "either";
+
+/**
+ * What is spoken between callouts, for each setting that speaks at all. More
+ * than one entry means one is picked at random each time.
+ */
+export const BETWEEN_CALLOUT_TEXT: Record<
+  Exclude<BetweenCallouts, "off">,
+  readonly string[]
+> = {
+  jab: ["Jab"],
+  check: ["Check"],
+  either: ["Jab", "Check"],
+};
 
 export interface RoundStructure {
   /** How several selected styles share the session. */
@@ -27,6 +41,8 @@ export interface RoundStructure {
   buildUp: boolean;
   /** How the pace moves from round to round. */
   intensity: IntensityShape;
+  /** A jab or a check called after every callout, to keep the hands busy. */
+  between: BetweenCallouts;
   /**
    * `by_round` only: the style chosen for each round. `null` leaves the round
    * to the rotation; `BLEND_ALL` makes it a blended round.
@@ -42,9 +58,11 @@ export const DEFAULT_ROUND_STRUCTURE: RoundStructure = {
   calisthenics: "sprinkled",
   buildUp: false,
   intensity: "steady",
+  between: "off",
   customRounds: [],
 };
 
+const BETWEENS: BetweenCallouts[] = ["off", "jab", "check", "either"];
 const MIX_MODES: MixMode[] = ["blend", "by_round"];
 const PLACEMENTS: CalisthenicsPlacement[] = [
   "sprinkled",
@@ -59,7 +77,8 @@ export function isDefaultStructure(s: RoundStructure): boolean {
     s.mixMode === "blend" &&
     s.calisthenics === "sprinkled" &&
     !s.buildUp &&
-    s.intensity === "steady"
+    s.intensity === "steady" &&
+    s.between === "off"
   );
 }
 
@@ -78,6 +97,9 @@ export function sanitizeRoundStructure(raw: unknown): RoundStructure {
     intensity: SHAPES.includes(r.intensity as IntensityShape)
       ? (r.intensity as IntensityShape)
       : DEFAULT_ROUND_STRUCTURE.intensity,
+    between: BETWEENS.includes(r.between as BetweenCallouts)
+      ? (r.between as BetweenCallouts)
+      : DEFAULT_ROUND_STRUCTURE.between,
     customRounds: Array.isArray(r.customRounds)
       ? r.customRounds
           .slice(0, 20)
@@ -378,6 +400,9 @@ export function structureSummary(
   if (structure.buildUp) parts.push("Warm-up round");
   if (structure.intensity === "ramp") parts.push("Building pace");
   if (structure.intensity === "pyramid") parts.push("Pyramid pace");
+  if (structure.between === "jab") parts.push("Jab between");
+  if (structure.between === "check") parts.push("Check between");
+  if (structure.between === "either") parts.push("Jab or check between");
   if (addCalisthenics && structure.calisthenics === "finisher") {
     parts.push("Finisher");
   }

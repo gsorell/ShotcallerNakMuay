@@ -12,6 +12,7 @@ import {
   describeRound,
   finisherSeconds,
   planRounds,
+  type BetweenCallouts,
   type CalisthenicsPlacement,
   type IntensityShape,
   type MixMode,
@@ -50,6 +51,20 @@ const INTENSITY_HINTS: Record<IntensityShape, string> = {
   steady: "The same pace in every round.",
   ramp: "Starts easier and gets a little faster each round.",
   pyramid: "Builds to the middle rounds, then eases back off.",
+};
+
+const BETWEEN_CHOICES: Choice<BetweenCallouts>[] = [
+  { value: "off", label: "Off" },
+  { value: "jab", label: "Jab" },
+  { value: "check", label: "Check" },
+  { value: "either", label: "Jab/Check" },
+];
+
+const BETWEEN_HINTS: Record<BetweenCallouts, string> = {
+  off: "Nothing is called between one callout and the next.",
+  jab: "A jab is called after every callout.",
+  check: "A check is called after every callout.",
+  either: "A jab or a check, at random, is called after every callout.",
 };
 
 type CalisthenicsChoice = "off" | CalisthenicsPlacement;
@@ -283,26 +298,6 @@ export default function RoundStructureSheet({
         </section>
 
         <section className="rs-section">
-          <h4 className="rs-label">Warm-up round{proTag}</h4>
-          <label className="rs-toggle">
-            <input
-              type="checkbox"
-              checked={structure.buildUp}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                gated(() => update({ buildUp: checked }, "build_up"))();
-              }}
-            />
-            Round 1 calls single techniques only
-          </label>
-          <p className="rs-hint">
-            {roundsCount >= 2
-              ? "Combinations come in from round 2."
-              : "Needs at least two rounds."}
-          </p>
-        </section>
-
-        <section className="rs-section">
           <h4 className="rs-label">Pace{proTag}</h4>
           <Segmented
             name="Pace across rounds"
@@ -364,6 +359,30 @@ export default function RoundStructureSheet({
           <p className="rs-hint">
             Swaps left and right in every callout, for left-handed fighters.
           </p>
+          <label className="rs-toggle rs-toggle--spaced">
+            <input
+              type="checkbox"
+              checked={structure.buildUp}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                gated(() => update({ buildUp: checked }, "build_up"))();
+              }}
+            />
+            Round 1 calls single techniques only
+          </label>
+          <p className="rs-hint">
+            {roundsCount >= 2
+              ? "A warm-up round. Combinations come in from round 2."
+              : "A warm-up round. Needs at least two rounds."}
+          </p>
+          <div className="rs-sublabel">Between callouts</div>
+          <Segmented
+            name="Between callouts"
+            choices={BETWEEN_CHOICES}
+            value={structure.between}
+            onChoose={(v) => gated(() => update({ between: v }, "between"))()}
+          />
+          <p className="rs-hint">{BETWEEN_HINTS[structure.between]}</p>
         </section>
           </>
         )}

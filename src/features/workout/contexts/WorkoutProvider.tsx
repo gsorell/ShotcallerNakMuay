@@ -37,6 +37,7 @@ import {
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import { useEntitlement } from "@/features/entitlement";
 import {
+  BETWEEN_CALLOUT_TEXT,
   DEFAULT_ROUND_STRUCTURE,
   buildRoundPool,
   calisthenicsPool,
@@ -299,6 +300,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     settingsRef.current.paceFactorRef.current = 1;
     if (calloutEngineRef.current) {
       calloutEngineRef.current.poolSharesRef.current = null;
+      calloutEngineRef.current.betweenCalloutRef.current = null;
     }
   }, []);
 
@@ -331,6 +333,12 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       }
       engine.currentPoolRef.current = built.flat;
       engine.poolSharesRef.current = built.shares;
+      // Nobody jabs between burpees: a calisthenics round goes without.
+      const between = sessionStructureRef.current?.structure.between ?? "off";
+      engine.betweenCalloutRef.current =
+        between === "off" || planned.calisthenics === "only"
+          ? null
+          : BETWEEN_CALLOUT_TEXT[between];
       switchPoolKey(poolKey(planned));
       settingsRef.current.paceFactorRef.current = planned.paceFactor;
     },
@@ -536,6 +544,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     if (!cal.length) return;
     engine.currentPoolRef.current = cal;
     engine.poolSharesRef.current = null;
+    engine.betweenCalloutRef.current = null;
     switchPoolKey("finisher");
     // Mark the switch. A sound rather than a spoken cue, which would land on
     // top of a callout; the interval bell rather than the big one, which

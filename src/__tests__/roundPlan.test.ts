@@ -381,6 +381,18 @@ describe("structure settings", () => {
   it("knows the default from anything else", () => {
     expect(isDefaultStructure(structure())).toBe(true);
     expect(isDefaultStructure(structure({ buildUp: true }))).toBe(false);
+    expect(isDefaultStructure(structure({ between: "jab" }))).toBe(false);
+  });
+
+  it("keeps a between-callouts choice and drops an unknown one", () => {
+    expect(sanitizeRoundStructure({ between: "check" }).between).toBe("check");
+    expect(sanitizeRoundStructure({ between: "either" }).between).toBe(
+      "either"
+    );
+    expect(sanitizeRoundStructure({ between: "hook" }).between).toBe("off");
+    expect(structureSummary(structure({ between: "jab" }), 1, false)).toBe(
+      "Jab between"
+    );
   });
 
   it("summarises itself in one line", () => {
