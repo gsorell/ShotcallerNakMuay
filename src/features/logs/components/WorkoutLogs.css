@@ -1,0 +1,334 @@
+/* WorkoutLogs.css — the Workout Logs page.
+   Follows the conventions the home screen and the Technique Manager settled
+   on: one filled control per screen at most, icons rather than buttons inside
+   a card, and a card's own header saying what it is. */
+
+.logs-page {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 0.25rem 0.25rem;
+  color: #fff;
+}
+
+.logs-back-row {
+  margin-bottom: 1rem;
+}
+
+.logs-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.logs-subtitle {
+  margin: 0 0 1.25rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: #f9a8d4;
+}
+
+/* --- The fighter card ------------------------------------------------------ */
+
+/* The one card on the page that is about the person rather than a session,
+   so it borrows the home tiles' lighter shell and stands a little forward of
+   the log rows beneath it. */
+.fighter-card {
+  margin-bottom: 1.75rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.fighter-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.fighter-card-avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.fighter-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.fighter-card-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fighter-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.fighter-card-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* A quieter line than the name, and never more than one. */
+.fighter-card-favorite {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* The pencil beside the name. Small and muted — the name is set once and
+   rarely touched — with a tap area larger than the glyph. */
+.fighter-card-edit {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.45rem;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.fighter-card-edit svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fighter-card-edit:hover {
+  color: #f9a8d4;
+  background: rgba(249, 168, 212, 0.1);
+}
+
+.fighter-card-edit:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 0.35rem;
+}
+
+/* Four numbers, one row: the fighter's record at a glance. */
+.fighter-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 1rem 0 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.fighter-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.fighter-stat-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fighter-stat-label {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.fighter-charms {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.fighter-card-section-label {
+  text-align: left;
+}
+
+/* --- Recent workouts -------------------------------------------------------- */
+
+.logs-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.logs-section-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.logs-section-count {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* One group per day. The day is a small heading over its sessions. */
+.logs-day + .logs-day {
+  margin-top: 1.25rem;
+}
+
+.logs-day-label {
+  margin: 0 0 0.5rem;
+  padding: 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.logs-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+/* A session's row, laid out the same way every time: what was trained at the
+   leading edge, the facts in the middle, the menu at the trailing edge. No
+   element changes place from one row to the next, whatever the row holds.
+   Same shell as a style's row on the Technique Manager. */
+.log-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.75rem 0.4rem 0.75rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.log-row-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.log-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+/* What was trained: the thing you scan the list for. */
+.log-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* When, at what level, and what was planned — one quiet line. */
+.log-row-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* How it ended, and the one thing to do about it. */
+.log-row-status {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.log-row-outcome {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.log-row-outcome.is-finished {
+  color: #6ee7b7;
+}
+
+/* A link in the app's own pink — not the pale pink, which reads as bubble
+   gum against a dark card. */
+.log-row-action {
+  all: unset;
+  color: #ec4899;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.log-row-action:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.log-row-action:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* --- Nothing logged yet ----------------------------------------------------- */
+
+.logs-empty {
+  padding: 2rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  text-align: center;
+}
+
+.logs-empty-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.logs-empty-body {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+}

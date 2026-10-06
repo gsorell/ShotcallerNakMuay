@@ -1,6 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import "@/styles/editor.css";
+import { useEffect, useState } from "react";
+// Deep imports rather than the style-share barrel: only the name and the
+// sheet that edits it are wanted here, not the whole sharing flow.
+import ShareNameSheet from "@/features/style-share/ShareNameSheet";
+import {
+  ensureSenderName,
+  markSenderNameConfirmed,
+  setSenderName,
+} from "@/features/style-share/shareStorage";
+import { ActionMenu, type ActionMenuItem } from "../../shared";
 import CharmTrophyCase from "./CharmTrophyCase";
+import "./WorkoutLogs.css";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
 const EMPHASIS_ICONS: Record<string, string> = {
@@ -145,7 +154,12 @@ export default function WorkoutLogs({
   onViewCompletion?: (log: WorkoutEntry) => void;
 }) {
   const [logs, setLogs] = useState<WorkoutEntry[]>([]);
-  const logsContainerRef = useRef<HTMLDivElement>(null);
+
+  // The name on the card is the one the user set for sharing — the only name
+  // the app has for them. Resolved on mount, so someone who never chose one
+  // still sees the name they have been given rather than a blank.
+  const [fighterName, setFighterName] = useState(() => ensureSenderName());
+  const [editingName, setEditingName] = useState(false);
 
   useEffect(() => {
     try {
@@ -245,19 +259,6 @@ export default function WorkoutLogs({
     };
   })();
 
-  // --- Get log card width for summary/favorite alignment ---
-  const [logsWidth, setLogsWidth] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    function updateWidth() {
-      if (logsContainerRef.current) {
-        setLogsWidth(logsContainerRef.current.offsetWidth);
-      }
-    }
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
-  }, []);
-
   // --- Responsive summary/favorite layout ---
   // Find the favorite emphasis config by label (case-insensitive)
   const favoriteConfig = stats?.mostCommonEmphasis
@@ -268,466 +269,270 @@ export default function WorkoutLogs({
       )
     : null;
 
+  // Sessions are listed under the day they happened, newest first. The day
+  // is said once, as a heading, instead of being repeated in full on every
+  // row — which is also where "Today" belongs: it names a group, not a row.
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const todayStart = startOfDay(new Date());
+  const dayLabel = (d: Date) => {
+    const daysAgo = Math.round((todayStart - startOfDay(d)) / 86400000);
+    if (daysAgo === 0) return "Today";
+    if (daysAgo === 1) return "Yesterday";
+    return d.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      ...(d.getFullYear() !== new Date().getFullYear()
+        ? { year: "numeric" }
+        : null),
+    });
+  };
+
+  const days: { label: string; entries: WorkoutEntry[] }[] = [];
+  for (const log of logs.slice().reverse()) {
+    const label = dayLabel(new Date(log.timestamp));
+    const last = days[days.length - 1];
+    if (last && last.label === label) last.entries.push(log);
+    else days.push({ label, entries: [log] });
+  }
+
+  // The picture on a row is the style that was trained — the first, where
+  // there were several. A session with no style of its own (a bare timer, a
+  // guided level) wears the app's mark.
+  const iconFor = (log: WorkoutEntry) => {
+    const first = (log.emphases[0] ?? "").trim().toLowerCase();
+    const match = emphasisList.find(
+      (e) => e.label.trim().toLowerCase() === first
+    );
+    return match?.iconPath ?? "/assets/logo_icon.webp";
+  };
+
   return (
-    <div
-      className="editor-root"
-      style={{
-        padding: "0.25rem",
-        paddingTop: "1rem",
-        margin: 0,
-        maxWidth: "none",
-        width: "100%",
-        boxSizing: "border-box",
-      }}
-    >
-      {/* Header with Back button */}
-      <div style={{ marginBottom: "1rem" }}>
+    <div className="logs-page">
+      <div className="logs-back-row">
         <button type="button" className="back-link" onClick={onBack}>
           <span className="back-link-arrow" aria-hidden="true">
             ←
           </span>
           Back
         </button>
-        <h2
-          style={{
-            margin: 0,
-            color: "white",
-            fontSize: "1.25rem",
-            textAlign: "center",
-          }}
-        >
-          Summary
-        </h2>
       </div>
 
-      {/* --- Compact Stats --- */}
-      {stats && (
-        <div
-          style={{
-            padding: "0.75rem",
-            background: "rgba(24, 24, 37, 0.48)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: "0.5rem",
-            marginBottom: "1rem",
-            position: "relative",
-            width: "100%",
-            boxSizing: "border-box",
-          }}
-        >
-          {/* Favorite Style and Streaks - Combined Container */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.5rem",
-              alignItems: "center",
-            }}
-          >
-            {/* Favorite Style */}
-            {favoriteConfig && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.25rem",
-                  fontSize: "0.75rem",
-                  color: "rgba(255,255,255,0.8)",
-                }}
+      {/* Named for what the menu calls it. It used to be titled "Summary",
+          which is a section of this page rather than the page. */}
+      <h1 className="logs-title">Workout Logs</h1>
+      <p className="logs-subtitle">Your record, and every session behind it.</p>
+
+      {/* The fighter card: who this is, then their record.
+
+          It is shown from the first visit, before there is anything to
+          count — the name is already theirs, and a row of zeros says what
+          will fill in more plainly than a card that is not there. */}
+      <section className="fighter-card" aria-label="Fighter">
+        <div className="fighter-card-head">
+          <img
+            className="fighter-card-avatar"
+            // Their favourite style stands in as the avatar; the app's own
+            // mark until they have trained enough to have one.
+            src={favoriteConfig?.iconPath ?? "/assets/logo_icon.webp"}
+            alt=""
+          />
+          {/* Name first, with the pencil that edits it right beside it —
+              the control sits against the thing it changes, not across the
+              card from it. One fact underneath, on one line. */}
+          <div className="fighter-card-identity">
+            <div className="fighter-card-name-row">
+              <span className="fighter-card-name">{fighterName}</span>
+              <button
+                type="button"
+                className="fighter-card-edit"
+                onClick={() => setEditingName(true)}
+                title="Change name"
+                aria-label="Change name"
               >
-                <img
-                  src={favoriteConfig.iconPath}
-                  alt={favoriteConfig.label}
-                  style={{ width: 24, height: 24, objectFit: "contain" }}
-                />
-                <span>Favorite: {favoriteConfig.label}</span>
-              </div>
-            )}
-
-            {/* Streaks */}
-            <div
-              style={{
-                display: "flex",
-                gap: "0.75rem",
-                justifyContent: "center",
-                fontSize: "0.8rem",
-              }}
-            >
-              {/* Current Streak */}
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.25rem",
-                    marginBottom: "0.125rem",
-                  }}
-                >
-                  <span style={{ fontSize: "1rem" }}>🔥</span>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: "white",
-                      fontSize: "1.125rem",
-                    }}
-                  >
-                    {stats.current}
-                  </span>
-                </div>
-                <div
-                  style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.7rem" }}
-                >
-                  Current Streak
-                </div>
-              </div>
-
-              {/* Longest Streak */}
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.25rem",
-                    marginBottom: "0.125rem",
-                  }}
-                >
-                  <span style={{ fontSize: "1rem" }}>🏆</span>
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: "white",
-                      fontSize: "1.125rem",
-                    }}
-                  >
-                    {stats.longest}
-                  </span>
-                </div>
-                <div
-                  style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.7rem" }}
-                >
-                  Best Streak
-                </div>
-              </div>
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M11.2 2.3a1.4 1.4 0 0 1 2 0l.5.5a1.4 1.4 0 0 1 0 2L6 12.5l-3 .7.7-3 7.5-7.9Z" />
+                  <path d="m10 3.6 2.4 2.4" />
+                </svg>
+              </button>
             </div>
+            {favoriteConfig && (
+              <span className="fighter-card-favorite">
+                Favorite style · {favoriteConfig.label}
+              </span>
+            )}
+          </div>
+        </div>
 
-            {/* Charms */}
+        <div className="fighter-stats">
+          <div className="fighter-stat">
+            <span className="fighter-stat-value">🔥 {stats?.current ?? 0}</span>
+            <span className="fighter-stat-label">Day streak</span>
+          </div>
+          <div className="fighter-stat">
+            <span className="fighter-stat-value">🏆 {stats?.longest ?? 0}</span>
+            <span className="fighter-stat-label">Best streak</span>
+          </div>
+          <div className="fighter-stat">
+            <span className="fighter-stat-value">
+              {stats?.totalWorkouts ?? 0}
+            </span>
+            <span className="fighter-stat-label">Workouts</span>
+          </div>
+          <div className="fighter-stat">
+            <span className="fighter-stat-value">{stats?.totalRounds ?? 0}</span>
+            <span className="fighter-stat-label">Rounds</span>
+          </div>
+        </div>
+
+        {stats && (
+          <div className="fighter-charms">
+            <span className="fighter-card-section-label">Charms</span>
             <CharmTrophyCase
               currentStreak={stats.current}
               longestStreak={stats.longest}
             />
           </div>
-        </div>
+        )}
+      </section>
+
+      {editingName && (
+        <ShareNameSheet
+          initialName={fighterName}
+          mode="edit"
+          onCancel={() => setEditingName(false)}
+          onConfirm={(next) => {
+            setSenderName(next);
+            // Choosing it here counts as confirming, so the first share does
+            // not stop to ask again.
+            markSenderNameConfirmed();
+            setFighterName(next);
+            setEditingName(false);
+          }}
+        />
       )}
 
-      {/* Enhanced Log Entries */}
-      <div ref={logsContainerRef}>
-        {logs.length === 0 ? (
-          <div
-            style={{
-              padding: "2rem",
-              background: "rgba(24, 24, 37, 0.48)",
-              borderRadius: "0.75rem",
-              border: "1px solid rgba(255,255,255,0.1)",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: "3rem", marginBottom: "1rem", opacity: 0.3 }}
-            >
-              📝
-            </div>
-            <p style={{ margin: 0, color: "#d1d5db", fontSize: "0.9rem" }}>
-              No workouts logged yet.
-              <br />
-              <span style={{ opacity: 0.7, fontSize: "0.8rem" }}>
-                Sessions are logged automatically when completed.
-              </span>
-            </p>
+      {logs.length === 0 ? (
+        <div className="logs-empty">
+          <p className="logs-empty-title">No workouts logged yet</p>
+          <p className="logs-empty-body">
+            Sessions are logged automatically when you finish or stop one.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="logs-section-head">
+            <h2>Recent workouts</h2>
+            <span className="logs-section-count">{logs.length}</span>
           </div>
-        ) : (
-          <>
-            {/* Simple Activity Header */}
-            <h3
-              style={{
-                margin: "0 0 1rem 0",
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: "white",
-              }}
-            >
-              Recent Workouts ({logs.length})
-            </h3>
 
-            <div style={{ display: "grid", gap: "0.5rem" }}>
-              {logs
-                .slice()
-                .reverse()
-                .map((log, index) => {
-                  const isToday =
-                    new Date(log.timestamp).toDateString() ===
-                    new Date().toDateString();
-                  const difficultyColors = {
-                    easy: "#10b981",
-                    medium: "#f59e0b",
-                    hard: "#ef4444",
-                  };
-                  const difficultyColor =
-                    difficultyColors[
-                      log.difficulty as keyof typeof difficultyColors
-                    ] || "#6b7280";
+          {days.map((day) => (
+            <section key={day.label} className="logs-day">
+              <h3 className="logs-day-label">{day.label}</h3>
+              <div className="logs-list">
+                {day.entries.map((log) => {
+                  const when = new Date(log.timestamp);
+                  const time = when.toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
+                  const level = difficultyLabel(log.difficulty);
+                  const finished = log.status === "completed";
+                  const canResume =
+                    !finished &&
+                    log.roundsCompleted < log.roundsPlanned &&
+                    Boolean(onResume);
+                  const canView = finished && Boolean(onViewCompletion);
+                  const title = log.emphases.length
+                    ? log.emphases.length > 3
+                      ? `${log.emphases.slice(0, 3).join(", ")} +${
+                          log.emphases.length - 3
+                        } more`
+                      : log.emphases.join(", ")
+                    : "Timer Only";
+
+                  // The row's one action, said in words: finish what was
+                  // started, or look at what was finished.
+                  const primary = canResume
+                    ? {
+                        label: "Resume",
+                        hint: `Resume from round ${log.roundsCompleted + 1}`,
+                        run: () => onResume?.(log),
+                      }
+                    : canView
+                    ? {
+                        label: "View result",
+                        hint: "View result",
+                        run: () => onViewCompletion?.(log),
+                      }
+                    : null;
+
+                  const actions: ActionMenuItem[] = [];
+                  if (primary) {
+                    actions.push({
+                      label: primary.hint,
+                      icon: canResume ? "▶" : "🏆",
+                      onSelect: primary.run,
+                    });
+                  }
+                  actions.push({
+                    label: "Delete log",
+                    icon: "✕",
+                    onSelect: () => deleteEntry(log.id),
+                    destructive: true,
+                  });
 
                   return (
-                    <div
-                      key={log.id}
-                      style={{
-                        position: "relative",
-                        padding: "0.75rem",
-                        background: "rgba(24, 24, 37, 0.48)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "0.5rem",
-                        width: "100%",
-                        maxWidth: "100vw",
-                        minWidth: 0,
-                        boxSizing: "border-box",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {/* Play/Trophy button - top right, before delete */}
-                      {log.status === "abandoned" &&
-                        log.roundsCompleted < log.roundsPlanned &&
-                        onResume && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onResume(log);
-                            }}
-                            title={`Resume from round ${
-                              log.roundsCompleted + 1
-                            }`}
-                            style={{
-                              position: "absolute",
-                              top: "0.5rem",
-                              right: "3rem",
-                              background: "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
-                              color: "#f9a8d4",
-                              border: "none",
-                              width: "36px",
-                              height: "36px",
-                              fontSize: "1rem",
-                              padding: 0,
-                              cursor: "pointer",
-                              borderRadius: "0.75rem",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              transition: "all 0.2s ease",
-                              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
-                              backdropFilter: "blur(8px)",
-                              flexShrink: 0,
-                              lineHeight: 1,
-                              textAlign: "center",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.opacity = "0.8";
-                              e.currentTarget.style.transform = "translateY(-1px)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.opacity = "1";
-                              e.currentTarget.style.transform = "translateY(0)";
-                            }}
-                          >
-                            ▶
-                          </button>
-                        )}
+                    <article key={log.id} className="log-row">
+                      <img className="log-row-icon" src={iconFor(log)} alt="" />
 
-                      {log.status === "completed" && onViewCompletion && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewCompletion(log);
-                          }}
-                          title="View completion screen"
-                          style={{
-                            position: "absolute",
-                            top: "0.5rem",
-                            right: "3rem",
-                            background: "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
-                            color: "#f9a8d4",
-                            border: "none",
-                            width: "36px",
-                            height: "36px",
-                            fontSize: "1rem",
-                            padding: 0,
-                            cursor: "pointer",
-                            borderRadius: "0.75rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            transition: "all 0.2s ease",
-                            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
-                            backdropFilter: "blur(8px)",
-                            flexShrink: 0,
-                            lineHeight: 1,
-                            textAlign: "center",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = "0.8";
-                            e.currentTarget.style.transform = "translateY(-1px)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = "1";
-                            e.currentTarget.style.transform = "translateY(0)";
-                          }}
-                        >
-                          🏆
-                        </button>
-                      )}
-
-                      {/* Delete button - top right corner */}
-                      <button
-                        onClick={() => deleteEntry(log.id)}
-                        style={{
-                          position: "absolute",
-                          top: "0.5rem",
-                          right: "0.5rem",
-                          background: "linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(236, 72, 153, 0.25) 100%)",
-                          color: "#f9a8d4",
-                          border: "none",
-                          width: "36px",
-                          height: "36px",
-                          fontSize: "1rem",
-                          padding: 0,
-                          cursor: "pointer",
-                          borderRadius: "0.75rem",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          transition: "all 0.2s ease",
-                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
-                          backdropFilter: "blur(8px)",
-                          flexShrink: 0,
-                          lineHeight: 1,
-                          textAlign: "center",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = "0.8";
-                          e.currentTarget.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = "1";
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
-                        aria-label="Delete log"
-                      >
-                        ✕
-                      </button>
-
-                      {/* Mobile-Responsive Layout */}
-                      <div
-                        style={{
-                          minWidth: 0,
-                          width: "100%",
-                          maxWidth: "100%",
-                          boxSizing: "border-box",
-                          overflow: "visible",
-                        }}
-                      >
-                        {/* Row 1: Date/Time - LEFT JUSTIFIED */}
-                        <div
-                          style={{
-                            fontSize: "0.8rem",
-                            fontWeight: 600,
-                            color: "white",
-                            marginBottom: "0.5rem",
-                            textAlign: "left",
-                          }}
-                        >
-                          {new Date(log.timestamp).toLocaleDateString()}{" "}
-                          {new Date(log.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                      <div className="log-row-main">
+                        <div className="log-row-title">{title}</div>
+                        <div className="log-row-meta">
+                          {[
+                            time,
+                            level,
+                            `${log.roundsPlanned} × ${log.roundLengthMin} min`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </div>
-
-                        {/* Row 2: Emphasis/Style */}
-                        <div
-                          style={{
-                            color: "rgba(255,255,255,0.7)",
-                            fontSize: "0.75rem",
-                            marginBottom: "0.5rem",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            textAlign: "left",
-                          }}
-                        >
-                          {log.emphases.length
-                            ? log.emphases.length > 3
-                              ? `${log.emphases.slice(0, 3).join(", ")} +${
-                                  log.emphases.length - 3
-                                } more`
-                              : log.emphases.join(", ")
-                            : "Timer Only"}
-                        </div>
-
-                        {/* Row 3: Stats */}
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "flex-start",
-                            gap: "0.75rem",
-                            fontSize: "0.7rem",
-                            minHeight: "24px",
-                          }}
-                        >
-                          {/* Difficulty badge */}
+                        <div className="log-row-status">
                           <span
-                            style={{
-                              padding: "0.125rem 0.375rem",
-                              background: `${difficultyColor}15`,
-                              color: difficultyColor,
-                              borderRadius: "0.25rem",
-                              fontSize: "0.65rem",
-                              fontWeight: 600,
-                              whiteSpace: "nowrap",
-                              flexShrink: 0,
-                            }}
+                            className={`log-row-outcome ${
+                              finished ? "is-finished" : ""
+                            }`}
                           >
-                            {difficultyLabel(log.difficulty)}
+                            {finished
+                              ? "Completed"
+                              : `${log.roundsCompleted} of ${log.roundsPlanned} rounds`}
                           </span>
-
-                          {/* Rounds */}
-                          <div
-                            style={{
-                              color: "rgba(255,255,255,0.8)",
-                              fontWeight: 600,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {log.roundsCompleted}/{log.roundsPlanned} rounds
-                          </div>
-
-                          {/* Duration */}
-                          <div
-                            style={{
-                              color: "rgba(255,255,255,0.8)",
-                              fontWeight: 600,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {log.roundLengthMin} min
-                          </div>
+                          {primary && (
+                            <button
+                              type="button"
+                              className="log-row-action"
+                              onClick={primary.run}
+                              aria-label={primary.hint}
+                            >
+                              {primary.label}
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </div>
+
+                      <ActionMenu
+                        subject={`${title}, ${day.label} ${time}`}
+                        items={actions}
+                      />
+                    </article>
                   );
                 })}
-            </div>
-          </>
-        )}
-      </div>
+              </div>
+            </section>
+          ))}
+        </>
+      )}
     </div>
   );
 }

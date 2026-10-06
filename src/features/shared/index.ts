@@ -21,3 +21,7 @@ export { useAndroidAudioDucking } from './hooks/useAndroidAudioDucking';
 export { useIOSAudioSession } from './hooks/useIOSAudioSession';
 export { useSoundEffects } from './hooks/useSoundEffects';
 export { default as AppMenu } from './components/AppMenu';
+export {
+  default as ActionMenu,
+  type ActionMenuItem,
+} from './components/ActionMenu';

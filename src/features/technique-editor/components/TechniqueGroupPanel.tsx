@@ -1,7 +1,7 @@
 import type { TechniqueShape } from "@/utils/techniqueUtils";
 import { normalizeArray } from "@/utils/techniqueUtils";
 import { GROUP_THUMBNAILS } from "../constants";
-import type { StyleMenuItem } from "./StyleMenu";
+import type { ActionMenuItem } from "../../shared";
 import StyleNameField from "./StyleNameField";
 import TechniqueGroupHeader from "./TechniqueGroupHeader";
 import TechniqueListSection from "./TechniqueListSection";
@@ -58,7 +58,7 @@ export default function TechniqueGroupPanel({
 
   // Everything that acts on the style as a whole, in one menu on its row.
   // Ordered by how often it is wanted, with the one that destroys work last.
-  const actions: StyleMenuItem[] = [];
+  const actions: ActionMenuItem[] = [];
   if (onShare) actions.push({ label: "Share", icon: "↗", onSelect: onShare });
   if (onDuplicate) {
     actions.push({ label: "Duplicate", icon: "⧉", onSelect: onDuplicate });

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { Capacitor } from "@capacitor/core";
 
@@ -244,6 +244,14 @@ export default function App() {
   const { shouldShowPrompt, dismissPrompt } = usePWA();
   const onboarding = useOnboardingState();
 
+  // Whether the completion screen was opened from a row in the Workout Logs
+  // rather than by finishing a session. From the logs it is a detail view,
+  // and needs a way back to the list it came from.
+  const [completionFromLogs, setCompletionFromLogs] = useState(false);
+  useEffect(() => {
+    if (page !== "completed") setCompletionFromLogs(false);
+  }, [page]);
+
   // --- 4. UI Refs ---
   const isEditorRef = useRef(false);
 
@@ -390,7 +398,10 @@ export default function App() {
             onBack={backToTimer}
             emphasisList={emphasisList}
             onResume={resumeWorkout}
-            onViewCompletion={viewCompletionScreen}
+            onViewCompletion={(log) => {
+              setCompletionFromLogs(true);
+              viewCompletionScreen(log);
+            }}
           />
         );
 
@@ -417,6 +428,7 @@ export default function App() {
             onRestart={() => restartSession(lastWorkout)}
             onReset={() => setPage("timer")}
             onViewLog={() => setPage("logs")}
+            onBack={completionFromLogs ? () => setPage("logs") : undefined}
             primaryAction={
               lastWorkout.roadmap ? (
                 <NextLevelPrompt completed={lastWorkout.roadmap} />

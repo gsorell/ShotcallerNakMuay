@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import "./ActionMenu.css";
 
-export type StyleMenuItem = {
+export type ActionMenuItem = {
   label: string;
   /** A single glyph shown ahead of the label. */
   icon: string;
@@ -9,23 +10,23 @@ export type StyleMenuItem = {
   destructive?: boolean;
 };
 
-type StyleMenuProps = {
-  /** The style's name, for the button's accessible label. */
-  styleName: string;
-  items: StyleMenuItem[];
+type ActionMenuProps = {
+  /** What the menu acts on, for the button's accessible label. */
+  subject: string;
+  items: ActionMenuItem[];
 };
 
 /**
- * The "more actions" menu on a style's row: everything you can do TO a style,
- * as opposed to opening it or moving it.
+ * The "more actions" menu on a row: everything you can do TO the thing the
+ * row stands for, as opposed to opening it.
  *
- * Share and Duplicate began as two bare glyphs on the row, which made it
- * crowded, then became links inside the open style, where they were tidy and
- * easy to miss. This is the usual answer to that pair of problems: one
- * familiar control on every row, open or closed, with the actions spelled out
- * behind it.
+ * One familiar control at the trailing edge of a row, with the actions spelled
+ * out behind it. It is what keeps a row from collecting a button for each
+ * thing that can be done to it — a style's row on the Technique Manager and a
+ * session's row in the Workout Logs both use it, so the same gesture means the
+ * same thing in both places.
  */
-export default function StyleMenu({ styleName, items }: StyleMenuProps) {
+export default function ActionMenu({ subject, items }: ActionMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -45,10 +46,10 @@ export default function StyleMenu({ styleName, items }: StyleMenuProps) {
   return (
     <div
       ref={rootRef}
-      className="tech-editor-menu"
+      className="action-menu"
       onKeyDown={(e) => {
         if (e.key === "Escape" && open) {
-          // This page also listens for Escape, to go back. Closing a menu
+          // Some pages also listen for Escape, to go back. Closing a menu
           // must not take the whole screen with it.
           e.stopPropagation();
           setOpen(false);
@@ -57,10 +58,10 @@ export default function StyleMenu({ styleName, items }: StyleMenuProps) {
     >
       <button
         type="button"
-        className="tech-editor-menu-btn"
+        className="action-menu-btn"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`More actions for ${styleName}`}
+        aria-label={`More actions for ${subject}`}
         title="More actions"
         onClick={() => setOpen((v) => !v)}
       >
@@ -72,13 +73,13 @@ export default function StyleMenu({ styleName, items }: StyleMenuProps) {
       </button>
 
       {open && (
-        <div className="tech-editor-menu-list" role="menu">
+        <div className="action-menu-list" role="menu">
           {items.map((item) => (
             <button
               key={item.label}
               type="button"
               role="menuitem"
-              className={`tech-editor-menu-item ${
+              className={`action-menu-item ${
                 item.destructive ? "is-destructive" : ""
               }`}
               onClick={() => {
@@ -86,7 +87,7 @@ export default function StyleMenu({ styleName, items }: StyleMenuProps) {
                 item.onSelect();
               }}
             >
-              <span className="tech-editor-menu-icon" aria-hidden="true">
+              <span className="action-menu-icon" aria-hidden="true">
                 {item.icon}
               </span>
               {item.label}

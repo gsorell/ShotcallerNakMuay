@@ -1,5 +1,5 @@
 import type { TechniqueShape } from "@/utils/techniqueUtils";
-import StyleMenu, { type StyleMenuItem } from "./StyleMenu";
+import { ActionMenu, type ActionMenuItem } from "../../shared";
 
 interface TechniqueGroupHeaderProps {
   keyName: string;
@@ -7,8 +7,8 @@ interface TechniqueGroupHeaderProps {
   thumbnail?: string;
   expanded: boolean;
   toggleGroupExpanded: (key: string) => void;
-  /** What can be done to the style as a whole — see StyleMenu. */
-  actions?: StyleMenuItem[];
+  /** What can be done to the style as a whole — see ActionMenu. */
+  actions?: ActionMenuItem[];
 }
 
 /**
@@ -55,7 +55,7 @@ export default function TechniqueGroupHeader({
             the way in (the chevron). Icons, not filled buttons — the row is
             mostly a name, and should read as one. */}
         <div className="tech-editor-buttons-row-inline">
-          <StyleMenu styleName={currentTitle} items={actions} />
+          <ActionMenu subject={currentTitle} items={actions} />
           <button
             type="button"
             onClick={() => toggleGroupExpanded(keyName)}

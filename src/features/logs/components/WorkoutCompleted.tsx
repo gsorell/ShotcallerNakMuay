@@ -29,6 +29,12 @@ interface WorkoutCompletedProps {
   onReset: () => void;
   onViewLog: () => void;
   /**
+   * Present when the screen was opened from somewhere to go back to — a row
+   * in the Workout Logs. After a session that has just finished there is
+   * nowhere "back" to, and the links under the card do the leaving.
+   */
+  onBack?: () => void;
+  /**
    * Rendered above the icon row. The guided path puts its "next level" button
    * here; passed in as a slot so this component stays unaware of the roadmap —
    * importing it directly would make logs and roadmap a circular import.
@@ -220,6 +226,7 @@ export default function WorkoutCompleted({
   onRestart,
   onReset,
   onViewLog,
+  onBack,
   primaryAction,
 }: WorkoutCompletedProps) {
   const exportRef = useRef<HTMLDivElement>(null);
@@ -324,7 +331,24 @@ export default function WorkoutCompleted({
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: "2rem auto" }}>
+    // Without a Back row the card would start right under the app menu, at
+    // the page's top corner; the margin keeps it clear.
+    <div
+      style={{
+        maxWidth: 500,
+        margin: onBack ? "0 auto 2rem" : "3.5rem auto 2rem",
+      }}
+    >
+      {onBack && (
+        <div style={{ marginBottom: "1rem" }}>
+          <button type="button" className="back-link" onClick={onBack}>
+            <span className="back-link-arrow" aria-hidden="true">
+              ←
+            </span>
+            Back
+          </button>
+        </div>
+      )}
       {celebrationQueue.length > 0 && (
         <CharmCelebrationModal
           charm={celebrationQueue[0]!.charm}

@@ -6,9 +6,15 @@
    clear — a back link, where there is one, is at the other end of the row. */
 .app-menu-slot {
   position: absolute;
-  top: 1.5rem;
+  /* The page's own top edge: the first row of every page starts here, so a
+     Back link at the leading edge and this button share a centre line. */
+  top: 2rem;
   right: 2rem;
   z-index: 5;
+  /* The height of that first row — see `.back-link` and the mode switches. */
+  display: flex;
+  align-items: center;
+  height: 2.25rem;
 }
 
 /* A solid block of the app's own pink, not a bare glyph. As three thin white

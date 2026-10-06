@@ -17,8 +17,11 @@
   align-items: center;
   gap: 0.4rem;
   /* No visible box, but keep a comfortable target — this is a phone control,
-     and the text alone is a small thing to hit. */
-  padding: 0.5rem 0.25rem;
+     and the text alone is a small thing to hit. The fixed height is the app
+     menu's, at the other end of the same row, so the two sit on one line. */
+  box-sizing: border-box;
+  min-height: 2.25rem;
+  padding: 0 0.25rem;
   color: #f9a8d4;
   font-weight: 600;
   font-size: 0.9rem;
