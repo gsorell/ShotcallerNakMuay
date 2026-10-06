@@ -26,6 +26,12 @@ interface AppLayoutProps {
   // In-flow bottom bar (e.g. the Start controls). Kept out of the scroll
   // region so the scrollbar stays within the main content only.
   bottomBar?: React.ReactNode;
+  /**
+   * The app menu. Pinned to the top corner of the page content, under the
+   * header rather than in it: beside the logo it crowded the logo. Absent
+   * during a live session.
+   */
+  menu?: React.ReactNode;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -38,6 +44,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   linkButtonStyle,
   setPage,
   bottomBar,
+  menu,
 }) => {
   // Which page the live scroll position belongs to. A ref because the listener
   // below is installed once and must always write against the CURRENT page.
@@ -87,7 +94,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <Header onHelp={onHelp} onLogoClick={onLogoClick} />
 
       <div className="app-layout-wrapper app-scroll">
-        <main className="app-layout-main">{children}</main>
+        <main className="app-layout-main">
+          {menu && <div className="app-menu-slot">{menu}</div>}
+          {children}
+        </main>
 
         <Footer
           isActive={isActive}

@@ -20,3 +20,4 @@ export { useUserEngagement } from './hooks/useUserEngagement';
 export { useAndroidAudioDucking } from './hooks/useAndroidAudioDucking';
 export { useIOSAudioSession } from './hooks/useIOSAudioSession';
 export { useSoundEffects } from './hooks/useSoundEffects';
+export { default as AppMenu } from './components/AppMenu';

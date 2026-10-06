@@ -299,7 +299,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
             />
             <p style={{ ...styles.note, fontSize: "0.78rem" }}>
               Leave it blank and we&rsquo;ll pick one for you. You can change it
-              any time from Manage Techniques.
+              any time from the Technique Manager, in the menu.
             </p>
           </>
         )}

@@ -1,0 +1,123 @@
+/* AppMenu.css — the menu button in the header, and the panel it opens. */
+
+/* The top corner of the page content, on the content's own right margin.
+   It rides with the page rather than the header: beside the logo it crowded
+   the logo, and there was no width to give it. Every page keeps this corner
+   clear — a back link, where there is one, is at the other end of the row. */
+.app-menu-slot {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  z-index: 5;
+}
+
+/* A solid block of the app's own pink, not a bare glyph. As three thin white
+   lines it sat beside the loudest thing on the screen — the logo — and was
+   simply not seen. It is the only way to the rest of the app, so it gets the
+   one treatment in the header that reads as a button. */
+.app-menu-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  background: #ec4899;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-menu-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.app-menu-btn[aria-expanded="true"] {
+  background: #be185d;
+}
+
+/* The panel hangs from the button; where exactly is set when it opens. */
+.app-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.app-menu {
+  position: absolute;
+  width: min(19rem, calc(100vw - 1.5rem));
+  padding: 0.4rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #1a1a2e;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.app-menu-item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.7rem;
+  color: #fff;
+  cursor: pointer;
+}
+
+.app-menu-item:hover,
+.app-menu-item:focus-visible {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Where you already are: marked, not hidden, so the list is the same list on
+   every screen. */
+.app-menu-item.is-current {
+  background: rgba(236, 72, 153, 0.14);
+}
+
+.app-menu-item.is-current .app-menu-label {
+  color: #f9a8d4;
+}
+
+.app-menu-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  text-align: left;
+}
+
+.app-menu-label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.app-menu-hint {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.app-menu-streak {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Help is not a place; it is set a little apart from the places. */
+.app-menu-item--help {
+  margin-top: 0.3rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0 0 0.7rem 0.7rem;
+}

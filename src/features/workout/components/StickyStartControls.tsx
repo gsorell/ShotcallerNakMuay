@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
+import { useEntitlement } from "@/features/entitlement";
 import { type Difficulty, type EmphasisKey } from "@/types";
+import { trackEvent } from "@/utils/analytics";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
+import { DEFAULT_ROUND_STRUCTURE, structureSummary } from "../utils/roundPlan";
+import RoundStructureSheet from "./RoundStructureSheet";
 
 interface StickyStartControlsProps {
   onStart: () => void;
@@ -33,7 +37,12 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
     setRoundMin,
     restMinutes,
     setRestMinutes,
+    roundStructure,
+    styleOrder,
+    addCalisthenics,
   } = settings;
+  const { isPro } = useEntitlement();
+  const [showStructure, setShowStructure] = useState(false);
 
   const stepRoundMin = (dir: 1 | -1) => {
     const next = Math.min(30, Math.max(0.25, roundMin + dir * ROUND_MIN_STEP));
@@ -166,6 +175,37 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
             </button>
           ))}
         </div>
+      )}
+
+      {/* One line, however much is set behind it. A bare timer or freestyle
+          round has no rounds to structure, but the voice still lives in the
+          same sheet, so the line stays and says what it opens. */}
+      <button
+        type="button"
+        className="rs-entry"
+        onClick={() => {
+          trackEvent("round_structure_open", { is_pro: isPro });
+          setShowStructure(true);
+        }}
+      >
+        {selectedEmphases.timer_only || selectedEmphases.freestyle ? (
+          <strong>Session settings</strong>
+        ) : (
+          <>
+            Session settings:
+            <strong>
+              {structureSummary(
+                isPro ? roundStructure : DEFAULT_ROUND_STRUCTURE,
+                styleOrder.length,
+                isPro && addCalisthenics
+              )}
+            </strong>
+          </>
+        )}
+        <span aria-hidden="true">›</span>
+      </button>
+      {showStructure && (
+        <RoundStructureSheet onClose={() => setShowStructure(false)} />
       )}
 
       <button

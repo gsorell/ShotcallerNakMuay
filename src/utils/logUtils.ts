@@ -58,6 +58,14 @@ export function createWorkoutLogEntry(
       addCalisthenics: settings.addCalisthenics,
       readInOrder: settings.readInOrder,
       southpawMode: settings.southpawMode,
+      // Enough to rebuild the same round plan on resume. Absent on a guided
+      // level, which has no styles to structure.
+      ...(roadmap
+        ? {}
+        : {
+            roundStructure: settings.roundStructure,
+            styleOrder: settings.styleOrder,
+          }),
     },
   };
 

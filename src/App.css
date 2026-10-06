@@ -475,21 +475,6 @@ html {
   }
 }
 
-.advanced-settings-panel {
-  width: 100%;
-  max-width: 24rem;
-  margin: 0 auto;
-  box-sizing: border-box;
-  padding-top: 0;
-}
-
-@media (max-width: 600px) {
-  .advanced-settings-panel {
-    max-width: 100vw;
-    padding: 1rem !important;
-  }
-}
-
 /* Only show backglow on hover and active, not on focus */
 .emphasis-grid > button {
   transition: box-shadow 0.2s;

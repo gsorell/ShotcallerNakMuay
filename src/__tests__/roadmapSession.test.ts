@@ -349,7 +349,7 @@ describe("rest between rounds", () => {
 });
 
 describe("southpaw", () => {
-  // A southpaw turns southpaw mode on in Advanced Settings and then starts a
+  // A southpaw turns southpaw mode on in Session Settings and then starts a
   // level. Every callout is mirrored on the way out, so the question is whether
   // mirroring can ever produce something the level has not taught.
   const mirroredSlug = (text: string) =>

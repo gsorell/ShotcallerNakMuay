@@ -1,125 +1,72 @@
 import type { TechniqueShape } from "@/utils/techniqueUtils";
-import { useRef, useState } from "react";
+import StyleMenu, { type StyleMenuItem } from "./StyleMenu";
 
 interface TechniqueGroupHeaderProps {
   keyName: string;
   group: TechniqueShape;
-  isCoreStyle: boolean;
   thumbnail?: string;
-  onDuplicate?: () => void;
-  onShare?: () => void;
   expanded: boolean;
   toggleGroupExpanded: (key: string) => void;
-  updateGroupLabel: (label: string) => void;
+  /** What can be done to the style as a whole — see StyleMenu. */
+  actions?: StyleMenuItem[];
 }
 
+/**
+ * A style's row: which style it is, what you can do to it, and the way in.
+ *
+ * It says the same thing open or closed. The name used to turn into a text
+ * field in place once the style was open, which left a field squeezed between
+ * the icon and two buttons and cut the name off mid-word on a phone. Renaming
+ * now happens in the open style, with the description — see StyleNameField.
+ */
 export default function TechniqueGroupHeader({
   keyName,
   group,
-  isCoreStyle,
   thumbnail,
-  onDuplicate,
-  onShare,
   expanded,
   toggleGroupExpanded,
-  updateGroupLabel,
+  actions = [],
 }: TechniqueGroupHeaderProps) {
-  // Local buffered state for stable editing (commit on blur/Enter)
-  const [tempEditValue, setTempEditValue] = useState<string>("");
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-
-  // Always use the current group data as the source of truth
   const currentTitle = group.title ?? group.label ?? keyName;
-  const displayValue = isEditing ? tempEditValue : currentTitle;
 
   return (
     <div
       className={`tech-editor-group-header ${expanded ? "is-expanded" : ""}`}
     >
-      {/* Top row: icon and title */}
       <div className="tech-editor-header-row">
         {thumbnail && (
           <img
             src={thumbnail}
-            alt={`${group.title ?? group.label ?? keyName} thumbnail`}
+            alt={`${currentTitle} thumbnail`}
             className="tech-editor-thumbnail"
           />
         )}
-        <div style={{ flex: 1 }}>
-          {expanded ? (
-            <input
-              type="text"
-              value={displayValue}
-              onChange={(e) => setTempEditValue(e.target.value)}
-              onFocus={() => {
-                setTempEditValue(currentTitle); // Initialize temp value with current title
-                setIsEditing(true);
-              }}
-              onBlur={() => {
-                const trimmed = tempEditValue.trim();
-
-                if (trimmed) {
-                  // Parent provides a bound updater via getUpdateLabelHandler(key)
-                  // So call the provided updateGroupLabel with the single trimmed label argument.
-                  updateGroupLabel(trimmed);
-                }
-                setIsEditing(false);
-                setTempEditValue(""); // Clear temp value
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  const trimmed = tempEditValue.trim();
-
-                  if (trimmed) {
-                    updateGroupLabel(trimmed);
-                  }
-                  setIsEditing(false);
-                  setTempEditValue("");
-                } else if (e.key === "Escape") {
-                  setIsEditing(false);
-                  setTempEditValue("");
-                }
-              }}
-              className="tech-editor-input tech-editor-input--title"
-              placeholder="Group name"
-              aria-label="Group title"
-            />
-          ) : (
-            <h3 className="tech-editor-title">{currentTitle}</h3>
-          )}
+        {/* The name opens and closes the style too — the whole row reads as
+            one thing to tap, and the button at the end is the same action for
+            the keyboard. */}
+        <div
+          className="tech-editor-title-area"
+          style={{ flex: 1 }}
+          onClick={() => toggleGroupExpanded(keyName)}
+        >
+          <h3 className="tech-editor-title">{currentTitle}</h3>
         </div>
-        {/* Buttons row - inline with icon/title */}
+        {/* The trailing edge: what you can do with the style (the menu), then
+            the way in (the chevron). Icons, not filled buttons — the row is
+            mostly a name, and should read as one. */}
         <div className="tech-editor-buttons-row-inline">
-          {onShare && (
-            <button
-              onClick={onShare}
-              className="tech-editor-btn tech-editor-btn--share"
-              title="Share this style"
-              aria-label={`Share ${currentTitle}`}
-            >
-              ↗
-            </button>
-          )}
-          {onDuplicate && (
-            <button
-              onClick={onDuplicate}
-              className="tech-editor-btn tech-editor-btn--copy"
-              title="Duplicate this group"
-              aria-label="Duplicate group"
-            >
-              ⧉
-            </button>
-          )}
+          <StyleMenu styleName={currentTitle} items={actions} />
           <button
+            type="button"
             onClick={() => toggleGroupExpanded(keyName)}
-            className={`tech-editor-btn tech-editor-btn--expand ${
-              expanded ? "is-expanded" : ""
-            }`}
+            className={`tech-editor-disclose ${expanded ? "is-expanded" : ""}`}
             title={expanded ? "Collapse" : "Expand"}
             aria-label={expanded ? "Collapse group" : "Expand group"}
+            aria-expanded={expanded}
           >
-            {expanded ? "▲" : "▼"}
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M3.5 6 8 10.5 12.5 6" />
+            </svg>
           </button>
         </div>
       </div>

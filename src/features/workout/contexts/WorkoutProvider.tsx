@@ -20,7 +20,7 @@ import {
 } from "@/features/roadmap/storage";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { createWorkoutLogEntry, type RoadmapLogRef } from "@/utils/logUtils";
-import { generateTechniquePool } from "@/utils/techniqueUtils";
+import { generateTechniquePool, humanizeKey } from "@/utils/techniqueUtils";
 import { scrollContentToTop } from "@/utils/scroll";
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from "react";
 import { useHomeStats } from "../../logs";
@@ -35,6 +35,22 @@ import {
   type ParkedSettings,
 } from "../utils/borrowedSettings";
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
+import { useEntitlement } from "@/features/entitlement";
+import {
+  DEFAULT_ROUND_STRUCTURE,
+  buildRoundPool,
+  calisthenicsPool,
+  describeRound,
+  finisherSeconds,
+  isDefaultStructure,
+  planRounds,
+  planVaries,
+  poolKey,
+  reconcileStyleOrder,
+  sanitizeRoundStructure,
+  type PlannedRound,
+  type RoundStructure,
+} from "../utils/roundPlan";
 
 // Context for workout-related state
 interface WorkoutContextValue {
@@ -71,6 +87,10 @@ interface WorkoutContextValue {
   /** The level currently being drilled, or null for a normal session. */
   activeRoadmap: { path: RoadmapPath; level: RoadmapLevel } | null;
   startRoadmapLevel: (path: RoadmapPath, level: RoadmapLevel) => void;
+
+  // Round structure
+  /** One entry per round of the session in progress; null on a guided level. */
+  sessionPlan: PlannedRound[] | null;
 
   // Actions
   getTechniquePool: () => TechniqueWithStyle[];
@@ -140,6 +160,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   // Audio hooks
   const { tts, sfx, platform } = useAudioSystem();
 
+  // Structuring rounds is a Pro feature. Read here as well as in the sheet
+  // that edits it, so a lapsed subscription falls back to a standard session
+  // rather than keeping a structure it can no longer change.
+  const { isPro } = useEntitlement();
+
   // Call interruption state
   const [isInterruptedByCall, setIsInterruptedByCall] = useState(false);
   const pauseSessionRef = useRef<(() => void) | null>(null);
@@ -205,6 +230,120 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     settingsRef.current.setReadInOrder(walksPoolInOrder(round));
   }, []);
 
+  // --- Round structure ---
+  // The plan for a normal session, one entry per round. Same split as the
+  // guided path above: the ref is what the timer callbacks read, the state
+  // copy is for the UI.
+  const sessionPlanRef = useRef<PlannedRound[] | null>(null);
+  const [sessionPlan, setSessionPlan] = useState<PlannedRound[] | null>(null);
+  // What the plan was built from, so the log entry records the structure the
+  // session actually ran rather than whatever the setting says by then.
+  const sessionStructureRef = useRef<{
+    structure: RoundStructure;
+    styleOrder: string[];
+  } | null>(null);
+  // Tracked here for the same reason as `roadmapRoundRef`.
+  const planRoundRef = useRef(1);
+  // Where an in-order walk had got to in each pool. A style that comes round
+  // again picks up where it left off instead of starting over, and a session
+  // whose rounds all share one pool walks straight through as it always has.
+  const planPoolKeyRef = useRef("");
+  const orderedIndexByPoolRef = useRef(new Map<string, number>());
+  // The round whose calisthenics finisher has already been switched in.
+  const finisherRoundRef = useRef(0);
+
+  const switchPoolKey = useCallback((key: string) => {
+    const engine = calloutEngineRef.current;
+    if (!engine || key === planPoolKeyRef.current) return;
+    orderedIndexByPoolRef.current.set(
+      planPoolKeyRef.current,
+      engine.orderedIndexRef.current
+    );
+    engine.orderedIndexRef.current =
+      orderedIndexByPoolRef.current.get(key) ?? 0;
+    planPoolKeyRef.current = key;
+  }, []);
+
+  const beginSessionPlan = useCallback(
+    (input: {
+      structure: RoundStructure;
+      styleOrder: string[];
+      roundsCount: number;
+      addCalisthenics: boolean;
+    }) => {
+      const plan = planRounds({
+        structure: input.structure,
+        styles: input.styleOrder,
+        roundsCount: input.roundsCount,
+        addCalisthenics: input.addCalisthenics,
+      });
+      sessionPlanRef.current = plan;
+      setSessionPlan(plan);
+      sessionStructureRef.current = {
+        structure: input.structure,
+        styleOrder: input.styleOrder,
+      };
+      planRoundRef.current = 1;
+      planPoolKeyRef.current = "";
+      orderedIndexByPoolRef.current.clear();
+      finisherRoundRef.current = 0;
+    },
+    []
+  );
+
+  /** Drop the plan — for sessions that have none, and when one ends. */
+  const clearSessionPlan = useCallback(() => {
+    sessionPlanRef.current = null;
+    setSessionPlan(null);
+    sessionStructureRef.current = null;
+    settingsRef.current.paceFactorRef.current = 1;
+    if (calloutEngineRef.current) {
+      calloutEngineRef.current.poolSharesRef.current = null;
+    }
+  }, []);
+
+  /** Point the callout engine at the planned pool for a given round. */
+  const applyPlannedRound = useCallback(
+    (round: number) => {
+      const plan = sessionPlanRef.current;
+      const engine = calloutEngineRef.current;
+      if (!plan || !engine) return;
+      const planned = plan[Math.min(Math.max(round, 1), plan.length) - 1];
+      if (!planned) return;
+
+      let built = buildRoundPool(
+        techniquesRef.current,
+        planned,
+        techniqueIndexRef.current
+      );
+      // A round with nothing to call — a style emptied in the editor, say —
+      // falls back to the whole selection rather than running in silence.
+      if (!built.flat.length) {
+        built = {
+          flat: generateTechniquePool(
+            techniquesRef.current,
+            settingsRef.current.selectedEmphases,
+            settingsRef.current.addCalisthenics,
+            techniqueIndexRef.current
+          ),
+          shares: null,
+        };
+      }
+      engine.currentPoolRef.current = built.flat;
+      engine.poolSharesRef.current = built.shares;
+      switchPoolKey(poolKey(planned));
+      settingsRef.current.paceFactorRef.current = planned.paceFactor;
+    },
+    [techniquesRef, techniqueIndexRef, switchPoolKey]
+  );
+
+  /** Settings as the log should record them for the session in progress. */
+  const settingsForLog = (s: ReturnType<typeof useWorkoutSettings>) => ({
+    ...s,
+    roundStructure: sessionStructureRef.current?.structure,
+    styleOrder: sessionStructureRef.current?.styleOrder,
+  });
+
   // Timer handlers
   const stopSessionCleanup = useCallback(() => {
     // Cleanup when workout session ends
@@ -216,12 +355,13 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // the session (level 1 for a fresh start, mid-level for a resume), so this
     // applies it rather than assuming round 1.
     if (activeRoadmapRef.current) applyRoadmapRound(roadmapRoundRef.current);
+    else applyPlannedRound(planRoundRef.current);
     // A genuine round boundary — start the pace ramp over. Pausing does not
     // come through here, which is what lets a resume pick the ramp back up
     // where it was rather than at the beginning.
     calloutEngineRef.current?.resetRoundPace?.();
     sfx.playBell();
-  }, [sfx, applyRoadmapRound]);
+  }, [sfx, applyRoadmapRound, applyPlannedRound]);
 
   const handleRoundEnd = useCallback(() => {
     // Immediately stop any ongoing callouts mid-utterance
@@ -234,8 +374,27 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   const handleRestWarning = useCallback(() => {
     // 10 seconds warning - just TTS announcement, no bell
-    tts.speakSystem("10 seconds", settings.voiceSpeed);
-  }, [tts, settings.voiceSpeed]);
+    let line = "10 seconds";
+    // When the rounds differ, say what is coming. It rides on this warning
+    // because rest is the one place nothing else is being called: spoken at
+    // the bell, it would land on top of the round's first callout.
+    const plan = sessionPlanRef.current;
+    const next =
+      plan && !activeRoadmapRef.current && planVaries(plan)
+        ? plan[planRoundRef.current]
+        : undefined;
+    if (next) {
+      const { labels } = describeRound(next, (key) => {
+        const found = emphasisList.find((e) => e.key === key);
+        return found ? found.label : humanizeKey(key);
+      });
+      line +=
+        labels.length <= 2
+          ? `. Next, ${labels.join(" and ")}`
+          : ". Next, a mixed round";
+    }
+    tts.speakSystem(line, settings.voiceSpeed);
+  }, [tts, settings.voiceSpeed, emphasisList]);
 
   const handleRestBell = useCallback(() => {
     // 5 seconds warning - interval bell (not the big bell)
@@ -248,11 +407,14 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     if (activeRoadmapRef.current) {
       roadmapRoundRef.current += 1;
       applyRoadmapRound(roadmapRoundRef.current);
+    } else {
+      planRoundRef.current += 1;
+      applyPlannedRound(planRoundRef.current);
     }
     calloutEngineRef.current?.resetRoundPace?.();
     // Round starting - big bell
     sfx.playBell();
-  }, [sfx, applyRoadmapRound]);
+  }, [sfx, applyRoadmapRound, applyPlannedRound]);
 
   // Create refs to store latest values for workout completion
   const calloutEngineRef = React.useRef<any>(null);
@@ -273,7 +435,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
     // Save workout log and show completion screen
     const logEntry = createWorkoutLogEntry(
-      settingsRef.current,
+      settingsForLog(settingsRef.current),
       timerRef.current,
       calloutEngineRef.current.shotsCalledOutRef.current,
       emphasisList,
@@ -310,6 +472,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       setActiveRoadmap(null);
       restoreUserSettings();
     }
+    clearSessionPlan();
 
     // Trigger stats refresh
     triggerStatsRefresh();
@@ -321,7 +484,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
     // Announce completion
     tts.speakSystem("Workout complete! Great job!", settingsRef.current.voiceSpeed);
-  }, [emphasisList, triggerStatsRefresh, tts, restoreUserSettings]);
+  }, [emphasisList, triggerStatsRefresh, tts, restoreUserSettings, clearSessionPlan]);
 
   // Timer
   const timer = useWorkoutTimer({
@@ -348,6 +511,46 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   // Store callout engine in ref
   calloutEngineRef.current = calloutEngine;
+
+  // Calisthenics finisher: inside the last stretch of a round, swap the pool
+  // for the calisthenics list. The engine reads its pool on every callout, so
+  // the round carries straight on. The next round's own pool goes back in at
+  // its boundary, and pausing inside the finisher leaves it in place.
+  useEffect(() => {
+    const plan = sessionPlanRef.current;
+    const engine = calloutEngineRef.current;
+    if (!plan || !engine || activeRoadmapRef.current) return;
+    if (!timer.running || timer.isResting || timer.timeLeft <= 0) return;
+    const round = planRoundRef.current;
+    if (finisherRoundRef.current === round) return;
+    const planned = plan[Math.min(round, plan.length) - 1];
+    if (planned?.calisthenics !== "finisher") return;
+    const windowSec = finisherSeconds(settings.roundMin);
+    if (!windowSec || timer.timeLeft > windowSec) return;
+
+    finisherRoundRef.current = round;
+    const cal = calisthenicsPool(
+      techniquesRef.current,
+      techniqueIndexRef.current
+    );
+    if (!cal.length) return;
+    engine.currentPoolRef.current = cal;
+    engine.poolSharesRef.current = null;
+    switchPoolKey("finisher");
+    // Mark the switch. A sound rather than a spoken cue, which would land on
+    // top of a callout; the interval bell rather than the big one, which
+    // means a round has started or ended.
+    sfx.playWarningSound();
+  }, [
+    sfx,
+    timer.timeLeft,
+    timer.running,
+    timer.isResting,
+    settings.roundMin,
+    techniquesRef,
+    techniqueIndexRef,
+    switchPoolKey,
+  ]);
 
   // Freestyle clack engine
   const isFreestyle = settings.selectedEmphases.freestyle &&
@@ -457,11 +660,18 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     const activeEmphases = Object.keys(settings.selectedEmphases).filter(
       (k) => settings.selectedEmphases[k as EmphasisKey]
     );
+    // A structure needs techniques to arrange, and Pro to have been chosen.
+    const structure =
+      isPro && !noTechniqueMode
+        ? settings.roundStructure
+        : DEFAULT_ROUND_STRUCTURE;
     trackEvent(AnalyticsEvents.WorkoutStart, {
       selected_emphases: activeEmphases.join(","),
       emphasis_count: activeEmphases.length,
       difficulty: settings.difficulty,
       rounds: settings.roundsCount,
+      mix_mode: structure.mixMode,
+      structured: !isDefaultStructure(structure),
     });
 
     // Unlock audio for iOS Safari (must happen during user gesture)
@@ -473,15 +683,25 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     void sfx.startKeepAlive();
 
     // Init Engine
-    if (settings.readInOrder) {
-      calloutEngine.currentPoolRef.current = pool;
-    } else {
-      calloutEngine.currentPoolRef.current = pool.sort(
-        () => Math.random() - 0.5
-      );
-    }
+    calloutEngine.currentPoolRef.current = pool;
     calloutEngine.orderedIndexRef.current = 0;
     calloutEngine.shotsCalledOutRef.current = 0;
+    if (noTechniqueMode) {
+      clearSessionPlan();
+    } else {
+      // Every technique session runs off a plan, including the ordinary one —
+      // its plan is simply the same round each time.
+      beginSessionPlan({
+        structure,
+        styleOrder: reconcileStyleOrder(
+          settings.styleOrder,
+          settings.selectedEmphases
+        ),
+        roundsCount: settings.roundsCount,
+        addCalisthenics: settings.addCalisthenics,
+      });
+      applyPlannedRound(1);
+    }
 
     tts.speakSystem("Get ready", settings.voiceSpeed);
     timer.startTimer();
@@ -496,6 +716,10 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     calloutEngine,
     tts,
     timer,
+    isPro,
+    beginSessionPlan,
+    applyPlannedRound,
+    clearSessionPlan,
   ]);
 
   /**
@@ -526,6 +750,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       // machine. Loosen it into something closer to a real pad round.
       settings.variedCadenceRef.current = true;
 
+      // A guided level drives its own pool; it has no round plan.
+      clearSessionPlan();
+
       activeRoadmapRef.current = { path, level };
       setActiveRoadmap({ path, level });
       roadmapRoundRef.current = 1;
@@ -552,7 +779,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         scrollContentToTop();
       }, 150);
     },
-    [settings, calloutEngine, tts, sfx, timer, setPage, parkUserSettings]
+    [settings, calloutEngine, tts, sfx, timer, setPage, parkUserSettings, clearSessionPlan]
   );
 
   const pauseSession = useCallback(() => {
@@ -594,7 +821,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // marker so it can be resumed from history, but it is not marked cleared.
     const active = activeRoadmapRef.current;
     createWorkoutLogEntry(
-      settings,
+      settingsForLog(settings),
       timer,
       calloutEngine.shotsCalledOutRef.current,
       emphasisList,
@@ -612,6 +839,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       setRoadmapFocusLevel(active.level.id);
       setPage("roadmap");
     }
+    clearSessionPlan();
     triggerStatsRefresh();
     timer.stopTimer();
     calloutEngine.setCurrentCallout("");
@@ -626,6 +854,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     restoreUserSettings,
     setRoadmapFocusLevel,
     setPage,
+    clearSessionPlan,
   ]);
 
   const resumeWorkout = useCallback(
@@ -654,6 +883,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         const resumeRound = (logEntry.roundsCompleted || 0) + 1;
         settings.setReadInOrder(walksPoolInOrder(resumeRound));
         settings.variedCadenceRef.current = true;
+        clearSessionPlan();
         activeRoadmapRef.current = { path, level };
         setActiveRoadmap({ path, level });
         roadmapRoundRef.current = resumeRound;
@@ -692,9 +922,27 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       calloutEngine.shotsCalledOutRef.current = logEntry.shotsCalledOut || 0;
       setPage("timer");
 
+      // Read off the log entry rather than the settings: the setters above
+      // have not landed in this closure, so `settings` here still holds
+      // whatever was selected before Resume was tapped.
+      const resumed = logEntry.settings;
+      const resumedEmphases: Record<EmphasisKey, boolean> =
+        resumed?.selectedEmphases ?? settings.selectedEmphases;
+      const resumedCalisthenics = Boolean(
+        resumed ? resumed.addCalisthenics : settings.addCalisthenics
+      );
+      const noTechniqueMode = Boolean(
+        resumedEmphases.timer_only || resumedEmphases.freestyle
+      );
+
       setTimeout(async () => {
-        const pool = getTechniquePool();
-        if (!pool.length && !logEntry.settings?.selectedEmphases?.timer_only && !logEntry.settings?.selectedEmphases?.freestyle) {
+        const pool = generateTechniquePool(
+          techniquesRef.current,
+          resumedEmphases,
+          resumedCalisthenics,
+          techniqueIndexRef.current
+        );
+        if (!pool.length && !noTechniqueMode) {
           alert("Cannot resume: No techniques found.");
           return;
         }
@@ -704,14 +952,28 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         await sfx.ensureMediaUnlocked();
         void sfx.startKeepAlive();
 
-        if (logEntry.settings?.readInOrder) {
-          calloutEngine.currentPoolRef.current = pool;
-        } else {
-          calloutEngine.currentPoolRef.current = pool.sort(
-            () => Math.random() - 0.5
-          );
-        }
+        calloutEngine.currentPoolRef.current = pool;
         calloutEngine.orderedIndexRef.current = 0;
+        if (noTechniqueMode) {
+          clearSessionPlan();
+        } else {
+          // Rebuild the plan the session was running, and rejoin it at the
+          // round after the last one finished. An entry from before round
+          // structure existed has none recorded, which reads as standard.
+          beginSessionPlan({
+            structure: isPro
+              ? sanitizeRoundStructure(resumed?.roundStructure)
+              : DEFAULT_ROUND_STRUCTURE,
+            styleOrder: reconcileStyleOrder(
+              Array.isArray(resumed?.styleOrder) ? resumed.styleOrder : [],
+              resumedEmphases
+            ),
+            roundsCount: logEntry.roundsPlanned,
+            addCalisthenics: resumedCalisthenics,
+          });
+          planRoundRef.current = (logEntry.roundsCompleted || 0) + 1;
+          applyPlannedRound(planRoundRef.current);
+        }
 
         timer.resumeTimerState(logEntry);
         tts.speakSystem("Resuming workout. Get ready", settings.voiceSpeed);
@@ -722,11 +984,16 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       settings,
       calloutEngine,
       setPage,
-      getTechniquePool,
+      techniquesRef,
+      techniqueIndexRef,
       sfx,
       tts,
       timer,
       parkUserSettings,
+      isPro,
+      beginSessionPlan,
+      applyPlannedRound,
+      clearSessionPlan,
     ]
   );
 
@@ -804,6 +1071,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     clearCallInterruption,
     activeRoadmap,
     startRoadmapLevel,
+    sessionPlan,
     getTechniquePool,
     hasSelectedEmphasis,
     startSession,

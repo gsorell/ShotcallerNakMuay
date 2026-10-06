@@ -23,8 +23,15 @@ interface ActiveSessionUIProps {
   selectedEmphases: Record<EmphasisKey, boolean>;
   emphasisList: any[];
   isInterruptedByCall?: boolean;
-  /** What the next round holds — shown during rest on a guided level. */
+  /** What the next round holds — shown during rest when rounds differ. */
   upNext?: { round: number; title: string; description: string } | null;
+  /**
+   * The styles this round is drawing on, when the rounds differ. The rest of
+   * the selection stays on screen, dimmed. Null when every round is the same.
+   */
+  activeStyleKeys?: string[] | null;
+  /** What is particular about this round — "Calisthenics finisher", say. */
+  roundNote?: string | null;
 }
 
 export default function ActiveSessionUI({
@@ -46,6 +53,8 @@ export default function ActiveSessionUI({
   emphasisList,
   isInterruptedByCall = false,
   upNext = null,
+  activeStyleKeys = null,
+  roundNote = null,
 }: ActiveSessionUIProps) {
   if (!running && !isPreRound) return null;
 
@@ -85,7 +94,9 @@ export default function ActiveSessionUI({
             Up next · Round {upNext.round}
           </div>
           <div className="active-session-upnext-title">{upNext.title}</div>
-          <p className="active-session-upnext-desc">{upNext.description}</p>
+          {upNext.description && (
+            <p className="active-session-upnext-desc">{upNext.description}</p>
+          )}
         </section>
       )}
 
@@ -147,7 +158,7 @@ export default function ActiveSessionUI({
           className="active-session-styles"
         >
           <div className="active-session-styles-title">
-            Selected Styles
+            {roundNote ?? (activeStyleKeys ? "This Round" : "Selected Styles")}
           </div>
           <div className="active-session-styles-grid">
             {emphasisList
@@ -155,7 +166,11 @@ export default function ActiveSessionUI({
               .map((e) => (
                 <div
                   key={e.key}
-                  className="active-session-style-chip"
+                  className={`active-session-style-chip ${
+                    activeStyleKeys && !activeStyleKeys.includes(e.key)
+                      ? "is-idle"
+                      : ""
+                  }`}
                   title={e.desc}
                 >
                   <ImageWithFallback

@@ -172,6 +172,12 @@
   color: white;
 }
 
+/* A style sitting this round out. Kept rather than removed, so the row does
+   not reshuffle at every bell. */
+.active-session-style-chip.is-idle {
+  opacity: 0.35;
+}
+
 .active-session-style-chip img {
   width: 20px;
   height: 20px;

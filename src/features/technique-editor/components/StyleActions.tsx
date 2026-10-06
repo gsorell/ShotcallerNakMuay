@@ -21,7 +21,9 @@ type StyleActionsProps = {
  * intent from different sources, so they should not look like different
  * species of control.
  */
-export default function StyleActions({ onCreate }: StyleActionsProps) {
+export default function StyleActions({
+  onCreate,
+}: StyleActionsProps) {
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
 

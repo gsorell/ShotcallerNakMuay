@@ -24,9 +24,11 @@
 
 /* ------------------------------------------------------------------ learn -- */
 
-/* Borrows the emphasis tiles' shell — same 1rem radius, same 2px translucent
-   border, same 10% fill — so it belongs to the screen. It is wider and shorter
-   than a tile, and it navigates rather than toggles. */
+/* Solid in the app's high-value pink — the same fill as "New Style" and the
+   menu button. It used to borrow the style tiles' translucent shell, which
+   made it read as a tenth tile at the foot of nine: the one destination this
+   screen promotes was dressed as one more thing to select. Same radius as the
+   tiles, so it still belongs to the screen. */
 .setup-learn-card {
   display: flex;
   align-items: center;
@@ -36,23 +38,27 @@
   box-sizing: border-box;
   padding: 0.75rem 1rem;
   border-radius: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.1);
+  border: 2px solid transparent;
+  background-color: #ec4899;
   color: #fff;
   text-align: left;
   cursor: pointer;
-  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 10px 24px rgba(236, 72, 153, 0.28);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .setup-learn-card:hover {
-  border-color: rgba(236, 72, 153, 0.45);
-  background-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  background-color: #f25aa6;
+  box-shadow: 0 12px 28px rgba(236, 72, 153, 0.38);
+}
+
+.setup-learn-card:active {
+  transform: translateY(1px);
 }
 
 .setup-learn-card:focus-visible {
   outline: none;
-  border-color: #60a5fa;
+  border-color: #fff;
 }
 
 /* Sized to sit where the 56px icon used to, with a little more room because a
@@ -60,6 +66,9 @@
 .setup-learn-figure {
   --sprite-size: 64px;
   flex-shrink: 0;
+  /* The silhouette is drawn in pink, which vanishes on a pink card. Flattened
+     to white here, and only here. */
+  filter: brightness(0) invert(1);
 }
 
 .setup-learn-text {
@@ -81,20 +90,19 @@
 .setup-learn-desc {
   font-size: 0.8rem;
   line-height: 1.3;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .setup-learn-chevron {
   flex: none;
   font-size: 1.35rem;
   line-height: 1;
-  color: rgba(249, 168, 212, 0.8);
+  color: #fff;
 }
 
 /* ----------------------------------------------------------------- manage -- */
 
-/* A link, matching "Show Advanced Settings" below it — the two quiet utilities
-   at the bottom of the screen now read as the same kind of thing. */
+/* A link rather than a card: a quiet utility at the bottom of the screen. */
 .setup-manage-link {
   all: unset;
   cursor: pointer;

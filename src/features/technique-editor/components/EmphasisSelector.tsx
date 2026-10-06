@@ -1,15 +1,22 @@
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { isFreeEmphasis, useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
 import type { EmphasisKey, TechniquesShape } from "@/types";
+import { trackEvent } from "@/utils/analytics";
 import { ImageWithFallback } from "../../shared";
+import { useEmphasisList } from "../hooks/useEmphasisList";
+import {
+  moveStyleKey,
+  saveStyleDisplayOrder,
+  useStyleDisplayOrder,
+} from "../utils/styleDisplayOrder";
 import { TechniqueQuickEdit } from "./TechniqueQuickEdit";
 
 interface EmphasisSelectorProps {
   emphasisList: any[];
   selectedEmphases: Record<EmphasisKey, boolean>;
-  toggleEmphasis: (k: EmphasisKey) => void;
+  toggleEmphasis: (k: EmphasisKey, source?: string) => void;
   techniques: TechniquesShape;
   setTechniques: (t: TechniquesShape) => void;
   showAllEmphases: boolean;
@@ -24,7 +31,14 @@ interface EmphasisSelectorProps {
   leadSlot?: React.ReactNode;
 }
 
-const TILES_WITHOUT_TECHNIQUES = new Set(["timer_only", "freestyle"]);
+// Modes rather than styles: a bare timer and a freestyle round call no
+// techniques. They are offered as a pair of small switches above the grid
+// instead of as tiles in it — as tiles they read as two more fighting styles,
+// and for free users they took two of the first three places.
+const MODE_KEYS = ["timer_only", "freestyle"];
+const TILES_WITHOUT_TECHNIQUES = new Set(MODE_KEYS);
+// Asks for the shipped order, whatever has been saved.
+const NO_ORDER: readonly string[] = [];
 
 export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   emphasisList,
@@ -41,6 +55,34 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   const { isEmphasisUnlocked, isPro, hydrated } = useEntitlement();
   const { openPaywall } = usePaywall();
 
+  // Opening the grid must leave the page where it is, so the new styles appear
+  // below and are scrolled down to. Left alone, the browser's scroll anchoring
+  // does the opposite whenever the tiles are mostly off the top of the screen:
+  // it holds the More button still and pushes the new tiles up out of view.
+  // So the position is noted on the tap and put back before paint. Closing is
+  // left to the browser — there, holding the button still is what you want.
+  const pinnedScrollTop = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const top = pinnedScrollTop.current;
+    if (top === null) return;
+    pinnedScrollTop.current = null;
+    const el = document.querySelector<HTMLElement>(".app-scroll");
+    if (!el) return;
+    el.scrollTop = top;
+    // Once more after layout settles, in case the adjustment lands late.
+    requestAnimationFrame(() => {
+      el.scrollTop = top;
+    });
+  }, [showAllEmphases]);
+
+  const toggleShowAll = () => {
+    if (!showAllEmphases) {
+      pinnedScrollTop.current =
+        document.querySelector<HTMLElement>(".app-scroll")?.scrollTop ?? null;
+    }
+    setShowAllEmphases((v) => !v);
+  };
+
   const toggleExpanded = (key: string) =>
     setExpandedKeys((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -49,37 +91,103 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
   // tiles. Pro users have everything unlocked, so they keep the original
   // archetype-led order.
   const orderedList = useMemo(() => {
-    if (isPro) return emphasisList;
-    const FREE_ORDER = ["newb", "freestyle", "timer_only"];
-    const rank = (key: string) => {
-      const i = FREE_ORDER.indexOf(key);
-      return i === -1 ? FREE_ORDER.length : i;
-    };
-    const free = emphasisList.filter((s) => isFreeEmphasis(s.key as EmphasisKey));
-    free.sort((a, b) => rank(a.key) - rank(b.key));
-    const locked = emphasisList.filter(
+    const styles = emphasisList.filter(
+      (s) => !TILES_WITHOUT_TECHNIQUES.has(s.key)
+    );
+    if (isPro) return styles;
+    const free = styles.filter((s) => isFreeEmphasis(s.key as EmphasisKey));
+    const locked = styles.filter(
       (s) => !isFreeEmphasis(s.key as EmphasisKey)
     );
     return [...free, ...locked];
   }, [emphasisList, isPro]);
 
+  // --- Reordering ---
+  // Done here, on the grid it changes, rather than on the Technique Manager:
+  // moving a tile where you can see it land needs no explaining, where arrows
+  // on another screen needed a caption to say what they were for.
+  //
+  // A mode, because it is done once and then left alone. While it is on, a
+  // tile is something to move, not to select or open, and every style is
+  // shown so that none is out of reach behind "More".
+  const [reordering, setReordering] = useState(false);
+  const savedOrder = useStyleDisplayOrder();
+  const shippedList = useEmphasisList(techniques, NO_ORDER);
+  const orderKeys = orderedList.map((s) => s.key as string);
+
+  const toggleReorder = () => {
+    if (!reordering) {
+      if (!isPro) {
+        openPaywall("style_reorder");
+        return;
+      }
+      if (!showAllEmphases) toggleShowAll();
+    }
+    setReordering((on) => !on);
+  };
+
+  const moveStyle = (key: string, direction: "up" | "down") => {
+    const next = moveStyleKey(orderKeys, key, direction);
+    // Arriving back at the shipped order saves nothing, so styles added to
+    // the app later fall into their intended places.
+    const shipped = shippedList
+      .map((s) => s.key)
+      .filter((k) => !TILES_WITHOUT_TECHNIQUES.has(k));
+    saveStyleDisplayOrder(next.join("\n") === shipped.join("\n") ? [] : next);
+    try {
+      trackEvent("style_order_move", { style: key, direction });
+    } catch { /* analytics must never break the move it measures */ }
+  };
+
+  const modes = MODE_KEYS.map((key) =>
+    emphasisList.find((s) => s.key === key)
+  ).filter(Boolean);
+  const activeMode = modes.find(
+    (mode) => selectedEmphases[mode.key as EmphasisKey]
+  );
+
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-      <div style={{ textAlign: "center", position: "relative" }}>
-        <h2
-          style={{
-            fontSize: "1.5rem",
-            fontWeight: "bold",
-            color: "white",
-            margin: "0 0 1rem 0",
-          }}
-        >
-          Choose Your Fighting Style
-        </h2>
-        <p style={{ color: "#f9a8d4", fontSize: "0.875rem", margin: 0 }}>
-          Select one or more styles to get started.
-        </p>
-      </div>
+      {/* The first row of the page: the two ways to train without picking a
+          style, at the leading edge, level with the app menu at the trailing
+          one. Above the heading rather than under it, because they are an
+          alternative to everything the heading introduces, not a part of it. */}
+      {modes.length > 0 && (
+        <div className="mode-switches">
+          <div className="mode-switches-row">
+            {modes.map((mode) => {
+              const isOn = Boolean(selectedEmphases[mode.key as EmphasisKey]);
+              return (
+                <button
+                  key={mode.key}
+                  type="button"
+                  className={`mode-switch ${isOn ? "is-on" : ""}`}
+                  aria-pressed={isOn}
+                  title={mode.desc}
+                  onClick={() =>
+                    toggleEmphasis(mode.key as EmphasisKey, "mode_switch")
+                  }
+                >
+                  <ImageWithFallback
+                    srcPath={mode.iconPath}
+                    alt=""
+                    emoji={mode.emoji}
+                    className="mode-switch-icon"
+                  />
+                  {mode.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Says what the mode does once it is on — the tile used to carry
+              this line all the time, which is most of why it was so big. */}
+          {activeMode?.desc && (
+            <p className="mode-switches-desc" aria-live="polite">
+              {activeMode.desc}
+            </p>
+          )}
+        </div>
+      )}
       <div
         style={{
           position: "relative",
@@ -89,6 +197,39 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
         }}
       >
         {leadSlot}
+
+        {/* The heading sits directly over the tiles it introduces, under the
+            Start Here card rather than above it. It does the job a separate
+            "Styles" label was doing one row further down, so that label is
+            gone. */}
+        <div className="style-grid-heading">
+          <h2>Choose Your Fighting Style</h2>
+          <p>Select one or more styles to get started.</p>
+        </div>
+
+        {/* Reordering is started from under the tiles; while it is on, this
+            bar says so and offers the way back. */}
+        {reordering && (
+          <div className="style-reorder-bar">
+            <span>Arrange your styles.</span>
+            {savedOrder.length > 0 && (
+              <button
+                type="button"
+                className="style-reorder-reset"
+                onClick={() => saveStyleDisplayOrder([])}
+              >
+                Reset
+              </button>
+            )}
+            <button
+              type="button"
+              className="style-reorder-done"
+              onClick={toggleReorder}
+            >
+              Done
+            </button>
+          </div>
+        )}
 
         <div
           className="emphasis-grid"
@@ -116,16 +257,22 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
             ))}
 
           {hydrated &&
-            (showAllEmphases ? orderedList : orderedList.slice(0, 9)).map(
-            (style) => {
+            (showAllEmphases || reordering
+              ? orderedList
+              : orderedList.slice(0, 9)
+            ).map((style, index) => {
               const isSelected = selectedEmphases[style.key as EmphasisKey];
               const isExpanded = !!expandedKeys[style.key];
               const locked = !isEmphasisUnlocked(style.key as EmphasisKey);
               // Inline editing is a Pro feature; free users view via the full
               // editor (read-only) instead.
               const canEdit =
-                !TILES_WITHOUT_TECHNIQUES.has(style.key) && isPro;
+                !TILES_WITHOUT_TECHNIQUES.has(style.key) &&
+                isPro &&
+                !reordering;
               const activate = () => {
+                // A tile is something to move while reordering, not to pick.
+                if (reordering) return;
                 if (locked) {
                   openPaywall("style_tile");
                 } else {
@@ -227,12 +374,49 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                     </button>
                   )}
 
+                  {reordering && (
+                    <div className="style-reorder-arrows">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveStyle(style.key, "up");
+                        }}
+                        disabled={index === 0}
+                        aria-label={`Move ${style.label} up`}
+                        title="Move earlier"
+                      >
+                        <svg viewBox="0 0 16 16" aria-hidden="true">
+                          <path d="M8 13V3.5M4 7.5l4-4 4 4" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          moveStyle(style.key, "down");
+                        }}
+                        disabled={index === orderedList.length - 1}
+                        aria-label={`Move ${style.label} down`}
+                        title="Move later"
+                      >
+                        <svg viewBox="0 0 16 16" aria-hidden="true">
+                          <path d="M8 3v9.5M4 8.5l4 4 4-4" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "0.625rem",
-                      paddingRight: canEdit || locked ? "2rem" : 0,
+                      paddingRight: reordering
+                        ? "var(--reorder-pad, 5.75rem)"
+                        : canEdit || locked
+                        ? "2rem"
+                        : 0,
                     }}
                   >
                     <ImageWithFallback
@@ -297,55 +481,60 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
                   )}
                 </div>
               );
-            }
-          )}
+            })}
         </div>
 
-        {orderedList.length > 9 && (
+        {reordering ? (
+          // The way out, where the eye is after the last tile moved: the list
+          // is long, and the bar at the top is a scroll away by then.
           <div
             style={{
               display: "flex",
-              justifyContent: "flex-end",
+              justifyContent: "center",
               marginTop: "1rem",
-              paddingRight: "0.5rem",
             }}
           >
             <button
               type="button"
-              onClick={() => setShowAllEmphases((v) => !v)}
-              style={{
-                padding: ".75rem 1rem",
-                borderRadius: "1rem",
-                border: "none",
-                backgroundColor: "transparent",
-                color: "#f9a8d4",
-                boxShadow: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                fontWeight: 500,
-                fontSize: "0.95rem",
-                transition: "all 0.2s",
-                cursor: "pointer",
-                minWidth: 0,
-                opacity: 1,
-              }}
+              className="style-reorder-done style-reorder-done--foot"
+              onClick={toggleReorder}
             >
-              {showAllEmphases ? "Less" : "More"}
-              <span
-                style={{
-                  display: "inline-block",
-                  transition: "transform 0.2s",
-                  fontSize: "1.1em",
-                  marginLeft: 2,
-                  transform: showAllEmphases
-                    ? "rotate(180deg)"
-                    : "rotate(0deg)",
-                }}
-              >
-                ▼
-              </span>
+              Done reordering
             </button>
+          </div>
+        ) : (
+          // Under the tiles, one row: Reorder at the leading edge, "show
+          // more" at the trailing one. A matched pair — same size, weight and
+          // colour, each a label followed by its icon — so the row reads as
+          // one thing rather than two controls that happen to share a line.
+          <div className="style-grid-foot">
+            <button
+              type="button"
+              className="style-grid-foot-link"
+              onClick={toggleReorder}
+            >
+              Reorder
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M5 13V3.5M2.5 6 5 3.5 7.5 6M11 3v9.5M8.5 10l2.5 2.5 2.5-2.5" />
+              </svg>
+            </button>
+            {orderedList.length > 9 && (
+              <button
+                type="button"
+                className="style-grid-foot-link"
+                onClick={toggleShowAll}
+                aria-expanded={showAllEmphases}
+              >
+                {showAllEmphases ? "Show fewer" : "Show more"}
+                <svg
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  className={showAllEmphases ? "is-open" : ""}
+                >
+                  <path d="M3.5 6 8 10.5 12.5 6" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
 

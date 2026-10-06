@@ -1,6 +1,8 @@
 import type { TechniqueShape } from "@/utils/techniqueUtils";
 import { normalizeArray } from "@/utils/techniqueUtils";
 import { GROUP_THUMBNAILS } from "../constants";
+import type { StyleMenuItem } from "./StyleMenu";
+import StyleNameField from "./StyleNameField";
 import TechniqueGroupHeader from "./TechniqueGroupHeader";
 import TechniqueListSection from "./TechniqueListSection";
 
@@ -54,23 +56,50 @@ export default function TechniqueGroupPanel({
     ? "/assets/icon_user.webp"
     : GROUP_THUMBNAILS[keyName];
 
+  // Everything that acts on the style as a whole, in one menu on its row.
+  // Ordered by how often it is wanted, with the one that destroys work last.
+  const actions: StyleMenuItem[] = [];
+  if (onShare) actions.push({ label: "Share", icon: "↗", onSelect: onShare });
+  if (onDuplicate) {
+    actions.push({ label: "Duplicate", icon: "⧉", onSelect: onDuplicate });
+  }
+  if (isCoreStyle && onResetGroup) {
+    actions.push({
+      label: "Restore defaults",
+      icon: "↺",
+      onSelect: onResetGroup,
+      destructive: true,
+    });
+  }
+  if (!isCoreStyle) {
+    actions.push({
+      label: "Delete style",
+      icon: "✕",
+      onSelect: onDeleteGroup,
+      destructive: true,
+    });
+  }
+
   return (
     <div className="tech-editor-panel" id={`group-panel-${keyName}`}>
       <TechniqueGroupHeader
         keyName={keyName}
         group={group}
-        isCoreStyle={isCoreStyle}
         thumbnail={thumbnail}
-        onDuplicate={onDuplicate}
-        onShare={onShare}
         expanded={expanded}
         toggleGroupExpanded={toggleGroupExpanded}
-        updateGroupLabel={updateGroupLabel}
+        actions={actions}
       />
       {expanded && (
         <>
-          {/* Description for all groups */}
-          <div>
+          {/* The style's own details first, as a short form: what it is
+              called, then what it is for. */}
+          <StyleNameField
+            keyName={keyName}
+            name={group.title ?? group.label ?? keyName}
+            onRename={updateGroupLabel}
+          />
+          <div className="tech-editor-field">
             <label htmlFor={`desc-${keyName}`} className="tech-editor-label">
               Description
             </label>
@@ -110,26 +139,6 @@ export default function TechniqueGroupPanel({
               onRemoveItem={onRemoveCombo}
               onAddItem={onAddCombo}
             />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
-            {isCoreStyle && onResetGroup && (
-              <button
-                onClick={onResetGroup}
-                className="tech-editor-btn--action"
-                aria-label={`Restore defaults for ${group.label}`}
-              >
-                Restore Defaults
-              </button>
-            )}
-            {!isCoreStyle && (
-              <button
-                onClick={onDeleteGroup}
-                className="tech-editor-btn--action"
-                aria-label={`Delete group ${group.label}`}
-              >
-                Delete Group
-              </button>
-            )}
           </div>
         </>
       )}

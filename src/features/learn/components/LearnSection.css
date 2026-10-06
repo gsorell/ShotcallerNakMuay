@@ -17,6 +17,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+  /* The app menu sits at this row's trailing corner; the chip stops short. */
+  padding-right: 3rem;
 }
 
 .learn-pro-chip {
@@ -437,6 +439,39 @@
   background: rgba(236, 72, 153, 0.1);
   color: #fff;
   cursor: pointer;
+}
+
+/* The way out to the blog, at the foot of the shelf. Quieter than the path
+   link it borrows its shape from: it leaves the app. */
+.learn-blog-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 1.5rem 0 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  text-decoration: none;
+}
+
+.learn-blog-link:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+.learn-blog-link-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.learn-blog-link-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f9a8d4;
 }
 
 .learn-path-link:hover {

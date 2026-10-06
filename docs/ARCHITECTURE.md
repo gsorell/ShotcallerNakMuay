@@ -152,7 +152,7 @@ The core timer and session management system.
 - `ActiveSessionUI` - Live timer display during workout
 - `StatusTimer` - Countdown timer component
 - `StickyStartControls` - Footer bar with rounds/length/rest, difficulty, and start button
-- `AdvancedSettingsPanel` - Southpaw mode, calisthenics, etc.
+- `RoundStructureSheet` - The "Session Settings" sheet, opened from the start bar: how styles share rounds, warm-up round, pace, calisthenics placement, read-in-order, southpaw mode, and voice (`VoiceSettings`). Replaced the Advanced Settings panel.
 
 **Context:**
 - `WorkoutProvider` - Central workout state orchestrator

@@ -12,8 +12,6 @@ interface UIContextValue {
   setShowGlossary: (show: boolean) => void;
   showPWAPrompt: boolean;
   setShowPWAPrompt: (show: boolean) => void;
-  showAdvanced: boolean;
-  setShowAdvanced: (show: boolean) => void;
   showAllEmphases: boolean;
   setShowAllEmphases: React.Dispatch<React.SetStateAction<boolean>>;
 
@@ -59,7 +57,6 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   // Modals
   const [showGlossary, setShowGlossary] = useState(false);
   const [showPWAPrompt, setShowPWAPrompt] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showAllEmphases, setShowAllEmphases] = useState(false);
 
   // Last workout
@@ -86,8 +83,6 @@ export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
     setShowGlossary,
     showPWAPrompt,
     setShowPWAPrompt,
-    showAdvanced,
-    setShowAdvanced,
     showAllEmphases,
     setShowAllEmphases,
     lastWorkout,

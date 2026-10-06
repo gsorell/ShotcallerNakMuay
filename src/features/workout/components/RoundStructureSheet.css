@@ -1,0 +1,191 @@
+/* RoundStructureSheet.css — the controls inside the round-structure sheet.
+   The surface itself (backdrop, card, buttons) is styles/modal.css. */
+
+.rs-pro-tag {
+  margin-left: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: #f9a8d4;
+}
+
+.rs-section {
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.rs-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #60a5fa;
+}
+
+.rs-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rs-segmented {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.rs-segment {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  padding: 0.55rem 0.3rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rs-segment.is-on {
+  background: rgba(236, 72, 153, 0.2);
+  border-color: #ec4899;
+  color: #fff;
+}
+
+.rs-segment:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.rs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.rs-toggle--spaced {
+  margin-top: 0.9rem;
+}
+
+.rs-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #ec4899;
+  cursor: pointer;
+}
+
+.rs-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.rs-custom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.rs-custom-row select {
+  flex: 0 1 62%;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  color: #fff;
+  font-size: 0.88rem;
+  font-family: inherit;
+}
+
+.rs-custom-row select option {
+  color: #181825;
+}
+
+.rs-plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rs-plan li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.rs-plan-round {
+  flex: 0 0 1.25rem;
+  font-weight: 800;
+  color: #f9a8d4;
+  text-align: right;
+}
+
+.rs-plan-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rs-plan-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.rs-plan-notes {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.rs-section + .sc-modal-actions {
+  margin-top: 1.1rem;
+}
+
+/* The one line on the setup bar that opens the sheet. */
+.rs-entry {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 0.15rem 0;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.rs-entry strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #f9a8d4;
+}
+
+.rs-entry:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}

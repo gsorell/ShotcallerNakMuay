@@ -2,7 +2,6 @@ import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import "@/styles/editor.css";
 import { trackEvent } from "@/utils/analytics";
 import { type TechniqueShape as UtilsTechniqueShape } from "@/utils/techniqueUtils";
-import { scrollContentToTop } from "@/utils/scroll";
 import React, { useRef, useState } from "react";
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
@@ -10,6 +9,7 @@ import { requestShareStyle } from "@/features/style-share";
 import { useUIContext } from "../../shared";
 import { useTechniqueEditor } from "../hooks/useTechniqueEditor";
 import { getSortedGroups } from "../utils/groupSorting";
+import { useStyleDisplayOrder } from "../utils/styleDisplayOrder";
 import "./TechniqueEditor.css";
 import StyleActions from "./StyleActions";
 import TechniqueGroupPanel from "./TechniqueGroupPanel";
@@ -79,19 +79,12 @@ export default function TechniqueEditor({
 
   const [showManageData, setShowManageData] = useState(false);
 
-  // --- NEW: Scroll to top on group creation/duplication ---
   const topRef = useRef<HTMLDivElement>(null);
-  const scrollToTop = React.useCallback(() => {
-    setTimeout(() => {
-      if (topRef.current) {
-        topRef.current.scrollIntoView({ behavior: "auto", block: "start" });
-      } else {
-        scrollContentToTop("auto");
-      }
-    }, 0);
-  }, [topRef]);
 
-  // --- MODIFIED: Add group and scroll to top ---
+  // A style just created or duplicated is opened and scrolled to, wherever in
+  // the order it has landed. It used to be enough to scroll to the top, when
+  // this list always led with the newest of the user's own styles; now the
+  // list follows the home-screen order, and the top is only sometimes right.
   // Returns whether the style was created, so the dialog can stay open with
   // the typed name intact when it was not.
   const handleAddGroup = (key: string): boolean => {
@@ -102,8 +95,7 @@ export default function TechniqueEditor({
     const result = addGroup(key);
     if (result.ok && result.key) {
       // Expand the newly created group so user can immediately start adding techniques
-      setExpandedGroups((prev) => ({ ...prev, [result.key!]: true }));
-      scrollToTop();
+      setEditorFocusKey(result.key);
       trackEvent("custom_group_created", { group_name: key });
       return true;
     }
@@ -136,9 +128,12 @@ export default function TechniqueEditor({
   };
 
   // --- NEW: Group sorting logic ---
+  // Listed in the home-screen order, which is set on the home screen itself,
+  // so a style sits in the same place on both.
+  const savedOrder = useStyleDisplayOrder();
   const sortedGroups: [string, TechniqueShape][] = React.useMemo(
-    () => getSortedGroups(local),
-    [local]
+    () => getSortedGroups(local, savedOrder),
+    [local, savedOrder]
   );
 
   // --- NEW: Track expanded/collapsed state for each group ---
@@ -178,11 +173,10 @@ export default function TechniqueEditor({
       }
       const result = duplicateGroup(key);
       if (result.ok && result.key) {
-        setExpandedGroups((prev) => ({ ...prev, [result.key!]: true }));
-        scrollToTop();
+        setEditorFocusKey(result.key);
       }
     },
-    [duplicateGroup, setExpandedGroups, scrollToTop, isPro, openPaywall]
+    [duplicateGroup, setEditorFocusKey, isPro, openPaywall]
   );
 
   // The Pro gate and the first-share name confirmation live in ShareStyleFlow,

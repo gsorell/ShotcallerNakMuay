@@ -126,7 +126,10 @@ export const generateTechniquePool = (
   techniques: TechniquesShape,
   selectedEmphases: Record<EmphasisKey, boolean>,
   addCalisthenics: boolean,
-  techniqueIndex: Record<string, string>
+  techniqueIndex: Record<string, string>,
+  // `only: "singles"` leaves the combinations out — a warm-up round calls
+  // single shots and nothing else.
+  options: { only?: "singles" } = {}
 ): TechniqueWithStyle[] => {
   if (selectedEmphases.timer_only || selectedEmphases.freestyle) return [];
 
@@ -175,7 +178,11 @@ export const generateTechniquePool = (
       return;
     }
     if (typeof node === "object") {
-      for (const field of ["singles", "combos"] as const) {
+      const fields =
+        options.only === "singles"
+          ? (["singles"] as const)
+          : (["singles", "combos"] as const);
+      for (const field of fields) {
         for (const entry of node[field] ?? []) {
           const text = typeof entry === "string" ? entry : entry?.text;
           if (typeof text !== "string") continue;

@@ -10,10 +10,9 @@ import {
 } from "@/features/learn/data/techniqueSprites";
 import { trackEvent } from "@/utils/analytics";
 import React from "react";
-import { ImageWithFallback, useUIContext } from "../../shared";
+import { useUIContext } from "../../shared";
 import { EmphasisSelector } from "../../technique-editor";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
-import { AdvancedSettingsPanel } from "./AdvancedSettingsPanel";
 import "./WorkoutSetup.css";
 
 /**
@@ -38,14 +37,10 @@ export default function WorkoutSetup() {
     emphasisList,
     techniques,
     persistTechniques,
-    homePageStats: stats,
-    favoriteConfig,
   } = useWorkoutContext();
 
   const {
     setPage,
-    showAdvanced,
-    setShowAdvanced,
     showAllEmphases,
     setShowAllEmphases,
     setEditorFocusKey,
@@ -54,36 +49,6 @@ export default function WorkoutSetup() {
   const { selectedEmphases, toggleEmphasis } = settings;
   return (
     <div>
-      {/* Compact Favorite Style & Streak - Combined Button */}
-      <div className="workout-setup-stats-container">
-        {stats && (
-          <button
-            type="button"
-            onClick={() => {
-              trackEvent("workout_logs_open", { source: "stats_button" });
-              setPage("logs");
-            }}
-            className="workout-setup-stat-btn"
-          >
-            {favoriteConfig && (
-              <>
-                <ImageWithFallback
-                  srcPath={favoriteConfig.iconPath}
-                  alt={favoriteConfig.label}
-                  emoji={favoriteConfig.emoji || "🎯"}
-                  className="workout-setup-stat-icon"
-                />
-                <span style={{ fontWeight: 600 }}>{favoriteConfig.label}</span>
-              </>
-            )}
-            <span role="img" aria-label="flame">
-              🔥
-            </span>
-            <span style={{ fontWeight: 700 }}>{stats.current}</span>
-          </button>
-        )}
-      </div>
-
       <div className="workout-setup-container">
         <EmphasisSelector
           emphasisList={emphasisList}
@@ -95,14 +60,11 @@ export default function WorkoutSetup() {
           setShowAllEmphases={setShowAllEmphases}
           // Sits with the styles rather than above them: it answers the
           // question the grid poses, so it belongs in the same space.
-          leadSlot={
-            <StartHereBanner
-              onBrowse={() => {
-                trackEvent("learn_open", { source: "start_here_banner" });
-                setPage("learn");
-              }}
-            />
-          }
+          // No "browse the library" link under it any more: the Learn card
+          // below the styles and the menu in the header both go there, and a
+          // third way in was one more thing standing between the heading and
+          // the tiles.
+          leadSlot={<StartHereBanner />}
           onManageTechniques={(groupKey?: string) => {
             try {
               trackEvent("technique_editor_open", {
@@ -114,10 +76,10 @@ export default function WorkoutSetup() {
           }}
         />
 
-        {/* Not a matched pair. Learn is a destination — a curriculum and a
-            library of filmed technique — while managing techniques is a tool
-            you visit when you want to change what gets called. Giving them the
-            same card made the bigger one wear the smaller one's size.
+        {/* Learn is a destination — a curriculum and a library of filmed
+            technique. Managing techniques is a tool for changing what gets
+            called, so it lives with the styles it edits, inside the selector
+            above, rather than beside this card.
 
             The figure is the argument for the card: it is a sample of what is
             inside rather than a symbol standing for it, and being the only
@@ -149,32 +111,7 @@ export default function WorkoutSetup() {
               ›
             </span>
           </button>
-
-          <button
-            onClick={() => {
-              try {
-                trackEvent("technique_editor_open", {
-                  source: "manage_button",
-                });
-              } catch { /* analytics must never break the navigation it measures */ }
-              setEditorFocusKey(null);
-              setPage("editor");
-            }}
-            className="setup-manage-link"
-          >
-            Manage Techniques
-            <span className="setup-manage-hint">Edit sets or build your own</span>
-          </button>
         </div>
-
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="workout-setup-advanced-toggle"
-        >
-          {showAdvanced ? "Hide" : "Show"} Advanced Settings
-        </button>
-
-        {showAdvanced && <AdvancedSettingsPanel />}
       </div>
     </div>
   );

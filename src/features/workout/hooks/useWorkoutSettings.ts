@@ -1,5 +1,10 @@
 // src/hooks/useWorkoutSettings.ts
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  reconcileStyleOrder,
+  sanitizeRoundStructure,
+  type RoundStructure,
+} from "../utils/roundPlan";
 import { type Difficulty, type EmphasisKey } from "@/types"; // Adjust path if needed
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { normalizeKey } from "@/utils/techniqueUtils"; // Adjust path if needed
@@ -16,6 +21,17 @@ const loadSouthpaw = () => {
     return Boolean(JSON.parse(stored));
   } catch {
     return false;
+  }
+};
+
+const ROUND_STRUCTURE_STORAGE_KEY = "round_structure_v1";
+
+const loadRoundStructure = (): RoundStructure => {
+  try {
+    const stored = localStorage.getItem(ROUND_STRUCTURE_STORAGE_KEY);
+    return sanitizeRoundStructure(stored ? JSON.parse(stored) : null);
+  } catch {
+    return sanitizeRoundStructure(null);
   }
 };
 
@@ -65,6 +81,38 @@ export function useWorkoutSettings(
   // Ref-only (never state) so it can be set at session start without
   // re-creating the callout callback.
   const variedCadenceRef = useRef(false);
+
+  // How the rounds are structured — see utils/roundPlan. Remembered between
+  // visits, unlike the style selection: it is a preference about how someone
+  // trains rather than a choice about today's session.
+  const [roundStructure, setRoundStructureState] =
+    useState<RoundStructure>(loadRoundStructure);
+  const setRoundStructure = useCallback((value: RoundStructure) => {
+    const next = sanitizeRoundStructure(value);
+    setRoundStructureState(next);
+    try {
+      localStorage.setItem(ROUND_STRUCTURE_STORAGE_KEY, JSON.stringify(next));
+    } catch { /* a full or blocked store must not break the setting */ }
+  }, []);
+
+  // Stretches or tightens the gap between callouts for the round in progress.
+  // Ref-only for the same reason as the cadence flag above: it changes at a
+  // round boundary and must not re-create the callout callback.
+  const paceFactorRef = useRef(1);
+
+  // The selection is a map, which cannot say which style was picked first.
+  // "One style per round" runs them in the order they were tapped, so that
+  // order is carried here, alongside the selection rather than inside it.
+  // Adjusted during render rather than in an effect, so there is never a
+  // frame where the order and the selection disagree.
+  const [pickedOrder, setPickedOrder] = useState<string[]>([]);
+  const styleOrder = useMemo(
+    () => reconcileStyleOrder(pickedOrder, selectedEmphases),
+    [pickedOrder, selectedEmphases]
+  );
+  if (styleOrder.join("\n") !== pickedOrder.join("\n")) {
+    setPickedOrder(styleOrder);
+  }
 
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [roundsCount, setRoundsCount] = useState(persistedSettings.roundsCount);
@@ -196,6 +244,10 @@ export function useWorkoutSettings(
     setReadInOrder,
     readInOrderRef,
     variedCadenceRef,
+    roundStructure,
+    setRoundStructure,
+    paceFactorRef,
+    styleOrder,
     southpawMode,
     setSouthpawMode,
     southpawModeRef,

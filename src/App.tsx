@@ -10,6 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { WorkoutCompleted, WorkoutLogs, seedAwardedCharmsOnce } from "@/features/logs";
 import {
   AppLayout,
+  AppMenu,
   GlossaryModal,
   PWAInstallPrompt,
   useNavigationGestures,
@@ -26,6 +27,11 @@ import { hasOnboarded, useOnboardingState } from "@/features/onboarding";
 import { usePaywall } from "@/features/paywall";
 import { NextLevelPrompt, RoadmapSection } from "@/features/roadmap";
 import { roundDescription, roundTitle } from "@/features/roadmap/session";
+import {
+  describeRound,
+  finisherSeconds,
+  planVaries,
+} from "@/features/workout/utils/roundPlan";
 import {
   ImportStyleModal,
   ShareStyleFlow,
@@ -54,7 +60,7 @@ import {
   toTechniqueGroup,
   type SharedStyle,
 } from "@/utils/styleShare";
-import { prependGroup } from "@/utils/techniqueUtils";
+import { humanizeKey, prependGroup } from "@/utils/techniqueUtils";
 import { fmtTime } from "@/utils/timeUtils";
 
 // CSS
@@ -101,6 +107,7 @@ export default function App() {
     isInterruptedByCall,
     isFreestyle,
     activeRoadmap,
+    sessionPlan,
   } = useWorkoutContext();
 
   // During rest on a guided level, tell the student what the next round asks
@@ -123,13 +130,59 @@ export default function App() {
         })()
       : null;
 
+  // The same card for a normal session whose rounds differ from one another.
+  // A session where every round is alike has nothing to announce, so it gets
+  // no card and looks exactly as it always has.
+  const variedPlan =
+    !activeRoadmap && sessionPlan && planVaries(sessionPlan)
+      ? sessionPlan
+      : null;
+  const styleLabel = (key: string) => {
+    const found = emphasisList.find((e) => e.key === key);
+    return found ? found.label : humanizeKey(key);
+  };
+  const planUpNext =
+    variedPlan && timer.isResting
+      ? (() => {
+          const next = timer.currentRound + 1;
+          const planned = variedPlan[next - 1];
+          if (!planned) return null;
+          const { title, notes } = describeRound(planned, styleLabel);
+          return { round: next, title, description: notes.join(" · ") };
+        })()
+      : null;
+
+  // What the round in progress is drawing on. Read off the plan rather than
+  // the selection, which still lists every style in the session.
+  const plannedNow =
+    !activeRoadmap && sessionPlan && timer.running && !timer.isResting
+      ? sessionPlan[Math.min(timer.currentRound, sessionPlan.length) - 1]
+      : undefined;
+  const inFinisher =
+    plannedNow?.calisthenics === "finisher" &&
+    timer.timeLeft > 0 &&
+    timer.timeLeft <= finisherSeconds(settings.roundMin);
+  const roundNote = !plannedNow
+    ? null
+    : inFinisher
+    ? "Calisthenics Finisher"
+    : plannedNow.calisthenics === "only"
+    ? "Calisthenics Round"
+    : plannedNow.content === "singles"
+    ? "Warm-up · Single Techniques"
+    : null;
+  const activeStyleKeys =
+    plannedNow && (variedPlan || inFinisher)
+      ? inFinisher
+        ? []
+        : plannedNow.styles
+      : null;
+
   // --- 3. UI State ---
   const {
     page,
     setPage,
     lastWorkout,
-    showAdvanced,
-    setShowAdvanced,
     showAllEmphases,
     setShowAllEmphases,
     showGlossary,
@@ -394,7 +447,9 @@ export default function App() {
                 selectedEmphases={settings.selectedEmphases}
                 emphasisList={emphasisList}
                 isInterruptedByCall={isInterruptedByCall}
-                upNext={upNext}
+                upNext={upNext ?? planUpNext}
+                activeStyleKeys={activeStyleKeys}
+                roundNote={roundNote}
               />
             </SessionTransitionWrapper>
 
@@ -458,6 +513,21 @@ export default function App() {
         hasSelectedEmphasis={hasSelectedEmphasis}
         linkButtonStyle={linkButtonStyle}
         setPage={setPage}
+        // Not during a live session: leaving mid-round should take a
+        // deliberate Stop, not a stray tap on the way to the pause button.
+        menu={
+          isActive ? null : (
+            <AppMenu
+              page={page}
+              onNavigate={(next) => {
+                setPage(next);
+                scrollContentToTop();
+              }}
+              onHelp={onboarding.openOnboarding}
+              streak={homePageStats?.current ?? 0}
+            />
+          )
+        }
         bottomBar={
           page === "timer" && !isActive && hasSelectedEmphasis ? (
             <StickyStartControls

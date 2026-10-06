@@ -24,6 +24,8 @@
 
 /* Main container */
 .app-layout-main {
+  /* The menu button is pinned to this box's top corner. */
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
   color: #fdf2f8;
@@ -209,5 +211,268 @@ html, body {
 
   .section-header-with-button p {
     text-align: center !important;
+  }
+}
+
+/* Timer Only and Freestyle: a pair of small switches in the page's first row,
+   rather than tiles in the grid. Deliberately quiet — most people are here
+   for the styles — but still plainly buttons. Leading edge; the app menu has
+   the trailing one, so the row stops short of it. */
+.mode-switches {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  /* Pulls the heading up under this row: the section spaces its children
+     2rem apart, which is right between blocks and too much here. */
+  margin: -0.5rem 3rem -0.5rem 0;
+}
+
+/* A grid of equal columns, so both switches take the width of the wider one
+   whatever their labels say. */
+.mode-switches-row {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.mode-switch {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.1rem;
+  padding: 0 0.9rem;
+  /* A line box taller than the glyphs sits the label low; at 1 the text is
+     centred by the flex row and nothing else. */
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.mode-switch.is-on {
+  border-color: #60a5fa;
+  background: #2563eb;
+  color: #fff;
+}
+
+.mode-switch:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.mode-switch-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: cover;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+}
+
+.mode-switches-desc {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #f9a8d4;
+}
+
+/* --- Reordering the styles, on the home grid ------------------------------- */
+
+/* The heading, directly over the tiles. */
+.style-grid-heading {
+  margin: 1.75rem 0 1.25rem;
+  text-align: center;
+}
+
+.style-grid-heading h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.style-grid-heading p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #f9a8d4;
+}
+
+/* The row under the tiles: Reorder at one end, "show more" at the other, on
+   the tiles' own left and right edges. One flex row, so the two always share
+   a baseline and move as a unit. */
+.style-grid-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+/* Both links, identically. */
+.style-grid-foot-link {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  color: #f9a8d4;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.style-grid-foot-link:hover {
+  opacity: 0.8;
+}
+
+.style-grid-foot-link svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s ease;
+}
+
+.style-grid-foot-link svg.is-open {
+  transform: rotate(180deg);
+}
+
+.style-grid-foot-link:focus-visible,
+.style-reorder-reset:focus-visible,
+.style-reorder-done:focus-visible,
+.style-reorder-arrows button:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* The mode's bar, above the grid: what you are doing, the way back to the
+   shipped order, and the way out. */
+.style-reorder-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  background: rgba(236, 72, 153, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+}
+
+.style-reorder-bar span {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.style-reorder-reset {
+  all: unset;
+  color: #f9a8d4;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.style-reorder-done {
+  all: unset;
+  box-sizing: border-box;
+  padding: 0.5rem 1rem;
+  border-radius: 0.6rem;
+  background: #ec4899;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.style-reorder-done--foot {
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+}
+
+/* The pair on each tile while reordering, in the corner the quick-edit
+   chevron normally has. */
+.style-reorder-arrows {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.35rem;
+  transform: translateY(-50%);
+}
+
+.style-reorder-arrows button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 0.6rem;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  cursor: pointer;
+}
+
+.style-reorder-arrows button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.style-reorder-arrows svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Wider than a phone the tiles run in columns, so one place earlier is the
+   tile to the left, not the one above. Turn the arrows to say so. */
+@media (min-width: 601px) {
+  .style-reorder-arrows svg {
+    transform: rotate(-90deg);
+  }
+
+  /* A tile in a column is far narrower than one on a phone, so the pair
+     stacks: one control's width taken from the name instead of two. */
+  .emphasis-grid {
+    --reorder-pad: 3.25rem;
+  }
+
+  .style-reorder-arrows {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .style-reorder-arrows button {
+    width: 36px;
+    height: 32px;
   }
 }

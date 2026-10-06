@@ -1,6 +1,7 @@
 /* WorkoutSetup.css - Component-specific styles for WorkoutSetup */
 
-/* Stats/Favorites container */
+/* (The favourite-style and streak chip that led this screen is gone: the
+   streak is shown beside Workout Logs in the header menu.) */
 .workout-setup-stats-container {
   display: flex;
   gap: 0.5rem;
@@ -50,17 +51,3 @@
 
 /* The Learn card and the Manage Techniques link are styled in
    styles/setupActions.css — see the note there for why they are not a pair. */
-
-/* "Show Advanced" button */
-.workout-setup-advanced-toggle {
-  all: unset;
-  cursor: pointer;
-  color: #f9a8d4;
-  padding: 0.5rem 0.75rem;
-  text-align: center;
-  font-weight: 700;
-}
-
-.workout-setup-advanced-toggle:hover {
-  opacity: 0.8;
-}

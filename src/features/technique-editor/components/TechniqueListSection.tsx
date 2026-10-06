@@ -44,17 +44,21 @@ export default function TechniqueListSection({
             />
             <button
               onClick={() => onToggleFavorite(idx)}
-              className={`tech-editor-btn--star ${
+              type="button"
+              className={`tech-editor-icon-btn tech-editor-icon-btn--star ${
                 item.favorite ? "is-active" : ""
               }`}
               aria-label={item.favorite ? "Unstar" : "Star"}
               title={item.favorite ? "Unstar (favorite)" : "Star (favorite)"}
             >
-              ★
+              {/* Outline until it is on, filled once it is — the same pair
+                  the quick editor on the home screen uses. */}
+              {item.favorite ? "★" : "☆"}
             </button>
             <button
               onClick={() => onRemoveItem(idx)}
-              className="tech-editor-btn tech-editor-btn--delete"
+              type="button"
+              className="tech-editor-icon-btn tech-editor-icon-btn--remove"
               aria-label="Delete item"
             >
               ×

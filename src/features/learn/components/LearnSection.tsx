@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { useCallback, useMemo, useState } from "react";
 
 import {
@@ -214,6 +215,13 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 
 // --------------------------------------------------------------- categories --
 
+// The blog is a Netlify-only static site (not bundled into the native app,
+// see scripts/strip-native-assets.mjs), so native builds link out to the
+// deployed site instead of a path that only exists on the web build.
+const BLOG_HREF = Capacitor.isNativePlatform()
+  ? "https://shotcallernakmuay.netlify.app/blog/index.html"
+  : "/blog/index.html";
+
 function CategoryList({
   isPro,
   onOpenTile,
@@ -261,6 +269,19 @@ function CategoryList({
       )}
 
       <TechniqueGallery onOpenTile={onOpenTile} onOpenCombo={onOpenCombo} />
+
+      {/* Last, after the library: the blog is further reading for someone who
+          has finished looking something up, not a way into the page. */}
+      <a
+        className="learn-blog-link"
+        href={BLOG_HREF}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => trackEvent("blog_link_click", { source: "learn" })}
+      >
+        <span className="learn-blog-link-label">Further reading</span>
+        <span className="learn-blog-link-title">Visit the Training Blog →</span>
+      </a>
     </>
   );
 }
@@ -385,9 +406,10 @@ function LessonDetail({
         <section className="learn-panel learn-panel--drill">
           <h2 className="learn-panel-title">Drill it</h2>
           <p className="learn-drill-hint">
-            This one is mixed into rounds rather than picked as a style. Turn on
-            <strong> Add Calisthenics</strong> in Advanced Settings on the timer
-            screen and it will start showing up between techniques.
+            This one is mixed into rounds rather than picked as a style. Pick a
+            style on the timer screen, open <strong>Session settings</strong>,
+            and switch <strong>Calisthenics</strong> on — it will start showing
+            up in your rounds.
           </p>
         </section>
       )}

@@ -3,8 +3,21 @@ import { INITIAL_TECHNIQUES } from "@/constants/techniques";
 import { BASE_EMPHASIS_CONFIG } from "@/emphasisConfig";
 import { type TechniquesShape } from "@/types";
 import { CORE_ORDER } from "../constants";
+import {
+  applyDisplayOrder,
+  useStyleDisplayOrder,
+} from "../utils/styleDisplayOrder";
 
-export function useEmphasisList(techniques: TechniquesShape) {
+/**
+ * The styles, in home-screen order. `orderOverride` replaces the order the
+ * user has saved — pass an empty list to get the shipped order regardless.
+ */
+export function useEmphasisList(
+  techniques: TechniquesShape,
+  orderOverride?: readonly string[]
+) {
+  const savedOrder = useStyleDisplayOrder();
+  const order = orderOverride ?? savedOrder;
   return useMemo(() => {
     // Exclude calisthenics from the tile list
     const techniqueKeys = Object.keys(techniques || {}).filter(
@@ -115,6 +128,10 @@ export function useEmphasisList(techniques: TechniquesShape) {
         };
       });
 
-    return [...leadingTiles, ...coreGroups, ...userGroups, ...trailingTiles];
-  }, [techniques]);
+    // The shipped order, then whatever the user has arranged on top of it.
+    return applyDisplayOrder(
+      [...leadingTiles, ...coreGroups, ...userGroups, ...trailingTiles],
+      order
+    );
+  }, [techniques, order]);
 }

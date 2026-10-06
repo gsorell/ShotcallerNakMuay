@@ -1,4 +1,3 @@
-import { trackEvent } from "@/utils/analytics";
 import { scrollContentToTop } from "@/utils/scroll";
 import "./Footer.css";
 
@@ -11,13 +10,14 @@ export type FooterProps = {
   onHelp: () => void;
 };
 
-export const Footer = ({
-  isActive,
-  hasSelectedEmphasis,
-  linkButtonStyle,
-  setPage,
-  onHelp,
-}: FooterProps) => (
+/**
+ * The foot of every page: the mark, and where to find the app elsewhere.
+ *
+ * It used to carry the app's navigation too — Learn, Workout Logs, Help — at
+ * the very bottom of the longest screen in the app. That lives in the header
+ * menu now, where it can be reached without scrolling.
+ */
+export const Footer = ({ setPage }: FooterProps) => (
   <footer className="app-footer">
     <div className="app-footer-content">
       <img
@@ -38,30 +38,6 @@ export const Footer = ({
         role="button"
         aria-label="Go to home"
       />
-      <button
-        onClick={() => {
-          trackEvent("learn_open", { source: "footer" });
-          setPage("learn");
-        }}
-        className="app-footer-link"
-      >
-        Learn
-      </button>
-      <button
-        onClick={() => {
-          trackEvent("workout_logs_open", { source: "footer" });
-          setPage("logs");
-        }}
-        className="app-footer-link"
-      >
-        Workout Logs
-      </button>
-      <button
-        onClick={onHelp}
-        className="app-footer-link"
-      >
-        Help
-      </button>
       <a
         href="https://www.instagram.com/nakmuayshotcaller?igsh=dTh6cXE4YnZmNDc4"
         target="_blank"

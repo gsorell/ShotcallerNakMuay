@@ -13,12 +13,18 @@ import {
   resetRound,
   startSegment,
 } from "../utils/roundStopwatch";
+import { pickFromShares, type PoolShare } from "../utils/roundPlan";
 
 type SpeakWithDurationFn = (
   text: string,
   speed: number,
   onEnd: (duration: number) => void
 ) => void;
+
+/** How long to hold a callout back while the last is still being spoken. */
+const SPEECH_DEFERRAL_MS = 150;
+/** ...and how many times, before speaking anyway (about four seconds). */
+const MAX_SPEECH_DEFERRALS = 26;
 
 interface UseCalloutEngineProps {
   timer: {
@@ -43,6 +49,10 @@ export function useCalloutEngine({
   const shotsCalledOutRef = useRef<number>(0);
   const orderedIndexRef = useRef<number>(0);
   const currentPoolRef = useRef<TechniqueWithStyle[]>([]);
+  // Set when several styles share a round: a random pick then goes by share
+  // rather than straight off the pool. Null everywhere else, including every
+  // guided level. See utils/roundPlan.
+  const poolSharesRef = useRef<PoolShare[] | null>(null);
   const ttsGuardRef = useRef(false);
 
   // Watchdog state. The scheduling loop is a chain: each callout schedules the
@@ -108,6 +118,8 @@ export function useCalloutEngine({
       const minDelayMs = Math.round(baseDelayMs * minDelayMultiplier);
       baseDelayRef.current = baseDelayMs;
 
+      let deferrals = 0;
+
       const scheduleNext = (delay: number) => {
         if (calloutRef.current) {
           clearTimeout(calloutRef.current);
@@ -137,6 +149,25 @@ export function useCalloutEngine({
           return;
         }
 
+        // Never talk over the callout before. Each one is scheduled from the
+        // end of the last, so this should not arise — but the browser's
+        // `onend` can fire early (iOS Safari does), and speaking then would
+        // cancel what is still being said. Wait it out instead. Bounded,
+        // because a `speaking` flag that sticks must not silence the round.
+        try {
+          if (
+            deferrals < MAX_SPEECH_DEFERRALS &&
+            typeof window !== "undefined" &&
+            "speechSynthesis" in window &&
+            window.speechSynthesis.speaking
+          ) {
+            deferrals += 1;
+            scheduleNext(SPEECH_DEFERRAL_MS);
+            return;
+          }
+        } catch { /* a throwing speechSynthesis must not kill the round */ }
+        deferrals = 0;
+
         // Select Technique. Ordering is read through a ref so a caller can
         // switch between sequential and random at a round boundary without
         // restarting the callout loop — see useWorkoutSettings.
@@ -145,7 +176,10 @@ export function useCalloutEngine({
           selectedTechnique = pool[orderedIndexRef.current % pool.length]!;
           orderedIndexRef.current += 1;
         } else {
-          selectedTechnique = pool[Math.floor(Math.random() * pool.length)]!;
+          selectedTechnique =
+            (poolSharesRef.current &&
+              pickFromShares(poolSharesRef.current)) ||
+            pool[Math.floor(Math.random() * pool.length)]!;
         }
 
         shotsCalledOutRef.current += 1;
@@ -206,6 +240,14 @@ export function useCalloutEngine({
               Math.min(responsiveDelayMs, timingCap)
             );
 
+            // A round can be set easier or faster than the difficulty's own
+            // pace — see `paceFactors` in utils/roundPlan. Guarded like the
+            // ramp below: a NaN delay fires immediately and runs away.
+            const pace = Number(settings.paceFactorRef?.current);
+            if (Number.isFinite(pace) && pace > 0 && pace !== 1) {
+              nextDelayMs = Math.max(minDelayMs, Math.round(nextDelayMs * pace));
+            }
+
             // Phrasing, not noise. An earlier attempt multiplied the gap by a
             // wide uniform random factor, which read as broken rather than
             // human — uncorrelated gaps have no musical logic, and it threw
@@ -249,6 +291,7 @@ export function useCalloutEngine({
       settings.difficulty,
       settings.readInOrderRef,
       settings.variedCadenceRef,
+      settings.paceFactorRef,
       settings.southpawModeRef,
       settings.voiceSpeedRef,
       stopTechniqueCallouts,
@@ -371,5 +414,6 @@ export function useCalloutEngine({
     shotsCalledOutRef,
     orderedIndexRef,
     currentPoolRef,
+    poolSharesRef,
   };
 }
