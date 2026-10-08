@@ -52,6 +52,10 @@
                     android:scheme="https"
                     android:host="shotcallernakmuay.netlify.app"
                     android:pathPrefix="/s/" />
+                <data
+                    android:scheme="https"
+                    android:host="shotcallermuaythai.app"
+                    android:pathPrefix="/s/" />
             </intent-filter>
         </activity>
 

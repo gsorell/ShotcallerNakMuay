@@ -128,7 +128,7 @@ export default function StyleShareCard({
         <span
           style={{ fontSize: "0.72rem", color: BRAND.muted, fontWeight: 500 }}
         >
-          shotcallernakmuay.netlify.app
+          shotcallermuaythai.app
         </span>
       </div>
     </div>

@@ -9,7 +9,7 @@
  * what this is yet. The card already spells the setup out in words, so nothing
  * needs to be carried in the address.
  */
-export const SITE_URL = "https://shotcallernakmuay.netlify.app/";
+export const SITE_URL = "https://shotcallermuaythai.app/";
 
 export const APP_STORE_URL =
   "https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630";

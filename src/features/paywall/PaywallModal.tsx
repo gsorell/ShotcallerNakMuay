@@ -12,8 +12,8 @@ import {
   monthlyEquivalent,
 } from "./pricing";
 
-const TERMS_URL = "https://shotcallernakmuay.netlify.app/terms.html";
-const PRIVACY_URL = "https://shotcallernakmuay.netlify.app/privacy-policy.html";
+const TERMS_URL = "https://shotcallermuaythai.app/terms.html";
+const PRIVACY_URL = "https://shotcallermuaythai.app/privacy-policy.html";
 
 interface PaywallModalProps {
   source?: string;

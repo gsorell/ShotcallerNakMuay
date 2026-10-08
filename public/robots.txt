@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://shotcallernakmuay.netlify.app/sitemap.xml
+Sitemap: https://shotcallermuaythai.app/sitemap.xml

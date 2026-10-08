@@ -72,7 +72,7 @@ describe("Image Utils", () => {
       expect(buildChallengeText(mockStats)).toBe(
         "5 × 3 min · Amateur · Two-Piece Combos, Kicks. 258 shots called. " +
           "Same setup — your move.\n" +
-          "https://shotcallernakmuay.netlify.app/\n" +
+          "https://shotcallermuaythai.app/\n" +
           "#NakMuay #ShotcallerNakMuay #MuayThai"
       );
     });

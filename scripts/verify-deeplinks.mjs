@@ -10,6 +10,10 @@
  * asking the live URL, which is what this does.
  *
  *   node scripts/verify-deeplinks.mjs [origin]
+ *
+ * The apps claim two hosts, and each is verified separately, so run it once
+ * per host: bare for the old Netlify one, and again with
+ * https://shotcallermuaythai.app.
  */
 
 const ORIGIN = process.argv[2] ?? "https://shotcallernakmuay.netlify.app";

@@ -106,15 +106,15 @@ period. You can manage your subscription and turn off auto-renewal in your
 Account Settings after purchase. Any unused portion of a free trial is forfeited
 when you buy a subscription.
 
-Privacy Policy: https://shotcallernakmuay.netlify.app/privacy-policy
-Terms of Use: https://shotcallernakmuay.netlify.app/terms
+Privacy Policy: https://shotcallermuaythai.app/privacy-policy
+Terms of Use: https://shotcallermuaythai.app/terms
 ```
 
 Both URLs verified live (HTTP 200) on 2026-09-09.
 
 All three prices, the per-month equivalent and the trial verified 2026-09-09
 against the live pricing section at
-`https://shotcallernakmuay.netlify.app/#pricing`, which is the canonical public
+`https://shotcallermuaythai.app/#pricing`, which is the canonical public
 statement of them. The 7-day trial runs on **both** the monthly and annual
 plans; Lifetime is a one-time purchase and has no trial. Note the site's own
 caveat: these are US prices and the stores convert and may round by region.

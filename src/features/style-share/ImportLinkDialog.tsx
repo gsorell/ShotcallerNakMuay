@@ -57,7 +57,7 @@ export default function ImportLinkDialog({ onClose }: ImportLinkDialogProps) {
           className="sc-modal-field"
           type="text"
           value={pasted}
-          placeholder="https://shotcallernakmuay.netlify.app/s/#p=…"
+          placeholder="https://shotcallermuaythai.app/s/#p=…"
           aria-label="Shared style link"
           autoFocus
           onChange={(e) => {

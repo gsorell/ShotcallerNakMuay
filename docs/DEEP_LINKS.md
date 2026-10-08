@@ -7,7 +7,7 @@ How a style shared in a text message opens the native app.
 ## The flow
 
 1. A Pro user taps **↗** on one of their styles in Manage Techniques.
-2. The OS share sheet opens with a link: `https://shotcallernakmuay.netlify.app/s/#p=<code>`.
+2. The OS share sheet opens with a link: `https://shotcallermuaythai.app/s/#p=<code>`.
 3. The friend taps that link in Messages / WhatsApp / wherever.
 4. **The native app opens directly**, straight to a confirmation sheet:
    *"Jake shared a style with you — Flow Drills, 30 singles · 15 combos."*
@@ -16,6 +16,24 @@ How a style shared in a text message opens the native app.
 
 If the app is not installed, the link opens the web app instead, which runs the
 same confirmation.
+
+## Two hosts
+
+The site's primary domain became `shotcallermuaythai.app` on 2026-10-08, and
+from the release after v1.22.0 share links are minted there (`SHARE_ORIGIN`).
+Every link sent before that sits on `shotcallernakmuay.netlify.app`.
+
+- The Android intent filter and the iOS entitlement list **both** hosts. Each
+  host is verified on its own, so `npm run verify:deeplinks` has to pass for
+  both: `npm run verify:deeplinks -- https://shotcallermuaythai.app`.
+- Builds up to v1.22.0 claim only the old host. A new-domain link sent to
+  someone who has not updated opens their browser, where the web app runs the
+  same import; the paste box in Manage Techniques gets it into the native app.
+- `netlify.toml` redirects the old host's marketing pages to the new domain
+  and deliberately leaves `/.well-known/*`, `/s/*` and `/app` alone. Do not
+  widen that to `/*`: the verifiers do not follow redirects, and the old host
+  has to keep serving `/.well-known/` for as long as any link minted on it is
+  still sitting in someone's messages — in practice, forever.
 
 ## Why the style travels inside the link
 

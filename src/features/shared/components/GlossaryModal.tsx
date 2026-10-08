@@ -116,7 +116,7 @@ export const GlossaryModal: React.FC<GlossaryModalProps> = ({
 
         <div className="glossary-footer">
           <a
-            href="https://shotcallernakmuay.netlify.app/privacy-policy.html"
+            href="https://shotcallermuaythai.app/privacy-policy.html"
             target="_blank"
             rel="noopener noreferrer"
             className="glossary-privacy"

@@ -931,7 +931,7 @@ const baseStyle = `
     </style>
 `;
 
-const SITE = 'https://shotcallernakmuay.netlify.app';
+const SITE = 'https://shotcallermuaythai.app';
 
 // Every post used to ship without an og:image, which is a bare grey box
 // wherever the link is pasted - Reddit, Discord, iMessage, Slack. The default
@@ -2786,7 +2786,7 @@ const filterBar = `
 `;
 
 const indexContent = `
-    ${renderHead('Muay Thai Training Blog - Shot Caller', 'Guides on shadow boxing, heavy bag drills, and combo-calling timers.', 'https://shotcallernakmuay.netlify.app/blog/', 'container--wide')}
+    ${renderHead('Muay Thai Training Blog - Shot Caller', 'Guides on shadow boxing, heavy bag drills, and combo-calling timers.', 'https://shotcallermuaythai.app/blog/', 'container--wide')}
     <div class="masthead">
         <span class="masthead-kicker">Shot Caller Nak Muay</span>
         <h1>The Fight <em>IQ</em> Journal</h1>
@@ -2835,7 +2835,7 @@ posts.forEach((post, i) => {
     );
 
     const html = `
-        ${renderHead(post.title, post.desc, `https://shotcallernakmuay.netlify.app/blog/${post.filename}`, '', post.image)}
+        ${renderHead(post.title, post.desc, `https://shotcallermuaythai.app/blog/${post.filename}`, '', post.image)}
         <a href="/blog/index.html" class="back-link-top">&larr; All Articles</a>
         ${renderArticleEyebrow(post)}
         ${body}

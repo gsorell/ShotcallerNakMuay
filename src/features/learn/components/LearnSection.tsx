@@ -219,7 +219,7 @@ export function LearnSection({ onBack }: LearnSectionProps) {
 // see scripts/strip-native-assets.mjs), so native builds link out to the
 // deployed site instead of a path that only exists on the web build.
 const BLOG_HREF = Capacitor.isNativePlatform()
-  ? "https://shotcallernakmuay.netlify.app/blog/index.html"
+  ? "https://shotcallermuaythai.app/blog/index.html"
   : "/blog/index.html";
 
 function CategoryList({

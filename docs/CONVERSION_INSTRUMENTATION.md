@@ -331,7 +331,7 @@ Then watch the deploy in the Netlify dashboard.
 ### Verify after the deploy
 
 1. Open any post, e.g.
-   `https://shotcallernakmuay.netlify.app/blog/mastering-the-teep.html`.
+   `https://shotcallermuaythai.app/blog/mastering-the-teep.html`.
 2. Confirm the **"Train To It Tonight"** block appears between the article and
    "You Might Also Like".
 3. Hover/inspect the two buttons and confirm the campaign tags survived:

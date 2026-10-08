@@ -22,6 +22,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:shotcallernakmuay.netlify.app</string>
+		<string>applinks:shotcallermuaythai.app</string>
 	</array>
 </dict>
 </plist>

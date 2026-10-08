@@ -47,6 +47,63 @@ NODE_VERSION = "22"
   [headers.values]
     Content-Type = "application/json"
 
+# ---------------------------------------------------------------------------
+# Old host -> shotcallermuaythai.app, for the marketing pages only.
+#
+# The site's primary domain moved off the netlify.app subdomain, but three
+# things have to keep answering on the old host, so this is a list and not a
+# blanket `/*`:
+#
+#   /.well-known/*  installed apps verify share links against the old host,
+#                   and neither store's verifier follows a redirect.
+#   /s/*            the share links themselves (see SHARE_ORIGIN).
+#   /app            browser storage is per-origin; redirecting the web app
+#                   would hand every existing web user an empty one.
+#
+# These sit above the root rewrite because the first match wins.
+# ---------------------------------------------------------------------------
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/"
+  to = "https://shotcallermuaythai.app/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/home.html"
+  to = "https://shotcallermuaythai.app/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/blog/*"
+  to = "https://shotcallermuaythai.app/blog/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/privacy-policy"
+  to = "https://shotcallermuaythai.app/privacy-policy"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/privacy-policy.html"
+  to = "https://shotcallermuaythai.app/privacy-policy.html"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/terms"
+  to = "https://shotcallermuaythai.app/terms"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://shotcallernakmuay.netlify.app/terms.html"
+  to = "https://shotcallermuaythai.app/terms.html"
+  status = 301
+  force = true
+
 # Root -> the sales page. Forced, because a file exists at `/`.
 [[redirects]]
   from = "/"

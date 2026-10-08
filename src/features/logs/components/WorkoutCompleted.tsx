@@ -186,7 +186,7 @@ function ChallengeCard({ stats }: { stats: WorkoutStats }) {
           hand from across a room.
 
           It replaces the wordmark rather than joining it, because
-          "SHOT CALLER" above "shotcallernakmuay.netlify.app" is the same word
+          "SHOT CALLER" above "shotcallermuaythai.app" is the same word
           twice. A QR was tried here too and removed: at the size a card is
           viewed in a chat it works out to ~0.25mm per module, under what a
           camera can resolve, so it was a fifth of the card spent on something
@@ -214,7 +214,7 @@ function ChallengeCard({ stats }: { stats: WorkoutStats }) {
             letterSpacing: "0.01em",
           }}
         >
-          shotcallernakmuay.netlify.app
+          shotcallermuaythai.app
         </span>
       </div>
     </div>
