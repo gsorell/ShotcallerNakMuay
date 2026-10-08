@@ -187,6 +187,9 @@ function Ladder({
   const path = FOUNDATIONS;
   const { known: taught, total, graduated, nextLevelId: next } = summary;
   const core = coreLevels(path);
+  // Counted, not written out: the free run grew to three levels in v1.17.0
+  // and the banner went on saying "Level 1".
+  const freeCount = path.levels.filter((l) => l.free).length;
 
   return (
     <>
@@ -215,11 +218,14 @@ function Ladder({
       {!isPro && (
         <button className="roadmap-unlock-banner" onClick={onUnlock}>
           <span className="roadmap-unlock-title">
-            🔒 Level 1 is free — the rest of the path is Pro
+            🔒{" "}
+            {freeCount > 1 ? `Levels 1–${freeCount} are` : "Level 1 is"} free —
+            the rest of the path is Pro
           </span>
           <span className="roadmap-unlock-body">
-            Train the first level as many times as you like. Unlock Pro to carry
-            on through all {core.length} levels and the bonus round.
+            Train {freeCount > 1 ? "them" : "it"} as many times as you like.
+            Unlock Pro to carry on through all {core.length} levels and the
+            bonus round.
           </span>
         </button>
       )}

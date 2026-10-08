@@ -242,6 +242,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+  /* The app menu sits at this row's trailing corner; the chip stops short. */
+  padding-right: 3rem;
 }
 
 .roadmap-pro-chip {
