@@ -43,6 +43,12 @@ export const AnalyticsEvents = {
   PaywallRestore: "paywall_restore",
   PaywallLegacyClaim: "paywall_legacy_claim",
 
+  // Store rating. `review_requested` is the app asking the OS for its rating
+  // sheet, which the OS may decline to show without saying so — it counts
+  // asks, not sheets and not ratings. `review_store_open` is the menu row.
+  ReviewRequested: "review_requested",
+  ReviewStoreOpen: "review_store_open",
+
   // PWA events
   PWAInstallPrompt: "pwa_install_prompt",
   PWAInstallAccept: "pwa_install_accept",

@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { Page } from "@/types";
-import { trackEvent } from "@/utils/analytics";
+import {
+  isStoreReviewSupported,
+  markReviewDone,
+  openStoreReviewPage,
+} from "@/features/review";
+import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import "./AppMenu.css";
 
 type AppMenuProps = {
@@ -157,6 +162,31 @@ export default function AppMenu({
                   <span className="app-menu-hint">How the app works</span>
                 </span>
               </button>
+              {/* Native only: the browser build has no listing of its own to
+                  rate. Going to the store by hand also retires the automatic
+                  ask — someone who came here to rate has been asked enough. */}
+              {isStoreReviewSupported() && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="app-menu-item app-menu-item--rate"
+                  onClick={() => {
+                    setOpen(false);
+                    markReviewDone();
+                    try {
+                      trackEvent(AnalyticsEvents.ReviewStoreOpen, { from: page });
+                    } catch { /* analytics must never break the tap it measures */ }
+                    void openStoreReviewPage();
+                  }}
+                >
+                  <span className="app-menu-text">
+                    <span className="app-menu-label">Rate Shot Caller</span>
+                    <span className="app-menu-hint">
+                      It helps other fighters find it
+                    </span>
+                  </span>
+                </button>
+              )}
             </nav>
           </div>,
           document.body

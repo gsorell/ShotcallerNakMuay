@@ -11,6 +11,7 @@ import {
 import { useEntitlement } from "@/features/entitlement";
 import { useOnboardingState } from "@/features/onboarding";
 import { shouldPromptAfterWorkout, usePaywall } from "@/features/paywall";
+import { useReviewPrompt } from "@/features/review";
 import { useHomeStats } from "../hooks/useHomeStats";
 import { claimNewMilestone } from "../utils/milestones";
 import { claimNewCharms, readWorkoutHistory } from "../utils/charms";
@@ -233,10 +234,16 @@ export default function WorkoutCompleted({
   const [isCapturing, setIsCapturing] = useState(false);
   const stats_home = useHomeStats(0);
   const { isPro, ready } = useEntitlement();
-  const { openPaywall } = usePaywall();
+  const { openPaywall, isOpen: paywallOpen } = usePaywall();
   const { isShowing: onboardingShowing, finishedThisSession } =
     useOnboardingState();
   const [celebrationQueue, setCelebrationQueue] = useState<Celebration[]>([]);
+  const [celebrationsClaimed, setCelebrationsClaimed] = useState(false);
+  // Whether this screen spent its one ask on the upsell (or stood down for
+  // onboarding). "pending" until entitlement resolves and that is decided.
+  const [upsell, setUpsell] = useState<"pending" | "asked" | "clear">(
+    "pending"
+  );
   const claimedRef = useRef(false);
   const promptedRef = useRef(false);
 
@@ -267,6 +274,7 @@ export default function WorkoutCompleted({
     );
 
     if (queue.length > 0) setCelebrationQueue(queue);
+    setCelebrationsClaimed(true);
   }, [stats_home, isPro]);
 
   /**
@@ -284,15 +292,40 @@ export default function WorkoutCompleted({
     // still `unknown`, so acting before `ready` would show a paywall to a
     // grandfathered owner whose lookup simply hadn't come back yet.
     if (!ready) return;
-    if (isPro) return;
-    if (onboardingShowing || finishedThisSession) return;
+    if (isPro) {
+      setUpsell("clear");
+      return;
+    }
+    if (onboardingShowing || finishedThisSession) {
+      setUpsell("asked");
+      return;
+    }
     promptedRef.current = true;
     // The just-finished workout is already in the log by the time this screen
     // renders, so the history length is the total including it.
     if (shouldPromptAfterWorkout(readWorkoutHistory().length)) {
       openPaywall("workout_complete");
+      setUpsell("asked");
+    } else {
+      setUpsell("clear");
     }
   }, [ready, isPro, onboardingShowing, finishedThisSession, openPaywall]);
+
+  /**
+   * The rating ask, which only ever gets the screen to itself: a session that
+   * has just been finished in full (not one reopened from the logs, not one
+   * stopped early), no upsell or onboarding in the same sitting, and any charm
+   * celebration already closed. Whether the user is *due* an ask is the hook's
+   * business; this is only whether now would be a decent time.
+   */
+  useReviewPrompt(
+    !onBack &&
+      stats.roundsCompleted >= stats.roundsPlanned &&
+      upsell === "clear" &&
+      !paywallOpen &&
+      (!isPro || celebrationsClaimed) &&
+      celebrationQueue.length === 0
+  );
 
   const handleDownload = async () => {
     if (!exportRef.current) return;

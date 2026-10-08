@@ -11,6 +11,9 @@
  */
 export const SITE_URL = "https://shotcallermuaythai.app/";
 
+/** The app's Apple ID — the number in the listing URL below. */
+export const APP_STORE_ID = "6757487630";
+
 export const APP_STORE_URL =
   "https://apps.apple.com/us/app/shot-caller-nak-muay/id6757487630";
 export const PLAY_STORE_URL =

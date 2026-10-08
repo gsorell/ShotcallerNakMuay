@@ -127,3 +127,13 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0 0 0.7rem 0.7rem;
 }
+
+/* Rating sits under Help, in the same set-apart group, and takes over as the
+   panel's last row when it is there (native only). */
+.app-menu-item--help:not(:last-child) {
+  border-radius: 0;
+}
+
+.app-menu-item--rate {
+  border-radius: 0 0 0.7rem 0.7rem;
+}
