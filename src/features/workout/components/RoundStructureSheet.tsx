@@ -340,28 +340,6 @@ export default function RoundStructureSheet({
           <label className="rs-toggle rs-toggle--spaced">
             <input
               type="checkbox"
-              checked={isPro && southpawMode}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                gated(() => {
-                  setSouthpawMode(checked);
-                  try {
-                    trackEvent(AnalyticsEvents.SettingToggle, {
-                      setting_name: "southpaw_mode",
-                      setting_value: checked,
-                    });
-                  } catch { /* analytics must never break the setting it measures */ }
-                })();
-              }}
-            />
-            Southpaw mode
-          </label>
-          <p className="rs-hint">
-            Swaps left and right in every callout, for left-handed fighters.
-          </p>
-          <label className="rs-toggle rs-toggle--spaced">
-            <input
-              type="checkbox"
               checked={structure.buildUp}
               onChange={(e) => {
                 const checked = e.target.checked;
@@ -386,6 +364,34 @@ export default function RoundStructureSheet({
         </section>
           </>
         )}
+
+        {/* Free, and outside the Pro-tagged Callouts section it used to sit in:
+            which way round someone stands is not an upgrade. Onboarding sets it
+            for people who have not paid, and they have to be able to undo that
+            here. Shown for a bare timer too — Learn's figures follow it. */}
+        <section className="rs-section">
+          <h4 className="rs-label">Stance</h4>
+          <label className="rs-toggle">
+            <input
+              type="checkbox"
+              checked={southpawMode}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setSouthpawMode(checked);
+                try {
+                  trackEvent(AnalyticsEvents.SettingToggle, {
+                    setting_name: "southpaw_mode",
+                    setting_value: checked,
+                  });
+                } catch { /* analytics must never break the setting it measures */ }
+              }}
+            />
+            Southpaw mode
+          </label>
+          <p className="rs-hint">
+            Swaps left and right in every callout, for left-handed fighters.
+          </p>
+        </section>
 
         <section className="rs-section">
           <h4 className="rs-label">Voice</h4>

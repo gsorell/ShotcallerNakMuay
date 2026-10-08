@@ -11,6 +11,10 @@ import {
   markSenderNameConfirmed,
   setSenderName,
 } from "@/features/style-share";
+import {
+  loadSouthpaw,
+  setSouthpawPreference,
+} from "@/utils/southpawPreference";
 import { SHARE_LIMITS } from "@/utils/styleShare";
 import { isDevNativeBranchForced } from "./devPreview";
 
@@ -130,7 +134,13 @@ const HOWTO_STEPS = [
   },
 ];
 
-// 0-3 explain the app, 4 collects a sharing name, 5 is the Pro/store step —
+const STANCES = [
+  { southpaw: false, label: "Orthodox", desc: "Left foot forward" },
+  { southpaw: true, label: "Southpaw", desc: "Right foot forward" },
+];
+
+// 0-3 explain the app, 4 collects a sharing name and a stance, 5 is the
+// Pro/store step —
 // which stays last so the ask is the final thing, not a mid-flow interruption.
 const TOTAL_STEPS = 6;
 
@@ -141,7 +151,28 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
+  // Seeded from what is saved, so re-reading this from Help shows the stance
+  // they already train in rather than quietly offering to reset it.
+  const [southpaw, setSouthpaw] = useState(loadSouthpaw);
   const isLast = step === TOTAL_STEPS - 1;
+
+  /**
+   * Applied on the tap, not on Next. Unlike the name there is nothing half-typed
+   * about it, and Skip sits one thumb away — a stance someone picked and then
+   * skipped past should still be the stance they train in.
+   */
+  const chooseStance = (next: boolean) => {
+    if (next === southpaw) return;
+    setSouthpaw(next);
+    setSouthpawPreference(next);
+    try {
+      trackEvent(AnalyticsEvents.SettingToggle, {
+        setting_name: "southpaw_mode",
+        setting_value: next,
+        source: "onboarding",
+      });
+    } catch { /* analytics must never break the setting it measures */ }
+  };
 
   /**
    * Save the sharing name, if they typed one.
@@ -300,6 +331,33 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
             <p style={{ ...styles.note, fontSize: "0.78rem" }}>
               Leave it blank and we&rsquo;ll pick one for you. You can change it
               any time from the Technique Manager, in the menu.
+            </p>
+
+            <h3 style={styles.subtitle}>Which stance do you train in?</h3>
+            <div role="radiogroup" aria-label="Stance" style={styles.stances}>
+              {STANCES.map((s) => {
+                const selected = s.southpaw === southpaw;
+                return (
+                  <button
+                    key={s.label}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => chooseStance(s.southpaw)}
+                    style={{
+                      ...styles.stance,
+                      ...(selected ? styles.stanceSelected : null),
+                    }}
+                  >
+                    <span style={styles.rowLabel}>{s.label}</span>
+                    <span style={styles.stanceDesc}>{s.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ ...styles.note, fontSize: "0.78rem" }}>
+              Southpaw swaps left and right in every callout. Change it any time
+              in Session Settings.
             </p>
           </>
         )}
@@ -505,6 +563,34 @@ const styles = {
     fontFamily: "inherit",
     marginBottom: "0.6rem",
   },
+  subtitle: {
+    fontSize: "0.9rem",
+    fontWeight: 700,
+    margin: "1.2rem 0 0.6rem",
+    color: "white",
+  },
+  stances: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "0.5rem",
+    marginBottom: "0.6rem",
+  },
+  stance: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.12rem",
+    padding: "0.6rem 0.4rem",
+    borderRadius: "0.5rem",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    background: "rgba(0, 0, 0, 0.35)",
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  stanceSelected: {
+    border: "1px solid #ec4899",
+    background: "rgba(236, 72, 153, 0.16)",
+  },
+  stanceDesc: { fontSize: "0.78rem", color: "#9ca3af" },
   link: {
     background: "transparent",
     border: "none",

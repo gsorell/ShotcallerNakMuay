@@ -7,22 +7,16 @@ import {
 } from "../utils/roundPlan";
 import { type Difficulty, type EmphasisKey } from "@/types"; // Adjust path if needed
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+import {
+  loadSouthpaw,
+  onSouthpawPreferenceChange,
+  saveSouthpaw,
+} from "@/utils/southpawPreference";
 import { normalizeKey } from "@/utils/techniqueUtils"; // Adjust path if needed
 import {
   loadUserSettings,
   saveUserSettings,
 } from "@/utils/userSettingsManager"; // Adjust path if needed
-
-// Helper to load southpaw mode safely
-const loadSouthpaw = () => {
-  try {
-    const stored = localStorage.getItem("southpaw_mode");
-    if (!stored) return false;
-    return Boolean(JSON.parse(stored));
-  } catch {
-    return false;
-  }
-};
 
 const ROUND_STRUCTURE_STORAGE_KEY = "round_structure_v1";
 
@@ -136,9 +130,12 @@ export function useWorkoutSettings(
 
   // Persist Southpaw
   useEffect(() => {
-    localStorage.setItem("southpaw_mode", JSON.stringify(southpawMode));
+    saveSouthpaw(southpawMode);
     southpawModeRef.current = Boolean(southpawMode);
   }, [southpawMode]);
+
+  // Onboarding asks for the stance from above this provider.
+  useEffect(() => onSouthpawPreferenceChange(setSouthpawMode), []);
 
   // Adjust Speed based on difficulty
   useEffect(() => {
