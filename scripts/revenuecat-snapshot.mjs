@@ -51,6 +51,54 @@ async function fetchOverview() {
   return rc(`/projects/${PROJECT_ID}/metrics/overview`);
 }
 
+// Before the 7-day trial shipped (v1.17.0), so the chart covers every trial ever started.
+const TRIALS_SINCE = '2026-01-01';
+const TRIAL_MEASURE_KEYS = {
+  'Trial Starts': 'starts',
+  Conversions: 'conversions',
+  Expirations: 'expirations',
+  Pending: 'pending',
+  'Conversion Rate': 'conversionRate',
+};
+
+// The customer list only holds trials that are live right now; the chart is the
+// one place that still counts trials that lapsed.
+async function fetchTrials() {
+  const today = new Date().toISOString().slice(0, 10);
+  const chart = await rc(
+    `/projects/${PROJECT_ID}/charts/trial_conversion_rate?start_date=${TRIALS_SINCE}&end_date=${today}&resolution=month&segment=store`,
+  );
+
+  const pick = (row = {}) => {
+    const out = {};
+    for (const [name, key] of Object.entries(TRIAL_MEASURE_KEYS)) out[key] = row[name] ?? 0;
+    return out;
+  };
+
+  const totals = chart.summary?.total ?? {};
+  const byStore = (chart.segments ?? [])
+    .filter((segment) => !segment.is_total)
+    .map((segment) => ({ store: segment.display_name, ...pick(totals[segment.display_name]) }));
+
+  const totalIdx = (chart.segments ?? []).findIndex((segment) => segment.is_total);
+  const months = new Map();
+  for (const v of chart.values ?? []) {
+    if (v.segment !== totalIdx) continue;
+    const key = TRIAL_MEASURE_KEYS[chart.measures?.[v.measure]?.display_name];
+    if (!key) continue;
+    const month = new Date(v.cohort * 1000).toISOString().slice(0, 7);
+    if (!months.has(month)) months.set(month, { month, incomplete: v.incomplete });
+    months.get(month)[key] = v.value;
+  }
+
+  return {
+    since: TRIALS_SINCE,
+    total: pick(totals.Total),
+    byStore,
+    byMonth: [...months.values()].filter((m) => m.starts > 0),
+  };
+}
+
 async function fetchAllCustomers() {
   const customers = [];
   let nextPage = `/projects/${PROJECT_ID}/customers?limit=100`;
@@ -131,10 +179,19 @@ async function main() {
     }
   }
 
+  // A chart failure must not cost the page its subscriber data.
+  let trials = null;
+  try {
+    trials = await fetchTrials();
+  } catch (err) {
+    console.error(`Trial chart unavailable: ${err.message}`);
+  }
+
   const snapshot = {
     pulledAt: new Date().toISOString(),
     overview,
     subscriptions,
+    trials,
   };
 
   process.stdout.write(JSON.stringify(snapshot));
