@@ -73,3 +73,7 @@ assets-src/social/
 # here. Ignored so they stop reading as untracked work.
 assets-src/merch/
 assets-src/audits/
+
+# Claude Code per-machine permissions; rewritten whenever a tool prompt is
+# approved, so it only ever read as noise in git status.
+.claude/settings.local.json
