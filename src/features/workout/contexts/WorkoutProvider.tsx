@@ -18,7 +18,11 @@ import {
   isLevelCleared,
   markLevelCleared,
 } from "@/features/roadmap/storage";
-import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+import {
+  AnalyticsEvents,
+  analyticsEmphasis,
+  trackEvent,
+} from "@/utils/analytics";
 import { createWorkoutLogEntry, type RoadmapLogRef } from "@/utils/logUtils";
 import { generateTechniquePool, humanizeKey } from "@/utils/techniqueUtils";
 import { scrollContentToTop } from "@/utils/scroll";
@@ -459,7 +463,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     const finishedEmphases = Object.keys(settingsRef.current.selectedEmphases)
       .filter((k) => settingsRef.current.selectedEmphases[k as EmphasisKey]);
     trackEvent(AnalyticsEvents.WorkoutComplete, {
-      selected_emphases: finishedEmphases.join(","),
+      selected_emphases: finishedEmphases.map(analyticsEmphasis).join(","),
       emphasis_count: finishedEmphases.length,
       difficulty: settingsRef.current.difficulty,
       rounds: settingsRef.current.roundsCount,
@@ -675,7 +679,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
         ? settings.roundStructure
         : DEFAULT_ROUND_STRUCTURE;
     trackEvent(AnalyticsEvents.WorkoutStart, {
-      selected_emphases: activeEmphases.join(","),
+      selected_emphases: activeEmphases.map(analyticsEmphasis).join(","),
       emphasis_count: activeEmphases.length,
       difficulty: settings.difficulty,
       rounds: settings.roundsCount,

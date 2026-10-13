@@ -2,6 +2,8 @@ import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 import { CapacitorHttp } from '@capacitor/core';
 
+import { INITIAL_TECHNIQUES } from "@/constants/techniques";
+
 // Analytics event names
 export const AnalyticsEvents = {
   // Timer events
@@ -54,6 +56,21 @@ export const AnalyticsEvents = {
   PWAInstallAccept: "pwa_install_accept",
   PWAInstallDecline: "pwa_install_decline",
 } as const;
+
+// The style key as analytics may see it. A style the user made is keyed by the
+// name they typed, so sending the key sent their free text to GA4 — real names
+// among it, and a new dimension row for every style anyone invented. Shipped
+// keys pass through; everything else is reported as "custom", which still
+// answers how often people train on their own styles. The two modes are listed
+// by hand because they have tiles but no entry in INITIAL_TECHNIQUES.
+const CUSTOM_EMPHASIS = "custom";
+const MODE_KEYS = ["timer_only", "freestyle"];
+
+export const analyticsEmphasis = (key: string): string =>
+  MODE_KEYS.includes(key) ||
+  Object.prototype.hasOwnProperty.call(INITIAL_TECHNIQUES, key)
+    ? key
+    : CUSTOM_EMPHASIS;
 
 // Google Analytics 4 (GA4) implementation
 declare global {

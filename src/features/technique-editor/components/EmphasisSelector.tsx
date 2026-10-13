@@ -3,7 +3,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { isFreeEmphasis, useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
 import type { EmphasisKey, TechniquesShape } from "@/types";
-import { trackEvent } from "@/utils/analytics";
+import { analyticsEmphasis, trackEvent } from "@/utils/analytics";
 import { ImageWithFallback } from "../../shared";
 import { useEmphasisList } from "../hooks/useEmphasisList";
 import {
@@ -135,7 +135,7 @@ export const EmphasisSelector: React.FC<EmphasisSelectorProps> = ({
       .filter((k) => !TILES_WITHOUT_TECHNIQUES.has(k));
     saveStyleDisplayOrder(next.join("\n") === shipped.join("\n") ? [] : next);
     try {
-      trackEvent("style_order_move", { style: key, direction });
+      trackEvent("style_order_move", { style: analyticsEmphasis(key), direction });
     } catch { /* analytics must never break the move it measures */ }
   };
 

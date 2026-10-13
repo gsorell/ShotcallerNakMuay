@@ -6,7 +6,11 @@ import {
   type RoundStructure,
 } from "../utils/roundPlan";
 import { type Difficulty, type EmphasisKey } from "@/types"; // Adjust path if needed
-import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
+import {
+  AnalyticsEvents,
+  analyticsEmphasis,
+  trackEvent,
+} from "@/utils/analytics";
 import {
   loadSouthpaw,
   onSouthpawPreferenceChange,
@@ -187,7 +191,7 @@ export function useWorkoutSettings(
           isTurningOn
             ? AnalyticsEvents.EmphasisSelect
             : AnalyticsEvents.EmphasisDeselect,
-          { emphasis: k, source }
+          { emphasis: analyticsEmphasis(k), source }
         );
       } catch { /* analytics must never break the selection it measures */ }
 

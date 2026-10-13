@@ -96,7 +96,8 @@ export default function TechniqueEditor({
     if (result.ok && result.key) {
       // Expand the newly created group so user can immediately start adding techniques
       setEditorFocusKey(result.key);
-      trackEvent("custom_group_created", { group_name: key });
+      // No name: it is whatever the user typed, and the count is the measure.
+      trackEvent("custom_group_created");
       return true;
     }
     return false;
