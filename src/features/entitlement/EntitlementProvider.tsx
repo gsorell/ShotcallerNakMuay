@@ -306,6 +306,20 @@ export function EntitlementProvider({
         } catch (error) {
           console.warn("[entitlement] collectDeviceIdentifiers failed", error);
         }
+
+        // The iOS counterpart, and the one that works without ATT: Apple Ads
+        // attribution comes from an AdServices token, not the IDFA, so every
+        // install from a search ad is matched regardless of consent. With the
+        // RevenueCat Apple Search Ads integration on, each subscriber row then
+        // carries its campaign, ad group and keyword - which is what lets a
+        // search-ads test be judged on cost per subscriber, not cost per tap.
+        if (Capacitor.getPlatform() === "ios") {
+          try {
+            await Purchases.enableAdServicesAttributionTokenCollection();
+          } catch (error) {
+            console.warn("[entitlement] AdServices token collection failed", error);
+          }
+        }
         await Purchases.addCustomerInfoUpdateListener((customerInfo) => {
           if (!cancelled) void evaluate(customerInfo);
         });
