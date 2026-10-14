@@ -223,9 +223,16 @@ html, body {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.5rem;
+  /* The styles column's width, so the row starts on the Start Here card's
+     left edge; the right padding keeps it clear of the menu button, which
+     sits on that column's right edge. */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 60rem;
+  padding-right: 3rem;
   /* Pulls the heading up under this row: the section spaces its children
      2rem apart, which is right between blocks and too much here. */
-  margin: 0 3rem -0.5rem 0;
+  margin: 0 auto -0.5rem;
 }
 
 /* A grid of equal columns, so both switches take the width of the wider one

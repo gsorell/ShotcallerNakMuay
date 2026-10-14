@@ -9,6 +9,7 @@ import {
 } from "@/features/style-share/shareStorage";
 import { ActionMenu, type ActionMenuItem } from "../../shared";
 import CharmTrophyCase from "./CharmTrophyCase";
+import StreakShareSheet from "./StreakShareSheet";
 import "./WorkoutLogs.css";
 
 // --- Icon mapping for favorite emphasis (update as needed) ---
@@ -78,7 +79,6 @@ function calculateStreaks(logs: WorkoutEntry[]) {
   ).sort((a, b) => a.localeCompare(b));
 
   if (days.length === 0) return { current: 0, longest: 0 };
-  if (days.length === 1) return { current: 1, longest: 1 };
 
   // Calculate longest streak
   let longest = 1,
@@ -160,6 +160,7 @@ export default function WorkoutLogs({
   // still sees the name they have been given rather than a blank.
   const [fighterName, setFighterName] = useState(() => ensureSenderName());
   const [editingName, setEditingName] = useState(false);
+  const [sharingStreak, setSharingStreak] = useState(false);
 
   useEffect(() => {
     try {
@@ -366,10 +367,24 @@ export default function WorkoutLogs({
         </div>
 
         <div className="fighter-stats">
-          <div className="fighter-stat">
-            <span className="fighter-stat-value">🔥 {stats?.current ?? 0}</span>
-            <span className="fighter-stat-label">Day streak</span>
-          </div>
+          {/* The streak is the one stat worth sending to someone, so it is
+              the one that opens a card — from the first day. */}
+          {(stats?.current ?? 0) >= 1 ? (
+            <button
+              type="button"
+              className="fighter-stat fighter-stat--share"
+              onClick={() => setSharingStreak(true)}
+              aria-label={`${stats!.current} day streak. Share`}
+            >
+              <span className="fighter-stat-value">🔥 {stats!.current}</span>
+              <span className="fighter-stat-label">Day streak</span>
+            </button>
+          ) : (
+            <div className="fighter-stat">
+              <span className="fighter-stat-value">🔥 {stats?.current ?? 0}</span>
+              <span className="fighter-stat-label">Day streak</span>
+            </div>
+          )}
           <div className="fighter-stat">
             <span className="fighter-stat-value">🏆 {stats?.longest ?? 0}</span>
             <span className="fighter-stat-label">Best streak</span>
@@ -532,6 +547,13 @@ export default function WorkoutLogs({
             </section>
           ))}
         </>
+      )}
+      {sharingStreak && stats && (
+        <StreakShareSheet
+          current={stats.current}
+          longest={stats.longest}
+          onClose={() => setSharingStreak(false)}
+        />
       )}
     </div>
   );

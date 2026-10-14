@@ -5,6 +5,12 @@ export interface HomeStats {
   mostCommonEmphasis: string;
   current: number;
   longest: number;
+  /**
+   * The day (YYYY-MM-DD) the current streak began, or "" when there is none.
+   * With `current` it names one particular streak: two streaks of the same
+   * length are told apart by when they started.
+   */
+  currentSince: string;
 }
 
 export function useHomeStats(trigger: number) {
@@ -62,7 +68,8 @@ function getLocalDateString(timestamp: string): string {
 
 // Helper logic extracted from the hook
 function calculateStreaks(logs: any[]) {
-  if (!logs.length) return { current: 0, longest: 0 };
+  const none = { current: 0, longest: 0, currentSince: "" };
+  if (!logs.length) return none;
 
   // Get unique workout days, sorted chronologically (using local timezone)
   const days = Array.from(
@@ -71,8 +78,7 @@ function calculateStreaks(logs: any[]) {
     )
   ).sort((a, b) => a.localeCompare(b));
 
-  if (days.length === 0) return { current: 0, longest: 0 };
-  if (days.length === 1) return { current: 1, longest: 1 };
+  if (days.length === 0) return none;
 
   // Calculate longest streak
   let longest = 1,
@@ -99,11 +105,12 @@ function calculateStreaks(logs: any[]) {
 
   // Only count as current streak if last workout was today or yesterday
   if (lastWorkoutDay !== today && lastWorkoutDay !== yesterday) {
-    return { current: 0, longest: max };
+    return { current: 0, longest: max, currentSince: "" };
   }
 
   // Count backwards from the most recent workout day
   let currentStreak = 1;
+  let currentSince = lastWorkoutDay!;
   for (let i = days.length - 1; i > 0; --i) {
     const prev = new Date(days[i - 1]!);
     const curr = new Date(days[i]!);
@@ -112,10 +119,11 @@ function calculateStreaks(logs: any[]) {
     );
     if (diff === 1) {
       currentStreak += 1;
+      currentSince = days[i - 1]!;
     } else {
       break;
     }
   }
 
-  return { current: currentStreak, longest: max };
+  return { current: currentStreak, longest: max, currentSince };
 }

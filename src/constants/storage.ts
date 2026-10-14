@@ -9,6 +9,10 @@ export const WORKOUTS_STORAGE_KEY = "shotcaller_workouts";
 export const VOICE_STORAGE_KEY = "shotcaller_voice_preference";
 export const MILESTONES_STORAGE_KEY = "shotcaller_streak_milestones";
 export const CHARMS_STORAGE_KEY = "shotcaller_charms";
+// The streak the home screen's menu badge was last seen for, as
+// "<start day>:<length>". Opening the menu sets it; a new streak day changes
+// the streak and brings the badge back.
+export const STREAK_BADGE_SEEN_KEY = "shotcaller_streak_badge_seen";
 // One-time flag: set after existing users' already-earned charms are seeded
 // as "awarded" so they don't get a backlog of celebrations on next workout.
 export const CHARMS_SEEDED_FLAG = "shotcaller_charms_seeded";

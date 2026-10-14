@@ -94,7 +94,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       <Header onHelp={onHelp} onLogoClick={onLogoClick} />
 
       <div className="app-layout-wrapper app-scroll">
-        <main className="app-layout-main">
+        {/* Home narrows its first row to the styles column; see the CSS. */}
+        <main
+          className={`app-layout-main${page === "timer" ? " app-layout-main--home" : ""}`}
+        >
           {menu && <div className="app-menu-slot">{menu}</div>}
           {children}
         </main>

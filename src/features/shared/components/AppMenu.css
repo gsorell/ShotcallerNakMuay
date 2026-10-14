@@ -17,6 +17,15 @@
   height: 2.25rem;
 }
 
+/* On home the content is one 60rem column (the Start Here card, the styles),
+   so the button moves in to that column's right edge rather than sitting out
+   at the page margin. The slot is positioned against main's padding box, and
+   the column is centred in main's content box, so its edge is half the spare
+   width in from the side. Other pages run at other widths and keep 2rem. */
+.app-layout-main--home .app-menu-slot {
+  right: max(2rem, calc((100% - 60rem) / 2));
+}
+
 /* A solid block of the app's own pink, not a bare glyph. As three thin white
    lines it sat beside the loudest thing on the screen — the logo — and was
    simply not seen. It is the only way to the rest of the app, so it gets the
@@ -34,6 +43,38 @@
   color: #fff;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* The streak, hung on the button's top-left corner like a notification
+   count. On the home screen only, and only until the menu is opened — it
+   comes back with each new streak day (see AppMenu.tsx). Dark, in the
+   page's own colour, with a thin light edge so it lifts off both the pink
+   button and the dark page behind it. On the leading corner it overhangs the
+   gap before the button rather than the page margin. */
+.app-menu-btn {
+  position: relative;
+}
+
+.app-menu-btn-streak {
+  position: absolute;
+  top: -0.55rem;
+  left: -0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+  height: 1.15rem;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #1a0b2e;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
 .app-menu-btn svg {

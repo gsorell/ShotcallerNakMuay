@@ -537,6 +537,8 @@ export default function App() {
               }}
               onHelp={onboarding.openOnboarding}
               streak={homePageStats?.current ?? 0}
+              streakSince={homePageStats?.currentSince ?? ""}
+              showStreakBadge={page === "timer"}
             />
           )
         }

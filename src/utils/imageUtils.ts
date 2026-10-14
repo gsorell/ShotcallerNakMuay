@@ -84,6 +84,69 @@ export const buildChallengeText = (stats: WorkoutStats): string => {
 };
 
 /**
+ * The caption that travels with a shared streak card.
+ *
+ * Same register as `buildChallengeText`: the number does the talking. The
+ * close is the card's own line, about consistency rather than a challenge. A
+ * streak is days a round was finished — it is not a measure of the work, and
+ * the caption claims nothing more than the count.
+ */
+export const buildStreakText = (days: number): string =>
+  (days === 1 ? "Day one." : `${days} days straight.`) +
+  " Show up. Repeat.\n" +
+  `${SITE_URL}\n` +
+  "#NakMuay #ShotcallerNakMuay #MuayThai";
+
+/**
+ * Shares a streak card. The same three routes as the other cards: the native
+ * share sheet with a cached file, the Web Share API, then the clipboard.
+ */
+export const shareStreakImage = async (
+  blob: Blob,
+  days: number
+): Promise<void> => {
+  const shareText = buildStreakText(days);
+  const base = `shotcaller-streak-${days}-day${days === 1 ? "" : "s"}`;
+  const title = "Shot Caller — your move";
+
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const base64Data = await blobToBase64(blob);
+      const cachePath = freshCardPath(base);
+      const result = await Filesystem.writeFile({
+        path: cachePath,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+      await pruneSharedCards(cachePath);
+      await Share.share({
+        title,
+        text: shareText,
+        url: result.uri,
+        dialogTitle: "Share your streak",
+      });
+    } else if ("share" in navigator) {
+      const file = new File([blob], `${base}.png`, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title, text: shareText, files: [file] });
+      } else {
+        await navigator.share({ title, text: shareText });
+      }
+    } else if (typeof navigator !== "undefined" && "clipboard" in navigator) {
+      await (navigator as any).clipboard.writeText(shareText);
+      alert("Streak copied to clipboard. Use Save to keep the card.");
+    } else {
+      alert("Sharing is not supported in this browser. Try Save instead.");
+    }
+  } catch (error) {
+    console.error("Error sharing streak:", error);
+    if (error instanceof Error && error.name !== "AbortError") {
+      alert("Unable to share. Try Save instead.");
+    }
+  }
+};
+
+/**
  * Captures a DOM element as a canvas and downloads it as an image
  * @param element - The DOM element to capture
  * @param filename - The filename for the downloaded image

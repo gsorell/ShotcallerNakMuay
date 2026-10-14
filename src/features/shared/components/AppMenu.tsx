@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { STREAK_BADGE_SEEN_KEY } from "@/constants/storage";
 import type { Page } from "@/types";
 import {
   isStoreReviewSupported,
@@ -16,6 +17,18 @@ type AppMenuProps = {
   onHelp: () => void;
   /** Current streak in days, shown beside Workout Logs. */
   streak?: number;
+  /** The day the current streak began; with `streak`, names this streak. */
+  streakSince?: string;
+  /** Also badge the button with the streak — the home screen does. */
+  showStreakBadge?: boolean;
+};
+
+const readSeenStreak = (): string => {
+  try {
+    return localStorage.getItem(STREAK_BADGE_SEEN_KEY) ?? "";
+  } catch {
+    return "";
+  }
 };
 
 type Destination = {
@@ -53,8 +66,16 @@ export default function AppMenu({
   onNavigate,
   onHelp,
   streak = 0,
+  streakSince = "",
+  showStreakBadge = false,
 }: AppMenuProps) {
   const [open, setOpen] = useState(false);
+  // The badge is news, not a fixture: it shows once per streak day, and
+  // opening the menu — where the streak sits beside Workout Logs — reads it.
+  const streakId = streak > 0 ? `${streakSince}:${streak}` : "";
+  const [seenStreak, setSeenStreak] = useState(readSeenStreak);
+  const badgeShown =
+    showStreakBadge && streakId !== "" && streakId !== seenStreak;
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Where to hang the panel: just under the button, wherever the page has
   // scrolled it to. Measured on opening rather than assumed.
@@ -69,6 +90,12 @@ export default function AppMenu({
       });
     }
     setOpen((v) => !v);
+    if (badgeShown) {
+      setSeenStreak(streakId);
+      try {
+        localStorage.setItem(STREAK_BADGE_SEEN_KEY, streakId);
+      } catch { /* the badge comes back next launch; nothing worse */ }
+    }
   };
 
   // Several screens listen for Escape to go back. With the menu open, Escape
@@ -101,12 +128,20 @@ export default function AppMenu({
         className="app-menu-btn"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Menu"
+        aria-label={badgeShown ? `Menu. ${streak} day streak` : "Menu"}
         onClick={toggle}
       >
         <svg viewBox="0 0 20 20" aria-hidden="true">
           <path d="M3 5.5h14M3 10h14M3 14.5h14" />
         </svg>
+        {/* Part of the button rather than a control of its own: a second
+            target on a 36px button is a mis-tap waiting to happen, and the
+            menu it opens shows the streak beside Workout Logs anyway. */}
+        {badgeShown && (
+          <span className="app-menu-btn-streak" aria-hidden="true">
+            🔥{streak}
+          </span>
+        )}
       </button>
 
       {open &&

@@ -169,6 +169,134 @@
   color: rgba(255, 255, 255, 0.65);
 }
 
+/* The streak, when there is one worth sharing: still a stat, laid out like
+   its neighbours, with its label in the accent pink as the only sign it does
+   anything. */
+.fighter-stat--share {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  margin: -0.35rem -0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.6rem;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s;
+}
+
+.fighter-stat--share:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fighter-stat--share:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.fighter-stat--share .fighter-stat-label {
+  white-space: nowrap;
+  color: #ff5fb0;
+  font-weight: 600;
+}
+
+/* --- The streak share sheet ------------------------------------------------ */
+
+.streak-share-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(8, 10, 24, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.streak-share-panel {
+  width: 100%;
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.streak-share-preview {
+  overflow: hidden;
+  border-radius: 1.1rem;
+  border: 1px solid #2e2240;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* The same ramp button as "Share your round", so the two read as one action. */
+.streak-share-primary {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.95rem 1rem;
+  border-radius: 0.85rem;
+  background-image: linear-gradient(
+    90deg,
+    #f838f8 0%,
+    #f838f8 12%,
+    #d660f8 30%,
+    #8898f8 50%,
+    #4accf8 70%,
+    #18f8f8 88%,
+    #18f8f8 100%
+  );
+  color: #0c0710;
+  font-size: 1.02rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.2s, box-shadow 0.2s;
+}
+
+.streak-share-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 22px rgba(248, 56, 248, 0.25);
+}
+
+.streak-share-primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.streak-share-secondary {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.streak-share-secondary button {
+  all: unset;
+  padding: 0.5rem 0.25rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.streak-share-secondary button:hover {
+  color: #fff;
+}
+
+.streak-share-primary:focus-visible,
+.streak-share-secondary button:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
 .fighter-charms {
   display: flex;
   flex-direction: column;
