@@ -115,6 +115,63 @@ async function fetchSubscriptions(customerId) {
   return page.items ?? [];
 }
 
+// v1.24.0 is the first build that sends the AdServices token, so nobody who
+// started before this can carry Apple Ads attribution.
+const ATTRIBUTION_SINCE = '2026-10-14';
+// Set by RevenueCat's Apple Search Ads integration. $campaign holds the
+// campaign name once the advanced (signed-in) integration is connected, and
+// the numeric campaign id before that.
+const ATTRIBUTION_KEYS = {
+  $mediaSource: 'mediaSource',
+  $campaign: 'campaign',
+  $adGroup: 'adGroup',
+  $keyword: 'keyword',
+};
+
+async function fetchAttribution(customerId) {
+  const page = await rc(`/projects/${PROJECT_ID}/customers/${encodeURIComponent(customerId)}/attributes?limit=100`);
+  const out = {};
+  for (const attr of page.items ?? []) {
+    const key = ATTRIBUTION_KEYS[attr.name];
+    if (key && attr.value) out[key] = attr.value;
+  }
+  return out;
+}
+
+// One row per customer acquired since ATTRIBUTION_SINCE, ad-driven or not, so
+// the page can compare paid acquisition against the organic baseline.
+async function buildAcquisitions(subsPerCustomer) {
+  const candidates = [];
+  for (const { customer, subs } of subsPerCustomer) {
+    const prod = subs.filter((s) => s.environment === 'production');
+    if (!prod.length) continue;
+    const firstStartMs = Math.min(...prod.map((s) => s.starts_at ?? Infinity));
+    if (!(firstStartMs >= Date.parse(ATTRIBUTION_SINCE))) continue;
+
+    const proceeds = prod.reduce((sum, s) => sum + (s.total_revenue_in_usd?.proceeds ?? 0), 0);
+    let outcome = 'lapsed';
+    if (proceeds > 0) outcome = 'paid';
+    else if (prod.some((s) => s.status === 'trialing')) outcome = 'trialing';
+    else if (prod.some((s) => ACTIVE_STATUSES.has(s.status))) outcome = 'paid';
+
+    candidates.push({
+      customer: customer.id,
+      store: prod[0].store,
+      firstStartedAt: toIso(firstStartMs),
+      outcome,
+      proceeds,
+    });
+  }
+
+  return mapWithConcurrency(candidates, 8, async (row) => {
+    try {
+      return { ...row, ...(await fetchAttribution(row.customer)) };
+    } catch {
+      return { ...row, attributionError: true };
+    }
+  });
+}
+
 async function mapWithConcurrency(items, concurrency, fn) {
   const results = [];
   let i = 0;
@@ -187,11 +244,21 @@ async function main() {
     console.error(`Trial chart unavailable: ${err.message}`);
   }
 
+  // Same rule as the trial chart: losing attribution must not cost the page
+  // its subscriber data.
+  let acquisitions = null;
+  try {
+    acquisitions = { since: ATTRIBUTION_SINCE, customers: await buildAcquisitions(subsPerCustomer) };
+  } catch (err) {
+    console.error(`Attribution unavailable: ${err.message}`);
+  }
+
   const snapshot = {
     pulledAt: new Date().toISOString(),
     overview,
     subscriptions,
     trials,
+    acquisitions,
   };
 
   process.stdout.write(JSON.stringify(snapshot));
