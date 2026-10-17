@@ -37,10 +37,16 @@ if (!API_KEY || !PROJECT_ID) {
 
 const BASE = 'https://api.revenuecat.com/v2';
 
-async function rc(pathAndQuery) {
+async function rc(pathAndQuery, attempt = 0) {
   const res = await fetch(`${BASE}${pathAndQuery}`, {
     headers: { Authorization: `Bearer ${API_KEY}` },
   });
+  // Two calls per customer can trip the rate limit; back off rather than drop rows.
+  if (res.status === 429 && attempt < 5) {
+    const waitS = Number(res.headers.get('retry-after')) || 2 ** attempt;
+    await new Promise((resolve) => setTimeout(resolve, waitS * 1000));
+    return rc(pathAndQuery, attempt + 1);
+  }
   if (!res.ok) {
     throw new Error(`${res.status} ${res.statusText} on ${pathAndQuery}: ${await res.text()}`);
   }
@@ -112,6 +118,13 @@ async function fetchAllCustomers() {
 
 async function fetchSubscriptions(customerId) {
   const page = await rc(`/projects/${PROJECT_ID}/customers/${encodeURIComponent(customerId)}/subscriptions?limit=100`);
+  return page.items ?? [];
+}
+
+// One-time purchases (lifetime). Subscriptions never list these, so without
+// them a lifetime sale shows up only as a jump in the overview's revenue.
+async function fetchPurchases(customerId) {
+  const page = await rc(`/projects/${PROJECT_ID}/customers/${encodeURIComponent(customerId)}/purchases?limit=100`);
   return page.items ?? [];
 }
 
@@ -217,6 +230,44 @@ async function main() {
     }
   });
 
+  // Losing purchases must not cost the page its subscriber data. A customer
+  // whose call fails is counted, so a short list never passes as complete.
+  let purchases = null;
+  try {
+    let failed = 0;
+    const perCustomer = await mapWithConcurrency(customers, 8, async (customer) => {
+      try {
+        return { customer, items: await fetchPurchases(customer.id) };
+      } catch {
+        failed++;
+        return { customer, items: [] };
+      }
+    });
+    const items = [];
+    for (const { customer, items: owned } of perCustomer) {
+      for (const p of owned) {
+        // The environment field, never the profile badge: sandbox buys are not sales.
+        if (p.environment !== 'production') continue;
+        items.push({
+          customer: customer.id,
+          store: p.store,
+          environment: p.environment,
+          status: p.status,
+          // An opaque RevenueCat id — the key can't read product config, so the
+          // page names it from gross price.
+          product: p.product_id,
+          purchasedAt: toIso(p.purchased_at),
+          gross: p.revenue_in_usd?.gross ?? 0,
+          proceeds: p.revenue_in_usd?.proceeds ?? 0,
+        });
+      }
+    }
+    items.sort((a, b) => (b.purchasedAt ?? '').localeCompare(a.purchasedAt ?? ''));
+    purchases = { items, failedCustomers: failed };
+  } catch (err) {
+    console.error(`Purchases unavailable: ${err.message}`);
+  }
+
   const subscriptions = [];
   for (const { customer, subs } of subsPerCustomer) {
     for (const sub of subs) {
@@ -259,6 +310,7 @@ async function main() {
     subscriptions,
     trials,
     acquisitions,
+    purchases,
   };
 
   process.stdout.write(JSON.stringify(snapshot));
