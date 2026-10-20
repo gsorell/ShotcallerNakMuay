@@ -37,4 +37,6 @@ export type TechniqueWithStyle = {
    * to `text` when absent.
    */
   display?: string;
+  /** Set when it came from a style's combinations rather than its singles. */
+  combo?: boolean;
 };

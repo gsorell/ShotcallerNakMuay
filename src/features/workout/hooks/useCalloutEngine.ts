@@ -57,7 +57,7 @@ export function useCalloutEngine({
   // rather than straight off the pool. Null everywhere else, including every
   // guided level. See utils/roundPlan.
   const poolSharesRef = useRef<PoolShare[] | null>(null);
-  // A technique called after every callout from the pool — "Jab", say — or
+  // A technique called after every combination from the pool — "Jab", say — or
   // null for none. Set per round alongside the pool; see utils/roundPlan.
   const betweenCalloutRef = useRef<readonly string[] | null>(null);
   const betweenDueRef = useRef(false);
@@ -202,8 +202,9 @@ export function useCalloutEngine({
               pickFromShares(poolSharesRef.current)) ||
             pool[Math.floor(Math.random() * pool.length)]!;
         }
-        // The pool calling it anyway is the one time it is not repeated.
-        if (!isBetween && !between?.includes(selectedTechnique.text)) {
+        // Only after a combination. Behind a single shot it doubled the
+        // singles in a round and buried the combinations among them.
+        if (!isBetween && selectedTechnique.combo) {
           betweenDueRef.current = true;
         }
 

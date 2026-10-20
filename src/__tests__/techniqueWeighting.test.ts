@@ -152,4 +152,23 @@ describe("shipped style hygiene", () => {
       }
     }
   });
+
+  it("marks combinations, so a between-callout can follow only those", () => {
+    const pool = generateTechniquePool(
+      {
+        test: {
+          label: "Test",
+          singles: ["Teep", { text: "Jab", weight: 2 }],
+          combos: [{ text: "Jab, Cross", weight: 2 }],
+        },
+      } as any,
+      { ...noEmphasis, test: true } as any,
+      false,
+      { test: "test" }
+    );
+    for (const t of pool) {
+      expect(Boolean(t.combo)).toBe(t.text === "Jab, Cross");
+    }
+    expect(pool.filter((t) => t.combo)).toHaveLength(2);
+  });
 });

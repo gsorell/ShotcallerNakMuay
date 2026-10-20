@@ -41,7 +41,7 @@ export interface RoundStructure {
   buildUp: boolean;
   /** How the pace moves from round to round. */
   intensity: IntensityShape;
-  /** A jab or a check called after every callout, to keep the hands busy. */
+  /** A jab or a check called after every combination, to keep the hands busy. */
   between: BetweenCallouts;
   /**
    * `by_round` only: the style chosen for each round. `null` leaves the round

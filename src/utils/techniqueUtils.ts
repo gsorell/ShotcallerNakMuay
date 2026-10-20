@@ -186,7 +186,12 @@ export const generateTechniquePool = (
         for (const entry of node[field] ?? []) {
           const text = typeof entry === "string" ? entry : entry?.text;
           if (typeof text !== "string") continue;
-          out.push({ text, style: styleKey, weight: entryWeight(entry) });
+          out.push({
+            text,
+            style: styleKey,
+            weight: entryWeight(entry),
+            ...(field === "combos" ? { combo: true } : {}),
+          });
         }
       }
       if (node.breakdown) extractStrings(node.breakdown, out, styleKey);
@@ -226,7 +231,13 @@ export const generateTechniquePool = (
   const out: TechniqueWithStyle[] = [];
   for (let pass = 0; pass < heaviest; pass += 1) {
     for (const item of unique) {
-      if (item.weight > pass) out.push({ text: item.text, style: item.style });
+      if (item.weight > pass) {
+        out.push({
+          text: item.text,
+          style: item.style,
+          ...(item.combo ? { combo: true } : {}),
+        });
+      }
     }
   }
   return out;

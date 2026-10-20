@@ -62,9 +62,9 @@ const BETWEEN_CHOICES: Choice<BetweenCallouts>[] = [
 
 const BETWEEN_HINTS: Record<BetweenCallouts, string> = {
   off: "Nothing is called between one callout and the next.",
-  jab: "A jab is called after every callout.",
-  check: "A check is called after every callout.",
-  either: "A jab or a check, at random, is called after every callout.",
+  jab: "A jab is called after every combination.",
+  check: "A check is called after every combination.",
+  either: "A jab or a check, at random, is called after every combination.",
 };
 
 type CalisthenicsChoice = "off" | CalisthenicsPlacement;
