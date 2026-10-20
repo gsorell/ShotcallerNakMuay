@@ -24,7 +24,7 @@ import {
   trackEvent,
 } from "@/utils/analytics";
 import { createWorkoutLogEntry, type RoadmapLogRef } from "@/utils/logUtils";
-import { generateTechniquePool, humanizeKey } from "@/utils/techniqueUtils";
+import { generateTechniquePool } from "@/utils/techniqueUtils";
 import { scrollContentToTop } from "@/utils/scroll";
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from "react";
 import { useHomeStats } from "../../logs";
@@ -45,11 +45,9 @@ import {
   DEFAULT_ROUND_STRUCTURE,
   buildRoundPool,
   calisthenicsPool,
-  describeRound,
   finisherSeconds,
   isDefaultStructure,
   planRounds,
-  planVaries,
   poolKey,
   reconcileStyleOrder,
   sanitizeRoundStructure,
@@ -386,27 +384,11 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
 
   const handleRestWarning = useCallback(() => {
     // 10 seconds warning - just TTS announcement, no bell
-    let line = "10 seconds";
-    // When the rounds differ, say what is coming. It rides on this warning
-    // because rest is the one place nothing else is being called: spoken at
-    // the bell, it would land on top of the round's first callout.
-    const plan = sessionPlanRef.current;
-    const next =
-      plan && !activeRoadmapRef.current && planVaries(plan)
-        ? plan[planRoundRef.current]
-        : undefined;
-    if (next) {
-      const { labels } = describeRound(next, (key) => {
-        const found = emphasisList.find((e) => e.key === key);
-        return found ? found.label : humanizeKey(key);
-      });
-      line +=
-        labels.length <= 2
-          ? `. Next, ${labels.join(" and ")}`
-          : ". Next, a mixed round";
-    }
-    tts.speakSystem(line, settings.voiceSpeed);
-  }, [tts, settings.voiceSpeed, emphasisList]);
+    // The next round's style is not spoken: the voices are English-only and
+    // mangle the Thai names ("Muay Femur" comes out as the bone). The rest
+    // screen shows what is up next instead.
+    tts.speakSystem("10 seconds", settings.voiceSpeed);
+  }, [tts, settings.voiceSpeed]);
 
   const handleRestBell = useCallback(() => {
     // 5 seconds warning - interval bell (not the big bell)
