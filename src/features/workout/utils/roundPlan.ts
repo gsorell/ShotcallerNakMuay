@@ -17,20 +17,59 @@ import { generateTechniquePool } from "@/utils/techniqueUtils";
 export type MixMode = "blend" | "by_round";
 export type CalisthenicsPlacement = "sprinkled" | "finisher" | "final_round";
 export type IntensityShape = "steady" | "ramp" | "pyramid";
-export type BetweenCallouts = "off" | "jab" | "check" | "either";
+export type BetweenTechnique = "jab" | "check" | "teep" | "block" | "slip";
 
 /**
- * What is spoken between callouts, for each setting that speaks at all. More
- * than one entry means one is picked at random each time.
+ * What can be called between callouts, in the order they are offered, and what
+ * is spoken for each. All side-neutral, so southpaw has nothing to mirror.
  */
-export const BETWEEN_CALLOUT_TEXT: Record<
-  Exclude<BetweenCallouts, "off">,
-  readonly string[]
-> = {
-  jab: ["Jab"],
-  check: ["Check"],
-  either: ["Jab", "Check"],
+export const BETWEEN_CALLOUT_TEXT: Record<BetweenTechnique, string> = {
+  jab: "Jab",
+  check: "Check",
+  teep: "Teep",
+  block: "Block",
+  slip: "Slip",
 };
+
+export const BETWEEN_TECHNIQUES = Object.keys(
+  BETWEEN_CALLOUT_TEXT
+) as BetweenTechnique[];
+
+/**
+ * What is spoken between callouts for a selection — one picked at random each
+ * time — or null when nothing is.
+ */
+export function betweenCalloutText(
+  between: readonly BetweenTechnique[]
+): string[] | null {
+  return between.length ? between.map((t) => BETWEEN_CALLOUT_TEXT[t]) : null;
+}
+
+/** "Jab", "Jab or check", "Jab, check or teep". */
+export function describeBetween(between: readonly BetweenTechnique[]): string {
+  const words = between.map((t) => BETWEEN_CALLOUT_TEXT[t].toLowerCase());
+  const list =
+    words.length <= 1
+      ? words.join("")
+      : `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
+  return list.charAt(0).toUpperCase() + list.slice(1);
+}
+
+// Before the selection was a list it was one of these.
+const LEGACY_BETWEEN: Record<string, BetweenTechnique[]> = {
+  off: [],
+  jab: ["jab"],
+  check: ["check"],
+  either: ["jab", "check"],
+};
+
+function sanitizeBetween(raw: unknown): BetweenTechnique[] {
+  if (typeof raw === "string") return [...(LEGACY_BETWEEN[raw] ?? [])];
+  if (!Array.isArray(raw)) return [];
+  // Kept in the order they are offered, so the summary reads the same however
+  // they were tapped.
+  return BETWEEN_TECHNIQUES.filter((t) => raw.includes(t));
+}
 
 export interface RoundStructure {
   /** How several selected styles share the session. */
@@ -41,8 +80,11 @@ export interface RoundStructure {
   buildUp: boolean;
   /** How the pace moves from round to round. */
   intensity: IntensityShape;
-  /** A jab or a check called after every combination, to keep the hands busy. */
-  between: BetweenCallouts;
+  /**
+   * Called after every combination to keep the hands busy, one picked at
+   * random from these. Empty is off.
+   */
+  between: BetweenTechnique[];
   /**
    * `by_round` only: the style chosen for each round. `null` leaves the round
    * to the rotation; `BLEND_ALL` makes it a blended round.
@@ -58,11 +100,10 @@ export const DEFAULT_ROUND_STRUCTURE: RoundStructure = {
   calisthenics: "sprinkled",
   buildUp: false,
   intensity: "steady",
-  between: "off",
+  between: [],
   customRounds: [],
 };
 
-const BETWEENS: BetweenCallouts[] = ["off", "jab", "check", "either"];
 const MIX_MODES: MixMode[] = ["blend", "by_round"];
 const PLACEMENTS: CalisthenicsPlacement[] = [
   "sprinkled",
@@ -78,7 +119,7 @@ export function isDefaultStructure(s: RoundStructure): boolean {
     s.calisthenics === "sprinkled" &&
     !s.buildUp &&
     s.intensity === "steady" &&
-    s.between === "off"
+    s.between.length === 0
   );
 }
 
@@ -97,9 +138,7 @@ export function sanitizeRoundStructure(raw: unknown): RoundStructure {
     intensity: SHAPES.includes(r.intensity as IntensityShape)
       ? (r.intensity as IntensityShape)
       : DEFAULT_ROUND_STRUCTURE.intensity,
-    between: BETWEENS.includes(r.between as BetweenCallouts)
-      ? (r.between as BetweenCallouts)
-      : DEFAULT_ROUND_STRUCTURE.between,
+    between: sanitizeBetween(r.between),
     customRounds: Array.isArray(r.customRounds)
       ? r.customRounds
           .slice(0, 20)
@@ -400,9 +439,12 @@ export function structureSummary(
   if (structure.buildUp) parts.push("Warm-up round");
   if (structure.intensity === "ramp") parts.push("Building pace");
   if (structure.intensity === "pyramid") parts.push("Pyramid pace");
-  if (structure.between === "jab") parts.push("Jab between");
-  if (structure.between === "check") parts.push("Check between");
-  if (structure.between === "either") parts.push("Jab or check between");
+  // Past two the names stop fitting on the line.
+  if (structure.between.length > 2) {
+    parts.push(`${structure.between.length} techniques between`);
+  } else if (structure.between.length) {
+    parts.push(`${describeBetween(structure.between)} between`);
+  }
   if (addCalisthenics && structure.calisthenics === "finisher") {
     parts.push("Finisher");
   }

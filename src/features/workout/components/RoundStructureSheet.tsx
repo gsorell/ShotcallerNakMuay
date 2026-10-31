@@ -7,12 +7,15 @@ import { humanizeKey } from "@/utils/techniqueUtils";
 import "@/styles/modal.css";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
 import {
+  BETWEEN_CALLOUT_TEXT,
+  BETWEEN_TECHNIQUES,
   BLEND_ALL,
   DEFAULT_ROUND_STRUCTURE,
+  describeBetween,
   describeRound,
   finisherSeconds,
   planRounds,
-  type BetweenCallouts,
+  type BetweenTechnique,
   type CalisthenicsPlacement,
   type IntensityShape,
   type MixMode,
@@ -53,19 +56,19 @@ const INTENSITY_HINTS: Record<IntensityShape, string> = {
   pyramid: "Builds to the middle rounds, then eases back off.",
 };
 
-const BETWEEN_CHOICES: Choice<BetweenCallouts>[] = [
-  { value: "off", label: "Off" },
-  { value: "jab", label: "Jab" },
-  { value: "check", label: "Check" },
-  { value: "either", label: "Jab/Check" },
-];
+const BETWEEN_CHOICES: Choice<BetweenTechnique>[] = BETWEEN_TECHNIQUES.map(
+  (t) => ({ value: t, label: BETWEEN_CALLOUT_TEXT[t] })
+);
 
-const BETWEEN_HINTS: Record<BetweenCallouts, string> = {
-  off: "Nothing is called between one callout and the next.",
-  jab: "A jab is called after every combination.",
-  check: "A check is called after every combination.",
-  either: "A jab or a check, at random, is called after every combination.",
-};
+function betweenHint(between: readonly BetweenTechnique[]): string {
+  if (!between.length) {
+    return "Nothing is called between one callout and the next. Pick any to add them.";
+  }
+  if (between.length === 1) {
+    return `${describeBetween(between)} is called after every combination.`;
+  }
+  return `${describeBetween(between)}, one at random, is called after every combination.`;
+}
 
 type CalisthenicsChoice = "off" | CalisthenicsPlacement;
 
@@ -354,13 +357,23 @@ export default function RoundStructureSheet({
               : "A warm-up round. Needs at least two rounds."}
           </p>
           <div className="rs-sublabel">Between callouts</div>
-          <Segmented
+          <MultiToggle
             name="Between callouts"
             choices={BETWEEN_CHOICES}
-            value={structure.between}
-            onChoose={(v) => gated(() => update({ between: v }, "between"))()}
+            values={structure.between}
+            onToggle={(t) =>
+              gated(() => {
+                const on = structure.between.includes(t);
+                // Kept in the order offered, so the summary reads the same
+                // however they were tapped.
+                const between = BETWEEN_TECHNIQUES.filter((b) =>
+                  b === t ? !on : structure.between.includes(b)
+                );
+                update({ between }, "between");
+              })()
+            }
           />
-          <p className="rs-hint">{BETWEEN_HINTS[structure.between]}</p>
+          <p className="rs-hint">{betweenHint(structure.between)}</p>
         </section>
           </>
         )}
@@ -449,6 +462,38 @@ function Segmented<T extends string>({
           {choice.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Segmented's look, but any number can be on at once — including none. */
+function MultiToggle<T extends string>({
+  name,
+  choices,
+  values,
+  onToggle,
+}: {
+  name: string;
+  choices: Choice<T>[];
+  values: readonly T[];
+  onToggle: (value: T) => void;
+}) {
+  return (
+    <div className="rs-segmented" role="group" aria-label={name}>
+      {choices.map((choice) => {
+        const on = values.includes(choice.value);
+        return (
+          <button
+            key={choice.value}
+            type="button"
+            className={`rs-segment ${on ? "is-on" : ""}`}
+            aria-pressed={on}
+            onClick={() => onToggle(choice.value)}
+          >
+            {choice.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -5,7 +5,9 @@ import {
   DEFAULT_ROUND_STRUCTURE,
   FASTEST_PACE,
   SLOWEST_PACE,
+  betweenCalloutText,
   buildRoundPool,
+  describeBetween,
   describeRound,
   finisherSeconds,
   isDefaultStructure,
@@ -381,18 +383,43 @@ describe("structure settings", () => {
   it("knows the default from anything else", () => {
     expect(isDefaultStructure(structure())).toBe(true);
     expect(isDefaultStructure(structure({ buildUp: true }))).toBe(false);
-    expect(isDefaultStructure(structure({ between: "jab" }))).toBe(false);
+    expect(isDefaultStructure(structure({ between: ["jab"] }))).toBe(false);
   });
 
-  it("keeps a between-callouts choice and drops an unknown one", () => {
-    expect(sanitizeRoundStructure({ between: "check" }).between).toBe("check");
-    expect(sanitizeRoundStructure({ between: "either" }).between).toBe(
-      "either"
+  it("keeps between-callouts techniques and drops unknown ones", () => {
+    expect(
+      sanitizeRoundStructure({ between: ["slip", "hook", "teep"] }).between
+    ).toEqual(["teep", "slip"]);
+    expect(sanitizeRoundStructure({ between: "nonsense" }).between).toEqual([]);
+    expect(sanitizeRoundStructure({}).between).toEqual([]);
+  });
+
+  it("reads a between-callouts setting saved before it was a list", () => {
+    expect(sanitizeRoundStructure({ between: "off" }).between).toEqual([]);
+    expect(sanitizeRoundStructure({ between: "check" }).between).toEqual([
+      "check",
+    ]);
+    expect(sanitizeRoundStructure({ between: "either" }).between).toEqual([
+      "jab",
+      "check",
+    ]);
+  });
+
+  it("speaks and summarises the between-callouts selection", () => {
+    expect(betweenCalloutText([])).toBeNull();
+    expect(betweenCalloutText(["jab", "block"])).toEqual(["Jab", "Block"]);
+    expect(describeBetween(["jab", "check", "slip"])).toBe(
+      "Jab, check or slip"
     );
-    expect(sanitizeRoundStructure({ between: "hook" }).between).toBe("off");
-    expect(structureSummary(structure({ between: "jab" }), 1, false)).toBe(
+    expect(structureSummary(structure({ between: ["jab"] }), 1, false)).toBe(
       "Jab between"
     );
+    expect(
+      structureSummary(structure({ between: ["jab", "check"] }), 1, false)
+    ).toBe("Jab or check between");
+    expect(
+      structureSummary(structure({ between: ["jab", "teep", "slip"] }), 1, false)
+    ).toBe("3 techniques between");
   });
 
   it("summarises itself in one line", () => {

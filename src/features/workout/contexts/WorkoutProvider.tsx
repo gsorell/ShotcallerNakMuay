@@ -41,7 +41,7 @@ import {
 import { useWorkoutTimer } from "../hooks/useWorkoutTimer";
 import { useEntitlement } from "@/features/entitlement";
 import {
-  BETWEEN_CALLOUT_TEXT,
+  betweenCalloutText,
   DEFAULT_ROUND_STRUCTURE,
   buildRoundPool,
   calisthenicsPool,
@@ -336,11 +336,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
       engine.currentPoolRef.current = built.flat;
       engine.poolSharesRef.current = built.shares;
       // Nobody jabs between burpees: a calisthenics round goes without.
-      const between = sessionStructureRef.current?.structure.between ?? "off";
+      const between = sessionStructureRef.current?.structure.between ?? [];
       engine.betweenCalloutRef.current =
-        between === "off" || planned.calisthenics === "only"
-          ? null
-          : BETWEEN_CALLOUT_TEXT[between];
+        planned.calisthenics === "only" ? null : betweenCalloutText(between);
       switchPoolKey(poolKey(planned));
       settingsRef.current.paceFactorRef.current = planned.paceFactor;
     },
