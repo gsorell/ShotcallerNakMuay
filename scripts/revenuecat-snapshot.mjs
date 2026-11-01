@@ -153,26 +153,39 @@ async function fetchAttribution(customerId) {
 
 // One row per customer acquired since ATTRIBUTION_SINCE, ad-driven or not, so
 // the page can compare paid acquisition against the organic baseline.
-async function buildAcquisitions(subsPerCustomer) {
+//
+// Lifetime buyers count too. Built from subscriptions alone, a customer who
+// went straight to the one-time purchase never appeared here, so the first
+// sale traced to Apple Ads (a lifetime, 2026-10-30) was invisible on the page.
+// `purchasesByCustomer` is null when the purchases pull failed; rows are then
+// subscription-only, as before.
+async function buildAcquisitions(subsPerCustomer, purchasesByCustomer) {
   const candidates = [];
   for (const { customer, subs } of subsPerCustomer) {
     const prod = subs.filter((s) => s.environment === 'production');
-    if (!prod.length) continue;
-    const firstStartMs = Math.min(...prod.map((s) => s.starts_at ?? Infinity));
+    const bought = (purchasesByCustomer?.get(customer.id) ?? []).filter((p) => p.environment === 'production');
+    if (!prod.length && !bought.length) continue;
+    const firstStartMs = Math.min(
+      ...prod.map((s) => s.starts_at ?? Infinity),
+      ...bought.map((p) => p.purchased_at ?? Infinity),
+    );
     if (!(firstStartMs >= Date.parse(ATTRIBUTION_SINCE))) continue;
 
-    const proceeds = prod.reduce((sum, s) => sum + (s.total_revenue_in_usd?.proceeds ?? 0), 0);
+    const proceeds =
+      prod.reduce((sum, s) => sum + (s.total_revenue_in_usd?.proceeds ?? 0), 0) +
+      bought.reduce((sum, p) => sum + (p.revenue_in_usd?.proceeds ?? 0), 0);
     let outcome = 'lapsed';
-    if (proceeds > 0) outcome = 'paid';
+    if (proceeds > 0 || bought.length) outcome = 'paid';
     else if (prod.some((s) => s.status === 'trialing')) outcome = 'trialing';
     else if (prod.some((s) => ACTIVE_STATUSES.has(s.status))) outcome = 'paid';
 
     candidates.push({
       customer: customer.id,
-      store: prod[0].store,
+      store: (prod[0] ?? bought[0]).store,
       firstStartedAt: toIso(firstStartMs),
       outcome,
       proceeds,
+      ...(bought.length ? { lifetime: true } : {}),
     });
   }
 
@@ -233,6 +246,7 @@ async function main() {
   // Losing purchases must not cost the page its subscriber data. A customer
   // whose call fails is counted, so a short list never passes as complete.
   let purchases = null;
+  let purchasesByCustomer = null;
   try {
     let failed = 0;
     const perCustomer = await mapWithConcurrency(customers, 8, async (customer) => {
@@ -264,6 +278,7 @@ async function main() {
     }
     items.sort((a, b) => (b.purchasedAt ?? '').localeCompare(a.purchasedAt ?? ''));
     purchases = { items, failedCustomers: failed };
+    purchasesByCustomer = new Map(perCustomer.map(({ customer, items: owned }) => [customer.id, owned]));
   } catch (err) {
     console.error(`Purchases unavailable: ${err.message}`);
   }
@@ -299,7 +314,7 @@ async function main() {
   // its subscriber data.
   let acquisitions = null;
   try {
-    acquisitions = { since: ATTRIBUTION_SINCE, customers: await buildAcquisitions(subsPerCustomer) };
+    acquisitions = { since: ATTRIBUTION_SINCE, customers: await buildAcquisitions(subsPerCustomer, purchasesByCustomer) };
   } catch (err) {
     console.error(`Attribution unavailable: ${err.message}`);
   }
