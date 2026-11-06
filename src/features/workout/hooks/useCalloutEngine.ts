@@ -17,7 +17,11 @@ import {
   startSegment,
 } from "../utils/roundStopwatch";
 import { pickFromShares, type PoolShare } from "../utils/roundPlan";
-import { notifyCallout } from "@/features/session-video/calloutSignal";
+import {
+  notifyCallout,
+  notifyCalloutScheduled,
+  notifyCalloutSpoken,
+} from "@/features/session-video/calloutSignal";
 
 type SpeakWithDurationFn = (
   text: string,
@@ -142,6 +146,8 @@ export function useCalloutEngine({
           doCallout,
           Math.max(0, delay)
         ) as unknown as number;
+        // The session reel starts filming a beat before the call lands.
+        notifyCalloutScheduled(Math.max(0, delay));
       };
 
       const doCallout = () => {
@@ -212,7 +218,7 @@ export function useCalloutEngine({
 
         shotsCalledOutRef.current += 1;
         lastCalloutAtRef.current = Date.now();
-        // The session reel opens a clip on a callout, when it opens one at all.
+        // The session reel's clip, if this callout has one, is already rolling.
         notifyCallout();
 
         // Determine Text
@@ -252,6 +258,8 @@ export function useCalloutEngine({
           finalPhrase,
           settings.voiceSpeedRef.current,
           (actualDurationMs: number) => {
+            // The session reel ends its clip once the combination has landed.
+            notifyCalloutSpoken(finalPhrase);
             // A single word is almost all voice tail; the shortest one said is
             // the best measure of it. See utils/cadence.
             if (/^\S+$/.test(finalPhrase.trim())) {

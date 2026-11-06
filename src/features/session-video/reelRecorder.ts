@@ -1,49 +1,6 @@
+import type { CalloutEvent } from "./calloutSignal";
+import { ClipScheduler } from "./clipScheduler";
 import type { SessionReel } from "./reelStore";
-
-/**
- * A clip runs from the callout that opens it until the next callout begins,
- * so it holds the whole combination however long it takes to throw. A fixed
- * length cut long combinations off mid-strike.
- *
- * The next callout only ends the clip once it has run this long. Called
- * sooner than that (a fast pace), the clip carries on through the second
- * technique and ends at the one after.
- */
-export const MIN_CLIP_MS = 2500;
-/** Ends a clip whose next callout never comes: a long pause between calls. */
-export const MAX_CLIP_MS = 9000;
-/** What a clip usually runs to, for spacing them out. */
-export const CLIP_MS = 4000;
-/** Roughly how long the finished reel runs: short enough to post. */
-export const REEL_TARGET_MS = 30000;
-
-/**
- * How far apart clips must start so the reel's clips are spread across the
- * whole session instead of all landing in round one. Callouts come every few
- * seconds, so taking every one would just record the first half-minute.
- */
-export const clipGapMs = (
-  plannedWorkMs: number,
-  clipMs = CLIP_MS,
-  targetMs = REEL_TARGET_MS
-): number => {
-  const clipsWanted = Math.max(1, Math.round(targetMs / clipMs));
-  return Math.max(0, plannedWorkMs / clipsWanted - clipMs);
-};
-
-/** Whether a callout arriving mid-clip ends it (else the clip runs on). */
-export const calloutEndsClip = (clipElapsedMs: number): boolean =>
-  clipElapsedMs >= MIN_CLIP_MS;
-
-/** Whether a callout at `now` should open a clip. */
-export const shouldStartClip = (s: {
-  now: number;
-  lastClipEnd: number;
-  gapMs: number;
-  recordedMs: number;
-  /** Hard ceiling, for a session that runs longer than planned. */
-  maxMs: number;
-}): boolean => s.now - s.lastClipEnd >= s.gapMs && s.recordedMs < s.maxMs;
 
 /** MP4 first: it plays everywhere and Photos takes it. WebM where it's not. */
 const pickMime = (): string => {
@@ -67,8 +24,8 @@ const pickMime = (): string => {
 /**
  * Records a session's highlight reel.
  *
- * One MediaRecorder for the whole session, *resumed* when a callout opens a
- * clip and *paused* when the clip ends. A paused recorder leaves no gap in
+ * One MediaRecorder for the whole session, *resumed* when a clip opens and
+ * *paused* when it ends (when is ClipScheduler's call). A paused recorder leaves no gap in
  * its output, so the reel is a single finished file the moment the session
  * ends: no clips to stitch, nothing to re-encode on the phone.
  *
@@ -83,19 +40,15 @@ export class ReelRecorder {
   private recorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
   private drawing = false;
-  private clipTimer: ReturnType<typeof setTimeout> | null = null;
-  private segmentStart = 0;
-  private lastClipEnd = -Infinity;
-  private recordedMs = 0;
-  private clips = 0;
-  private readonly gapMs: number;
-  private readonly maxMs: number;
+  private readonly scheduler: ClipScheduler;
   /** Told when a clip starts or stops, for the preview's red border. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
   constructor(plannedWorkMs: number) {
-    this.gapMs = clipGapMs(plannedWorkMs);
-    this.maxMs = REEL_TARGET_MS + CLIP_MS * 2;
+    this.scheduler = new ClipScheduler(
+      { roll: () => this.roll(), cut: () => this.cut() },
+      plannedWorkMs
+    );
   }
 
   /** Opens the front camera into `preview` and gets the recorder ready. */
@@ -161,51 +114,31 @@ export class ReelRecorder {
     };
   }
 
-  /**
-   * A technique was just called. Ends the clip in progress — it has caught
-   * the whole of the last combination — and may open the next one.
-   */
-  callout(): void {
+  /** The callout engine's timing; the scheduler decides when to film. */
+  event(e: CalloutEvent): void {
+    if (this.recorder) this.scheduler.event(e);
+  }
+
+  /** Paused, resting, or the round ended. */
+  hold(): void {
+    this.scheduler.hold();
+  }
+
+  /** Rolls the tape: the recorder resumes (or starts, the first time). */
+  private roll(): void {
     const r = this.recorder;
-    if (!r) return;
-    const now = performance.now();
-    if (r.state === "recording") {
-      if (!calloutEndsClip(now - this.segmentStart)) return; // runs on
-      this.endClip();
-    }
-    if (
-      !shouldStartClip({
-        now,
-        lastClipEnd: this.lastClipEnd,
-        gapMs: this.gapMs,
-        recordedMs: this.recordedMs,
-        maxMs: this.maxMs,
-      })
-    ) {
-      return;
-    }
+    if (!r || r.state === "recording") return;
     try {
       if (r.state === "inactive") r.start(1000);
       else r.resume();
+      this.onRecordingChange(true);
     } catch {
-      return;
+      /* the clip is lost, not the session */
     }
-    this.segmentStart = now;
-    this.clips += 1;
-    this.onRecordingChange(true);
-    // Normally the next callout ends the clip; this is the backstop.
-    this.clipTimer = setTimeout(() => this.endClip(), MAX_CLIP_MS);
   }
 
-  /**
-   * Ends the clip in progress: the next callout began, the round ended, or
-   * the session paused.
-   */
-  endClip(): void {
-    if (this.clipTimer) {
-      clearTimeout(this.clipTimer);
-      this.clipTimer = null;
-    }
+  /** Cuts the tape: the recorder pauses, leaving no gap in the file. */
+  private cut(): void {
     const r = this.recorder;
     if (!r || r.state !== "recording") return;
     try {
@@ -213,15 +146,12 @@ export class ReelRecorder {
     } catch {
       /* stays recording; finish() still closes it */
     }
-    const now = performance.now();
-    this.recordedMs += now - this.segmentStart;
-    this.lastClipEnd = now;
     this.onRecordingChange(false);
   }
 
   /** Stops everything and hands back the reel, or null if nothing was shot. */
   async finish(): Promise<SessionReel | null> {
-    this.endClip();
+    this.scheduler.hold();
     const r = this.recorder;
     this.recorder = null;
     let reel: SessionReel | null = null;
@@ -243,8 +173,8 @@ export class ReelRecorder {
           blob,
           url: URL.createObjectURL(blob),
           ext: type.includes("mp4") ? "mp4" : "webm",
-          durationMs: Math.round(this.recordedMs),
-          clips: this.clips,
+          durationMs: Math.round(this.scheduler.recordedMs),
+          clips: this.scheduler.clips,
         };
       }
     }
@@ -254,8 +184,7 @@ export class ReelRecorder {
 
   /** Lets go of the camera without keeping anything. */
   release(): void {
-    if (this.clipTimer) clearTimeout(this.clipTimer);
-    this.clipTimer = null;
+    this.scheduler.dispose();
     this.drawing = false;
     this.camera?.getTracks().forEach((t) => t.stop());
     this.canvasStream?.getTracks().forEach((t) => t.stop());

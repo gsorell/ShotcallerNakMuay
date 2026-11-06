@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { trackEvent } from "@/utils/analytics";
-import { onCallout } from "./calloutSignal";
+import { onCalloutEvent } from "./calloutSignal";
 import { useRecordSession } from "./recordPreference";
 import { ReelRecorder } from "./reelRecorder";
 import { clearSessionReel, setSessionReel } from "./reelStore";
@@ -69,7 +69,7 @@ export default function SessionCameraPip({
       });
     }
 
-    const off = onCallout(() => recorderRef.current?.callout());
+    const off = onCalloutEvent((e) => recorderRef.current?.event(e));
 
     return () => {
       cancelled = true;
@@ -83,7 +83,7 @@ export default function SessionCameraPip({
   }, [active, enabled]);
 
   useEffect(() => {
-    if (holding) recorderRef.current?.endClip();
+    if (holding) recorderRef.current?.hold();
   }, [holding]);
 
   const closeEarly = () => {

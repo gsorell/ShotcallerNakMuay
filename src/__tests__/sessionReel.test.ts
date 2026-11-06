@@ -1,82 +1,133 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  CLIP_MS,
-  MIN_CLIP_MS,
+  ClipScheduler,
+  PREROLL_MS,
   REEL_TARGET_MS,
-  calloutEndsClip,
+  CLIP_MS,
   clipGapMs,
   shouldStartClip,
-} from "@/features/session-video/reelRecorder";
+  strikesIn,
+  tailAfterSpeechMs,
+} from "@/features/session-video/clipScheduler";
 
-/**
- * Plays a session's callouts through the recorder's rules: a clip opens on a
- * callout when spacing allows, and the next callout ends it once it has run
- * MIN_CLIP_MS (sooner, the clip runs on through that callout).
- */
-const simulate = (workMs: number, everyMs: number) => {
-  const gapMs = clipGapMs(workMs);
-  const maxMs = REEL_TARGET_MS + CLIP_MS * 2;
-  let lastClipEnd = -Infinity;
-  let recordedMs = 0;
-  let clipStart: number | null = null;
-  const clips: { start: number; end: number }[] = [];
-  for (let now = everyMs; now < workMs; now += everyMs) {
-    if (clipStart !== null) {
-      if (!calloutEndsClip(now - clipStart)) continue;
-      clips.push({ start: clipStart, end: now });
-      recordedMs += now - clipStart;
-      lastClipEnd = now;
-      clipStart = null;
-    }
-    if (shouldStartClip({ now, lastClipEnd, gapMs, recordedMs, maxMs })) {
-      clipStart = now;
-    }
-  }
-  return { clips, recordedMs };
+/** A tape that logs when it rolls and cuts, in fake-clock milliseconds. */
+const makeTape = () => {
+  const log: string[] = [];
+  const t0 = Date.now();
+  return {
+    log,
+    tape: {
+      roll: () => log.push(`roll@${Date.now() - t0}`),
+      cut: () => log.push(`cut@${Date.now() - t0}`),
+    },
+  };
 };
 
-describe("session reel clips", () => {
-  it("runs each clip from its callout to the next one", () => {
-    const { clips } = simulate(9 * 60_000, 3500);
-    expect(clips.length).toBeGreaterThan(3);
-    for (const c of clips) expect(c.end - c.start).toBe(3500);
+describe("clip timing", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("starts filming before the callout and stops after the combination lands", () => {
+    const { log, tape } = makeTape();
+    // A short session: no spacing, every callout is filmed.
+    const s = new ClipScheduler(tape, 20_000, () => Date.now());
+    s.event({ type: "scheduled", delayMs: 3000 });
+    vi.advanceTimersByTime(3000);
+    s.event({ type: "called" });
+    vi.advanceTimersByTime(1500);
+    s.event({ type: "spoken", phrase: "Jab, cross, left kick" });
+    vi.advanceTimersByTime(5000);
+
+    expect(log).toEqual([
+      `roll@${3000 - PREROLL_MS}`,
+      `cut@${4500 + tailAfterSpeechMs("Jab, cross, left kick")}`,
+    ]);
   });
 
-  it("carries a clip through a callout that comes too soon", () => {
-    // A fast pace: 1.5s between calls. Ended at the first callout the clip
-    // would be 1.5s; it runs on to the next, 3s.
-    const { clips } = simulate(9 * 60_000, 1500);
-    for (const c of clips) {
-      expect(c.end - c.start).toBeGreaterThanOrEqual(MIN_CLIP_MS);
-      expect(c.end - c.start).toBe(3000);
-    }
+  it("ends the clip when an unfilmed callout comes before the tail is up", () => {
+    const { log, tape } = makeTape();
+    // A long session: clips are spaced, so the next call is not filmed.
+    const s = new ClipScheduler(tape, 3 * 3 * 60_000, () => Date.now());
+    s.event({ type: "scheduled", delayMs: 1000 });
+    vi.advanceTimersByTime(1000);
+    s.event({ type: "called" });
+    vi.advanceTimersByTime(800);
+    s.event({ type: "spoken", phrase: "Jab, cross, hook, cross" });
+    // The next call is scheduled 600ms out, inside the tail.
+    s.event({ type: "scheduled", delayMs: 600 });
+    vi.advanceTimersByTime(600);
+    s.event({ type: "called" });
+
+    expect(log).toEqual([`roll@${1000 - PREROLL_MS}`, "cut@2400"]);
+    expect(s.clips).toBe(1);
   });
 
+  it("keeps rolling when the callout it is waiting for is pushed back", () => {
+    const { log, tape } = makeTape();
+    const s = new ClipScheduler(tape, 20_000, () => Date.now());
+    s.event({ type: "scheduled", delayMs: 1000 });
+    vi.advanceTimersByTime(900); // rolling, armed
+    // The voice was still busy: the engine reschedules the same call.
+    s.event({ type: "scheduled", delayMs: 250 });
+    vi.advanceTimersByTime(250);
+    s.event({ type: "called" });
+    expect(log).toEqual([`roll@${1000 - PREROLL_MS}`]);
+  });
+
+  it("drops a planned clip when the session pauses before it starts", () => {
+    const { log, tape } = makeTape();
+    const s = new ClipScheduler(tape, 20_000, () => Date.now());
+    s.event({ type: "scheduled", delayMs: 3000 });
+    vi.advanceTimersByTime(1000);
+    s.hold();
+    vi.advanceTimersByTime(10_000);
+    expect(log).toEqual([]);
+  });
+
+  it("cuts on a backstop if the voice never reports finishing", () => {
+    const { log, tape } = makeTape();
+    const s = new ClipScheduler(tape, 20_000, () => Date.now());
+    s.event({ type: "scheduled", delayMs: 1000 });
+    vi.advanceTimersByTime(1000);
+    s.event({ type: "called" });
+    vi.advanceTimersByTime(20_000);
+    expect(log.length).toBe(2);
+    expect(log[1]!.startsWith("cut@")).toBe(true);
+  });
+});
+
+describe("clip spacing", () => {
   it("spreads a 3×3 session's clips across all three rounds", () => {
     const workMs = 3 * 3 * 60_000;
-    const { clips, recordedMs } = simulate(workMs, 3000);
-    expect(recordedMs).toBeGreaterThanOrEqual(REEL_TARGET_MS * 0.7);
-    expect(recordedMs).toBeLessThanOrEqual(REEL_TARGET_MS + CLIP_MS * 3);
-    // Clips in the last round, not all bunched in the first.
-    expect(clips[clips.length - 1]!.start).toBeGreaterThan((workMs * 2) / 3);
+    const gapMs = clipGapMs(workMs);
+    const maxMs = REEL_TARGET_MS + CLIP_MS * 2;
+    let lastClipEnd = -Infinity;
+    let recordedMs = 0;
+    const starts: number[] = [];
+    for (let now = 3000; now < workMs; now += 3000) {
+      if (shouldStartClip({ now, lastClipEnd, gapMs, recordedMs, maxMs })) {
+        starts.push(now);
+        lastClipEnd = now + CLIP_MS;
+        recordedMs += CLIP_MS;
+      }
+    }
+    expect(recordedMs).toBeGreaterThanOrEqual(REEL_TARGET_MS * 0.8);
+    expect(starts[starts.length - 1]).toBeGreaterThan((workMs * 2) / 3);
   });
 
-  it("records back to back when the session is shorter than the reel", () => {
+  it("records every callout when the session is shorter than the reel", () => {
     expect(clipGapMs(20_000)).toBe(0);
-    const { recordedMs } = simulate(20_000, 3000);
-    expect(recordedMs).toBeGreaterThan(10_000);
   });
+});
 
-  it("stops at the ceiling when a session runs long", () => {
-    expect(
-      shouldStartClip({
-        now: 1e9,
-        lastClipEnd: 0,
-        gapMs: 0,
-        recordedMs: REEL_TARGET_MS + CLIP_MS * 2,
-        maxMs: REEL_TARGET_MS + CLIP_MS * 2,
-      })
-    ).toBe(false);
+describe("tail after the voice", () => {
+  it("grows with the strikes called, within bounds", () => {
+    expect(strikesIn("Jab")).toBe(1);
+    expect(strikesIn("Jab, cross, left kick")).toBe(3);
+    expect(tailAfterSpeechMs("Jab")).toBeLessThan(
+      tailAfterSpeechMs("Jab, cross, hook, cross")
+    );
+    expect(tailAfterSpeechMs("a, b, c, d, e, f, g, h")).toBe(2500);
   });
 });
