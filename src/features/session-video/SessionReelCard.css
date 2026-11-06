@@ -87,6 +87,10 @@
   color: #9d8fa9;
 }
 
+.reel-ready-sub.is-saved {
+  color: #7ee2a8;
+}
+
 .reel-ready-chevron {
   flex-shrink: 0;
   font-size: 1.6rem;

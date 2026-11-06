@@ -6,6 +6,7 @@ import { onCallout } from "./calloutSignal";
 import { useRecordSession } from "./recordPreference";
 import { ReelRecorder } from "./reelRecorder";
 import { clearSessionReel, setSessionReel } from "./reelStore";
+import { autoSaveReel } from "./saveToGallery";
 import "./SessionCameraPip.css";
 
 interface SessionCameraPipProps {
@@ -122,6 +123,8 @@ async function handOver(rec: ReelRecorder): Promise<void> {
     const reel = await rec.finish();
     if (reel) {
       setSessionReel(reel);
+      // Kept without anyone having to remember to: straight to the gallery.
+      void autoSaveReel(reel);
       trackEvent("session_reel_created", {
         clips: reel.clips,
         seconds: Math.round(reel.durationMs / 1000),

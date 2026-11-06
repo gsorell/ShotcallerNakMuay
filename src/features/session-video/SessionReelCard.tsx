@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor } from "@capacitor/core";
 
 import { trackEvent } from "@/utils/analytics";
 import {
@@ -29,6 +30,15 @@ export default function SessionReelCard() {
   if (!reel) return null;
 
   const seconds = Math.max(1, Math.round(reel.durationMs / 1000));
+  const galleryName = Capacitor.getPlatform() === "ios" ? "Photos" : "your gallery";
+  const status =
+    reel.gallery === "saving"
+      ? `Saving to ${galleryName}…`
+      : reel.gallery === "saved"
+      ? `${seconds}s · saved to ${galleryName}`
+      : reel.gallery === "failed"
+      ? `${seconds}s · not saved, tap to share it instead`
+      : `${seconds}s of today's rounds · tap to watch`;
 
   return (
     <>
@@ -53,8 +63,12 @@ export default function SessionReelCard() {
         </span>
         <span className="reel-ready-text">
           <span className="reel-ready-title">Your reel is ready</span>
-          <span className="reel-ready-sub">
-            {seconds}s of today's rounds · tap to watch
+          <span
+            className={`reel-ready-sub ${
+              reel.gallery === "saved" ? "is-saved" : ""
+            }`}
+          >
+            {status}
           </span>
         </span>
         <span className="reel-ready-chevron" aria-hidden="true">
@@ -161,7 +175,7 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
           onClick={onShare}
           disabled={busy}
         >
-          {busy ? "Preparing…" : "Share or save"}
+          {busy ? "Preparing…" : "Share"}
         </button>
         <button type="button" className="reel-viewer-again" onClick={replay}>
           Watch again

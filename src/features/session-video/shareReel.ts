@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
-import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 
+import { ensureReelFile } from "./reelFile";
 import type { SessionReel } from "./reelStore";
 
 const SHARE_TEXT = "Today's rounds, called by Shot Caller 🥊 #MuayThai";
@@ -17,66 +17,24 @@ const isDismissal = (error: unknown): boolean => {
   );
 };
 
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const s = String(reader.result ?? "");
-      resolve(s.slice(s.indexOf(",") + 1));
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-
-/** One file in the cache at a time; an earlier reel is dropped on write. */
-const REEL_PREFIX = "shotcaller-reel-";
-
-const pruneOldReels = async (keep: string): Promise<void> => {
-  try {
-    const { files } = await Filesystem.readdir({
-      path: "",
-      directory: Directory.Cache,
-    });
-    await Promise.all(
-      files
-        .filter((f) => f.name !== keep && f.name.startsWith(REEL_PREFIX))
-        .map((f) =>
-          Filesystem.deleteFile({
-            path: f.name,
-            directory: Directory.Cache,
-          }).catch(() => undefined)
-        )
-    );
-  } catch {
-    /* nothing worth surfacing */
-  }
-};
-
 /**
- * Opens the share sheet with the reel. On native that sheet is also how it
- * gets saved — "Save Video" on iOS, Photos or Files on Android — so there is
- * no separate save path to maintain.
+ * Opens the share sheet with the reel. On native the sheet is also a way to
+ * save it somewhere else (Files, Drive) — the gallery copy is made
+ * automatically when the session ends.
  *
  * Returns "shared", "dismissed" or "failed".
  */
 export const shareReel = async (
   reel: SessionReel
 ): Promise<"shared" | "dismissed" | "failed"> => {
-  const name = `${REEL_PREFIX}${Date.now()}.${reel.ext}`;
+  const name = `shotcaller-reel.${reel.ext}`;
   try {
     if (Capacitor.isNativePlatform()) {
-      const data = await blobToBase64(reel.blob);
-      const result = await Filesystem.writeFile({
-        path: name,
-        data,
-        directory: Directory.Cache,
-      });
-      await pruneOldReels(name);
       await Share.share({
         title: "My Shot Caller session",
         text: SHARE_TEXT,
-        files: [result.uri],
-        dialogTitle: "Share or save your reel",
+        files: [await ensureReelFile(reel)],
+        dialogTitle: "Share your reel",
       });
       return "shared";
     }

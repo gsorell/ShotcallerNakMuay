@@ -7,13 +7,20 @@ export interface SessionReel {
   ext: string;
   durationMs: number;
   clips: number;
+  /** The reel written to the app's cache, once it has been (native only). */
+  fileUri?: string;
+  /**
+   * The automatic save to the phone's gallery. Absent where there is no
+   * gallery to save to (the browser build).
+   */
+  gallery?: "saving" | "saved" | "failed";
 }
 
 /**
- * The reel from the session that just ended. Held in memory only: it is
- * offered on the completion screen, shared or saved from there, and gone on
- * the next session or the next launch. Keeping videos would need storage
- * management nobody has asked for.
+ * The reel from the session that just ended. On a phone it is also saved to
+ * the gallery as soon as the session ends (see saveToGallery); this copy is
+ * what the completion screen plays, and it is gone on the next session or
+ * the next launch.
  */
 let current: SessionReel | null = null;
 /** Whether the full-screen player is up — the back button closes it first. */
@@ -29,10 +36,21 @@ const subscribe = (cb: () => void) => {
 };
 
 export const setSessionReel = (reel: SessionReel | null): void => {
-  if (current && current !== reel) URL.revokeObjectURL(current.url);
+  if (current && current.url !== reel?.url) URL.revokeObjectURL(current.url);
   current = reel;
   if (!reel) viewerOpen = false;
   emit();
+};
+
+/** Updates the current reel, if it is still `reel` (not a newer session's). */
+export const patchSessionReel = (
+  reel: SessionReel,
+  patch: Partial<Pick<SessionReel, "fileUri" | "gallery">>
+): SessionReel | null => {
+  if (!current || current.url !== reel.url) return null;
+  current = { ...current, ...patch };
+  emit();
+  return current;
 };
 
 export const clearSessionReel = (): void => setSessionReel(null);
