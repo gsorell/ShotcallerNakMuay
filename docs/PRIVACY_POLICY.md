@@ -1,6 +1,6 @@
 # Privacy Policy for Nak Muay Shot Caller
 
-**Last Updated: September 8, 2026**
+**Last Updated: November 6, 2026**
 
 ## Overview
 
@@ -29,6 +29,11 @@ Nak Muay Shot Caller ("we," "our," or "the app") is a Muay Thai training timer a
 - Custom technique names and descriptions you create in the Technique Editor
 - Workout preferences (round duration, rest periods, emphasis selections)
 - Voice and speed preferences for text-to-speech functionality
+
+**Session Video (optional)**
+- If you turn on "Record My Session", the app uses your front camera during a workout to record short clips and build a highlight reel. No audio is recorded.
+- The video is processed and kept only on your device, in memory, until you leave the completion screen or start another session. It is never uploaded to us or any third party. It leaves your device only if you choose to share or save it.
+- You can turn the feature off in the menu at any time, and revoke camera access in your device settings.
 
 ## How We Use Your Information
 

@@ -38,6 +38,7 @@ import {
   recordImport,
   useIncomingShare,
 } from "@/features/style-share";
+import { SessionCameraPip, SessionReelCard } from "@/features/session-video";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -429,6 +430,8 @@ export default function App() {
             onReset={() => setPage("timer")}
             onViewLog={() => setPage("logs")}
             onBack={completionFromLogs ? () => setPage("logs") : undefined}
+            // Only for the session that just ended, not a log opened later.
+            reel={completionFromLogs ? null : <SessionReelCard />}
             primaryAction={
               lastWorkout.roadmap ? (
                 <NextLevelPrompt completed={lastWorkout.roadmap} />
@@ -503,6 +506,13 @@ export default function App() {
           openPaywall("shared_style_import");
         }}
         onDismiss={dismissIncomingShare}
+      />
+
+      {/* "Record my session": the camera in the corner while a session runs. */}
+      <SessionCameraPip
+        active={isActive}
+        holding={timer.paused || timer.isResting || timer.isPreRound}
+        plannedWorkMs={settings.roundsCount * settings.roundMin * 60_000}
       />
 
       <GlossaryModal

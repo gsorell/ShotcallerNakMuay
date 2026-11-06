@@ -17,6 +17,7 @@ import {
   startSegment,
 } from "../utils/roundStopwatch";
 import { pickFromShares, type PoolShare } from "../utils/roundPlan";
+import { notifyCallout } from "@/features/session-video/calloutSignal";
 
 type SpeakWithDurationFn = (
   text: string,
@@ -211,6 +212,8 @@ export function useCalloutEngine({
 
         shotsCalledOutRef.current += 1;
         lastCalloutAtRef.current = Date.now();
+        // The session reel opens a clip on a callout, when it opens one at all.
+        notifyCallout();
 
         // Determine Text
         let finalPhrase = "";

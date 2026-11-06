@@ -8,6 +8,12 @@ import {
   markReviewDone,
   openStoreReviewPage,
 } from "@/features/review";
+import {
+  isReelRecordingSupported,
+  requestCameraAccess,
+  setRecordSession,
+  useRecordSession,
+} from "@/features/session-video";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import "./AppMenu.css";
 
@@ -112,6 +118,31 @@ export default function AppMenu({
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [open]);
 
+  // "Record My Session" is a switch, not a place: the menu stays open so the
+  // user sees it flip. Turning it on asks for the camera here, so the system
+  // prompt never interrupts a countdown.
+  const reelSupported = isReelRecordingSupported();
+  const recordOn = useRecordSession();
+  const [askingCamera, setAskingCamera] = useState(false);
+  const [cameraDenied, setCameraDenied] = useState(false);
+  const toggleRecording = async () => {
+    if (recordOn) {
+      setRecordSession(false);
+      try {
+        trackEvent("session_reel_toggle", { on: false });
+      } catch { /* analytics must never break the tap it measures */ }
+      return;
+    }
+    setAskingCamera(true);
+    const granted = await requestCameraAccess();
+    setAskingCamera(false);
+    setCameraDenied(!granted);
+    if (granted) setRecordSession(true);
+    try {
+      trackEvent("session_reel_toggle", { on: granted, denied: !granted });
+    } catch { /* analytics must never break the tap it measures */ }
+  };
+
   const go = (destination: Page) => {
     setOpen(false);
     try {
@@ -183,6 +214,29 @@ export default function AppMenu({
                   )}
                 </button>
               ))}
+              {reelSupported && (
+                <button
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={recordOn}
+                  className="app-menu-item app-menu-item--record"
+                  onClick={toggleRecording}
+                  disabled={askingCamera}
+                >
+                  <span className="app-menu-text">
+                    <span className="app-menu-label">Record My Session</span>
+                    <span className="app-menu-hint">
+                      {cameraDenied
+                        ? "Camera access is off. Allow it in Settings."
+                        : "Camera in the corner, highlight reel at the end"}
+                    </span>
+                  </span>
+                  <span
+                    className={`app-menu-switch ${recordOn ? "is-on" : ""}`}
+                    aria-hidden="true"
+                  />
+                </button>
+              )}
               <button
                 type="button"
                 role="menuitem"

@@ -178,3 +178,50 @@
 .app-menu-item--rate {
   border-radius: 0 0 0.7rem 0.7rem;
 }
+
+/* "Record My Session" is a setting among places, so it is set apart above
+   Help and carries a switch instead of a destination. */
+.app-menu-item--record {
+  margin-top: 0.3rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+}
+
+.app-menu-item--record + .app-menu-item--help {
+  margin-top: 0;
+}
+
+.app-menu-item--record:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.app-menu-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 1.4rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.2s ease;
+}
+
+.app-menu-switch::after {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.app-menu-switch.is-on {
+  background: #ec4899;
+}
+
+.app-menu-switch.is-on::after {
+  transform: translateX(1rem);
+}

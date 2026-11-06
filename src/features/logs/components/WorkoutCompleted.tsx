@@ -42,6 +42,8 @@ interface WorkoutCompletedProps {
    * importing it directly would make logs and roadmap a circular import.
    */
   primaryAction?: React.ReactNode;
+  /** The session's video reel, when one was recorded. Shown above the card. */
+  reel?: React.ReactNode;
 }
 
 // Shared with the streak card; the reasoning behind each colour is there.
@@ -196,6 +198,7 @@ export default function WorkoutCompleted({
   onViewLog,
   onBack,
   primaryAction,
+  reel,
 }: WorkoutCompletedProps) {
   const exportRef = useRef<HTMLDivElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -356,6 +359,7 @@ export default function WorkoutCompleted({
           onClose={() => setCelebrationQueue((q) => q.slice(1))}
         />
       )}
+      {reel}
       {/* Workout Summary - This will be captured for download/sharing */}
       <div
         style={{

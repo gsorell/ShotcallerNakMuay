@@ -1,0 +1,50 @@
+.session-reel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 1.25rem;
+}
+
+.session-reel-video {
+  width: 100%;
+  max-height: 62vh;
+  border-radius: 0.85rem;
+  background: #000;
+  border: 1px solid #2e2240;
+  object-fit: contain;
+}
+
+/* Secondary to the challenge card's share button below it: outlined in the
+   app's border colour rather than filled with the ramp. */
+.session-reel-share {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 0.85rem;
+  border: 2px solid #ff5fb0;
+  color: #f4eef6;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.session-reel-share:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.session-reel-share:focus-visible {
+  outline: 2px solid rgba(255, 95, 176, 0.9);
+  outline-offset: 3px;
+}
+
+.session-reel-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #ff8a8a;
+  text-align: center;
+}

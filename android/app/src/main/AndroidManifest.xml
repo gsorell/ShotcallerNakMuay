@@ -105,6 +105,16 @@
     <uses-permission android:name="com.android.vending.BILLING" />
 
     <!--
+        "Record My Session": the front camera, video only (no RECORD_AUDIO on
+        purpose). Capacitor's BridgeWebChromeClient asks for this at runtime
+        when the page calls getUserMedia. Not required, so Play still offers
+        the app to devices without a camera; the menu hides the switch there.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+
+    <!--
         Required to read the Google Advertising ID on Android 13+ (we target
         36). Without it the ID reads back as all zeros and Meta drops every
         conversion RevenueCat forwards as unmatched - the integration looks
