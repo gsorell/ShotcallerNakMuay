@@ -1,7 +1,19 @@
 import type { SessionReel } from "./reelStore";
 
-/** Seconds of footage after each callout that starts a clip. */
-export const CLIP_MS = 3000;
+/**
+ * A clip runs from the callout that opens it until the next callout begins,
+ * so it holds the whole combination however long it takes to throw. A fixed
+ * length cut long combinations off mid-strike.
+ *
+ * The next callout only ends the clip once it has run this long. Called
+ * sooner than that (a fast pace), the clip carries on through the second
+ * technique and ends at the one after.
+ */
+export const MIN_CLIP_MS = 2500;
+/** Ends a clip whose next callout never comes: a long pause between calls. */
+export const MAX_CLIP_MS = 9000;
+/** What a clip usually runs to, for spacing them out. */
+export const CLIP_MS = 4000;
 /** Roughly how long the finished reel runs: short enough to post. */
 export const REEL_TARGET_MS = 30000;
 
@@ -18,6 +30,10 @@ export const clipGapMs = (
   const clipsWanted = Math.max(1, Math.round(targetMs / clipMs));
   return Math.max(0, plannedWorkMs / clipsWanted - clipMs);
 };
+
+/** Whether a callout arriving mid-clip ends it (else the clip runs on). */
+export const calloutEndsClip = (clipElapsedMs: number): boolean =>
+  clipElapsedMs >= MIN_CLIP_MS;
 
 /** Whether a callout at `now` should open a clip. */
 export const shouldStartClip = (s: {
@@ -145,11 +161,18 @@ export class ReelRecorder {
     };
   }
 
-  /** A technique was just called. */
+  /**
+   * A technique was just called. Ends the clip in progress — it has caught
+   * the whole of the last combination — and may open the next one.
+   */
   callout(): void {
     const r = this.recorder;
-    if (!r || r.state === "recording") return;
+    if (!r) return;
     const now = performance.now();
+    if (r.state === "recording") {
+      if (!calloutEndsClip(now - this.segmentStart)) return; // runs on
+      this.endClip();
+    }
     if (
       !shouldStartClip({
         now,
@@ -170,10 +193,14 @@ export class ReelRecorder {
     this.segmentStart = now;
     this.clips += 1;
     this.onRecordingChange(true);
-    this.clipTimer = setTimeout(() => this.endClip(), CLIP_MS);
+    // Normally the next callout ends the clip; this is the backstop.
+    this.clipTimer = setTimeout(() => this.endClip(), MAX_CLIP_MS);
   }
 
-  /** Ends the clip in progress — the round ended, or the session paused. */
+  /**
+   * Ends the clip in progress: the next callout began, the round ended, or
+   * the session paused.
+   */
   endClip(): void {
     if (this.clipTimer) {
       clearTimeout(this.clipTimer);
@@ -238,8 +265,51 @@ export class ReelRecorder {
   }
 }
 
-/** The wordmark's magenta-to-cyan ramp, small, in the bottom corner. */
+/**
+ * The header's own banner (icon, SHOT CALLER, MUAY THAI TIMER) on a
+ * transparent background. Loaded once; until it has, the reel falls back to
+ * the wordmark drawn as text, so no frame goes out unbranded.
+ */
+const WATERMARK_SRC = "/assets/Logo_Header_Banner_Smooth.webp";
+let watermarkImg: HTMLImageElement | null = null;
+
+const loadWatermark = (): HTMLImageElement | null => {
+  if (typeof Image === "undefined") return null;
+  if (!watermarkImg) {
+    watermarkImg = new Image();
+    watermarkImg.decoding = "async";
+    watermarkImg.src = WATERMARK_SRC;
+  }
+  return watermarkImg;
+};
+
+// Fetched with the module, so it is decoded before the first clip opens.
+loadWatermark();
+
+/** The banner in the bottom-right corner, about 45% of the frame's width. */
 const drawWatermark = (
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number
+): void => {
+  const img = loadWatermark();
+  if (img && img.complete && img.naturalWidth > 0) {
+    const margin = Math.round(Math.min(w, h) * 0.035);
+    const markW = Math.round(Math.min(w * 0.45, 560));
+    const markH = Math.round((markW * img.naturalHeight) / img.naturalWidth);
+    ctx.save();
+    // A soft shadow lifts the neon off a bright room behind it.
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = Math.round(markH * 0.12);
+    ctx.drawImage(img, w - markW - margin, h - markH - margin, markW, markH);
+    ctx.restore();
+    return;
+  }
+  drawTextWatermark(ctx, w, h);
+};
+
+/** The wordmark's magenta-to-cyan ramp as text: the fallback. */
+const drawTextWatermark = (
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number
