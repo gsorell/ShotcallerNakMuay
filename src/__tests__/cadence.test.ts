@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   CADENCE_PER_MIN,
+  MIN_REST_AFTER_SPEECH_MS,
   SLOWEST_INTERVAL_MS,
   rampedIntervalMs,
+  restAfterCalloutMs,
+  voiceTailMs,
 } from "@/features/workout/utils/cadence";
 
 const perMinute = (intervalMs: number) => 60000 / intervalMs;
@@ -49,5 +52,42 @@ describe("guided round pace ramp", () => {
     // Elapsed/duration is NaN for a single tick if a round is measured before
     // it starts; the clamp has to survive it rather than schedule NaN.
     expect(Number.isFinite(rampedIntervalMs(Number.NaN))).toBe(true);
+  });
+});
+
+describe("rest after a callout", () => {
+  const medium = 60000 / CADENCE_PER_MIN.medium;
+  // The Microsoft voices in Chrome: a bare "Check" measures about 1.3s.
+  const tail = voiceTailMs(1300);
+
+  it("measures the voice tail from its shortest word, within bounds", () => {
+    expect(voiceTailMs(null)).toBe(0);
+    expect(tail).toBe(900);
+    expect(voiceTailMs(200)).toBe(0);
+    expect(voiceTailMs(5000)).toBe(1200);
+    expect(voiceTailMs(Number.NaN)).toBe(0);
+  });
+
+  it("keeps the silence after a single technique short", () => {
+    // "Right Elbow" measured 1.57s and used to be followed by 2.1s more.
+    const rest = restAfterCalloutMs({ durationMs: 1570, tailMs: tail, baseDelayMs: medium });
+    expect(tail + rest).toBeLessThan(1400);
+  });
+
+  it("gives a long combination more, up to a ceiling", () => {
+    const single = restAfterCalloutMs({ durationMs: 1300, tailMs: tail, baseDelayMs: medium });
+    const combo = restAfterCalloutMs({ durationMs: 3000, tailMs: tail, baseDelayMs: medium });
+    const long = restAfterCalloutMs({ durationMs: 6000, tailMs: tail, baseDelayMs: medium });
+    expect(combo).toBeGreaterThan(single);
+    expect(long).toBeGreaterThanOrEqual(combo);
+    expect(tail + long).toBeLessThanOrEqual(Math.ceil(medium * 0.85));
+  });
+
+  it("follows the pace factor and never collapses to nothing", () => {
+    const base = { durationMs: 3000, tailMs: tail, baseDelayMs: medium };
+    expect(restAfterCalloutMs({ ...base, pace: 1.3 })).toBeGreaterThan(restAfterCalloutMs(base));
+    expect(restAfterCalloutMs({ ...base, durationMs: Number.NaN })).toBe(MIN_REST_AFTER_SPEECH_MS);
+    expect(restAfterCalloutMs({ ...base, pace: Number.NaN })).toBe(restAfterCalloutMs(base));
+    expect(restAfterCalloutMs({ durationMs: 300, tailMs: 1200, baseDelayMs: 1400 })).toBe(MIN_REST_AFTER_SPEECH_MS);
   });
 });

@@ -3,8 +3,11 @@ import type { TechniqueWithStyle } from "@/types";
 import { mirrorTechnique } from "@/utils/textUtils";
 import {
   CADENCE_PER_MIN,
+  MIN_REST_AFTER_SPEECH_MS,
   SLOWEST_INTERVAL_MS,
   rampedIntervalMs,
+  restAfterCalloutMs,
+  voiceTailMs,
 } from "../utils/cadence";
 import {
   bankSegment,
@@ -25,10 +28,6 @@ type SpeakWithDurationFn = (
 const SPEECH_DEFERRAL_MS = 150;
 /** ...and how many times, before speaking anyway (about four seconds). */
 const MAX_SPEECH_DEFERRALS = 26;
-/** How far into the gap after a callout the between-callout is spoken. */
-const BETWEEN_CALLOUT_AT = 0.4;
-/** The least room left after it, so it never runs into the next callout. */
-const MIN_GAP_AFTER_BETWEEN_MS = 300;
 
 interface UseCalloutEngineProps {
   timer: {
@@ -61,6 +60,9 @@ export function useCalloutEngine({
   // null for none. Set per round alongside the pool; see utils/roundPlan.
   const betweenCalloutRef = useRef<readonly string[] | null>(null);
   const betweenDueRef = useRef(false);
+  // The shortest single-word callout the voice has said this session — the
+  // measure of how long it trails on after speaking. See utils/cadence.
+  const shortestWordMsRef = useRef<number | null>(null);
   const ttsGuardRef = useRef(false);
 
   // Watchdog state. The scheduling loop is a chain: each callout schedules the
@@ -84,6 +86,8 @@ export function useCalloutEngine({
     runningRef.current = timer.running;
     pausedRef.current = timer.paused;
     isRestingRef.current = timer.isResting;
+    // The voice or its speed can change between sessions, never inside one.
+    if (!timer.running) shortestWordMsRef.current = null;
 
     // Guard: If we shouldn't be speaking, clean up
     ttsGuardRef.current = !timer.running || timer.paused || timer.isResting;
@@ -127,9 +131,6 @@ export function useCalloutEngine({
       baseDelayRef.current = baseDelayMs;
 
       let deferrals = 0;
-      // When the next callout from the pool is due, while a between-callout
-      // is being fitted in ahead of it.
-      let nextPoolAt = 0;
 
       const scheduleNext = (delay: number) => {
         if (calloutRef.current) {
@@ -248,15 +249,16 @@ export function useCalloutEngine({
           finalPhrase,
           settings.voiceSpeedRef.current,
           (actualDurationMs: number) => {
-            // The between-callout rides inside the gap its callout already
-            // earned, so the next one from the pool lands when it would have
-            // anyway — more work in the round, not fewer combinations.
-            if (isBetween) {
-              scheduleNext(
-                Math.max(MIN_GAP_AFTER_BETWEEN_MS, nextPoolAt - Date.now())
-              );
-              return;
+            // A single word is almost all voice tail; the shortest one said is
+            // the best measure of it. See utils/cadence.
+            if (/^\S+$/.test(finalPhrase.trim())) {
+              const shortest = shortestWordMsRef.current;
+              shortestWordMsRef.current =
+                shortest == null
+                  ? actualDurationMs
+                  : Math.min(shortest, actualDurationMs);
             }
+            const tailMs = voiceTailMs(shortestWordMsRef.current);
 
             // Calculate Wait Time for Next Shot
             const isPro = settings.difficulty === "hard";
@@ -269,20 +271,20 @@ export function useCalloutEngine({
             const jitter = Math.floor(
               baseDelayMs * jitterMultiplier * (Math.random() - 0.5)
             );
-            const responsiveDelayMs = actualDurationMs + bufferTime + jitter;
-            const timingCap = isPro ? baseDelayMs * 0.85 : baseDelayMs * 1.1;
+            // A between-callout is a single word, so it gets a single
+            // technique's rest of its own — fitted inside its combination's
+            // gap, it left the next callout almost none.
             let nextDelayMs = Math.max(
-              minDelayMs,
-              Math.min(responsiveDelayMs, timingCap)
+              MIN_REST_AFTER_SPEECH_MS,
+              restAfterCalloutMs({
+                durationMs: actualDurationMs,
+                tailMs,
+                baseDelayMs,
+                // A round can be set easier or faster than the difficulty's
+                // own pace — see `paceFactors` in utils/roundPlan.
+                pace: Number(settings.paceFactorRef?.current),
+              }) + jitter
             );
-
-            // A round can be set easier or faster than the difficulty's own
-            // pace — see `paceFactors` in utils/roundPlan. Guarded like the
-            // ramp below: a NaN delay fires immediately and runs away.
-            const pace = Number(settings.paceFactorRef?.current);
-            if (Number.isFinite(pace) && pace > 0 && pace !== 1) {
-              nextDelayMs = Math.max(minDelayMs, Math.round(nextDelayMs * pace));
-            }
 
             // Phrasing, not noise. An earlier attempt multiplied the gap by a
             // wide uniform random factor, which read as broken rather than
@@ -316,11 +318,6 @@ export function useCalloutEngine({
               );
             }
 
-            if (betweenCalloutRef.current?.length && betweenDueRef.current) {
-              nextPoolAt = Date.now() + nextDelayMs;
-              scheduleNext(nextDelayMs * BETWEEN_CALLOUT_AT);
-              return;
-            }
             scheduleNext(nextDelayMs);
           }
         );
