@@ -1,24 +1,111 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { trackEvent } from "@/utils/analytics";
-import { useSessionReel } from "./reelStore";
+import {
+  closeReelViewer,
+  openReelViewer,
+  useReelViewerOpen,
+  useSessionReel,
+  type SessionReel,
+} from "./reelStore";
 import { shareReel } from "./shareReel";
 import "./SessionReelCard.css";
 
 /**
- * The session's reel at the top of the completion screen: it plays on its
- * own, muted and looping, with one button to share or save it.
+ * "Your reel is ready" — a single row on the completion screen, under the
+ * result. The result comes first; the reel is an offer, not a takeover, so
+ * the card and its Share / Train again keep the screen. Tapping the row opens
+ * the reel full screen.
  */
 export default function SessionReelCard() {
   const reel = useSessionReel();
+  const viewerOpen = useReelViewerOpen();
+
+  // Leaving the completion screen leaves the player shut, so coming back to
+  // the screen later doesn't land in it.
+  useEffect(() => () => void closeReelViewer(), []);
+
+  if (!reel) return null;
+
+  const seconds = Math.max(1, Math.round(reel.durationMs / 1000));
+
+  return (
+    <>
+      <button
+        type="button"
+        className="reel-ready"
+        onClick={() => {
+          openReelViewer();
+          try {
+            trackEvent("session_reel_open", { clips: reel.clips });
+          } catch { /* analytics must never break the tap it measures */ }
+        }}
+      >
+        <span className="reel-ready-thumb" aria-hidden="true">
+          {/* The first frame, as a poster. #t nudges Safari into drawing it. */}
+          <video src={`${reel.url}#t=0.1`} muted playsInline preload="metadata" />
+          <span className="reel-ready-play">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </span>
+        <span className="reel-ready-text">
+          <span className="reel-ready-title">Your reel is ready</span>
+          <span className="reel-ready-sub">
+            {seconds}s of today's rounds · tap to watch
+          </span>
+        </span>
+        <span className="reel-ready-chevron" aria-hidden="true">
+          ›
+        </span>
+      </button>
+
+      {viewerOpen && <ReelViewer reel={reel} />}
+    </>
+  );
+}
+
+/** The reel, full screen, with Share / Save and Watch again. */
+function ReelViewer({ reel }: { reel: SessionReel }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [ended, setEnded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  if (!reel) return null;
+  // Escape closes the player and nothing else: caught on the way down,
+  // before the app's own Escape-means-back hears it.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      closeReelViewer();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, []);
+
+  const replay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    setEnded(false);
+    v.currentTime = 0;
+    void v.play().catch(() => undefined);
+  };
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (ended) return replay();
+    if (v.paused) void v.play().catch(() => undefined);
+    else v.pause();
+  };
 
   const onShare = async () => {
     setBusy(true);
     setFailed(false);
+    videoRef.current?.pause();
     const outcome = await shareReel(reel);
     setBusy(false);
     if (outcome === "failed") setFailed(true);
@@ -27,30 +114,60 @@ export default function SessionReelCard() {
     } catch { /* analytics must never break the tap it measures */ }
   };
 
-  return (
-    <section className="session-reel" aria-label="Your session reel">
+  return createPortal(
+    <div className="reel-viewer" role="dialog" aria-modal="true" aria-label="Your reel">
       <video
-        className="session-reel-video"
+        ref={videoRef}
+        className="reel-viewer-video"
         src={reel.url}
         autoPlay
         muted
-        loop
         playsInline
-        controls
+        onEnded={() => setEnded(true)}
+        onClick={togglePlay}
       />
+
       <button
         type="button"
-        className="session-reel-share"
-        onClick={onShare}
-        disabled={busy}
+        className="reel-viewer-close"
+        aria-label="Close"
+        onClick={() => closeReelViewer()}
       >
-        {busy ? "Preparing…" : "Share or save your reel"}
+        ×
       </button>
-      {failed && (
-        <p className="session-reel-error" role="alert">
-          Couldn't open sharing. Try again in a moment.
-        </p>
+
+      {ended && (
+        <button
+          type="button"
+          className="reel-viewer-replay-big"
+          aria-label="Watch again"
+          onClick={replay}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" />
+          </svg>
+        </button>
       )}
-    </section>
+
+      <div className="reel-viewer-bar">
+        {failed && (
+          <p className="reel-viewer-error" role="alert">
+            Couldn't open sharing. Try again in a moment.
+          </p>
+        )}
+        <button
+          type="button"
+          className="reel-viewer-share"
+          onClick={onShare}
+          disabled={busy}
+        >
+          {busy ? "Preparing…" : "Share or save"}
+        </button>
+        <button type="button" className="reel-viewer-again" onClick={replay}>
+          Watch again
+        </button>
+      </div>
+    </div>,
+    document.body
   );
 }

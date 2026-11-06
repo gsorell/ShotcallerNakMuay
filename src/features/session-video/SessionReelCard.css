@@ -1,22 +1,203 @@
-.session-reel {
+/* ------------------------------------------------ "Your reel is ready" row -- */
+
+/* One row under the result card: an offer, quieter than the card's own
+   Share / Train again, but with the thumbnail to say what it is. */
+.reel-ready {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  margin: 1rem 0 1.1rem;
+  padding: 0.6rem 0.85rem 0.6rem 0.6rem;
+  border-radius: 0.85rem;
+  border: 1px solid #2e2240;
+  background: rgba(12, 7, 16, 0.75);
+  color: #f4eef6;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: reel-ready-in 0.4s ease-out both;
+}
+
+.reel-ready:active {
+  transform: translateY(1px);
+}
+
+.reel-ready:focus-visible {
+  outline: 2px solid rgba(255, 95, 176, 0.9);
+  outline-offset: 3px;
+}
+
+@keyframes reel-ready-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.reel-ready-thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.reel-ready-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.reel-ready-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.reel-ready-play svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: #fff;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+.reel-ready-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.reel-ready-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.reel-ready-sub {
+  font-size: 0.8rem;
+  color: #9d8fa9;
+}
+
+.reel-ready-chevron {
+  flex-shrink: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #ff5fb0;
+}
+
+/* --------------------------------------------------- full-screen player -- */
+
+.reel-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  animation: reel-viewer-in 0.25s ease-out both;
+}
+
+@keyframes reel-viewer-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.reel-viewer-video {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.reel-viewer-close {
+  all: unset;
+  position: absolute;
+  top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  left: 0.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reel-viewer-replay-big {
+  all: unset;
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4.5rem;
+  height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+
+.reel-viewer-replay-big svg {
+  width: 2.2rem;
+  height: 2.2rem;
+  fill: #fff;
+}
+
+.reel-viewer-bar {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  margin: 0 0 1.25rem;
+  padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  background: #0c0710;
 }
 
-.session-reel-video {
+/* The ramp, like the completion screen's own primary. */
+.reel-viewer-share {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  max-height: 62vh;
+  padding: 0.95rem 1rem;
   border-radius: 0.85rem;
-  background: #000;
-  border: 1px solid #2e2240;
-  object-fit: contain;
+  background-image: linear-gradient(
+    90deg,
+    #f838f8 0%,
+    #d660f8 30%,
+    #8898f8 50%,
+    #4accf8 70%,
+    #18f8f8 100%
+  );
+  color: #0c0710;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-/* Secondary to the challenge card's share button below it: outlined in the
-   app's border colour rather than filled with the ramp. */
-.session-reel-share {
+.reel-viewer-share:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.reel-viewer-again {
   all: unset;
   box-sizing: border-box;
   display: flex;
@@ -25,24 +206,14 @@
   width: 100%;
   padding: 0.8rem 1rem;
   border-radius: 0.85rem;
-  border: 2px solid #ff5fb0;
+  border: 2px solid #2e2240;
   color: #f4eef6;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
 }
 
-.session-reel-share:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.session-reel-share:focus-visible {
-  outline: 2px solid rgba(255, 95, 176, 0.9);
-  outline-offset: 3px;
-}
-
-.session-reel-error {
+.reel-viewer-error {
   margin: 0;
   font-size: 0.85rem;
   color: #ff8a8a;

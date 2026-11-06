@@ -5,6 +5,6 @@ export {
   setRecordSession,
   useRecordSession,
 } from "./recordPreference";
-export { clearSessionReel, useSessionReel } from "./reelStore";
+export { clearSessionReel, closeReelViewer, useSessionReel } from "./reelStore";
 export { default as SessionCameraPip } from "./SessionCameraPip";
 export { default as SessionReelCard } from "./SessionReelCard";

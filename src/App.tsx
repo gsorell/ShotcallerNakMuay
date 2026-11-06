@@ -38,7 +38,11 @@ import {
   recordImport,
   useIncomingShare,
 } from "@/features/style-share";
-import { SessionCameraPip, SessionReelCard } from "@/features/session-video";
+import {
+  SessionCameraPip,
+  SessionReelCard,
+  closeReelViewer,
+} from "@/features/session-video";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
   ActiveSessionUI,
@@ -299,6 +303,8 @@ export default function App() {
 
   useNavigationGestures({
     onBack: () => {
+      // The full-screen reel player closes before anything navigates.
+      if (closeReelViewer()) return;
       if (showGlossary) setShowGlossary(false);
       else if (
         page === "editor" ||

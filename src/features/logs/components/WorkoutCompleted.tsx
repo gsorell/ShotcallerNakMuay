@@ -42,7 +42,7 @@ interface WorkoutCompletedProps {
    * importing it directly would make logs and roadmap a circular import.
    */
   primaryAction?: React.ReactNode;
-  /** The session's video reel, when one was recorded. Shown above the card. */
+  /** "Your reel is ready", when the session was recorded. Under the card. */
   reel?: React.ReactNode;
 }
 
@@ -359,7 +359,6 @@ export default function WorkoutCompleted({
           onClose={() => setCelebrationQueue((q) => q.slice(1))}
         />
       )}
-      {reel}
       {/* Workout Summary - This will be captured for download/sharing */}
       <div
         style={{
@@ -553,6 +552,9 @@ export default function WorkoutCompleted({
           <ChallengeCard stats={stats} />
         </div>
       </div>
+
+      {/* The result first; the session's reel is offered under it. */}
+      {reel}
 
       {primaryAction}
 
