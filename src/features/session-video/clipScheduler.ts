@@ -3,19 +3,18 @@ import type { CalloutEvent } from "./calloutSignal";
 /**
  * When the reel films, decided from the callout engine's timing.
  *
- * A clip should hold one whole combination and little else. People throw on
- * the first word they recognise, not when the voice finishes, so a clip that
- * starts *at* the callout misses the first strike — and resuming a paused
- * recorder takes a moment of its own. So filming starts PREROLL_MS before the
- * callout is due (the engine says when, ahead of time). It stops a short tail
- * after the voice finishes, scaled to how many strikes were called, instead
- * of running on through the standing about before the next call.
+ * A clip holds one whole combination: from the moment it is called to the
+ * moment the next one is. People throw on the first word they recognise, and
+ * resuming a paused recorder takes a moment of its own, so filming starts
+ * PREROLL_MS before the callout is due (the engine says when, ahead of time).
+ * It ends when the next callout begins. An earlier version ended a fixed
+ * tail after the voice finished, which cut the last strike off.
  */
 export const PREROLL_MS = 600;
-/** Backstop for a clip whose end never comes (speech that never finished). */
-export const MAX_CLIP_MS = 7000;
+/** Backstop for a clip whose next callout never comes. */
+export const MAX_CLIP_MS = 10000;
 /** What a clip usually runs to, for spacing them out. */
-export const CLIP_MS = 3500;
+export const CLIP_MS = 4000;
 /** Roughly how long the finished reel runs: short enough to post. */
 export const REEL_TARGET_MS = 30000;
 
@@ -43,18 +42,6 @@ export const shouldStartClip = (s: {
   maxMs: number;
 }): boolean => s.now - s.lastClipEnd >= s.gapMs && s.recordedMs < s.maxMs;
 
-/** Strikes in a called phrase: "Jab, cross, left kick" is three. */
-export const strikesIn = (phrase: string): number =>
-  Math.max(1, phrase.split(",").filter((s) => s.trim()).length);
-
-/**
- * How long to keep filming after the voice finishes. The last strike lands
- * a little after its name is said; a longer combination gets a little more,
- * since people fall behind the voice as it goes.
- */
-export const tailAfterSpeechMs = (phrase: string): number =>
-  Math.min(2500, 900 + 300 * strikesIn(phrase));
-
 /** What the scheduler drives: the recorder, rolling or cut. */
 export interface Tape {
   roll(): void;
@@ -72,8 +59,6 @@ export class ClipScheduler {
   private planned = false;
   /** Rolling ahead of a planned callout that hasn't been called yet. */
   private armed = false;
-  /** The clip is following a callout whose voice hasn't finished. */
-  private tracking = false;
   private armTimer: ReturnType<typeof setTimeout> | null = null;
   private endTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly gapMs: number;
@@ -90,8 +75,7 @@ export class ClipScheduler {
 
   event(e: CalloutEvent): void {
     if (e.type === "scheduled") this.onScheduled(e.delayMs);
-    else if (e.type === "called") this.onCalled();
-    else this.onSpoken(e.phrase);
+    else this.onCalled();
   }
 
   /** Paused, resting, or the round ended: stop filming and forget the plan. */
@@ -99,7 +83,6 @@ export class ClipScheduler {
     this.clearArm();
     this.armed = false;
     this.planned = false;
-    this.tracking = false;
     this.endClip();
   }
 
@@ -141,27 +124,14 @@ export class ClipScheduler {
       if (wanted) {
         // Carry on: this callout is part of the clip.
         this.setEnd(MAX_CLIP_MS);
-        this.tracking = true;
       } else {
-        // A callout nobody planned to film: the last combination is over.
-        this.tracking = false;
+        // The next callout begins: the last combination is over.
         this.endClip();
       }
       return;
     }
     // Planned, but too soon after scheduling for the head start to fire.
-    if (wanted) {
-      this.startClip();
-      this.tracking = true;
-    } else {
-      this.tracking = false;
-    }
-  }
-
-  private onSpoken(phrase: string): void {
-    if (!this.rolling || !this.tracking) return;
-    this.tracking = false;
-    this.setEnd(tailAfterSpeechMs(phrase));
+    if (wanted) this.startClip();
   }
 
   private startClip(): void {

@@ -3,19 +3,16 @@
  *
  * The engine's `currentCallout` is state for the screen; it does not change
  * when the same technique is called twice, and it says nothing about when
- * the next call is due or when the voice finished. The recorder needs all
- * three — to start filming just *before* a call (people throw on the first
- * word) and stop just after the combination lands — and the engine should
- * not need to know a recorder exists. So the engine rings these and anything
+ * the next call is due. The recorder needs both — to start filming just
+ * *before* a call (people throw on the first word) and stop when the next
+ * one begins — and the engine should not need to know a recorder exists. So the engine rings these and anything
  * interested listens.
  */
 export type CalloutEvent =
   /** The next callout is due in `delayMs`. Replaces any earlier schedule. */
   | { type: "scheduled"; delayMs: number }
   /** A technique is being called, now. */
-  | { type: "called" }
-  /** The voice finished saying `phrase`. */
-  | { type: "spoken"; phrase: string };
+  | { type: "called" };
 
 type Listener = (event: CalloutEvent) => void;
 
@@ -35,9 +32,6 @@ export const notifyCalloutScheduled = (delayMs: number): void =>
   emit({ type: "scheduled", delayMs });
 
 export const notifyCallout = (): void => emit({ type: "called" });
-
-export const notifyCalloutSpoken = (phrase: string): void =>
-  emit({ type: "spoken", phrase });
 
 export const onCalloutEvent = (listener: Listener): (() => void) => {
   listeners.add(listener);
