@@ -520,6 +520,7 @@ export default function App() {
         holding={timer.paused || timer.isResting || timer.isPreRound}
         resting={timer.isResting}
         rounds={settings.roundsCount}
+        roundMs={settings.roundMin * 60_000}
       />
 
       <GlossaryModal

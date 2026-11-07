@@ -1,11 +1,13 @@
 import type { CallInfo, CalloutEvent } from "./calloutSignal";
 import {
   RoundPicker,
-  mainCall,
+  newReelSoFar,
   roundBudgetMs,
   scoreClip,
+  strikesIn,
   type Candidate,
 } from "./highlights";
+import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { MotionMeter, cutClip } from "./motion";
 import { ReelRenderer, pickMime } from "./reelRenderer";
@@ -38,9 +40,12 @@ export class ReelRecorder {
   private hits: HitDetector | null = null;
   private renderer: ReelRenderer | null = null;
   private scheduler: SegmentScheduler | null = null;
-  private picker = new RoundPicker();
-  /** Techniques already in the reel, so none appears twice. */
-  private shown = new Set<string>();
+  private readonly budgetMs: number;
+  private picker: RoundPicker;
+  /** What the reel has shown so far: no technique past twice, or twice running. */
+  private soFar = newReelSoFar();
+  /** Every clip's verdict, written where it can be read for tuning. */
+  private notes = new ReelNotes();
   private round = 0;
   private mimeType = "";
   private seq = 0;
@@ -55,7 +60,14 @@ export class ReelRecorder {
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
-  constructor(private readonly roundCount: number) {}
+  /** `roundMs`: one round's length; with the count, the session's work. */
+  constructor(
+    private readonly roundCount: number,
+    roundMs: number
+  ) {
+    this.budgetMs = roundBudgetMs(roundCount * roundMs, roundCount);
+    this.picker = new RoundPicker(this.budgetMs);
+  }
 
   /** Opens the camera (and microphone) into `preview` and gets ready. */
   async start(preview: HTMLVideoElement): Promise<void> {
@@ -132,6 +144,7 @@ export class ReelRecorder {
     this.renderer = null;
     if (!renderer) return null;
     const out = await renderer.finish();
+    void this.notes.save();
     if (!out) return null;
     // Recorder output can't be scrubbed in a gallery; give it an index.
     const { blob, remuxed } = await remuxToMp4(out.blob);
@@ -168,21 +181,11 @@ export class ReelRecorder {
     await new Promise((r) => setTimeout(r, OVERLAP_MS + 150));
     await Promise.all([...this.pending]);
     this.round += 1;
-    const picks = this.picker.pick(
-      roundBudgetMs(this.roundCount),
-      this.shown,
-      this.round === 1
-    );
-    // Read off the device log (adb logcat) to tune the picker against
-    // real sessions.
-    console.info(
-      `[reel] round ${this.round}: ${picks
-        .map(
-          (p) =>
-            `${mainCall(p.calls)?.text ?? "?"} score=${p.score.toFixed(2)} hits=${p.cut.hits} ` +
-            `${Math.round(p.cut.endMs - p.cut.startMs)}ms`
-        )
-        .join(" | ")}`
+    const picks = this.picker.pick(this.budgetMs, this.soFar, this.round === 1);
+    this.picker = new RoundPicker(this.budgetMs);
+    this.notes.round(
+      this.round,
+      picks.map((p) => p.seq)
     );
     if (!picks.length || !this.renderer) {
       picks.forEach((p) => p.release());
@@ -228,6 +231,7 @@ export class ReelRecorder {
     const startedAt = performance.now();
     const chunks: Blob[] = [];
     const calls: CallInfo[] = [];
+    let callAt: number | undefined;
     rec.ondataavailable = (e) => {
       if (e.data && e.data.size) chunks.push(e.data);
     };
@@ -236,7 +240,7 @@ export class ReelRecorder {
         "stop",
         () => {
           const stoppedAt = performance.now();
-          this.offer(seq, chunks, calls, rec.mimeType, startedAt, stoppedAt);
+          this.offer(seq, chunks, calls, callAt, rec.mimeType, startedAt, stoppedAt);
           resolve();
         },
         { once: true }
@@ -246,7 +250,10 @@ export class ReelRecorder {
     void done.then(() => this.pending.delete(done));
 
     return {
-      tag: (call) => calls.push(call),
+      tag: (call) => {
+        calls.push(call);
+        if (!call.between && callAt === undefined) callAt = performance.now();
+      },
       close: () => {
         try {
           if (rec.state !== "inactive") rec.stop();
@@ -262,6 +269,7 @@ export class ReelRecorder {
     seq: number,
     chunks: Blob[],
     calls: CallInfo[],
+    callAt: number | undefined,
     type: string,
     startedAt: number,
     stoppedAt: number
@@ -274,14 +282,25 @@ export class ReelRecorder {
     const hits = (this.hits?.between(startedAt, stoppedAt) ?? []).map(
       (t) => t - startedAt
     );
-    const cut = cutClip(samples, stoppedAt - startedAt, meter.levels(), hits);
-    if (cut.endMs <= cut.startMs) return;
+    const cut = cutClip({
+      samples,
+      durationMs: stoppedAt - startedAt,
+      levels: meter.levels(),
+      hits,
+      callAtMs: callAt !== undefined ? callAt - startedAt : undefined,
+      strikes: strikesIn(calls),
+    });
+    if (cut.endMs <= cut.startMs) {
+      this.notes.clip(seq, calls, cut, 0);
+      return;
+    }
 
     // What an ordinary clip's movement amounts to in this session so far.
     this.motionSeen.push(cut.motion);
     const sorted = [...this.motionSeen].sort((a, b) => a - b);
     const motionNorm = sorted[Math.floor(sorted.length / 2)] ?? cut.motion;
     const score = scoreClip(cut, calls, motionNorm);
+    this.notes.clip(seq, calls, cut, score);
     if (score <= 0) return;
 
     const url = URL.createObjectURL(new Blob(chunks, { type: type || "video/webm" }));

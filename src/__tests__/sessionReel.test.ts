@@ -3,9 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CallInfo } from "@/features/session-video/calloutSignal";
 import {
   RoundPicker,
+  avoidRepeatsInARow,
+  newReelSoFar,
   reelBudgetMs,
   roundBudgetMs,
   scoreClip,
+  techniqueKey,
   techniqueWeight,
   type Candidate,
 } from "@/features/session-video/highlights";
@@ -13,6 +16,7 @@ import {
   MAX_KEEP_MS,
   MIN_KEEP_MS,
   cutClip,
+  keepCapMs,
   motionLevels,
 } from "@/features/session-video/motion";
 import {
@@ -142,46 +146,80 @@ const samplesFor = (durationMs: number, busy: [number, number][]) => {
 const LEVELS = { floor: 0.005, threshold: 0.02 };
 
 describe("trimming a clip to its action", () => {
-  it("keeps the movement and cuts the waiting either side", () => {
-    const cut = cutClip(samplesFor(5500, [[1000, 2500]]), 5500, LEVELS);
-    expect(cut.startMs).toBe(700);
-    expect(cut.endMs).toBe(2900);
+  it("starts with the movement and ends back in stance", () => {
+    const cut = cutClip({
+      samples: samplesFor(5500, [[1000, 2500]]),
+      durationMs: 5500,
+      levels: LEVELS,
+      callAtMs: 700,
+      strikes: 3,
+    });
+    expect(cut.startMs).toBe(600);
+    expect(cut.endMs).toBe(2850);
     expect(cut.motion).toBeGreaterThan(0);
   });
 
-  it("ends just after the last strike lands, when strikes are heard", () => {
-    const cut = cutClip(
-      samplesFor(6000, [[1000, 4500]]),
-      6000,
-      LEVELS,
-      [1200, 1600, 2000]
+  it("ignores the last combination's tail before the call", () => {
+    const cut = cutClip({
+      samples: samplesFor(5500, [[0, 400], [1500, 2500]]),
+      durationMs: 5500,
+      levels: LEVELS,
+      callAtMs: 1200,
+      strikes: 3,
+    });
+    expect(cut.startMs).toBe(1100);
+  });
+
+  it("keeps the snap back to guard instead of cutting at the last big move", () => {
+    // Strikes to 2000, then smaller movement back to stance until 2800.
+    const samples = samplesFor(5000, [[1000, 2000]]).map((s) =>
+      s.t > 2000 && s.t <= 2800 ? { ...s, m: 0.015 } : s
     );
-    expect(cut.hits).toBe(3);
-    expect(cut.endMs).toBe(2450);
+    const cut = cutClip({ samples, durationMs: 5000, levels: LEVELS, strikes: 3 });
+    // The old cut ended 400ms after the last big movement: 2500.
+    expect(cut.endMs).toBeGreaterThan(2700);
+    expect(cut.endMs).toBeLessThan(3300);
   });
 
   it("comes back empty for a stare", () => {
-    const cut = cutClip(samplesFor(5000, []), 5000, LEVELS);
+    const cut = cutClip({ samples: samplesFor(5000, []), durationMs: 5000, levels: LEVELS });
     expect(cut.endMs).toBe(cut.startMs);
   });
 
-  it("never keeps more than one combination's worth", () => {
-    const cut = cutClip(samplesFor(9000, [[500, 8500]]), 9000, LEVELS);
-    expect(cut.endMs - cut.startMs).toBe(MAX_KEEP_MS);
+  it("gives a longer combination more room, within a ceiling", () => {
+    const long = (strikes: number) =>
+      cutClip({
+        samples: samplesFor(9000, [[500, 8500]]),
+        durationMs: 9000,
+        levels: LEVELS,
+        strikes,
+      });
+    const one = long(1);
+    const five = long(5);
+    const ten = long(10);
+    expect(one.endMs - one.startMs).toBe(keepCapMs(1));
+    expect(five.endMs - five.startMs).toBe(keepCapMs(5));
+    expect(ten.endMs - ten.startMs).toBe(MAX_KEEP_MS);
+    expect(keepCapMs(5)).toBeGreaterThan(keepCapMs(1));
   });
 
   it("keeps the stretch with the strikes in it when it must choose", () => {
-    const cut = cutClip(
-      samplesFor(9000, [[500, 8500]]),
-      9000,
-      LEVELS,
-      [6000, 6400, 6800]
-    );
+    const cut = cutClip({
+      samples: samplesFor(9000, [[500, 8500]]),
+      durationMs: 9000,
+      levels: LEVELS,
+      hits: [6000, 6400, 6800],
+      strikes: 1,
+    });
     expect(cut.hits).toBe(3);
   });
 
   it("pads a single flinch out to a watchable length", () => {
-    const cut = cutClip(samplesFor(5000, [[2000, 2100]]), 5000, LEVELS);
+    const cut = cutClip({
+      samples: samplesFor(5000, [[2000, 2100]]),
+      durationMs: 5000,
+      levels: LEVELS,
+    });
     expect(cut.endMs - cut.startMs).toBeGreaterThanOrEqual(MIN_KEEP_MS - 1);
   });
 
@@ -248,7 +286,7 @@ const candidate = (seq: number, score: number, text: string, lenMs = 2000) => {
 
 describe("picking a round's best", () => {
   it("picks the best that fit and ends the round on the best", () => {
-    const p = new RoundPicker();
+    const p = new RoundPicker(6000);
     const all = [
       candidate(0, 3, "Jab"),
       candidate(1, 9, "Jab, Cross, Left Kick"),
@@ -264,36 +302,52 @@ describe("picking a round's best", () => {
   });
 
   it("opens the first round on its runner-up", () => {
-    const p = new RoundPicker();
+    const p = new RoundPicker(6000);
     [
       candidate(0, 3, "Jab"),
       candidate(1, 9, "Jab, Cross, Left Kick"),
       candidate(2, 7, "Right Knee"),
     ].forEach(({ c }) => p.offer(c));
-    expect(p.pick(6000, new Set(), true).map((c) => c.seq)).toEqual([2, 0, 1]);
+    expect(p.pick(6000, newReelSoFar(), true).map((c) => c.seq)).toEqual([2, 0, 1]);
   });
 
-  it("never shows the same technique twice", () => {
-    const p = new RoundPicker();
-    const shown = new Set<string>();
-    [candidate(0, 9, "Jab, Cross"), candidate(1, 8, "Jab, Cross"), candidate(2, 2, "Teep")]
-      .forEach(({ c }) => p.offer(c));
-    expect(p.pick(6000, shown).map((c) => c.seq)).toEqual([2, 0]);
-    // ...nor in a later round.
-    const q = new RoundPicker();
-    q.offer(candidate(3, 9, "Jab, Cross").c);
-    expect(q.pick(6000, shown)).toEqual([]);
+  it("shows a technique at most twice across the reel", () => {
+    const soFar = newReelSoFar();
+    const p = new RoundPicker(20000);
+    [
+      candidate(0, 9, "Jab, Cross"),
+      candidate(1, 8, "Jab, Cross"),
+      candidate(2, 7, "Jab, Cross"),
+      candidate(3, 2, "Teep"),
+    ].forEach(({ c }) => p.offer(c));
+    expect(p.pick(20000, soFar).map((c) => c.seq)).toEqual([1, 3, 0]);
+    // Twice already: not again in a later round.
+    const q = new RoundPicker(20000);
+    q.offer(candidate(4, 9, "Jab, Cross").c);
+    expect(q.pick(20000, soFar)).toEqual([]);
+  });
+
+  it("never runs the same technique twice in a row", () => {
+    const list = [
+      candidate(0, 1, "Teep").c,
+      candidate(1, 1, "Jab").c,
+      candidate(2, 1, "Jab").c,
+      candidate(3, 1, "Hook").c,
+    ];
+    const keys = avoidRepeatsInARow(list, "teep").map(techniqueKey);
+    for (let i = 1; i < keys.length; i++) expect(keys[i]).not.toBe(keys[i - 1]);
+    expect(keys[0]).not.toBe("teep");
   });
 
   it("lets go of clips with nothing in them straight away", () => {
-    const p = new RoundPicker();
+    const p = new RoundPicker(6000);
     const stare = candidate(0, 0, "Jab");
     p.offer(stare.c);
     expect(stare.released.value).toBe(true);
   });
 
-  it("holds only a handful per round however long it runs", () => {
-    const p = new RoundPicker();
+  it("holds only what the round could use, however long it runs", () => {
+    const p = new RoundPicker(6000);
     const all = Array.from({ length: 60 }, (_, i) => candidate(i, i + 1, `T${i}`));
     all.forEach(({ c }) => p.offer(c));
     expect(all.filter((x) => !x.released.value).length).toBeLessThanOrEqual(12);
@@ -301,9 +355,12 @@ describe("picking a round's best", () => {
 });
 
 describe("reel length", () => {
-  it("grows with the session up to 30s, shared across the rounds", () => {
-    expect(reelBudgetMs(1)).toBe(12000);
-    expect(reelBudgetMs(5)).toBe(30000);
-    expect(roundBudgetMs(5)).toBe(6000);
+  it("runs about 4 seconds per minute of work, 12s to 60s", () => {
+    expect(reelBudgetMs(2 * 60_000)).toBe(12000);
+    expect(reelBudgetMs(10 * 60_000)).toBe(40000);
+    expect(reelBudgetMs(15 * 60_000)).toBe(60000);
+    expect(reelBudgetMs(60 * 60_000)).toBe(60000);
+    // 5 × 3 minutes: 12 seconds from each round.
+    expect(roundBudgetMs(15 * 60_000, 5)).toBe(12000);
   });
 });

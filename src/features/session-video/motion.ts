@@ -136,17 +136,31 @@ export const motionLevels = (values: number[]): MotionLevels => {
   return { floor, threshold: floor + Math.max(0.002, 0.25 * (peak - floor)) };
 };
 
-/**
- * The longest a kept clip runs: one combination, cut tight. Shorter clips,
- * more of them, is what makes a reel move.
- */
-export const MAX_KEEP_MS = 3500;
-/** The shortest: anything less is a flinch, not a technique. */
+/** The shortest kept clip: anything less is a flinch, not a technique. */
 export const MIN_KEEP_MS = 1200;
-/** Kept before the first movement and after the last. */
+/** The longest, whatever was called. */
+export const MAX_KEEP_MS = 5000;
+
+/**
+ * How long a combination of `strikes` may run in the reel: a single strike
+ * stays snappy, a five-strike combination gets room to finish. A flat 3.5s
+ * cap chopped the long ones.
+ */
+export const keepCapMs = (strikes: number): number =>
+  Math.min(MAX_KEEP_MS, 1500 + 600 * Math.max(1, strikes));
+
+/**
+ * The reaction to a call starts on its first word; the clip starts this long
+ * after the call does, so the wind-up is in and the standing before isn't.
+ */
+const AFTER_CALL_MS = 300;
+/** Kept before the first movement when there's no call to go by. */
 const LEAD_MS = 300;
-const TRAIL_MS = 400;
-/** Kept after the last hit: the strike landing, and the snap back. */
+/** Back in stance means this long below the settle level. */
+const SETTLED_FOR_MS = 300;
+/** Kept after settling: the guard coming back up. */
+const AFTER_SETTLE_MS = 150;
+/** Kept after the last hit when nothing settles first. */
 const AFTER_HIT_MS = 450;
 
 export interface ClipCut {
@@ -159,34 +173,85 @@ export interface ClipCut {
   hits: number;
 }
 
+export interface ClipEvidence {
+  /** Movement through the clip, ms from its start. */
+  samples: { t: number; m: number }[];
+  durationMs: number;
+  levels: MotionLevels;
+  /** Strikes heard landing, ms from the clip's start (HitDetector). */
+  hits?: number[];
+  /** When the clip's callout began, ms from its start. */
+  callAtMs?: number;
+  /** Strikes in what was called, for how long it may run. */
+  strikes?: number;
+}
+
 /**
  * The part of a filmed callout worth keeping, and what happened in it.
  *
- * From just before the first real movement (or hit) to just after the last
- * hit — or, with nothing heard, the last movement. If that runs longer than
- * MAX_KEEP_MS, the stretch of that length with the most going on. A stare
- * comes back empty.
+ * Starts just after the call begins (people move on the first word), or
+ * just before the first real movement if that comes sooner or there was no
+ * call. Ends once the fighter is back in stance: after the last strike
+ * heard, or the last real movement, the first moment movement stays down
+ * near stillness for a beat. The old cut ended a fixed 0.4s after the last
+ * big movement, which lopped off the snap back to guard — and the leg still
+ * in the air at the end of a kick.
  *
- * `hits` are ms from the clip's start, from HitDetector.
+ * If that runs past the combination's cap, the stretch of that length with
+ * the most going on. A stare comes back empty.
  */
-export const cutClip = (
-  samples: { t: number; m: number }[],
-  durationMs: number,
-  levels: MotionLevels,
-  hits: number[] = []
-): ClipCut => {
+export const cutClip = (e: ClipEvidence): ClipCut => {
+  const { durationMs, levels } = e;
+  // The clip opens before its call, over the tail of the last combination;
+  // that movement isn't this call's.
+  const from = e.callAtMs !== undefined ? e.callAtMs - 200 : 0;
+  const hits = (e.hits ?? []).filter((h) => h >= from);
   const none = { startMs: 0, endMs: 0, motion: 0, hits: 0 };
-  const active = samples.filter((s) => s.m > levels.threshold);
+  // Lightly smoothed, so one still frame mid-combination isn't "settled".
+  const samples = e.samples.map((s, i, all) => {
+    const a = all[i - 1]?.m ?? s.m;
+    const b = all[i + 1]?.m ?? s.m;
+    return { t: s.t, m: (a + s.m + b) / 3 };
+  });
+  const active = samples.filter((s) => s.t >= from && s.m > levels.threshold);
   if ((!active.length && !hits.length) || durationMs < MIN_KEEP_MS) return none;
 
   const firstMove = active.length ? active[0]!.t : Infinity;
   const lastMove = active.length ? active[active.length - 1]!.t : -Infinity;
-  let start = Math.max(0, Math.min(firstMove, hits[0] ?? Infinity) - LEAD_MS);
+  const firstEvidence = Math.min(firstMove, hits[0] ?? Infinity);
+  let start = Math.max(
+    0,
+    Math.min(
+      e.callAtMs !== undefined ? e.callAtMs + AFTER_CALL_MS : Infinity,
+      firstEvidence - LEAD_MS
+    )
+  );
+
+  // Back in stance: below the settle level for SETTLED_FOR_MS, after the
+  // last thing that happened.
+  const lastEvent = Math.max(lastMove, hits[hits.length - 1] ?? -Infinity);
+  const settle = levels.floor + 0.5 * (levels.threshold - levels.floor);
+  let settledAt: number | null = null;
+  let quietSince: number | null = null;
+  for (const s of samples) {
+    if (s.t <= lastEvent) continue;
+    if (s.m <= settle) {
+      quietSince ??= s.t;
+      if (s.t - quietSince >= SETTLED_FOR_MS) {
+        settledAt = quietSince;
+        break;
+      }
+    } else {
+      quietSince = null;
+    }
+  }
   let end = Math.min(
     durationMs,
-    hits.length
-      ? hits[hits.length - 1]! + AFTER_HIT_MS
-      : lastMove + TRAIL_MS
+    settledAt !== null
+      ? settledAt + AFTER_SETTLE_MS
+      : hits.length
+      ? lastEvent + AFTER_HIT_MS
+      : lastEvent + SETTLED_FOR_MS + AFTER_SETTLE_MS
   );
 
   const excess = (from: number, to: number) =>
@@ -196,20 +261,22 @@ export const cutClip = (
   const hitsIn = (from: number, to: number) =>
     hits.filter((h) => h >= from && h <= to).length;
 
-  if (end - start > MAX_KEEP_MS) {
-    // Slide a MAX_KEEP_MS window across the span; keep the one with the
-    // most hits, then the most movement.
+  const cap = keepCapMs(e.strikes ?? 1);
+  if (end - start > cap) {
+    // Slide a cap-length window across the span; keep the one with the most
+    // hits, then the most movement. Starting from the call is preferred, so
+    // ties keep the opening.
     let best = start;
     let bestKey = -1;
-    for (let from = start; from + MAX_KEEP_MS <= end; from += 100) {
-      const key = hitsIn(from, from + MAX_KEEP_MS) * 1000 + excess(from, from + MAX_KEEP_MS);
-      if (key > bestKey) {
+    for (let from = start; from + cap <= end; from += 100) {
+      const key = hitsIn(from, from + cap) * 1000 + excess(from, from + cap);
+      if (key > bestKey + 1e-9) {
         bestKey = key;
         best = from;
       }
     }
     start = best;
-    end = best + MAX_KEEP_MS;
+    end = best + cap;
   }
 
   if (end - start < MIN_KEEP_MS) {

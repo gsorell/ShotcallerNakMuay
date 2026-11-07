@@ -18,6 +18,8 @@ interface SessionCameraPipProps {
   resting: boolean;
   /** Rounds in the session, for each round's share of the reel. */
   rounds: number;
+  /** One round's length: with the rounds, how long the reel runs. */
+  roundMs: number;
 }
 
 /**
@@ -32,16 +34,17 @@ export default function SessionCameraPip({
   holding,
   resting,
   rounds,
+  roundMs,
 }: SessionCameraPipProps) {
   const enabled = useRecordSession();
   const videoRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<ReelRecorder | null>(null);
   const [shown, setShown] = useState(false);
   const [recording, setRecording] = useState(false);
-  const roundsRef = useRef(rounds);
+  const planRef = useRef({ rounds, roundMs });
   useEffect(() => {
-    roundsRef.current = rounds;
-  }, [rounds]);
+    planRef.current = { rounds, roundMs };
+  }, [rounds, roundMs]);
 
   // Session lifecycle: open the camera at the start, hand over the reel at
   // the end. Keyed on `active` alone so nothing mid-session restarts it.
@@ -49,7 +52,7 @@ export default function SessionCameraPip({
     if (!active || !enabled) return;
     clearSessionReel();
     let cancelled = false;
-    const rec = new ReelRecorder(roundsRef.current);
+    const rec = new ReelRecorder(planRef.current.rounds, planRef.current.roundMs);
     rec.onRecordingChange = setRecording;
     recorderRef.current = rec;
 
