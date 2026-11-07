@@ -28,7 +28,7 @@ export const pickMime = (): string => {
 
 /**
  * Builds the reel: plays each kept clip's best stretch onto a canvas, with
- * the watermark, mirrored like the preview, into one recorder that is paused
+ * the watermark, the right way round, into one recorder that is paused
  * between clips — so the output is one file with no gaps.
  *
  * It runs at playback speed, which is why it is fed a round at a time during
@@ -78,11 +78,10 @@ export class ReelRenderer {
         }
         const w = this.canvas.width;
         const h = this.canvas.height;
-        this.ctx.save();
-        this.ctx.translate(w, 0);
-        this.ctx.scale(-1, 1);
+        // Drawn as the camera delivered it — the true view, not mirrored.
+        // Only the live preview is mirrored, like every selfie preview; a
+        // mirrored reel had every orthodox fighter southpaw and text backwards.
         this.ctx.drawImage(v, 0, 0, w, h);
-        this.ctx.restore();
         drawWatermark(this.ctx, w, h);
       }
       requestAnimationFrame(draw);

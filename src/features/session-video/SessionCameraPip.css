@@ -34,7 +34,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* A mirror, like every front camera preview; the reel is mirrored to match. */
+  /* A mirror, like every front camera preview. The reel is not: it shows
+     the true view, so an orthodox stance reads as orthodox. */
   transform: scaleX(-1);
 }
 

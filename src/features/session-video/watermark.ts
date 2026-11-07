@@ -19,7 +19,7 @@ const loadWatermark = (): HTMLImageElement | null => {
 // Fetched with the module, so it is decoded before the first clip opens.
 loadWatermark();
 
-/** The banner in the bottom-right corner, about 45% of the frame's width. */
+/** The banner centred along the bottom, about 45% of the frame's width. */
 export const drawWatermark = (
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -34,7 +34,7 @@ export const drawWatermark = (
     // A soft shadow lifts the neon off a bright room behind it.
     ctx.shadowColor = "rgba(0,0,0,0.7)";
     ctx.shadowBlur = Math.round(markH * 0.12);
-    ctx.drawImage(img, w - markW - margin, h - markH - margin, markW, markH);
+    ctx.drawImage(img, Math.round((w - markW) / 2), h - markH - margin, markW, markH);
     ctx.restore();
     return;
   }
@@ -50,12 +50,12 @@ const drawTextWatermark = (
   const fs = Math.round(Math.min(w, h) * 0.045);
   ctx.save();
   ctx.font = `900 ${fs}px Poppins, system-ui, -apple-system, sans-serif`;
-  ctx.textAlign = "right";
+  ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  const x = w - fs * 0.7;
+  const x = w / 2;
   const y = h - fs * 0.6;
   const textW = ctx.measureText("SHOT CALLER").width;
-  const ramp = ctx.createLinearGradient(x - textW, 0, x, 0);
+  const ramp = ctx.createLinearGradient(x - textW / 2, 0, x + textW / 2, 0);
   ramp.addColorStop(0, "#f838f8");
   ramp.addColorStop(0.5, "#8898f8");
   ramp.addColorStop(1, "#18f8f8");

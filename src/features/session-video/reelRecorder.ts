@@ -17,8 +17,8 @@ import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentSched
  * during the rest that follows (ReelRenderer). By the final bell only the
  * last round's few seconds are left to assemble.
  *
- * The camera is recorded as it comes. Mirroring and the watermark are added
- * when the reel is assembled. Video only: opening the microphone changes the
+ * The camera is recorded as it comes, the true view (only the live preview
+ * is mirrored). The watermark is added when the reel is assembled. Video only: opening the microphone changes the
  * iOS audio session, and the app's callouts have been silenced by that
  * before.
  */
