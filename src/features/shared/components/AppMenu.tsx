@@ -228,7 +228,7 @@ export default function AppMenu({
                     <span className="app-menu-hint">
                       {cameraDenied
                         ? "Camera access is off. Allow it in Settings."
-                        : "Camera in the corner, highlight reel at the end"}
+                        : "Camera and sound, highlight reel at the end"}
                     </span>
                   </span>
                   <span

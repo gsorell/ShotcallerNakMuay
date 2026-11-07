@@ -105,12 +105,17 @@
     <uses-permission android:name="com.android.vending.BILLING" />
 
     <!--
-        "Record My Session": the front camera, video only (no RECORD_AUDIO on
-        purpose). Capacitor's BridgeWebChromeClient asks for this at runtime
-        when the page calls getUserMedia. Not required, so Play still offers
-        the app to devices without a camera; the menu hides the switch there.
+        "Record My Session": the front camera, and the microphone for the
+        reel's sound and for hearing strikes land. Capacitor's
+        BridgeWebChromeClient asks for these at runtime when the page calls
+        getUserMedia. Not required, so Play still offers the app to devices
+        without a camera or microphone; the menu hides the switch without a
+        camera, and the reel is filmed silent without a microphone.
     -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 

@@ -136,55 +136,75 @@ export const motionLevels = (values: number[]): MotionLevels => {
   return { floor, threshold: floor + Math.max(0.002, 0.25 * (peak - floor)) };
 };
 
-/** The longest a kept clip runs: one combination, not a round. */
-export const MAX_KEEP_MS = 4500;
+/**
+ * The longest a kept clip runs: one combination, cut tight. Shorter clips,
+ * more of them, is what makes a reel move.
+ */
+export const MAX_KEEP_MS = 3500;
 /** The shortest: anything less is a flinch, not a technique. */
 export const MIN_KEEP_MS = 1200;
 /** Kept before the first movement and after the last. */
 const LEAD_MS = 300;
 const TRAIL_MS = 400;
+/** Kept after the last hit: the strike landing, and the snap back. */
+const AFTER_HIT_MS = 450;
 
 export interface ClipCut {
   /** Where the kept part starts and ends, ms from the clip's start. */
   startMs: number;
   endMs: number;
-  /** How much happened in it. Zero means nothing worth keeping. */
-  score: number;
+  /** Movement above the floor inside the kept part. */
+  motion: number;
+  /** Strikes heard landing inside the kept part. */
+  hits: number;
 }
 
 /**
- * The part of a filmed callout worth keeping, and how good it is.
+ * The part of a filmed callout worth keeping, and what happened in it.
  *
- * Everything from just before the first real movement to just after the
- * last; if that runs longer than MAX_KEEP_MS, the busiest stretch of that
- * length. The score is the movement above the floor inside it, so a flurry
- * beats a single jab and a stare scores nothing.
+ * From just before the first real movement (or hit) to just after the last
+ * hit — or, with nothing heard, the last movement. If that runs longer than
+ * MAX_KEEP_MS, the stretch of that length with the most going on. A stare
+ * comes back empty.
+ *
+ * `hits` are ms from the clip's start, from HitDetector.
  */
 export const cutClip = (
   samples: { t: number; m: number }[],
   durationMs: number,
-  levels: MotionLevels
+  levels: MotionLevels,
+  hits: number[] = []
 ): ClipCut => {
-  const none = { startMs: 0, endMs: 0, score: 0 };
+  const none = { startMs: 0, endMs: 0, motion: 0, hits: 0 };
   const active = samples.filter((s) => s.m > levels.threshold);
-  if (!active.length || durationMs < MIN_KEEP_MS) return none;
+  if ((!active.length && !hits.length) || durationMs < MIN_KEEP_MS) return none;
 
-  let start = Math.max(0, active[0]!.t - LEAD_MS);
-  let end = Math.min(durationMs, active[active.length - 1]!.t + TRAIL_MS);
+  const firstMove = active.length ? active[0]!.t : Infinity;
+  const lastMove = active.length ? active[active.length - 1]!.t : -Infinity;
+  let start = Math.max(0, Math.min(firstMove, hits[0] ?? Infinity) - LEAD_MS);
+  let end = Math.min(
+    durationMs,
+    hits.length
+      ? hits[hits.length - 1]! + AFTER_HIT_MS
+      : lastMove + TRAIL_MS
+  );
 
   const excess = (from: number, to: number) =>
     samples
       .filter((s) => s.t >= from && s.t <= to)
       .reduce((sum, s) => sum + Math.max(0, s.m - levels.floor), 0);
+  const hitsIn = (from: number, to: number) =>
+    hits.filter((h) => h >= from && h <= to).length;
 
   if (end - start > MAX_KEEP_MS) {
-    // Slide a MAX_KEEP_MS window across the span; keep the busiest.
+    // Slide a MAX_KEEP_MS window across the span; keep the one with the
+    // most hits, then the most movement.
     let best = start;
-    let bestScore = -1;
+    let bestKey = -1;
     for (let from = start; from + MAX_KEEP_MS <= end; from += 100) {
-      const sc = excess(from, from + MAX_KEEP_MS);
-      if (sc > bestScore) {
-        bestScore = sc;
+      const key = hitsIn(from, from + MAX_KEEP_MS) * 1000 + excess(from, from + MAX_KEEP_MS);
+      if (key > bestKey) {
+        bestKey = key;
         best = from;
       }
     }
@@ -199,5 +219,10 @@ export const cutClip = (
     start = Math.max(0, end - MIN_KEEP_MS);
   }
 
-  return { startMs: start, endMs: end, score: excess(start, end) };
+  return {
+    startMs: start,
+    endMs: end,
+    motion: excess(start, end),
+    hits: hitsIn(start, end),
+  };
 };

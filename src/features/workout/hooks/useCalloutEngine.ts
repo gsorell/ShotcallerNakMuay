@@ -145,8 +145,12 @@ export function useCalloutEngine({
           doCallout,
           Math.max(0, delay)
         ) as unknown as number;
-        // The session reel starts filming a beat before the call lands.
-        notifyCalloutScheduled(Math.max(0, delay));
+        // The session reel starts filming a beat before the call lands —
+        // unless it's a between-call, which joins the combination's clip.
+        notifyCalloutScheduled(
+          Math.max(0, delay),
+          Boolean(betweenDueRef.current && betweenCalloutRef.current?.length)
+        );
       };
 
       const doCallout = () => {
@@ -217,8 +221,12 @@ export function useCalloutEngine({
 
         shotsCalledOutRef.current += 1;
         lastCalloutAtRef.current = Date.now();
-        // The session reel's clip, if this callout has one, is already rolling.
-        notifyCallout();
+        // The session reel's clip is already rolling; this says what's in it.
+        notifyCallout({
+          text: selectedTechnique.text || "",
+          between: isBetween,
+          combo: Boolean(selectedTechnique.combo),
+        });
 
         // Determine Text
         let finalPhrase = "";

@@ -24,6 +24,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Shot Caller records the sound of your session with the video, and listens for strikes landing to pick the best moments for your reel.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Shot Caller uses the front camera to film your session and build a highlight reel. The reel is saved to your Photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

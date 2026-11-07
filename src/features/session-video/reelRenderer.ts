@@ -7,15 +7,27 @@ export interface RenderClip {
   endMs: number;
 }
 
-/** MP4 first: it plays everywhere and Photos takes it. WebM where it's not. */
-export const pickMime = (): string => {
-  const candidates = [
-    "video/mp4;codecs=avc1",
-    "video/mp4",
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm",
-  ];
+/**
+ * MP4 first: it plays everywhere and Photos takes it. WebM where it's not.
+ * With sound, AAC where the recorder offers it (iOS), Opus otherwise.
+ */
+export const pickMime = (withAudio = false): string => {
+  const candidates = withAudio
+    ? [
+        "video/mp4;codecs=avc1,mp4a.40.2",
+        "video/mp4;codecs=avc1,opus",
+        "video/mp4",
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ]
+    : [
+        "video/mp4;codecs=avc1",
+        "video/mp4",
+        "video/webm;codecs=vp9",
+        "video/webm;codecs=vp8",
+        "video/webm",
+      ];
   for (const m of candidates) {
     try {
       if (MediaRecorder.isTypeSupported(m)) return m;
@@ -45,11 +57,13 @@ export class ReelRenderer {
   private readonly chunks: Blob[] = [];
   private drawing = true;
   private started = false;
+  private audioCtx: AudioContext | null = null;
   private queue: Promise<void> = Promise.resolve();
   renderedMs = 0;
   clips = 0;
 
-  constructor() {
+  /** `withAudio`: the clips carry sound, and the reel should too. */
+  constructor(withAudio = false) {
     const ctx = this.canvas.getContext("2d");
     if (!ctx) throw new Error("No 2D canvas");
     this.ctx = ctx;
@@ -88,16 +102,42 @@ export class ReelRenderer {
     };
     requestAnimationFrame(draw);
 
-    const mimeType = pickMime();
+    const stream = this.canvas.captureStream(30);
+    // The clips' sound — the callouts, the pads — goes into the reel through
+    // Web Audio and never out of the speaker: the element's output is taken
+    // over by the graph, which ends at a stream, not the speakers. Muted,
+    // the element would hand the graph silence.
+    let audio = false;
+    if (withAudio) {
+      try {
+        const Ctx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext;
+        const actx = new Ctx();
+        const dest = actx.createMediaStreamDestination();
+        actx.createMediaElementSource(v).connect(dest);
+        dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+        v.muted = false;
+        void actx.resume().catch(() => undefined);
+        this.audioCtx = actx;
+        audio = true;
+      } catch (e) {
+        console.warn("Reel will be silent:", e);
+      }
+    }
+
+    const mimeType = pickMime(audio);
     // A keyframe a second, where the browser takes the hint, so a gallery
     // can scrub in one-second steps rather than every three or four (what
     // the Pixel's recorder chose on its own). Ignored where unsupported.
     const options = {
       videoBitsPerSecond: 3_000_000,
+      ...(audio ? { audioBitsPerSecond: 128_000 } : {}),
       videoKeyFrameIntervalDuration: 1000,
       ...(mimeType ? { mimeType } : {}),
     } as MediaRecorderOptions;
-    this.recorder = new MediaRecorder(this.canvas.captureStream(30), options);
+    this.recorder = new MediaRecorder(stream, options);
     this.recorder.ondataavailable = (e) => {
       if (e.data && e.data.size) this.chunks.push(e.data);
     };
@@ -154,6 +194,8 @@ export class ReelRenderer {
     this.video.pause();
     this.video.removeAttribute("src");
     this.video.remove();
+    void this.audioCtx?.close().catch(() => undefined);
+    this.audioCtx = null;
   }
 
   private async renderOne(clip: RenderClip): Promise<void> {
@@ -167,7 +209,7 @@ export class ReelRenderer {
     if (startS > 0.05) {
       // Fast to just short of it, then real speed, so the overshoot of a
       // 4x run doesn't eat the lead-in.
-      await v.play();
+      await playSafely(v);
       if (startS > 0.5) {
         v.playbackRate = 4;
         await until(() => v.currentTime >= startS - 0.4 || v.ended, 8000);
@@ -189,13 +231,26 @@ export class ReelRenderer {
       r.resume();
     }
     const rolledAt = performance.now();
-    await v.play();
+    await playSafely(v);
     await until(() => v.currentTime >= endS || v.ended, (endS - startS) * 1000 + 3000);
     if (r.state === "recording") r.pause();
     v.pause();
     this.renderedMs += performance.now() - rolledAt;
   }
 }
+
+/**
+ * Plays, and if sound isn't allowed without a tap (a desktop browser —
+ * the apps allow it), plays muted: a silent reel beats no reel.
+ */
+const playSafely = async (v: HTMLVideoElement): Promise<void> => {
+  try {
+    await v.play();
+  } catch {
+    v.muted = true;
+    await v.play();
+  }
+};
 
 const once = (el: HTMLElement, event: string, timeoutMs: number) =>
   new Promise<void>((resolve, reject) => {

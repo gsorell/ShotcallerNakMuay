@@ -31,7 +31,7 @@ Nak Muay Shot Caller ("we," "our," or "the app") is a Muay Thai training timer a
 - Voice and speed preferences for text-to-speech functionality
 
 **Session Video (optional)**
-- If you turn on "Record My Session", the app uses your front camera during a workout to record short clips and build a highlight reel. No audio is recorded.
+- If you turn on "Record My Session", the app uses your front camera and microphone during a workout to record short clips and build a highlight reel. The sound is recorded with the video, and is also used on your device to tell when strikes land, so the reel can pick your best moments. You can refuse the microphone and the reel will be silent.
 - The reel is made on your device and saved automatically to your device's photo gallery (Photos on iPhone, a "Shot Caller" album on Android). On iPhone the app asks for permission to add to Photos; it cannot read your library. The video is never uploaded to us or any third party. It leaves your device only if you choose to share it.
 - You can turn the feature off in the menu at any time, and revoke camera access in your device settings.
 

@@ -55,19 +55,30 @@ export const useRecordSession = (): boolean =>
   );
 
 /**
- * Asks for the camera now, while the user is looking at the switch, so the
- * system prompt never lands in the middle of a pre-round countdown. The
- * stream is closed straight away; the session opens its own.
+ * Asks for the camera and microphone now, while the user is looking at the
+ * switch, so the system prompts never land in the middle of a pre-round
+ * countdown. The stream is closed straight away; the session opens its own.
+ *
+ * The camera is what matters: refuse the microphone and the reel is filmed
+ * silent, judged on movement alone.
  */
 export const requestCameraAccess = async (): Promise<boolean> => {
-  try {
+  const tryOpen = async (audio: boolean) => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "user" },
-      audio: false,
+      audio,
     });
     stream.getTracks().forEach((t) => t.stop());
+  };
+  try {
+    await tryOpen(true);
     return true;
   } catch {
-    return false;
+    try {
+      await tryOpen(false);
+      return true;
+    } catch {
+      return false;
+    }
   }
 };

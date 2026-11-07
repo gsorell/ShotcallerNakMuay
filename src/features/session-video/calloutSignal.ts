@@ -1,18 +1,36 @@
 /**
- * What the callout engine tells the session reel about its timing.
+ * What the callout engine tells the session reel.
  *
  * The engine's `currentCallout` is state for the screen; it does not change
  * when the same technique is called twice, and it says nothing about when
  * the next call is due. The recorder needs both — to start filming just
- * *before* a call (people throw on the first word) and stop when the next
- * one begins — and the engine should not need to know a recorder exists. So the engine rings these and anything
+ * *before* a call (people throw on the first word) — and it needs to know
+ * *what* was called, because a four-strike combination makes a better clip
+ * than a check, and the video alone can't tell them apart. The engine should
+ * not need to know a recorder exists, so it rings these and anything
  * interested listens.
  */
+export interface CallInfo {
+  /** The technique as written, e.g. "Jab, Cross, Left Kick". */
+  text: string;
+  /**
+   * A single word slipped in after a combination ("Check"), from the
+   * session's "between callouts" setting. It belongs to the combination
+   * before it, not a clip of its own.
+   */
+  between: boolean;
+  combo: boolean;
+}
+
 export type CalloutEvent =
-  /** The next callout is due in `delayMs`. Replaces any earlier schedule. */
-  | { type: "scheduled"; delayMs: number }
+  /**
+   * The next callout is due in `delayMs`; replaces any earlier schedule.
+   * `nextIsBetween`: it will be a between-call, which joins the clip in
+   * progress rather than starting one.
+   */
+  | { type: "scheduled"; delayMs: number; nextIsBetween: boolean }
   /** A technique is being called, now. */
-  | { type: "called" };
+  | { type: "called"; call: CallInfo };
 
 type Listener = (event: CalloutEvent) => void;
 
@@ -28,10 +46,13 @@ const emit = (event: CalloutEvent): void => {
   });
 };
 
-export const notifyCalloutScheduled = (delayMs: number): void =>
-  emit({ type: "scheduled", delayMs });
+export const notifyCalloutScheduled = (
+  delayMs: number,
+  nextIsBetween = false
+): void => emit({ type: "scheduled", delayMs, nextIsBetween });
 
-export const notifyCallout = (): void => emit({ type: "called" });
+export const notifyCallout = (call: CallInfo): void =>
+  emit({ type: "called", call });
 
 export const onCalloutEvent = (listener: Listener): (() => void) => {
   listeners.add(listener);
