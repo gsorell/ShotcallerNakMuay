@@ -5,17 +5,19 @@ import { trackEvent } from "@/utils/analytics";
 import { onCalloutEvent } from "./calloutSignal";
 import { useRecordSession } from "./recordPreference";
 import { ReelRecorder } from "./reelRecorder";
-import { clearSessionReel, setSessionReel } from "./reelStore";
+import { clearSessionReel, setReelBuilding, setSessionReel } from "./reelStore";
 import { autoSaveReel } from "./saveToGallery";
 import "./SessionCameraPip.css";
 
 interface SessionCameraPipProps {
   /** A session is under way (pre-round countdown included). */
   active: boolean;
-  /** Paused or resting: no clip should run through either. */
+  /** Paused, resting or counting down: nothing is filmed. */
   holding: boolean;
-  /** Rounds × round length, for spreading clips across the whole session. */
-  plannedWorkMs: number;
+  /** Between rounds: the round just ended is picked from and assembled. */
+  resting: boolean;
+  /** Rounds in the session, for each round's share of the reel. */
+  rounds: number;
 }
 
 /**
@@ -28,17 +30,18 @@ interface SessionCameraPipProps {
 export default function SessionCameraPip({
   active,
   holding,
-  plannedWorkMs,
+  resting,
+  rounds,
 }: SessionCameraPipProps) {
   const enabled = useRecordSession();
   const videoRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<ReelRecorder | null>(null);
   const [shown, setShown] = useState(false);
   const [recording, setRecording] = useState(false);
-  const plannedRef = useRef(plannedWorkMs);
+  const roundsRef = useRef(rounds);
   useEffect(() => {
-    plannedRef.current = plannedWorkMs;
-  }, [plannedWorkMs]);
+    roundsRef.current = rounds;
+  }, [rounds]);
 
   // Session lifecycle: open the camera at the start, hand over the reel at
   // the end. Keyed on `active` alone so nothing mid-session restarts it.
@@ -46,7 +49,7 @@ export default function SessionCameraPip({
     if (!active || !enabled) return;
     clearSessionReel();
     let cancelled = false;
-    const rec = new ReelRecorder(plannedRef.current);
+    const rec = new ReelRecorder(roundsRef.current);
     rec.onRecordingChange = setRecording;
     recorderRef.current = rec;
 
@@ -86,6 +89,12 @@ export default function SessionCameraPip({
     if (holding) recorderRef.current?.hold();
   }, [holding]);
 
+  // The rest is when a round's best clips are picked and assembled, so by
+  // the final bell only the last round is left to do.
+  useEffect(() => {
+    if (resting) recorderRef.current?.roundOver();
+  }, [resting]);
+
   const closeEarly = () => {
     const rec = recorderRef.current;
     recorderRef.current = null;
@@ -119,6 +128,8 @@ export default function SessionCameraPip({
 }
 
 async function handOver(rec: ReelRecorder): Promise<void> {
+  // The completion screen says "Cutting your reel…" until it is ready.
+  setReelBuilding(true);
   try {
     const reel = await rec.finish();
     if (reel) {
@@ -134,5 +145,7 @@ async function handOver(rec: ReelRecorder): Promise<void> {
   } catch (e) {
     console.warn("Reel could not be finished:", e);
     rec.release();
+  } finally {
+    setReelBuilding(false);
   }
 }

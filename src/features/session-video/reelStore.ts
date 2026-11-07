@@ -60,6 +60,18 @@ export const getSessionReel = (): SessionReel | null => current;
 export const useSessionReel = (): SessionReel | null =>
   useSyncExternalStore(subscribe, () => current, () => null);
 
+/** The last round's clips are still being assembled into the reel. */
+let building = false;
+
+export const setReelBuilding = (on: boolean): void => {
+  if (building === on) return;
+  building = on;
+  emit();
+};
+
+export const useReelBuilding = (): boolean =>
+  useSyncExternalStore(subscribe, () => building, () => false);
+
 export const openReelViewer = (): void => {
   if (!current || viewerOpen) return;
   viewerOpen = true;

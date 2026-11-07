@@ -518,7 +518,8 @@ export default function App() {
       <SessionCameraPip
         active={isActive}
         holding={timer.paused || timer.isResting || timer.isPreRound}
-        plannedWorkMs={settings.roundsCount * settings.roundMin * 60_000}
+        resting={timer.isResting}
+        rounds={settings.roundsCount}
       />
 
       <GlossaryModal

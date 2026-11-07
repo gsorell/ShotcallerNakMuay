@@ -6,6 +6,7 @@ import { trackEvent } from "@/utils/analytics";
 import {
   closeReelViewer,
   openReelViewer,
+  useReelBuilding,
   useReelViewerOpen,
   useSessionReel,
   type SessionReel,
@@ -22,10 +23,24 @@ import "./SessionReelCard.css";
 export default function SessionReelCard() {
   const reel = useSessionReel();
   const viewerOpen = useReelViewerOpen();
+  const building = useReelBuilding();
 
   // Leaving the completion screen leaves the player shut, so coming back to
   // the screen later doesn't land in it.
   useEffect(() => () => void closeReelViewer(), []);
+
+  // The last round's best moments are still being cut in: a few seconds.
+  if (!reel && building) {
+    return (
+      <div className="reel-ready is-building" role="status" aria-live="polite">
+        <span className="reel-ready-thumb reel-ready-spinner" aria-hidden="true" />
+        <span className="reel-ready-text">
+          <span className="reel-ready-title">Cutting your reel…</span>
+          <span className="reel-ready-sub">Picking your best moments</span>
+        </span>
+      </div>
+    );
+  }
 
   if (!reel) return null;
 

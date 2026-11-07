@@ -20,6 +20,32 @@
   animation: reel-ready-in 0.4s ease-out both;
 }
 
+.reel-ready.is-building {
+  cursor: default;
+}
+
+.reel-ready-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reel-ready-spinner::after {
+  content: "";
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ff5fb0;
+  animation: reel-spin 0.8s linear infinite;
+}
+
+@keyframes reel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .reel-ready:active {
   transform: translateY(1px);
 }
