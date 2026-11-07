@@ -35,6 +35,7 @@
     "@capawesome/capacitor-app-review": "^8.1.0",
     "@revenuecat/purchases-capacitor": "^13.3.0",
     "html2canvas": "^1.4.1",
+    "mediabunny": "^1.65.2",
     "nosleep.js": "^0.12.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

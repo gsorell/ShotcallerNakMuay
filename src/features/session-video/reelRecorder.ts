@@ -3,6 +3,7 @@ import { RoundPicker, roundBudgetMs, type Candidate } from "./highlights";
 import { MotionMeter, cutClip } from "./motion";
 import { ReelRenderer, pickMime } from "./reelRenderer";
 import type { SessionReel } from "./reelStore";
+import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
 
 /**
@@ -101,10 +102,12 @@ export class ReelRecorder {
     if (!renderer) return null;
     const out = await renderer.finish();
     if (!out) return null;
+    // Recorder output can't be scrubbed in a gallery; give it an index.
+    const { blob, remuxed } = await remuxToMp4(out.blob);
     return {
-      blob: out.blob,
-      url: URL.createObjectURL(out.blob),
-      ext: out.type.includes("mp4") ? "mp4" : "webm",
+      blob,
+      url: URL.createObjectURL(blob),
+      ext: remuxed || out.type.includes("mp4") ? "mp4" : "webm",
       durationMs: Math.round(renderer.renderedMs),
       clips: renderer.clips,
     };

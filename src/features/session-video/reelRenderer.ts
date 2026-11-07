@@ -90,12 +90,15 @@ export class ReelRenderer {
     requestAnimationFrame(draw);
 
     const mimeType = pickMime();
-    this.recorder = new MediaRecorder(
-      this.canvas.captureStream(30),
-      mimeType
-        ? { mimeType, videoBitsPerSecond: 3_000_000 }
-        : { videoBitsPerSecond: 3_000_000 }
-    );
+    // A keyframe a second, where the browser takes the hint, so a gallery
+    // can scrub in one-second steps rather than every three or four (what
+    // the Pixel's recorder chose on its own). Ignored where unsupported.
+    const options = {
+      videoBitsPerSecond: 3_000_000,
+      videoKeyFrameIntervalDuration: 1000,
+      ...(mimeType ? { mimeType } : {}),
+    } as MediaRecorderOptions;
+    this.recorder = new MediaRecorder(this.canvas.captureStream(30), options);
     this.recorder.ondataavailable = (e) => {
       if (e.data && e.data.size) this.chunks.push(e.data);
     };
