@@ -30,7 +30,12 @@ export type CalloutEvent =
    */
   | { type: "scheduled"; delayMs: number; nextIsBetween: boolean }
   /** A technique is being called, now. */
-  | { type: "called"; call: CallInfo };
+  | { type: "called"; call: CallInfo }
+  /**
+   * The voice just finished saying it. Between "called" and this, a crack
+   * the microphone hears may be the app's own voice, not a strike.
+   */
+  | { type: "spoken" };
 
 type Listener = (event: CalloutEvent) => void;
 
@@ -54,7 +59,9 @@ export const notifyCalloutScheduled = (
 export const notifyCallout = (call: CallInfo): void =>
   emit({ type: "called", call });
 
-export const onCalloutEvent = (listener: Listener): (() => void) => {
+export const notifyCalloutSpoken = (): void => emit({ type: "spoken" });
+
+export const onCalloutEvent =(listener: Listener): (() => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };

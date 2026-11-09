@@ -48,7 +48,7 @@ export class SegmentScheduler {
   event(e: CalloutEvent): void {
     if (this.stopped) return;
     if (e.type === "scheduled") this.onScheduled(e.delayMs, e.nextIsBetween);
-    else this.onCalled(e.call);
+    else if (e.type === "called") this.onCalled(e.call);
   }
 
   /** Paused, resting, or the round ended: close the clip, cancel the next. */

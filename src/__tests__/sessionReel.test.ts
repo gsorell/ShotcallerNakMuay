@@ -14,11 +14,15 @@ import {
 } from "@/features/session-video/highlights";
 import {
   MAX_KEEP_MS,
+  MIN_CROP,
   MIN_KEEP_MS,
+  cropFromHeat,
   cutClip,
   keepCapMs,
   motionLevels,
 } from "@/features/session-video/motion";
+import { cropAt } from "@/features/session-video/reelRenderer";
+import { endCard, titleCard } from "@/features/session-video/cards";
 import {
   MAX_SEGMENT_MS,
   OVERLAP_MS,
@@ -362,5 +366,77 @@ describe("reel length", () => {
     expect(reelBudgetMs(60 * 60_000)).toBe(60000);
     // 5 × 3 minutes: 12 seconds from each round.
     expect(roundBudgetMs(15 * 60_000, 5)).toBe(12000);
+  });
+});
+
+describe("framing the fighter", () => {
+  /** A 27×48 portrait grid with movement in one block of cells. */
+  const heatAt = (x0: number, x1: number, y0: number, y1: number) => {
+    const w = 27;
+    const h = 48;
+    const cells = new Float32Array(w * h);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) cells[y * w + x] = 1;
+    return { w, h, cells };
+  };
+
+  it("closes in on where the fighter moved, keeping the frame's shape", () => {
+    const c = cropFromHeat(heatAt(11, 16, 18, 34));
+    expect(c.w).toBe(c.h);
+    expect(c.w).toBeLessThan(1);
+    expect(c.w).toBeGreaterThanOrEqual(MIN_CROP);
+    // The movement is inside the crop.
+    expect(c.x).toBeLessThanOrEqual(11 / 27);
+    expect(c.x + c.w).toBeGreaterThanOrEqual(16 / 27);
+    expect(c.y).toBeLessThanOrEqual(18 / 48);
+    expect(c.y + c.h).toBeGreaterThanOrEqual(34 / 48);
+  });
+
+  it("never zooms past the point where the picture goes soft", () => {
+    const c = cropFromHeat(heatAt(13, 14, 24, 25));
+    expect(c.w).toBe(MIN_CROP);
+  });
+
+  it("stays inside the frame when the fighter is at its edge", () => {
+    const c = cropFromHeat(heatAt(0, 4, 40, 48));
+    expect(c.x).toBeGreaterThanOrEqual(0);
+    expect(c.y + c.h).toBeLessThanOrEqual(1 + 1e-9);
+  });
+
+  it("shows the whole frame with nothing to go by", () => {
+    expect(cropFromHeat(null)).toEqual({ x: 0, y: 0, w: 1, h: 1 });
+  });
+
+  it("pushes in slowly through a clip, about its centre", () => {
+    const crop = { x: 0.2, y: 0.1, w: 0.6, h: 0.6 };
+    const start = cropAt(crop, 0);
+    const end = cropAt(crop, 1);
+    expect(start).toEqual(crop);
+    expect(end.w).toBeLessThan(start.w);
+    expect(end.x + end.w / 2).toBeCloseTo(start.x + start.w / 2);
+  });
+});
+
+describe("hits the voice could have made", () => {
+  it("trims with every hit but scores only those away from the voice", () => {
+    const cut = cutClip({
+      samples: samplesFor(6000, [[1000, 3000]]),
+      durationMs: 6000,
+      levels: LEVELS,
+      hits: [1100, 1300, 1500, 2600],
+      cleanHits: [2600],
+      strikes: 3,
+    });
+    expect(cut.hits).toBe(1);
+  });
+});
+
+describe("cards", () => {
+  it("opens on the session and closes on where it came from", () => {
+    const title = titleCard(5, 180_000, new Date(2026, 10, 9));
+    expect(title.lines[0]).toBe("5 ROUNDS × 3:00");
+    expect(title.lines[1]).toMatch(/NOV 9/);
+    const end = endCard(288, 15 * 60_000);
+    expect(end.lines[0]).toBe("288 CALLS · 15 MIN");
+    expect(end.lines.join(" ")).toContain("shotcallermuaythai.app");
   });
 });

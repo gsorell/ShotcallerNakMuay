@@ -6,7 +6,7 @@
 const WATERMARK_SRC = "/assets/Logo_Header_Banner_Smooth.webp";
 let watermarkImg: HTMLImageElement | null = null;
 
-const loadWatermark = (): HTMLImageElement | null => {
+export const loadWatermark = (): HTMLImageElement | null => {
   if (typeof Image === "undefined") return null;
   if (!watermarkImg) {
     watermarkImg = new Image();

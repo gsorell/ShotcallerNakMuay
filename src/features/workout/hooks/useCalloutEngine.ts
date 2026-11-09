@@ -20,6 +20,7 @@ import { pickFromShares, type PoolShare } from "../utils/roundPlan";
 import {
   notifyCallout,
   notifyCalloutScheduled,
+  notifyCalloutSpoken,
 } from "@/features/session-video/calloutSignal";
 
 type SpeakWithDurationFn = (
@@ -265,6 +266,8 @@ export function useCalloutEngine({
           finalPhrase,
           settings.voiceSpeedRef.current,
           (actualDurationMs: number) => {
+            // The session reel stops discounting what it hears as the voice.
+            notifyCalloutSpoken();
             // A single word is almost all voice tail; the shortest one said is
             // the best measure of it. See utils/cadence.
             if (/^\S+$/.test(finalPhrase.trim())) {

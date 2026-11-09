@@ -19,12 +19,18 @@ import type { ClipCut } from "./motion";
 export class ReelNotes {
   private lines: string[] = [];
 
-  clip(seq: number, calls: CallInfo[], cut: ClipCut, score: number): void {
+  clip(
+    seq: number,
+    calls: CallInfo[],
+    cut: ClipCut,
+    score: number,
+    heard = cut.hits
+  ): void {
     const what = calls
       .map((c) => (c.between ? `+${c.text}` : c.text))
       .join(" ");
     this.lines.push(
-      `clip ${seq}\t${score.toFixed(2)}\thits=${cut.hits}\tmotion=${cut.motion.toFixed(3)}\t` +
+      `clip ${seq}\t${score.toFixed(2)}\thits=${cut.hits}/${heard}\tmotion=${cut.motion.toFixed(3)}\t` +
         `${Math.round(cut.startMs)}-${Math.round(cut.endMs)}ms\t${what || mainCall(calls)?.text || "?"}`
     );
   }

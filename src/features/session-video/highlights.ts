@@ -1,5 +1,6 @@
 import type { CallInfo } from "./calloutSignal";
 import type { ClipCut } from "./motion";
+import type { Crop } from "./reelRenderer";
 
 /**
  * Which of a round's filmed callouts make the reel, and in what order.
@@ -109,6 +110,10 @@ export interface Candidate {
   cut: ClipCut;
   calls: CallInfo[];
   score: number;
+  /** Where in the frame to show; the whole frame if absent. */
+  crop?: Crop;
+  /** The clip's busiest moment, ms from its start: where slow motion goes. */
+  peakMs?: number;
   /** The clip's video. */
   url: string;
   /** Lets go of the clip's video. */

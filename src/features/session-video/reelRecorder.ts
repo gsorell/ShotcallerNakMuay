@@ -9,8 +9,9 @@ import {
 } from "./highlights";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
-import { MotionMeter, cutClip } from "./motion";
-import { ReelRenderer, pickMime } from "./reelRenderer";
+import { endCard, titleCard } from "./cards";
+import { MotionMeter, cropFromHeat, cutClip } from "./motion";
+import { ReelRenderer, pickMime, type RenderClip } from "./reelRenderer";
 import type { SessionReel } from "./reelStore";
 import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
@@ -57,13 +58,20 @@ export class ReelRecorder {
   private lastOpen: MediaRecorder | null = null;
   /** Round ends are handled one at a time, in order. */
   private rounds: Promise<void> = Promise.resolve();
+  /**
+   * When the app's own voice was speaking. A crack heard then may be a
+   * consonant, not a strike: those don't count towards a clip's score.
+   */
+  private speech: { from: number; to: number }[] = [];
+  /** Techniques called this session, for the end card. */
+  private callsMade = 0;
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
   /** `roundMs`: one round's length; with the count, the session's work. */
   constructor(
     private readonly roundCount: number,
-    roundMs: number
+    private readonly roundMs: number
   ) {
     this.budgetMs = roundBudgetMs(roundCount * roundMs, roundCount);
     this.picker = new RoundPicker(this.budgetMs);
@@ -111,6 +119,7 @@ export class ReelRecorder {
       if (!(await this.hits.start(this.camera))) this.hits = null;
     }
     this.renderer = new ReelRenderer(withAudio);
+    this.renderer.setTitle(titleCard(this.roundCount, this.roundMs));
     this.scheduler = new SegmentScheduler(
       () => this.openSegment(),
       (on) => this.onRecordingChange(on)
@@ -119,6 +128,17 @@ export class ReelRecorder {
 
   /** The callout engine's timing and calls. */
   event(e: CalloutEvent): void {
+    const now = performance.now();
+    if (e.type === "called") {
+      if (!e.call.between) this.callsMade += 1;
+      // Open-ended until the voice says it's done (or a backstop).
+      this.speech.push({ from: now, to: now + 6000 });
+      if (this.speech.length > 400) this.speech = this.speech.slice(-200);
+    } else if (e.type === "spoken") {
+      const last = this.speech[this.speech.length - 1];
+      // A beat after the last word: the voice's own tail.
+      if (last && last.to > now) last.to = now + 150;
+    }
     this.scheduler?.event(e);
   }
 
@@ -143,7 +163,9 @@ export class ReelRecorder {
     const renderer = this.renderer;
     this.renderer = null;
     if (!renderer) return null;
-    const out = await renderer.finish();
+    const out = await renderer.finish(
+      endCard(this.callsMade, this.roundCount * this.roundMs)
+    );
     void this.notes.save();
     if (!out) return null;
     // Recorder output can't be scrubbed in a gallery; give it an index.
@@ -193,9 +215,23 @@ export class ReelRecorder {
     }
     // Queued, not awaited: the next round starts filming while this one is
     // still being assembled.
-    void this.renderer.add(
-      picks.map((p) => ({ url: p.url, startMs: p.cut.startMs, endMs: p.cut.endMs })),
-      (clip) => picks.find((p) => p.url === clip.url)?.release()
+    // The round's best comes last; it gets slow motion at its peak.
+    const best = picks[picks.length - 1];
+    const clips: RenderClip[] = picks.map((p) => ({
+      url: p.url,
+      startMs: p.cut.startMs,
+      endMs: p.cut.endMs,
+      crop: p.crop,
+      slow:
+        p === best && p.peakMs !== undefined
+          ? {
+              fromMs: Math.max(p.cut.startMs, p.peakMs - 450),
+              toMs: Math.min(p.cut.endMs, p.peakMs + 350),
+            }
+          : undefined,
+    }));
+    void this.renderer.add(clips, (clip) =>
+      picks.find((p) => p.url === clip.url)?.release()
     );
   }
 
@@ -279,19 +315,22 @@ export class ReelRecorder {
     const samples = meter
       .between(startedAt, stoppedAt)
       .map((s) => ({ t: s.at - startedAt, m: s.m }));
-    const hits = (this.hits?.between(startedAt, stoppedAt) ?? []).map(
-      (t) => t - startedAt
-    );
+    const heard = this.hits?.between(startedAt, stoppedAt) ?? [];
+    const hits = heard.map((t) => t - startedAt);
+    const cleanHits = heard
+      .filter((t) => !this.speech.some((s) => t >= s.from && t <= s.to))
+      .map((t) => t - startedAt);
     const cut = cutClip({
       samples,
       durationMs: stoppedAt - startedAt,
       levels: meter.levels(),
       hits,
+      cleanHits,
       callAtMs: callAt !== undefined ? callAt - startedAt : undefined,
       strikes: strikesIn(calls),
     });
     if (cut.endMs <= cut.startMs) {
-      this.notes.clip(seq, calls, cut, 0);
+      this.notes.clip(seq, calls, cut, 0, 0);
       return;
     }
 
@@ -300,8 +339,29 @@ export class ReelRecorder {
     const sorted = [...this.motionSeen].sort((a, b) => a - b);
     const motionNorm = sorted[Math.floor(sorted.length / 2)] ?? cut.motion;
     const score = scoreClip(cut, calls, motionNorm);
-    this.notes.clip(seq, calls, cut, score);
+    this.notes.clip(
+      seq,
+      calls,
+      cut,
+      score,
+      hits.filter((t) => t >= cut.startMs && t <= cut.endMs).length
+    );
     if (score <= 0) return;
+
+    // Framed around where the fighter moved in the kept part, and its
+    // busiest moment marked in case it's the round's best.
+    const crop = cropFromHeat(
+      meter.heat(startedAt + cut.startMs, startedAt + cut.endMs)
+    );
+    let peakMs: number | undefined;
+    let peak = -1;
+    for (const s of samples) {
+      if (s.t < cut.startMs || s.t > cut.endMs) continue;
+      if (s.m > peak) {
+        peak = s.m;
+        peakMs = s.t;
+      }
+    }
 
     const url = URL.createObjectURL(new Blob(chunks, { type: type || "video/webm" }));
     this.picker.offer({
@@ -309,6 +369,8 @@ export class ReelRecorder {
       cut,
       calls,
       score,
+      crop,
+      peakMs,
       url,
       release: () => URL.revokeObjectURL(url),
     } satisfies Candidate);
