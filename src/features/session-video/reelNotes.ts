@@ -18,6 +18,28 @@ import type { ClipCut } from "./motion";
  */
 export class ReelNotes {
   private lines: string[] = [];
+  private readonly began = performance.now();
+
+  /**
+   * A step of the pipeline (what the phone offered, what failed), stamped
+   * with seconds into the session. When no reel comes out, these lines are
+   * what the completion screen shows: on iOS nothing else can be read.
+   */
+  log(line: string): void {
+    const s = ((performance.now() - this.began) / 1000).toFixed(1);
+    this.lines.push(`${s}s ${line}`);
+    if (this.lines.length > 600) this.lines.splice(0, this.lines.length - 500);
+  }
+
+  /** The trace lines, without the per-clip verdicts. */
+  trace(): string {
+    return this.lines.filter((l) => /^\d+\.\ds /.test(l)).join("\n");
+  }
+
+  /** Clips judged so far, kept or not. */
+  get judged(): number {
+    return this.lines.filter((l) => l.startsWith("clip ")).length;
+  }
 
   clip(
     seq: number,

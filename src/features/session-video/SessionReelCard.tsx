@@ -7,8 +7,10 @@ import {
   closeReelViewer,
   openReelViewer,
   useReelBuilding,
+  useReelFailure,
   useReelViewerOpen,
   useSessionReel,
+  type ReelFailure,
   type SessionReel,
 } from "./reelStore";
 import { shareReel } from "./shareReel";
@@ -24,6 +26,7 @@ export default function SessionReelCard() {
   const reel = useSessionReel();
   const viewerOpen = useReelViewerOpen();
   const building = useReelBuilding();
+  const failure = useReelFailure();
 
   // Leaving the completion screen leaves the player shut, so coming back to
   // the screen later doesn't land in it.
@@ -41,6 +44,8 @@ export default function SessionReelCard() {
       </div>
     );
   }
+
+  if (!reel && failure) return <ReelFailed failure={failure} />;
 
   if (!reel) return null;
 
@@ -93,6 +98,40 @@ export default function SessionReelCard() {
 
       {viewerOpen && <ReelViewer reel={reel} />}
     </>
+  );
+}
+
+/**
+ * The session was filmed but no reel came out. Said plainly rather than the
+ * row just vanishing, with what happened behind "Details" — on an iPhone
+ * there is no other way to see why.
+ */
+function ReelFailed({ failure }: { failure: ReelFailure }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="reel-failed">
+      <button
+        type="button"
+        className="reel-ready is-failed"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="reel-ready-thumb reel-failed-mark" aria-hidden="true">
+          !
+        </span>
+        <span className="reel-ready-text">
+          <span className="reel-ready-title">Couldn't make your reel this time</span>
+          <span className="reel-ready-sub">
+            {open ? "Hide details" : "Tap for details"}
+          </span>
+        </span>
+      </button>
+      {open && (
+        <pre className="reel-failed-details">
+          {`${failure.reason}\n\n${failure.trace}`}
+        </pre>
+      )}
+    </div>
   );
 }
 

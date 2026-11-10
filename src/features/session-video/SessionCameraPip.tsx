@@ -9,8 +9,10 @@ import {
   clearSessionReel,
   patchSessionReel,
   setReelBuilding,
+  setReelFailure,
   setSessionReel,
 } from "./reelStore";
+import { errText } from "./reelRenderer";
 import { buildShortCut } from "./shortCut";
 import { autoSaveReel } from "./saveToGallery";
 import "./SessionCameraPip.css";
@@ -188,6 +190,7 @@ async function handOver(rec: ReelRecorder): Promise<void> {
   setReelBuilding(true);
   try {
     const reel = await rec.finish();
+    if (!reel && rec.failure) reportFailure(rec.failure.reason, rec.failure.trace);
     if (reel) {
       setSessionReel(reel);
       // Kept without anyone having to remember to: straight to the gallery.
@@ -216,7 +219,19 @@ async function handOver(rec: ReelRecorder): Promise<void> {
   } catch (e) {
     console.warn("Reel could not be finished:", e);
     rec.release();
+    reportFailure(errText(e), `${rec.trace()}\nthrown: ${errText(e)}`);
   } finally {
     setReelBuilding(false);
   }
+}
+
+/** No reel when one was due: say so on the completion screen, and count it. */
+function reportFailure(reason: string, trace: string): void {
+  setReelFailure({ reason, trace });
+  try {
+    trackEvent("session_reel_error", {
+      stage: "finish",
+      error: reason.slice(0, 100),
+    });
+  } catch { /* analytics must never break the session */ }
 }

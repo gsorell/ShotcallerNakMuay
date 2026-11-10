@@ -39,6 +39,8 @@ export interface RendererOptions {
   watermark?: boolean;
   /** Even the sound out to a feed's loudness. Off for an already mastered source. */
   master?: boolean;
+  /** Told what went wrong (and how it ended), for when no reel comes out. */
+  log?: (line: string) => void;
 }
 
 /** A card: a few lines of text under the logo, on the brand's dark. */
@@ -133,6 +135,7 @@ export class ReelRenderer {
   /** The title over the action, until `until` (performance.now()). */
   private overlay: { card: Card; until: number } | null = null;
   private readonly watermark: boolean;
+  private readonly log: (line: string) => void;
   renderedMs = 0;
   clips = 0;
   /** Each clip's place in the reel, in order. */
@@ -145,8 +148,10 @@ export class ReelRenderer {
       withAudio = false,
       watermark = true,
       master = true,
+      log = () => {},
     } = typeof opts === "boolean" ? { withAudio: opts } : opts;
     this.watermark = watermark;
+    this.log = log;
     const ctx = this.canvas.getContext("2d");
     if (!ctx) throw new Error("No 2D canvas");
     this.ctx = ctx;
@@ -206,6 +211,7 @@ export class ReelRenderer {
         audio = true;
       } catch (e) {
         console.warn("Reel will be silent:", e);
+        log(`render audio: ${errText(e)}`);
       }
     }
 
@@ -220,6 +226,9 @@ export class ReelRenderer {
       ...(mimeType ? { mimeType } : {}),
     } as MediaRecorderOptions;
     this.recorder = new MediaRecorder(stream, options);
+    log(`render: mime "${mimeType}" -> "${this.recorder.mimeType}", audio ${audio}`);
+    this.recorder.onerror = (e) =>
+      log(`render recorder error: ${errText((e as unknown as { error?: unknown }).error ?? e)}`);
     this.recorder.ondataavailable = (e) => {
       if (e.data && e.data.size) this.chunks.push(e.data);
     };
@@ -244,6 +253,7 @@ export class ReelRenderer {
           this.clips += 1;
         } catch (e) {
           console.warn("Reel clip skipped:", e);
+          this.log(`render skipped clip: ${errText(e)}`);
         }
         onDone(clip);
       }
@@ -279,6 +289,11 @@ export class ReelRenderer {
         result = { blob: new Blob(this.chunks, { type }), type };
       }
     }
+    const bytes = this.chunks.reduce((n, c) => n + c.size, 0);
+    this.log(
+      `render finish: ${this.clips} clips, started ${this.started}, ` +
+        `${this.chunks.length} chunks, ${bytes} bytes, ${Math.round(this.renderedMs)}ms`
+    );
     this.dispose();
     return result;
   }
@@ -372,8 +387,7 @@ export class ReelRenderer {
 
   private async renderOne(clip: RenderClip): Promise<void> {
     const v = this.video;
-    v.src = clip.url;
-    await once(v, "loadeddata", 5000);
+    await loadFrames(v, clip.url);
     // The reel takes the shape of the camera's frame, set once.
     if (!this.sized && v.videoWidth) {
       this.canvas.width = v.videoWidth;
@@ -595,7 +609,38 @@ const playSafely = async (v: HTMLVideoElement): Promise<void> => {
   }
 };
 
+/** An error as one short line. */
+export const errText = (e: unknown): string =>
+  e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Loads `url` until a frame can be drawn. Chrome buffers on its own; iOS
+ * often fetches only the metadata until the element is told to play, and
+ * waiting for "loadeddata" alone timed every clip out there. So: ask for the
+ * data, and if it doesn't come, play it (the sound goes to the reel's graph,
+ * never the speaker) until it does, and return to the start.
+ */
+const loadFrames = async (v: HTMLVideoElement, url: string): Promise<void> => {
+  v.preload = "auto";
+  v.src = url;
+  v.load();
+  if (await until(() => v.readyState >= 2 && v.videoWidth > 0, 1500)) return;
+  await playSafely(v).catch(() => undefined);
+  const ok = await until(() => v.readyState >= 2 && v.videoWidth > 0, 5000);
+  v.pause();
+  if (!ok) {
+    throw new Error(
+      `no frames (readyState ${v.readyState}, ${v.videoWidth}x${v.videoHeight}, ` +
+        `error ${v.error?.code ?? "none"})`
+    );
+  }
+  if (v.currentTime > 0.05) {
+    v.currentTime = 0;
+    await once(v, "seeked", 2000).catch(() => undefined);
+  }
+};
 
 const once = (el: HTMLElement, event: string, timeoutMs: number) =>
   new Promise<void>((resolve, reject) => {
@@ -610,11 +655,13 @@ const once = (el: HTMLElement, event: string, timeoutMs: number) =>
     );
   });
 
+/** Resolves true once `test` passes, false if the time ran out first. */
 const until = (test: () => boolean, timeoutMs: number) =>
-  new Promise<void>((resolve) => {
+  new Promise<boolean>((resolve) => {
     const started = performance.now();
     const tick = () => {
-      if (test() || performance.now() - started > timeoutMs) resolve();
+      if (test()) resolve(true);
+      else if (performance.now() - started > timeoutMs) resolve(false);
       else requestAnimationFrame(tick);
     };
     tick();

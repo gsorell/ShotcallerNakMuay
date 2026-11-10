@@ -12,7 +12,13 @@ import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
 import { MotionMeter, cropFromHeat, cutClip } from "./motion";
-import { ReelRenderer, pickMime, type Card, type RenderClip } from "./reelRenderer";
+import {
+  ReelRenderer,
+  errText,
+  pickMime,
+  type Card,
+  type RenderClip,
+} from "./reelRenderer";
 import type { SessionReel } from "./reelStore";
 import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
@@ -63,6 +69,8 @@ export class ReelRecorder {
   private motionSeen: number[] = [];
   /** Clips still being filmed or finalised; a round waits for them. */
   private pending = new Set<Promise<void>>();
+  /** Logged once: this phone won't run two clip recorders at a time. */
+  private overlapRefused = false;
   /** The last clip opened, closed early if a second recorder won't start. */
   private lastOpen: MediaRecorder | null = null;
   /** Round ends are handled one at a time, in order. */
@@ -103,10 +111,13 @@ export class ReelRecorder {
       frameRate: { ideal: 30 },
     };
     this.camera = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    const cam = this.camera.getVideoTracks()[0]?.getSettings?.();
+    this.notes.log(`camera ${cam?.width}x${cam?.height}@${cam?.frameRate}`);
     // The phone's own microphone, never a headset's (see micChoice.ts). No
     // microphone (refused, or none): film silent.
     const mic = await openBuiltInMic();
     mic?.getAudioTracks().forEach((t) => this.camera?.addTrack(t));
+    this.notes.log(`mic ${mic?.getAudioTracks()[0]?.label ?? "none"}`);
     // The picture only. Given the microphone too, the muted preview still
     // opened a low-latency output to "play" it, and that crackled a
     // Bluetooth speaker all session (see micChoice.ts).
@@ -124,13 +135,25 @@ export class ReelRecorder {
     }
     const withAudio = this.camera.getAudioTracks().length > 0;
     this.mimeType = pickMime(withAudio);
+    this.notes.log(
+      `clips mime "${this.mimeType}", preview ${preview.videoWidth}x${preview.videoHeight}`
+    );
     this.meter = new MotionMeter(preview);
     this.meter.start();
     if (withAudio) {
       this.hits = new HitDetector();
       if (!(await this.hits.start(this.camera))) this.hits = null;
+      this.notes.log(`hit detector ${this.hits ? "on" : "off"}`);
     }
-    this.renderer = new ReelRenderer(withAudio);
+    try {
+      this.renderer = new ReelRenderer({
+        withAudio,
+        log: (line) => this.notes.log(line),
+      });
+    } catch (e) {
+      this.notes.log(`renderer failed: ${errText(e)}`);
+      throw e;
+    }
     this.withAudio = withAudio;
     this.title = titleCard(this.roundCount, this.roundMs);
     this.renderer.setTitle(this.title);
@@ -183,10 +206,13 @@ export class ReelRecorder {
     this.scheduler?.stop();
     // Stopped before a round's worth of work: no reel. A minute of warming
     // up isn't a session, and its reel would land in the gallery anyway.
+    this.notes.log(`finish: worked ${Math.round(this.workedMs / 1000)}s of ${Math.round(this.roundMs / 1000)}s rounds`);
     if (!keepsReel(this.workedMs, this.roundMs)) {
       this.notes.round(this.round + 1, []);
       void this.notes.save();
       this.release();
+      // On purpose, not a failure: nothing to apologise for.
+      this.failure = null;
       return null;
     }
     this.rounds = this.rounds.then(() => this.closeRound());
@@ -195,12 +221,25 @@ export class ReelRecorder {
     this.stopCapture();
     const renderer = this.renderer;
     this.renderer = null;
-    if (!renderer) return null;
+    if (!renderer) {
+      this.fail("no renderer");
+      return null;
+    }
     const out = await renderer.finish(endCard(this.callsMade, this.workedMs));
-    void this.notes.save();
-    if (!out) return null;
+    if (!out) {
+      this.fail(
+        this.notes.judged === 0
+          ? "no clips were filmed"
+          : renderer.clips === 0
+          ? "no clip could be assembled"
+          : "the assembled reel was empty"
+      );
+      return null;
+    }
     // Recorder output can't be scrubbed in a gallery; give it an index.
     const { blob, remuxed } = await remuxToMp4(out.blob);
+    this.notes.log(`reel ${out.type}, ${blob.size} bytes, remuxed ${remuxed}`);
+    void this.notes.save();
     return {
       blob,
       url: URL.createObjectURL(blob),
@@ -216,6 +255,24 @@ export class ReelRecorder {
           }
         : undefined,
     };
+  }
+
+  /**
+   * Why the last finish() came back empty when a reel was due, with the
+   * session's trace; null when there was nothing to report (a reel came
+   * out, or the session was too short for one).
+   */
+  failure: { reason: string; trace: string } | null = null;
+
+  /** The session's trace so far (see ReelNotes.log). */
+  trace(): string {
+    return this.notes.trace();
+  }
+
+  private fail(reason: string): void {
+    this.notes.log(`no reel: ${reason}`);
+    void this.notes.save();
+    this.failure = { reason, trace: this.notes.trace() };
   }
 
   /** Lets go of everything without keeping anything. */
@@ -254,6 +311,7 @@ export class ReelRecorder {
       this.round,
       picks.map((p) => p.seq)
     );
+    if (!picks.length) this.notes.log(`round ${this.round}: nothing worth keeping`);
     if (!picks.length || !this.renderer) {
       picks.forEach((p) => p.release());
       return;
@@ -296,14 +354,19 @@ export class ReelRecorder {
     try {
       rec = make();
       rec.start();
-    } catch {
+    } catch (first) {
       // Some phones won't run two at once: give up the overlap, not the clip.
+      if (!this.overlapRefused) {
+        this.overlapRefused = true;
+        this.notes.log(`second recorder refused: ${errText(first)}`);
+      }
       try {
         if (this.lastOpen?.state === "recording") this.lastOpen.stop();
         rec = make();
         rec.start();
       } catch (e) {
         console.warn("Clip could not start:", e);
+        this.notes.log(`clip could not start: ${errText(e)}`);
         return null;
       }
     }
@@ -314,6 +377,10 @@ export class ReelRecorder {
     const chunks: Blob[] = [];
     const calls: CallInfo[] = [];
     let callAt: number | undefined;
+    rec.onerror = (e) =>
+      this.notes.log(
+        `clip ${seq} recorder error: ${errText((e as unknown as { error?: unknown }).error ?? e)}`
+      );
     rec.ondataavailable = (e) => {
       if (e.data && e.data.size) chunks.push(e.data);
     };
@@ -357,7 +424,10 @@ export class ReelRecorder {
     stoppedAt: number
   ): void {
     const meter = this.meter;
-    if (!chunks.length || !meter) return;
+    if (!chunks.length || !meter) {
+      this.notes.log(`clip ${seq}: ${chunks.length ? "no motion meter" : "recorder gave no data"}`);
+      return;
+    }
     const samples = meter
       .between(startedAt, stoppedAt)
       .map((s) => ({ t: s.at - startedAt, m: s.m }));
@@ -409,7 +479,8 @@ export class ReelRecorder {
       }
     }
 
-    const url = URL.createObjectURL(new Blob(chunks, { type: type || "video/webm" }));
+    const blobType = type || chunks[0]?.type || this.mimeType || "video/mp4";
+    const url = URL.createObjectURL(new Blob(chunks, { type: blobType }));
     this.picker.offer({
       seq,
       cut,

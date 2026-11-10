@@ -67,12 +67,36 @@ export const patchSessionReel = (
   return current;
 };
 
-export const clearSessionReel = (): void => setSessionReel(null);
+export const clearSessionReel = (): void => {
+  failure = null;
+  setSessionReel(null);
+};
 
 export const getSessionReel = (): SessionReel | null => current;
 
 export const useSessionReel = (): SessionReel | null =>
   useSyncExternalStore(subscribe, () => current, () => null);
+
+/**
+ * Why the session that just ended has no reel when it should have: a short
+ * reason, and the pipeline's trace for "Details" (on iOS nothing else can be
+ * read). Null when a reel came out, or none was due.
+ */
+export interface ReelFailure {
+  reason: string;
+  trace: string;
+}
+
+let failure: ReelFailure | null = null;
+
+export const setReelFailure = (f: ReelFailure | null): void => {
+  if (failure === f) return;
+  failure = f;
+  emit();
+};
+
+export const useReelFailure = (): ReelFailure | null =>
+  useSyncExternalStore(subscribe, () => failure, () => null);
 
 /** The last round's clips are still being assembled into the reel. */
 let building = false;
