@@ -64,7 +64,10 @@ export class HitDetector {
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext })
           .webkitAudioContext;
-      const ctx = new Ctx();
+      // "playback": the default low-latency output fights the phone's
+      // Bluetooth mixer (it crackled a Bluetooth speaker), and listening
+      // doesn't need low latency; hit times are corrected for the lag.
+      const ctx = new Ctx({ latencyHint: "playback" });
       this.ctx = ctx;
       const url = URL.createObjectURL(
         new Blob([WORKLET], { type: "application/javascript" })

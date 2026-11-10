@@ -19,6 +19,29 @@ export const loadWatermark = (): HTMLImageElement | null => {
 // Fetched with the module, so it is decoded before the first clip opens.
 loadWatermark();
 
+/**
+ * Resolves once the banner and the cards' font can be drawn, or after a
+ * short wait if they can't: the reel's first frame is its thumbnail in a
+ * gallery and a feed, so it must not go out without the logo or in a
+ * fallback font.
+ */
+export const cardAssetsReady = async (): Promise<void> => {
+  const img = loadWatermark();
+  const timeout = new Promise<void>((r) => setTimeout(r, 1500));
+  const logo =
+    img && !(img.complete && img.naturalWidth > 0)
+      ? img.decode().catch(() => undefined)
+      : Promise.resolve();
+  const fonts =
+    typeof document !== "undefined" && document.fonts
+      ? Promise.all([
+          document.fonts.load("900 40px Poppins"),
+          document.fonts.load("700 40px Poppins"),
+        ]).catch(() => undefined)
+      : Promise.resolve();
+  await Promise.race([Promise.all([logo, fonts]), timeout]);
+};
+
 /** The banner centred along the bottom, about 45% of the frame's width. */
 export const drawWatermark = (
   ctx: CanvasRenderingContext2D,

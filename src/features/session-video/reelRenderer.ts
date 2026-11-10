@@ -1,4 +1,4 @@
-import { drawWatermark, loadWatermark } from "./watermark";
+import { cardAssetsReady, drawWatermark, loadWatermark } from "./watermark";
 
 /** Part of the frame, as fractions of its width and height. */
 export interface Crop {
@@ -17,6 +17,28 @@ export interface RenderClip {
   crop?: Crop;
   /** A stretch to play at half speed: the clip's best moment. */
   slow?: { fromMs: number; toMs: number };
+  /** How good it is, kept with where it lands, for a shorter cut later. */
+  score?: number;
+  /** No slow push-in: the source is a finished reel, already framed. */
+  still?: boolean;
+  /** Seek to the start instead of running up to it: the source is indexed. */
+  seek?: boolean;
+}
+
+/** Where a clip landed in the finished reel, and how good it was. */
+export interface ReelSegment {
+  fromMs: number;
+  toMs: number;
+  score: number;
+}
+
+export interface RendererOptions {
+  /** The clips carry sound, and the reel should too. */
+  withAudio?: boolean;
+  /** The banner along the bottom. Off for a cut of a reel that has one. */
+  watermark?: boolean;
+  /** Even the sound out to a feed's loudness. Off for an already mastered source. */
+  master?: boolean;
 }
 
 /** A card: a few lines of text under the logo, on the brand's dark. */
@@ -106,13 +128,25 @@ export class ReelRenderer {
     | { kind: "clip"; clip: RenderClip }
     | { kind: "card"; card: Card; startedAt: number }
     | null = null;
-  /** Shown before the first clip, once the frame's shape is known. */
+  /** Laid over the opening clip, once the frame's shape is known. */
   private title: Card | null = null;
+  /** The title over the action, until `until` (performance.now()). */
+  private overlay: { card: Card; until: number } | null = null;
+  private readonly watermark: boolean;
   renderedMs = 0;
   clips = 0;
+  /** Each clip's place in the reel, in order. */
+  readonly segments: ReelSegment[] = [];
+  /** Where the end card starts in the reel, once it has one. */
+  endCardFromMs: number | null = null;
 
-  /** `withAudio`: the clips carry sound, and the reel should too. */
-  constructor(withAudio = false) {
+  constructor(opts: boolean | RendererOptions = false) {
+    const {
+      withAudio = false,
+      watermark = true,
+      master = true,
+    } = typeof opts === "boolean" ? { withAudio: opts } : opts;
+    this.watermark = watermark;
     const ctx = this.canvas.getContext("2d");
     if (!ctx) throw new Error("No 2D canvas");
     this.ctx = ctx;
@@ -148,10 +182,22 @@ export class ReelRenderer {
           window.AudioContext ||
           (window as unknown as { webkitAudioContext: typeof AudioContext })
             .webkitAudioContext;
-        const actx = new Ctx();
+        // "playback": the default low-latency output crackles a Bluetooth
+        // speaker, and this graph never reaches a speaker anyway.
+        const actx = new Ctx({ latencyHint: "playback" });
         const dest = actx.createMediaStreamDestination();
+        // The slow-motion dip comes after the mastering, which would
+        // otherwise flatten it back out.
         const gain = actx.createGain();
-        actx.createMediaElementSource(v).connect(gain).connect(dest);
+        const source = actx.createMediaElementSource(v);
+        if (master) {
+          const [into, out] = masterChain(actx);
+          source.connect(into);
+          out.connect(gain);
+        } else {
+          source.connect(gain);
+        }
+        gain.connect(dest);
         dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
         v.muted = false;
         void actx.resume().catch(() => undefined);
@@ -179,7 +225,12 @@ export class ReelRenderer {
     };
   }
 
-  /** The opening card, shown before the first clip. */
+  /**
+   * The title: laid over the opening clip, in full from its first frame, for
+   * the card's duration. The first frame is the reel's thumbnail in a
+   * gallery and a feed, and a feed decides in a second whether to stay — so
+   * the reel opens on action with the title over it, not on a black card.
+   */
   setTitle(card: Card): void {
     this.title = card;
   }
@@ -206,7 +257,10 @@ export class ReelRenderer {
    */
   async finish(endCard?: Card): Promise<{ blob: Blob; type: string } | null> {
     await this.queue;
-    if (this.started && endCard) await this.renderCard(endCard);
+    if (this.started && endCard) {
+      this.endCardFromMs = this.renderedMs;
+      await this.renderCard(endCard);
+    }
     const r = this.recorder;
     let result: { blob: Blob; type: string } | null = null;
     if (this.started && r.state !== "inactive") {
@@ -251,15 +305,18 @@ export class ReelRenderer {
     const w = canvas.width;
     const h = canvas.height;
     if (scene.kind === "card") {
-      drawCard(ctx, w, h, scene.card, performance.now() - scene.startedAt);
+      drawCard(ctx, w, h, scene.card);
       return;
     }
     const v = this.video;
     if (v.readyState < 2 || !v.videoWidth) return;
     const clip = scene.clip;
     const span = Math.max(1, clip.endMs - clip.startMs);
-    const progress = (v.currentTime * 1000 - clip.startMs) / span;
-    const c = cropAt(clip.crop ?? { x: 0, y: 0, w: 1, h: 1 }, progress);
+    const progress = clip.still
+      ? 0
+      : (v.currentTime * 1000 - clip.startMs) / span;
+    const whole = { x: 0, y: 0, w: 1, h: 1 };
+    const c = clip.still ? whole : cropAt(clip.crop ?? whole, progress);
     // Drawn as the camera delivered it — the true view, not mirrored.
     // Only the live preview is mirrored, like every selfie preview; a
     // mirrored reel had every orthodox fighter southpaw and text backwards.
@@ -274,7 +331,14 @@ export class ReelRenderer {
       w,
       h
     );
-    drawWatermark(ctx, w, h);
+    const o = this.overlay;
+    if (o && performance.now() < o.until) {
+      // The title stands in for the banner while it's up.
+      drawTitleOverlay(ctx, w, h, o.card);
+      return;
+    }
+    this.overlay = null;
+    if (this.watermark) drawWatermark(ctx, w, h);
   }
 
   /** Rolls the tape: starts the recorder, or resumes it. */
@@ -293,8 +357,11 @@ export class ReelRenderer {
   }
 
   private async renderCard(card: Card): Promise<void> {
+    await cardAssetsReady();
     this.scene = { kind: "card", card, startedAt: performance.now() };
-    await nextFrames(1);
+    // Painted before the tape rolls: the first frame recorded is the whole
+    // card, never a blank or half-drawn one.
+    await nextFrames(2);
     this.roll();
     const rolledAt = performance.now();
     await wait(card.durationMs);
@@ -313,16 +380,21 @@ export class ReelRenderer {
       this.canvas.height = v.videoHeight;
       this.sized = true;
     }
-    if (this.title) {
-      const title = this.title;
-      this.title = null;
-      await this.renderCard(title);
-    }
+    const title = this.title;
+    this.title = null;
+    if (title) await cardAssetsReady();
     const startS = clip.startMs / 1000;
     const endS = clip.endMs / 1000;
 
-    // Run up to the kept part fast, off the record.
-    if (startS > 0.05) {
+    if (clip.seek && startS > 0.05) {
+      // An indexed file seeks cleanly: to just before, then play into it.
+      v.currentTime = Math.max(0, startS - 0.25);
+      await once(v, "seeked", 3000).catch(() => undefined);
+      await playSafely(v);
+      await until(() => v.currentTime >= startS || v.ended, 2000);
+      v.pause();
+    } else if (startS > 0.05) {
+      // Run up to the kept part fast, off the record.
       // Fast to just short of it, then real speed, so the overshoot of a
       // 4x run doesn't eat the lead-in.
       await playSafely(v);
@@ -335,6 +407,8 @@ export class ReelRenderer {
       v.pause();
     }
     v.playbackRate = 1;
+    // Up before the tape rolls, so the reel's very first frame carries it.
+    if (title) this.overlay = { card: title, until: Infinity };
     this.scene = { kind: "clip", clip };
     // Let the canvas catch the first kept frame before the tape rolls, so
     // the reel never opens a clip on the last frame of the one before.
@@ -342,21 +416,30 @@ export class ReelRenderer {
 
     this.roll();
     const rolledAt = performance.now();
+    const fromMs = this.renderedMs;
+    if (this.overlay) this.overlay.until = rolledAt + this.overlay.card.durationMs;
     await playSafely(v);
     const limit = (endS - startS) * 1000 * 2 + 3000;
+    // A clip whose picture stops moving is cut where it stalled: a phone
+    // starved of power once filmed one frozen frame into the reel for 11s.
+    let stalled = false;
     if (clip.slow) {
       const fromS = clip.slow.fromMs / 1000;
       const toS = clip.slow.toMs / 1000;
-      await until(() => v.currentTime >= fromS || v.ended, limit);
-      this.setSlow(true);
-      await until(() => v.currentTime >= toS || v.ended, limit);
-      this.setSlow(false);
+      stalled = await playTo(v, fromS, limit);
+      if (!stalled) {
+        this.setSlow(true);
+        stalled = await playTo(v, toS, limit);
+        this.setSlow(false);
+      }
     }
-    await until(() => v.currentTime >= endS || v.ended, limit);
+    if (!stalled) await playTo(v, endS, limit);
     this.cut();
     v.pause();
     this.setSlow(false);
+    this.overlay = null;
     this.renderedMs += performance.now() - rolledAt;
+    this.segments.push({ fromMs, toMs: this.renderedMs, score: clip.score ?? 0 });
   }
 
   /** Half speed, with the sound pulled back: slowed speech sounds wrong. */
@@ -371,29 +454,93 @@ export class ReelRenderer {
 }
 
 /**
- * A card on the brand's near-black: the logo, then a big first line and
- * smaller ones under it. Fades in over its first quarter-second.
+ * The sound brought up to where feeds play things (about -14 LUFS), evenly:
+ * reels came out at -23 to -33 LUFS, half as loud as the posts around them.
+ * A gentle compressor narrows quiet and loud sessions together, a fixed
+ * lift brings them up, and a limiter then a soft clip hold the peaks under
+ * 0 dBFS. Tuned in Chrome on five real reels (2026-11-10): a 17 dB spread
+ * between them became under 3 dB. The lift is 6 dB, not the 10 that hit
+ * -14 in tuning: that was measured on a mono mix, and the reel is stereo,
+ * which reads 3 dB louder for the same sound (a full render at 10 dB came
+ * out at -10.4 LUFS, at 7 dB -12.1; 6 dB leaves a pad session near -13
+ * and quieter shadowboxing near -14 to -15).
  */
-const drawCard = (
+export const MASTER = {
+  compressor: { threshold: -30, knee: 12, ratio: 3, attack: 0.005, release: 0.25 },
+  makeupDb: 6,
+  limiter: { threshold: -6, knee: 0, ratio: 20, attack: 0.001, release: 0.1 },
+  ceiling: 0.89,
+};
+
+const masterChain = (ctx: BaseAudioContext): [AudioNode, AudioNode] => {
+  const set = (
+    node: DynamicsCompressorNode,
+    p: { threshold: number; knee: number; ratio: number; attack: number; release: number }
+  ) => {
+    node.threshold.value = p.threshold;
+    node.knee.value = p.knee;
+    node.ratio.value = p.ratio;
+    node.attack.value = p.attack;
+    node.release.value = p.release;
+    return node;
+  };
+  const comp = set(ctx.createDynamicsCompressor(), MASTER.compressor);
+  const makeup = ctx.createGain();
+  makeup.gain.value = Math.pow(10, MASTER.makeupDb / 20);
+  const limit = set(ctx.createDynamicsCompressor(), MASTER.limiter);
+  const clip = ctx.createWaveShaper();
+  clip.curve = softClipCurve(MASTER.ceiling);
+  comp.connect(makeup).connect(limit).connect(clip);
+  return [comp, clip];
+};
+
+/** tanh up to `ceiling`: nothing passes it, and the corner is round. */
+export const softClipCurve = (ceiling: number, n = 2048): Float32Array<ArrayBuffer> => {
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curve[i] = ceiling * Math.tanh(x / ceiling);
+  }
+  return curve;
+};
+
+/**
+ * The title over the opening action: a band of shade across the upper
+ * middle, and in it the logo, the session and the day. In full from the
+ * first frame.
+ */
+const drawTitleOverlay = (
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  card: Card
+): void => {
+  ctx.save();
+  const band = ctx.createLinearGradient(0, h * 0.12, 0, h * 0.62);
+  band.addColorStop(0, "rgba(12,7,16,0)");
+  band.addColorStop(0.3, "rgba(12,7,16,0.72)");
+  band.addColorStop(0.7, "rgba(12,7,16,0.72)");
+  band.addColorStop(1, "rgba(12,7,16,0)");
+  ctx.fillStyle = band;
+  ctx.fillRect(0, h * 0.12, w, h * 0.5);
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = Math.round(Math.min(w, h) * 0.02);
+  drawCardContent(ctx, w, h, card, h * 0.33, "#e6dcef");
+  ctx.restore();
+};
+
+/** The logo above `baseY`, then the card's lines under it. */
+const drawCardContent = (
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
   card: Card,
-  elapsedMs: number
+  baseY: number,
+  secondary: string
 ): void => {
-  ctx.save();
-  ctx.fillStyle = "#0c0710";
-  ctx.fillRect(0, 0, w, h);
-  const glow = ctx.createRadialGradient(w / 2, h * 0.42, 0, w / 2, h * 0.42, h * 0.5);
-  glow.addColorStop(0, "#2a1030");
-  glow.addColorStop(1, "#0c0710");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, w, h);
-
-  ctx.globalAlpha = Math.min(1, elapsedMs / 250);
   const unit = Math.min(w, h);
   const logo = loadWatermark();
-  let y = h * 0.36;
+  let y = baseY;
   if (logo && logo.complete && logo.naturalWidth > 0) {
     const lw = Math.min(w * 0.82, unit * 0.9);
     const lh = (lw * logo.naturalHeight) / logo.naturalWidth;
@@ -405,10 +552,33 @@ const drawCard = (
   card.lines.forEach((line, i) => {
     const size = i === 0 ? unit * 0.075 : unit * 0.045;
     ctx.font = `${i === 0 ? 900 : 700} ${Math.round(size)}px Poppins, system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = i === 0 ? "#f4eef6" : "#9d8fa9";
+    ctx.fillStyle = i === 0 ? "#f4eef6" : secondary;
     ctx.fillText(line, w / 2, y);
     y += size * 1.6;
   });
+};
+
+/**
+ * A card on the brand's near-black: the logo, then a big first line and
+ * smaller ones under it. No fade-in: on screen in full from the first frame,
+ * because the title card's first frame is the reel's thumbnail in a gallery
+ * and a feed, and faded it read as an empty reel.
+ */
+const drawCard = (
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  card: Card
+): void => {
+  ctx.save();
+  ctx.fillStyle = "#0c0710";
+  ctx.fillRect(0, 0, w, h);
+  const glow = ctx.createRadialGradient(w / 2, h * 0.42, 0, w / 2, h * 0.42, h * 0.5);
+  glow.addColorStop(0, "#2a1030");
+  glow.addColorStop(1, "#0c0710");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h);
+  drawCardContent(ctx, w, h, card, h * 0.36, "#9d8fa9");
   ctx.restore();
 };
 
@@ -446,6 +616,35 @@ const until = (test: () => boolean, timeoutMs: number) =>
     const tick = () => {
       if (test() || performance.now() - started > timeoutMs) resolve();
       else requestAnimationFrame(tick);
+    };
+    tick();
+  });
+
+/** How long a playing clip's picture may stand still before it's a stall. */
+export const STALL_MS = 700;
+
+/**
+ * Plays on until `targetS`, the end, or the time limit. Resolves true if the
+ * video stopped advancing for STALL_MS on the way: decoding fell behind.
+ */
+const playTo = (v: HTMLVideoElement, targetS: number, timeoutMs: number) =>
+  new Promise<boolean>((resolve) => {
+    const started = performance.now();
+    let lastT = v.currentTime;
+    let movedAt = started;
+    const tick = () => {
+      const now = performance.now();
+      if (v.currentTime !== lastT) {
+        lastT = v.currentTime;
+        movedAt = now;
+      }
+      if (v.currentTime >= targetS || v.ended || now - started > timeoutMs) {
+        resolve(false);
+      } else if (now - movedAt > STALL_MS) {
+        resolve(true);
+      } else {
+        requestAnimationFrame(tick);
+      }
     };
     tick();
   });

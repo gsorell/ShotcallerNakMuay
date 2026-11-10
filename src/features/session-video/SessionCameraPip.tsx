@@ -5,7 +5,13 @@ import { trackEvent } from "@/utils/analytics";
 import { onCalloutEvent } from "./calloutSignal";
 import { useRecordSession } from "./recordPreference";
 import { ReelRecorder } from "./reelRecorder";
-import { clearSessionReel, setReelBuilding, setSessionReel } from "./reelStore";
+import {
+  clearSessionReel,
+  patchSessionReel,
+  setReelBuilding,
+  setSessionReel,
+} from "./reelStore";
+import { buildShortCut } from "./shortCut";
 import { autoSaveReel } from "./saveToGallery";
 import "./SessionCameraPip.css";
 
@@ -41,6 +47,7 @@ export default function SessionCameraPip({
   const recorderRef = useRef<ReelRecorder | null>(null);
   const [shown, setShown] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [lowBattery, setLowBattery] = useState(false);
   const planRef = useRef({ rounds, roundMs });
   useEffect(() => {
     planRef.current = { rounds, roundMs };
@@ -57,8 +64,24 @@ export default function SessionCameraPip({
     recorderRef.current = rec;
 
     const video = videoRef.current;
-    if (video) {
-      rec.start(video).then(() => {
+    let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+    const begin = async () => {
+      if (!video) return;
+      // A nearly flat phone is asked to call the session, not to film it:
+      // recording is the heaviest thing it does.
+      if (await batteryTooLow()) {
+        if (cancelled || recorderRef.current !== rec) return;
+        recorderRef.current = null;
+        rec.release();
+        setLowBattery(true);
+        noticeTimer = setTimeout(() => setLowBattery(false), 6000);
+        try {
+          trackEvent("session_reel_error", { stage: "battery", error: "low" });
+        } catch { /* analytics must never break the session */ }
+        return;
+      }
+      if (cancelled) return;
+      return rec.start(video).then(() => {
         // Seen once there is a picture, and not if the × already closed it.
         if (!cancelled && recorderRef.current === rec) setShown(true);
       }).catch((e) => {
@@ -73,12 +96,15 @@ export default function SessionCameraPip({
         rec.release();
         if (!cancelled) setShown(false);
       });
-    }
+    };
+    void begin();
 
     const off = onCalloutEvent((e) => recorderRef.current?.event(e));
 
     return () => {
       cancelled = true;
+      if (noticeTimer) clearTimeout(noticeTimer);
+      setLowBattery(false);
       off();
       setShown(false);
       setRecording(false);
@@ -109,25 +135,52 @@ export default function SessionCameraPip({
   if (!active || !enabled) return null;
 
   return createPortal(
-    <div
-      className={`session-pip ${shown ? "is-on" : ""} ${
-        recording ? "is-recording" : ""
-      }`}
-      aria-label={recording ? "Camera, recording" : "Camera"}
-    >
-      <video ref={videoRef} muted playsInline autoPlay />
-      <span className="session-pip-dot" aria-hidden="true" />
-      <button
-        type="button"
-        className="session-pip-close"
-        aria-label="Turn off the camera for this session"
-        onClick={closeEarly}
+    <>
+      <div
+        className={`session-pip ${shown ? "is-on" : ""} ${
+          recording ? "is-recording" : ""
+        }`}
+        aria-label={recording ? "Camera, recording" : "Camera"}
       >
-        ×
-      </button>
-    </div>,
+        <video ref={videoRef} muted playsInline autoPlay />
+        <span className="session-pip-dot" aria-hidden="true" />
+        <button
+          type="button"
+          className="session-pip-close"
+          aria-label="Turn off the camera for this session"
+          onClick={closeEarly}
+        >
+          ×
+        </button>
+      </div>
+      {lowBattery && (
+        <div className="session-pip-notice" role="status">
+          Battery low: not recording this session
+        </div>
+      )}
+    </>,
     document.body
   );
+}
+
+/** Recording on a battery this low is how a session ends in crackle. */
+const LOW_BATTERY = 0.15;
+
+/**
+ * Below LOW_BATTERY and not charging. False wherever the battery can't be
+ * read (iOS has no Battery API): film rather than guess.
+ */
+async function batteryTooLow(): Promise<boolean> {
+  try {
+    const nav = navigator as Navigator & {
+      getBattery?: () => Promise<{ level: number; charging: boolean }>;
+    };
+    if (typeof nav.getBattery !== "function") return false;
+    const b = await nav.getBattery();
+    return !b.charging && b.level <= LOW_BATTERY;
+  } catch {
+    return false;
+  }
 }
 
 async function handOver(rec: ReelRecorder): Promise<void> {
@@ -143,6 +196,21 @@ async function handOver(rec: ReelRecorder): Promise<void> {
         clips: reel.clips,
         seconds: Math.round(reel.durationMs / 1000),
         format: reel.ext,
+      });
+      // Then the short version, while the result screen is being read.
+      void buildShortCut(reel).then((short) => {
+        if (!short) return;
+        if (!patchSessionReel(reel, { short })) {
+          URL.revokeObjectURL(short.url); // a newer session took over
+          return;
+        }
+        void autoSaveReel(short, "_short");
+        try {
+          trackEvent("session_reel_short_created", {
+            clips: short.clips,
+            seconds: Math.round(short.durationMs / 1000),
+          });
+        } catch { /* analytics must never break the reel */ }
       });
     }
   } catch (e) {

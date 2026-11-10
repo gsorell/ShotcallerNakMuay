@@ -7,14 +7,23 @@ import {
   strikesIn,
   type Candidate,
 } from "./highlights";
+import { openBuiltInMic } from "./micChoice";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
 import { MotionMeter, cropFromHeat, cutClip } from "./motion";
-import { ReelRenderer, pickMime, type RenderClip } from "./reelRenderer";
+import { ReelRenderer, pickMime, type Card, type RenderClip } from "./reelRenderer";
 import type { SessionReel } from "./reelStore";
 import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
+
+/**
+ * Whether a session ended with enough work in it for a reel: about one
+ * round's worth (a completed session always has). Callouts start a moment
+ * into a round, so "a round" allows for that.
+ */
+export const keepsReel = (workedMs: number, roundMs: number): boolean =>
+  workedMs >= Math.min(roundMs * 0.85, roundMs - 5000);
 
 /**
  * Records a session's highlight reel.
@@ -65,6 +74,14 @@ export class ReelRecorder {
   private speech: { from: number; to: number }[] = [];
   /** Techniques called this session, for the end card. */
   private callsMade = 0;
+  /**
+   * Time spent working (callouts coming, not paused or resting), for the end
+   * card and for whether a stopped session is worth a reel.
+   */
+  private workedMs = 0;
+  private withAudio = false;
+  private title: Card | null = null;
+  private workingSince: number | null = null;
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
@@ -85,20 +102,15 @@ export class ReelRecorder {
       height: { ideal: 720 },
       frameRate: { ideal: 30 },
     };
-    try {
-      this.camera = await navigator.mediaDevices.getUserMedia({
-        video,
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
-      });
-    } catch {
-      // No microphone (refused, or none): film silent.
-      this.camera = await navigator.mediaDevices.getUserMedia({ video, audio: false });
-    }
-    preview.srcObject = this.camera;
+    this.camera = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+    // The phone's own microphone, never a headset's (see micChoice.ts). No
+    // microphone (refused, or none): film silent.
+    const mic = await openBuiltInMic();
+    mic?.getAudioTracks().forEach((t) => this.camera?.addTrack(t));
+    // The picture only. Given the microphone too, the muted preview still
+    // opened a low-latency output to "play" it, and that crackled a
+    // Bluetooth speaker all session (see micChoice.ts).
+    preview.srcObject = new MediaStream(this.camera.getVideoTracks());
     preview.muted = true; // never play the room back through the speaker
     preview.playsInline = true;
     await preview.play().catch(() => undefined);
@@ -119,7 +131,9 @@ export class ReelRecorder {
       if (!(await this.hits.start(this.camera))) this.hits = null;
     }
     this.renderer = new ReelRenderer(withAudio);
-    this.renderer.setTitle(titleCard(this.roundCount, this.roundMs));
+    this.withAudio = withAudio;
+    this.title = titleCard(this.roundCount, this.roundMs);
+    this.renderer.setTitle(this.title);
     this.scheduler = new SegmentScheduler(
       () => this.openSegment(),
       (on) => this.onRecordingChange(on)
@@ -129,6 +143,14 @@ export class ReelRecorder {
   /** The callout engine's timing and calls. */
   event(e: CalloutEvent): void {
     const now = performance.now();
+    if ((e.type === "scheduled" || e.type === "called") && this.workingSince === null) {
+      this.workingSince = now;
+    }
+    if (e.type === "sound") {
+      // A bell rings on: its tail is as loud as its strike.
+      this.speech.push({ from: now, to: now + e.durationMs + 150 });
+      return;
+    }
     if (e.type === "called") {
       if (!e.call.between) this.callsMade += 1;
       // Open-ended until the voice says it's done (or a backstop).
@@ -144,18 +166,29 @@ export class ReelRecorder {
 
   /** Paused, or between rounds: stop filming. */
   hold(): void {
+    this.stopWorkClock();
     this.scheduler?.hold();
   }
 
   /** A round ended: pick its best clips and add them to the reel. */
   roundOver(): void {
+    this.stopWorkClock();
     this.scheduler?.hold();
     this.rounds = this.rounds.then(() => this.closeRound());
   }
 
   /** Stops everything and hands back the reel, or null if nothing was kept. */
   async finish(): Promise<SessionReel | null> {
+    this.stopWorkClock();
     this.scheduler?.stop();
+    // Stopped before a round's worth of work: no reel. A minute of warming
+    // up isn't a session, and its reel would land in the gallery anyway.
+    if (!keepsReel(this.workedMs, this.roundMs)) {
+      this.notes.round(this.round + 1, []);
+      void this.notes.save();
+      this.release();
+      return null;
+    }
     this.rounds = this.rounds.then(() => this.closeRound());
     await this.rounds;
     // Nothing more is filmed; the camera can go before the last assembly.
@@ -163,9 +196,7 @@ export class ReelRecorder {
     const renderer = this.renderer;
     this.renderer = null;
     if (!renderer) return null;
-    const out = await renderer.finish(
-      endCard(this.callsMade, this.roundCount * this.roundMs)
-    );
+    const out = await renderer.finish(endCard(this.callsMade, this.workedMs));
     void this.notes.save();
     if (!out) return null;
     // Recorder output can't be scrubbed in a gallery; give it an index.
@@ -176,6 +207,14 @@ export class ReelRecorder {
       ext: remuxed || out.type.includes("mp4") ? "mp4" : "webm",
       durationMs: Math.round(renderer.renderedMs),
       clips: renderer.clips,
+      cut: this.title
+        ? {
+            segments: [...renderer.segments],
+            endCardFromMs: renderer.endCardFromMs,
+            title: this.title,
+            withAudio: this.withAudio,
+          }
+        : undefined,
     };
   }
 
@@ -187,6 +226,12 @@ export class ReelRecorder {
     this.renderer?.dispose();
     this.renderer = null;
     this.stopCapture();
+  }
+
+  private stopWorkClock(): void {
+    if (this.workingSince === null) return;
+    this.workedMs += performance.now() - this.workingSince;
+    this.workingSince = null;
   }
 
   private stopCapture(): void {
@@ -222,6 +267,7 @@ export class ReelRecorder {
       startMs: p.cut.startMs,
       endMs: p.cut.endMs,
       crop: p.crop,
+      score: p.score,
       slow:
         p === best && p.peakMs !== undefined
           ? {

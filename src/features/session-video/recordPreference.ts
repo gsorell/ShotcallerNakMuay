@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 
+import { releaseHeadsetRoute } from "./micChoice";
+
 const KEY = "shotcaller_record_session";
 
 /**
@@ -72,6 +74,9 @@ export const requestCameraAccess = async (): Promise<boolean> => {
   };
   try {
     await tryOpen(true);
+    // That asked for "a microphone", which may have put a Bluetooth speaker
+    // or headphones into call mode and left them there (see micChoice.ts).
+    await releaseHeadsetRoute();
     return true;
   } catch {
     try {

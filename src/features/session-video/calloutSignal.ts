@@ -35,7 +35,13 @@ export type CalloutEvent =
    * The voice just finished saying it. Between "called" and this, a crack
    * the microphone hears may be the app's own voice, not a strike.
    */
-  | { type: "spoken" };
+  | { type: "spoken" }
+  /**
+   * The app played one of its own sounds (a bell, a beep) lasting about
+   * `durationMs`. A bell's strike is as sharp as a pad's: what the microphone
+   * hears meanwhile isn't evidence of a strike.
+   */
+  | { type: "sound"; durationMs: number };
 
 type Listener = (event: CalloutEvent) => void;
 
@@ -60,6 +66,9 @@ export const notifyCallout = (call: CallInfo): void =>
   emit({ type: "called", call });
 
 export const notifyCalloutSpoken = (): void => emit({ type: "spoken" });
+
+export const notifyAppSound = (durationMs: number): void =>
+  emit({ type: "sound", durationMs });
 
 export const onCalloutEvent =(listener: Listener): (() => void) => {
   listeners.add(listener);

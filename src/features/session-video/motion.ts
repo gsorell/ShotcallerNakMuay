@@ -318,7 +318,10 @@ export const cutClip = (e: ClipEvidence): ClipCut => {
     return { t: s.t, m: (a + s.m + b) / 3 };
   });
   const active = samples.filter((s) => s.t >= from && s.m > levels.threshold);
-  if ((!active.length && !hits.length) || durationMs < MIN_KEEP_MS) return none;
+  // Nothing moved, nothing to show, whatever was heard: hits shape a clip's
+  // trim but never make one on their own. A round's opening bell, heard as
+  // hits, once put a clip of someone standing still into the reel.
+  if (!active.length || durationMs < MIN_KEEP_MS) return none;
 
   const firstMove = active.length ? active[0]!.t : Infinity;
   const lastMove = active.length ? active[active.length - 1]!.t : -Infinity;

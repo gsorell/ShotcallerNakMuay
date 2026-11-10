@@ -20,8 +20,12 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob);
   });
 
-/** One reel in the cache at a time; earlier ones are dropped. */
-const pruneOldReels = async (keep: string): Promise<void> => {
+/** The newest two files are kept: a session's reel and its short cut. */
+const recent: string[] = [];
+
+/** One session's reels in the cache at a time; earlier ones are dropped. */
+const pruneOldReels = async (): Promise<void> => {
+  const keep = new Set(recent);
   try {
     const { files } = await Filesystem.readdir({
       path: "",
@@ -29,7 +33,7 @@ const pruneOldReels = async (keep: string): Promise<void> => {
     });
     await Promise.all(
       files
-        .filter((f) => f.name !== keep && f.name.startsWith(REEL_PREFIX))
+        .filter((f) => !keep.has(f.name) && f.name.startsWith(REEL_PREFIX))
         .map((f) =>
           Filesystem.deleteFile({
             path: f.name,
@@ -51,7 +55,9 @@ export const ensureReelFile = async (reel: SessionReel): Promise<string> => {
     data: await blobToBase64(reel.blob),
     directory: Directory.Cache,
   });
-  void pruneOldReels(name);
+  recent.push(name);
+  recent.splice(0, Math.max(0, recent.length - 2));
+  void pruneOldReels();
   patchSessionReel(reel, { fileUri: result.uri });
   reel.fileUri = result.uri;
   return result.uri;

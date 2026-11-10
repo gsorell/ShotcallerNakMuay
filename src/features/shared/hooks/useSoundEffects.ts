@@ -1,6 +1,8 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
+import { notifyAppSound } from "@/features/session-video/calloutSignal";
+
 // All sounds use Web Audio API to avoid:
 // 1. iOS Safari autoplay blocking in setTimeout/setInterval
 // 2. iOS Now Playing widget appearing
@@ -190,7 +192,15 @@ export function useSoundEffects(_iosAudioSession: any) {
         // when the context is created.
         claimPageAudioSession();
 
-        const ctx: AudioContext = new AudioCtx();
+        // Android: "playback" latency. The default ("interactive") gets a
+        // low-latency output that the Pixel's Bluetooth mixer can't keep in
+        // step with: a Bluetooth speaker crackled through whole sessions
+        // (hundreds of mixer resyncs a minute, measured 2026-11-10). A bell
+        // 20ms later is inaudible; iOS is left exactly as it was.
+        const ctx: AudioContext =
+          Capacitor.getPlatform() === "android"
+            ? new AudioCtx({ latencyHint: "playback" })
+            : new AudioCtx();
         audioContextRef.current = ctx;
 
         // WebKit has just claimed the session for this page; add back the
@@ -247,6 +257,7 @@ export function useSoundEffects(_iosAudioSession: any) {
       osc.connect(gain).connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.45);
+      notifyAppSound(450);
     } catch {
       /* noop */
     }
@@ -274,6 +285,8 @@ export function useSoundEffects(_iosAudioSession: any) {
         source.connect(gainNode);
         gainNode.connect(ctx.destination);
         source.start(0);
+        // So a session reel doesn't take the bell for a strike landing.
+        notifyAppSound(buffer.duration * 1000);
       } catch (error) {
         console.warn("[WebAudio] Playback failed:", error);
       }

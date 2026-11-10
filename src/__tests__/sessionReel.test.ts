@@ -315,7 +315,7 @@ describe("picking a round's best", () => {
     expect(p.pick(6000, newReelSoFar(), true).map((c) => c.seq)).toEqual([2, 0, 1]);
   });
 
-  it("shows a technique at most twice across the reel", () => {
+  it("shows a technique once a round, and at most twice across the reel", () => {
     const soFar = newReelSoFar();
     const p = new RoundPicker(20000);
     [
@@ -324,11 +324,33 @@ describe("picking a round's best", () => {
       candidate(2, 7, "Jab, Cross"),
       candidate(3, 2, "Teep"),
     ].forEach(({ c }) => p.offer(c));
-    expect(p.pick(20000, soFar).map((c) => c.seq)).toEqual([1, 3, 0]);
-    // Twice already: not again in a later round.
+    // The better take only: twice in a round, back to back, read as a replay.
+    expect(p.pick(20000, soFar).map((c) => c.seq)).toEqual([3, 0]);
+    // A later round may show it again...
     const q = new RoundPicker(20000);
     q.offer(candidate(4, 9, "Jab, Cross").c);
-    expect(q.pick(20000, soFar)).toEqual([]);
+    q.offer(candidate(5, 3, "Hook").c);
+    expect(q.pick(20000, soFar).map((c) => c.seq)).toEqual([5, 4]);
+    // ...but twice is enough.
+    const r = new RoundPicker(20000);
+    r.offer(candidate(6, 9, "Jab, Cross").c);
+    expect(r.pick(20000, soFar)).toEqual([]);
+  });
+
+  it("drops a clip rather than show the same technique twice running", () => {
+    const soFar = newReelSoFar();
+    const p = new RoundPicker(20000);
+    p.offer(candidate(0, 9, "Teep").c);
+    p.pick(20000, soFar);
+    // With something else to open on, the teep moves along...
+    const q = new RoundPicker(20000);
+    q.offer(candidate(1, 5, "Teep").c);
+    q.offer(candidate(2, 9, "Hook").c);
+    expect(q.pick(20000, soFar).map((c) => c.seq)).toEqual([2, 1]);
+    // ...and with nothing else, it goes.
+    const r = new RoundPicker(20000);
+    r.offer(candidate(3, 9, "Teep").c);
+    expect(r.pick(20000, soFar)).toEqual([]);
   });
 
   it("never runs the same technique twice in a row", () => {

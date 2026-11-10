@@ -97,8 +97,11 @@ export default function SessionReelCard() {
 }
 
 /** The reel, full screen, with Share / Save and Watch again. */
-function ReelViewer({ reel }: { reel: SessionReel }) {
+function ReelViewer({ reel: full }: { reel: SessionReel }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  // The full reel, or the ~15s short once it has been cut.
+  const [cut, setCut] = useState<"full" | "short">("full");
+  const reel = cut === "short" && full.short ? full.short : full;
   const [ended, setEnded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -115,6 +118,29 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, []);
 
+  // With its sound: the reel was recorded with it. Opened by a tap, so the
+  // apps allow it; where a browser won't, it starts muted and a tap on the
+  // picture turns the sound on.
+  // Again on switching between the full reel and the short.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    v.play().catch(() => {
+      v.muted = true;
+      void v.play().catch(() => undefined);
+    });
+  }, [reel.url]);
+
+  const choose = (next: "full" | "short") => {
+    if (next === cut) return;
+    setEnded(false);
+    setCut(next);
+    try {
+      trackEvent("session_reel_cut_switch", { cut: next });
+    } catch { /* analytics must never break the tap it measures */ }
+  };
+
   const replay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -127,6 +153,11 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
     const v = videoRef.current;
     if (!v) return;
     if (ended) return replay();
+    if (v.muted) {
+      v.muted = false;
+      if (v.paused) void v.play().catch(() => undefined);
+      return;
+    }
     if (v.paused) void v.play().catch(() => undefined);
     else v.pause();
   };
@@ -139,7 +170,7 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
     setBusy(false);
     if (outcome === "failed") setFailed(true);
     try {
-      trackEvent("session_reel_share", { outcome, format: reel.ext });
+      trackEvent("session_reel_share", { outcome, format: reel.ext, cut });
     } catch { /* analytics must never break the tap it measures */ }
   };
 
@@ -149,12 +180,29 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
         ref={videoRef}
         className="reel-viewer-video"
         src={reel.url}
-        autoPlay
-        muted
         playsInline
         onEnded={() => setEnded(true)}
         onClick={togglePlay}
       />
+
+      {full.short && (
+        <div className="reel-viewer-cuts" role="group" aria-label="Which cut">
+          {(["full", "short"] as const).map((c) => {
+            const r = c === "short" ? full.short! : full;
+            return (
+              <button
+                key={c}
+                type="button"
+                className={`reel-viewer-cut ${cut === c ? "is-on" : ""}`}
+                aria-pressed={cut === c}
+                onClick={() => choose(c)}
+              >
+                {c === "full" ? "Full" : "Short"} · {Math.round(r.durationMs / 1000)}s
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <button
         type="button"

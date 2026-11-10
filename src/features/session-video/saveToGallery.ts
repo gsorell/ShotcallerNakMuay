@@ -42,7 +42,11 @@ const stamp = (): string => {
  * The browser build has no gallery and leaves the reel unsaved; the player
  * offers a download there.
  */
-export const autoSaveReel = async (reel: SessionReel): Promise<void> => {
+export const autoSaveReel = async (
+  reel: SessionReel,
+  /** Added to the file name: "_short" for the short cut. */
+  suffix = ""
+): Promise<void> => {
   if (!Capacitor.isNativePlatform()) return;
   patchSessionReel(reel, { gallery: "saving" });
   try {
@@ -51,7 +55,7 @@ export const autoSaveReel = async (reel: SessionReel): Promise<void> => {
       await Media.saveVideo({
         path,
         albumIdentifier: await androidAlbum(),
-        fileName: `ShotCaller_${stamp()}`,
+        fileName: `ShotCaller_${stamp()}${suffix}`,
       });
     } else {
       await Media.saveVideo({ path });

@@ -200,16 +200,25 @@ export class RoundPicker {
     const byScore = [...this.held].sort((a, b) => b.score - a.score);
     const picked: Candidate[] = [];
     const counts = new Map(soFar.shown);
+    // Once a round: the same combination twice in one round is the same
+    // shot twice — same spot, same light — and back to back, with the
+    // second in slow motion, it read as one clip replayed by mistake.
+    const thisRound = new Set<string>();
     let used = 0;
     for (const c of byScore) {
       const len = c.cut.endMs - c.cut.startMs;
       const key = techniqueKey(c);
       const times = counts.get(key) ?? 0;
-      if (times >= MAX_SHOWINGS || (used + len > budgetMs && picked.length > 0)) {
+      if (
+        times >= MAX_SHOWINGS ||
+        thisRound.has(key) ||
+        (used + len > budgetMs && picked.length > 0)
+      ) {
         c.release();
         continue;
       }
       picked.push(c);
+      thisRound.add(key);
       counts.set(key, times + 1);
       used += len;
     }
@@ -226,8 +235,20 @@ export class RoundPicker {
       ordered = [...(openStrong ? [runnerUp] : []), ...middle, best];
     }
     ordered = avoidRepeatsInARow(ordered, soFar.lastKey);
+    // Where a repeat couldn't be moved apart (a round of one clip, the same
+    // technique the last round ended on), it goes: a technique shown twice
+    // running looks like a mistake, not a highlight.
+    if (
+      soFar.lastKey !== undefined &&
+      techniqueKey(ordered[0]!) === soFar.lastKey
+    ) {
+      const [dropped] = ordered.splice(0, 1);
+      const key = techniqueKey(dropped!);
+      counts.set(key, (counts.get(key) ?? 1) - 1);
+      dropped!.release();
+    }
     soFar.shown = counts;
-    soFar.lastKey = techniqueKey(ordered[ordered.length - 1]!);
+    if (ordered.length) soFar.lastKey = techniqueKey(ordered[ordered.length - 1]!);
     return ordered;
   }
 
