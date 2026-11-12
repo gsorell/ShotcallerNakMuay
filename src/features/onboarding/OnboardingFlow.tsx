@@ -47,7 +47,7 @@ interface OnboardingFlowProps {
   /** Dismiss to the free app without opening the paywall ("Maybe later"). */
   onSkip: () => void;
   /**
-   * Dismiss and open the paywall (the paywall-forward primary action). Safe on
+   * Dismiss and open the paywall (the secondary action on native). Safe on
    * every platform: the paywall itself explains the browser has no purchase
    * path and links to the apps.
    */
@@ -59,6 +59,14 @@ interface OnboardingFlowProps {
    * with somewhere to go afterwards.
    */
   onOpenLearn: () => void;
+  /**
+   * Dismiss and open Start Here at Level 1's start screen — the primary way
+   * out. A first-run user used to be handed the paywall (native) or a store
+   * link (web) as the big button, before they had thrown a single punch; the
+   * free path was the grey one. Level 1 is three one-minute rounds that teach
+   * what the app is, which is the thing that sells Pro.
+   */
+  onStartPath: () => void;
 }
 
 interface Item {
@@ -148,6 +156,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onSkip,
   onUnlock,
   onOpenLearn,
+  onStartPath,
 }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -414,28 +423,19 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                 stores. So on web the ask is the store directly. This also
                 absorbs the standalone install prompt, which used to fire at a
                 first-time visitor seconds after they closed this. */}
+            {/* The free first session leads on both platforms; the ask comes
+                second, and the paywall is still one tap away. */}
+            <button type="button" onClick={onStartPath} style={styles.primary}>
+              Start Level 1 — free
+            </button>
             {isWeb ? (
-              <>
-                <button
-                  type="button"
-                  onClick={openStore}
-                  style={styles.primary}
-                >
-                  Get the app
-                </button>
-                <button type="button" onClick={onSkip} style={styles.secondary}>
-                  Keep going in the browser
-                </button>
-              </>
+              <button type="button" onClick={openStore} style={styles.secondary}>
+                Get the app
+              </button>
             ) : (
-              <>
-                <button type="button" onClick={onUnlock} style={styles.primary}>
-                  See Pro Plans
-                </button>
-                <button type="button" onClick={onSkip} style={styles.secondary}>
-                  Maybe later — start free
-                </button>
-              </>
+              <button type="button" onClick={onUnlock} style={styles.secondary}>
+                See Pro Plans
+              </button>
             )}
           </div>
         ) : (

@@ -56,9 +56,13 @@ export interface UserSettings {
 
 export const DEFAULT_REST_MINUTES = 1;
 
+// Only a brand-new install ever sees these — every change to the steppers is
+// persisted. So they are sized for someone's first session, not a fight camp:
+// 5 x 3 min was a 19-minute first workout, which reads as "this app is too
+// hard for me" rather than "this works". Anyone who wants more is one tap away.
 export const DEFAULT_USER_SETTINGS: UserSettings = {
-  roundMin: 3,
+  roundMin: 2,
   restMinutes: DEFAULT_REST_MINUTES,
   voiceSpeed: 1,
-  roundsCount: 5,
+  roundsCount: 3,
 };

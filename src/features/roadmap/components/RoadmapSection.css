@@ -515,6 +515,20 @@
   line-height: 1.4;
 }
 
+/* A free level that is waiting on the one before — said in words, because a
+   padlock here read exactly like the Pro one. */
+.roadmap-rung-after {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(249, 168, 212, 0.75);
+  line-height: 1.3;
+}
+
+.roadmap-rung-chevron .roadmap-pro-chip {
+  font-size: 0.6rem;
+  padding: 0.12rem 0.45rem;
+}
+
 .roadmap-rung-chevron {
   color: rgba(255, 255, 255, 0.45);
   font-size: 1.1rem;

@@ -92,8 +92,13 @@ export function RoadmapSection({ onBack }: RoadmapSectionProps) {
   const stateFor = useCallback(
     (level: RoadmapLevel): LevelState => {
       if (isLevelCleared(path.id, level.id)) return "cleared";
-      if (!isLevelUnlocked(path.id, level.id)) return "locked";
+      // Pro before progression. The other way round, every level past the
+      // next one read as "locked" — the same padlock on free level 2 as on Pro
+      // level 8, and Pro levels that did nothing when tapped. A free user can
+      // tell "pay for this" from "finish the one before" only if they look
+      // different.
       if (!isPro && !level.free) return "pro";
+      if (!isLevelUnlocked(path.id, level.id)) return "locked";
       return "current";
     },
     [path.id, isPro]
@@ -267,7 +272,7 @@ function Ladder({
                       ✓
                     </span>
                   )}
-                  {(state === "locked" || state === "pro") && (
+                  {state === "pro" && (
                     <span className="roadmap-rung-state roadmap-rung-state--locked">
                       🔒
                     </span>
@@ -282,9 +287,23 @@ function Ladder({
                   <span className="roadmap-rung-teaches">
                     {level.introduces.join(" · ")}
                   </span>
+                  {state === "locked" && path.levels[index - 1] && (
+                    <span className="roadmap-rung-after">
+                      {!isPro && level.free ? "Free · " : ""}opens after{" "}
+                      {path.levels[index - 1]!.bonus
+                        ? "the level before"
+                        : `Level ${path.levels[index - 1]!.id}`}
+                    </span>
+                  )}
                 </span>
                 <span className="roadmap-rung-chevron" aria-hidden="true">
-                  {state === "locked" ? "" : state === "pro" ? "🔒" : "›"}
+                  {state === "locked" ? (
+                    ""
+                  ) : state === "pro" ? (
+                    <span className="roadmap-pro-chip">Pro</span>
+                  ) : (
+                    "›"
+                  )}
                 </span>
               </button>
             </li>
