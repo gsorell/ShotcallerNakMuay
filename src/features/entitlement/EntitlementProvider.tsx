@@ -34,6 +34,16 @@ import { getClientId, setRevenueCatUserId } from "@/utils/analytics";
 import { isLegacyOwner, markLegacyOwner } from "./legacy";
 import { isGrandfatheredByOriginalVersion } from "./originalVersion";
 import { readCachedStatus, writeCachedStatus } from "./statusCache";
+import { loadPlans, type PlansResult } from "./loadPlans";
+
+/** A promise plus the function that settles it. */
+function createSettable<T>() {
+  let settle!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    settle = resolve;
+  });
+  return { promise, settle };
+}
 
 // The full set of entitlement states the app can be in. `unknown` is the
 // pre-resolution / offline state — callers should treat it as not-yet-Pro but
@@ -73,8 +83,12 @@ interface EntitlementContextValue {
   restore: () => Promise<void>;
   /** Honor-system "I bought this before it went free" grant (Phase 0). */
   claimLegacyOwnership: () => Promise<void>;
-  /** Packages from the current RevenueCat offering (empty if unavailable). */
-  getPackages: () => Promise<PurchasesPackage[]>;
+  /**
+   * Packages from the current RevenueCat offering. Waits for RevenueCat to
+   * finish configuring and retries once; when there are still none, `failure`
+   * says why. See ./loadPlans.
+   */
+  getPackages: () => Promise<PlansResult<PurchasesPackage>>;
   /** Purchase a package; resolves entitlement state on success. */
   purchase: (pkg: PurchasesPackage) => Promise<PurchaseResult>;
 }
@@ -98,6 +112,10 @@ export function EntitlementProvider({
   );
   const [ready, setReady] = useState(false);
   const configuredRef = useRef(false);
+  // Settles once init knows whether RevenueCat is usable, so a paywall opened
+  // during startup waits for it instead of reading "not configured" as "no
+  // plans". Settling twice is harmless; the first answer stands.
+  const configuredSettable = useRef(createSettable<boolean>()).current;
 
   // Every status change also refreshes the cache.
   const setStatus = useCallback((next: EntitlementStatus) => {
@@ -187,16 +205,19 @@ export function EntitlementProvider({
     setStatus("legacy_lifetime");
   }, [setStatus]);
 
-  const getPackages = useCallback(async (): Promise<PurchasesPackage[]> => {
-    if (!configuredRef.current) return [];
-    try {
-      const offerings = await Purchases.getOfferings();
-      return offerings.current?.availablePackages ?? [];
-    } catch (error) {
-      console.warn("[entitlement] getOfferings failed", error);
-      return [];
+  const getPackages = useCallback(async (): Promise<PlansResult<PurchasesPackage>> => {
+    const result = await loadPlans<PurchasesPackage>({
+      whenConfigured: () => configuredSettable.promise,
+      fetchPackages: async () => {
+        const offerings = await Purchases.getOfferings();
+        return offerings.current?.availablePackages ?? [];
+      },
+    });
+    if (result.failure) {
+      console.warn("[entitlement] no plans", result.failure);
     }
-  }, []);
+    return result;
+  }, [configuredSettable]);
 
   const purchase = useCallback(
     async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
@@ -258,6 +279,7 @@ export function EntitlementProvider({
       // Web (PWA) or no key yet (pre-Task-6): skip RevenueCat, evaluate from
       // the legacy flag alone. Everyone else resolves to free-tier gating.
       if (!apiKey) {
+        configuredSettable.settle(false);
         if (!cancelled) {
           await evaluate(null);
           setReady(true);
@@ -275,6 +297,9 @@ export function EntitlementProvider({
         // nothing.
         await Purchases.configure({ apiKey });
         configuredRef.current = true;
+        // Plans can load from here on; the attribution and customer-info steps
+        // below need not finish first.
+        configuredSettable.settle(true);
 
         // The two halves of the attribution join, in both directions:
         // RevenueCat rows carry the GA4 client id, and GA4 events carry
@@ -330,6 +355,8 @@ export function EntitlementProvider({
         console.warn("[entitlement] RevenueCat init failed", error);
         if (!cancelled) await evaluate(null);
       } finally {
+        // Covers configure() itself throwing: nothing settled it above.
+        configuredSettable.settle(configuredRef.current);
         if (!cancelled) setReady(true);
       }
     };
@@ -338,7 +365,7 @@ export function EntitlementProvider({
     return () => {
       cancelled = true;
     };
-  }, [evaluate, setStatus]);
+  }, [evaluate, setStatus, configuredSettable]);
 
   // Dev review needs the Pro surfaces visible without a purchase. Compiled
   // out of production — see devUnlockAll.

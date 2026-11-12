@@ -44,6 +44,11 @@ export const AnalyticsEvents = {
   PaywallPurchaseError: "paywall_purchase_error",
   PaywallRestore: "paywall_restore",
   PaywallLegacyClaim: "paywall_legacy_claim",
+  // The sheet opened and no plans came back — carries `stage`, the store's
+  // error `code`/`error`, and `attempts`. Before this, a failed plan load was
+  // only visible as `plans_loaded = false` on the dismissal, with no cause.
+  PaywallPlansError: "paywall_plans_error",
+  PaywallPlansRetry: "paywall_plans_retry",
 
   // Store rating. `review_requested` is the app asking the OS for its rating
   // sheet, which the OS may decline to show without saying so — it counts

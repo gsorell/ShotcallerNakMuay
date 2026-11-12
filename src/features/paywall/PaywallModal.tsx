@@ -92,16 +92,43 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     [onClose, packages, source]
   );
 
+  // Guards against a load finishing after the sheet has closed.
+  const mountedRef = useRef(true);
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const pkgs = await getPackages();
-      if (!cancelled) setPackages(pkgs);
-    })();
+    mountedRef.current = true;
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
     };
-  }, [getPackages]);
+  }, []);
+
+  const loadPackages = useCallback(async () => {
+    setPackages(null);
+    const { packages: pkgs, failure } = await getPackages();
+    // The browser never has plans by design; only a native miss is a fault.
+    if (failure && !isWeb) {
+      try {
+        trackEvent(AnalyticsEvents.PaywallPlansError, {
+          source: source ?? "unknown",
+          stage: failure.stage,
+          code: failure.code ?? "none",
+          error: failure.message ?? "none",
+          attempts: failure.attempts,
+        });
+      } catch { /* analytics must never break the purchase it measures */ }
+    }
+    if (mountedRef.current) setPackages(pkgs);
+  }, [getPackages, isWeb, source]);
+
+  useEffect(() => {
+    void loadPackages();
+  }, [loadPackages]);
+
+  const retryPlans = () => {
+    try {
+      trackEvent(AnalyticsEvents.PaywallPlansRetry, { source: source ?? "unknown" });
+    } catch { /* analytics must never break the purchase it measures */ }
+    void loadPackages();
+  };
 
   const sorted = useMemo(
     () =>
@@ -285,10 +312,19 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           {packages === null && <p style={styles.muted}>Loading plans…</p>}
 
           {packages !== null && sorted.length === 0 && (
-            <p style={styles.muted}>
-              Plans aren't available right now. Please check your connection and
-              try again later.
-            </p>
+            <>
+              <p style={styles.muted}>
+                Couldn't load plans from the store. Check your connection and
+                try again.
+              </p>
+              <button
+                type="button"
+                onClick={retryPlans}
+                style={{ ...styles.storeButton, cursor: "pointer" }}
+              >
+                Try again
+              </button>
+            </>
           )}
 
           {sorted.map((pkg) => {
