@@ -7,13 +7,11 @@ import { useRecordSession } from "./recordPreference";
 import { ReelRecorder } from "./reelRecorder";
 import {
   clearSessionReel,
-  patchSessionReel,
   setReelBuilding,
   setReelFailure,
   setSessionReel,
 } from "./reelStore";
 import { errText } from "./reelRenderer";
-import { buildShortCut } from "./shortCut";
 import { autoSaveReel } from "./saveToGallery";
 import "./SessionCameraPip.css";
 
@@ -54,6 +52,11 @@ export default function SessionCameraPip({
   useEffect(() => {
     planRef.current = { rounds, roundMs };
   }, [rounds, roundMs]);
+  // Kept current for the lifecycle effect below, which runs after this one.
+  const holdingRef = useRef(holding);
+  useEffect(() => {
+    holdingRef.current = holding;
+  }, [holding]);
 
   // Session lifecycle: open the camera at the start, hand over the reel at
   // the end. Keyed on `active` alone so nothing mid-session restarts it.
@@ -64,6 +67,9 @@ export default function SessionCameraPip({
     const rec = new ReelRecorder(planRef.current.rounds, planRef.current.roundMs);
     rec.onRecordingChange = setRecording;
     recorderRef.current = rec;
+    // Sessions open on a countdown: held from the start, not just once
+    // `holding` next changes.
+    if (holdingRef.current) rec.hold();
 
     const video = videoRef.current;
     let noticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -118,6 +124,7 @@ export default function SessionCameraPip({
 
   useEffect(() => {
     if (holding) recorderRef.current?.hold();
+    else recorderRef.current?.resume();
   }, [holding]);
 
   // The rest is when a round's best clips are picked and assembled, so by
@@ -199,21 +206,6 @@ async function handOver(rec: ReelRecorder): Promise<void> {
         clips: reel.clips,
         seconds: Math.round(reel.durationMs / 1000),
         format: reel.ext,
-      });
-      // Then the short version, while the result screen is being read.
-      void buildShortCut(reel).then((short) => {
-        if (!short) return;
-        if (!patchSessionReel(reel, { short })) {
-          URL.revokeObjectURL(short.url); // a newer session took over
-          return;
-        }
-        void autoSaveReel(short, "_short");
-        try {
-          trackEvent("session_reel_short_created", {
-            clips: short.clips,
-            seconds: Math.round(short.durationMs / 1000),
-          });
-        } catch { /* analytics must never break the reel */ }
       });
     }
   } catch (e) {

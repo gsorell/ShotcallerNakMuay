@@ -15,21 +15,6 @@ export interface RenderClip {
   endMs: number;
   /** The part of the frame the fighter is in; the whole frame if absent. */
   crop?: Crop;
-  /** A stretch to play at half speed: the clip's best moment. */
-  slow?: { fromMs: number; toMs: number };
-  /** How good it is, kept with where it lands, for a shorter cut later. */
-  score?: number;
-  /** No slow push-in: the source is a finished reel, already framed. */
-  still?: boolean;
-  /** Seek to the start instead of running up to it: the source is indexed. */
-  seek?: boolean;
-}
-
-/** Where a clip landed in the finished reel, and how good it was. */
-export interface ReelSegment {
-  fromMs: number;
-  toMs: number;
-  score: number;
 }
 
 export interface RendererOptions {
@@ -82,9 +67,6 @@ export const pickMime = (withAudio = false): string => {
 
 /** How far each clip pushes in over its length: a slow, steady zoom. */
 const PUSH_IN = 0.06;
-/** Slow motion's speed, and how loud the sound stays through it. */
-const SLOW_RATE = 0.5;
-const SLOW_GAIN = 0.35;
 
 /** Where the crop sits at `progress` (0–1) through a clip, pushing in. */
 export const cropAt = (crop: Crop, progress: number): Crop => {
@@ -123,7 +105,6 @@ export class ReelRenderer {
   private started = false;
   private sized = false;
   private audioCtx: AudioContext | null = null;
-  private gain: GainNode | null = null;
   private queue: Promise<void> = Promise.resolve();
   /** What the canvas shows: a clip, a card, or nothing new. */
   private scene:
@@ -138,10 +119,6 @@ export class ReelRenderer {
   private readonly log: (line: string) => void;
   renderedMs = 0;
   clips = 0;
-  /** Each clip's place in the reel, in order. */
-  readonly segments: ReelSegment[] = [];
-  /** Where the end card starts in the reel, once it has one. */
-  endCardFromMs: number | null = null;
 
   constructor(opts: boolean | RendererOptions = false) {
     const {
@@ -191,23 +168,18 @@ export class ReelRenderer {
         // speaker, and this graph never reaches a speaker anyway.
         const actx = new Ctx({ latencyHint: "playback" });
         const dest = actx.createMediaStreamDestination();
-        // The slow-motion dip comes after the mastering, which would
-        // otherwise flatten it back out.
-        const gain = actx.createGain();
         const source = actx.createMediaElementSource(v);
         if (master) {
           const [into, out] = masterChain(actx);
           source.connect(into);
-          out.connect(gain);
+          out.connect(dest);
         } else {
-          source.connect(gain);
+          source.connect(dest);
         }
-        gain.connect(dest);
         dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
         v.muted = false;
         void actx.resume().catch(() => undefined);
         this.audioCtx = actx;
-        this.gain = gain;
         audio = true;
       } catch (e) {
         console.warn("Reel will be silent:", e);
@@ -267,10 +239,7 @@ export class ReelRenderer {
    */
   async finish(endCard?: Card): Promise<{ blob: Blob; type: string } | null> {
     await this.queue;
-    if (this.started && endCard) {
-      this.endCardFromMs = this.renderedMs;
-      await this.renderCard(endCard);
-    }
+    if (this.started && endCard) await this.renderCard(endCard);
     const r = this.recorder;
     let result: { blob: Blob; type: string } | null = null;
     if (this.started && r.state !== "inactive") {
@@ -327,11 +296,9 @@ export class ReelRenderer {
     if (v.readyState < 2 || !v.videoWidth) return;
     const clip = scene.clip;
     const span = Math.max(1, clip.endMs - clip.startMs);
-    const progress = clip.still
-      ? 0
-      : (v.currentTime * 1000 - clip.startMs) / span;
+    const progress = (v.currentTime * 1000 - clip.startMs) / span;
     const whole = { x: 0, y: 0, w: 1, h: 1 };
-    const c = clip.still ? whole : cropAt(clip.crop ?? whole, progress);
+    const c = cropAt(clip.crop ?? whole, progress);
     // Drawn as the camera delivered it — the true view, not mirrored.
     // Only the live preview is mirrored, like every selfie preview; a
     // mirrored reel had every orthodox fighter southpaw and text backwards.
@@ -400,14 +367,7 @@ export class ReelRenderer {
     const startS = clip.startMs / 1000;
     const endS = clip.endMs / 1000;
 
-    if (clip.seek && startS > 0.05) {
-      // An indexed file seeks cleanly: to just before, then play into it.
-      v.currentTime = Math.max(0, startS - 0.25);
-      await once(v, "seeked", 3000).catch(() => undefined);
-      await playSafely(v);
-      await until(() => v.currentTime >= startS || v.ended, 2000);
-      v.pause();
-    } else if (startS > 0.05) {
+    if (startS > 0.05) {
       // Run up to the kept part fast, off the record.
       // Fast to just short of it, then real speed, so the overshoot of a
       // 4x run doesn't eat the lead-in.
@@ -430,40 +390,18 @@ export class ReelRenderer {
 
     this.roll();
     const rolledAt = performance.now();
-    const fromMs = this.renderedMs;
     if (this.overlay) this.overlay.until = rolledAt + this.overlay.card.durationMs;
     await playSafely(v);
     const limit = (endS - startS) * 1000 * 2 + 3000;
     // A clip whose picture stops moving is cut where it stalled: a phone
     // starved of power once filmed one frozen frame into the reel for 11s.
-    let stalled = false;
-    if (clip.slow) {
-      const fromS = clip.slow.fromMs / 1000;
-      const toS = clip.slow.toMs / 1000;
-      stalled = await playTo(v, fromS, limit);
-      if (!stalled) {
-        this.setSlow(true);
-        stalled = await playTo(v, toS, limit);
-        this.setSlow(false);
-      }
-    }
-    if (!stalled) await playTo(v, endS, limit);
+    // (Slow motion at each round's best moment was tried and dropped,
+    // 2026-11-13: it read as random, not as emphasis.)
+    await playTo(v, endS, limit);
     this.cut();
     v.pause();
-    this.setSlow(false);
     this.overlay = null;
     this.renderedMs += performance.now() - rolledAt;
-    this.segments.push({ fromMs, toMs: this.renderedMs, score: clip.score ?? 0 });
-  }
-
-  /** Half speed, with the sound pulled back: slowed speech sounds wrong. */
-  private setSlow(on: boolean): void {
-    this.video.playbackRate = on ? SLOW_RATE : 1;
-    const g = this.gain;
-    const actx = this.audioCtx;
-    if (g && actx) {
-      g.gain.setTargetAtTime(on ? SLOW_GAIN : 1, actx.currentTime, 0.05);
-    }
   }
 }
 

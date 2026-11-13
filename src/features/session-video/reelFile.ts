@@ -20,7 +20,36 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob);
   });
 
-/** The newest two files are kept: a session's reel and its short cut. */
+/** Largest piece sent across the native bridge at once. */
+const PIECE = 2 * 1024 * 1024;
+
+/**
+ * Writes (or, with `append`, adds to) a file from a Blob, a piece at a time.
+ * Everything crossing to native code travels as one base64 string in the
+ * app's Java heap (256 MB on a Pixel 9); a 43 MB recording sent in one call
+ * ran it out of memory and killed the app (2026-11-13).
+ */
+export const writeBlobInPieces = async (
+  path: string,
+  directory: Directory,
+  blob: Blob,
+  append = false
+): Promise<string> => {
+  let uri = "";
+  let started = append;
+  for (let at = 0; at < blob.size || (!started && at === 0); at += PIECE) {
+    const data = await blobToBase64(blob.slice(at, at + PIECE));
+    if (started) {
+      await Filesystem.appendFile({ path, directory, data });
+    } else {
+      uri = (await Filesystem.writeFile({ path, directory, data })).uri;
+      started = true;
+    }
+  }
+  return uri || (await Filesystem.getUri({ path, directory })).uri;
+};
+
+/** The newest two files are kept: this session's reel and the last. */
 const recent: string[] = [];
 
 /** One session's reels in the cache at a time; earlier ones are dropped. */
@@ -50,15 +79,11 @@ const pruneOldReels = async (): Promise<void> => {
 export const ensureReelFile = async (reel: SessionReel): Promise<string> => {
   if (reel.fileUri) return reel.fileUri;
   const name = `${REEL_PREFIX}${Date.now()}.${reel.ext}`;
-  const result = await Filesystem.writeFile({
-    path: name,
-    data: await blobToBase64(reel.blob),
-    directory: Directory.Cache,
-  });
+  const uri = await writeBlobInPieces(name, Directory.Cache, reel.blob);
   recent.push(name);
   recent.splice(0, Math.max(0, recent.length - 2));
   void pruneOldReels();
-  patchSessionReel(reel, { fileUri: result.uri });
-  reel.fileUri = result.uri;
-  return result.uri;
+  patchSessionReel(reel, { fileUri: uri });
+  reel.fileUri = uri;
+  return uri;
 };

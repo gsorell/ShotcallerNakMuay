@@ -33,6 +33,19 @@ const stamp = (): string => {
   );
 };
 
+/** Saves a video file that is already on disk (see rawCapture.ts). */
+export const saveFileToGallery = async (path: string, suffix: string): Promise<void> => {
+  if (Capacitor.getPlatform() === "android") {
+    await Media.saveVideo({
+      path,
+      albumIdentifier: await androidAlbum(),
+      fileName: `ShotCaller_${stamp()}${suffix}`,
+    });
+  } else {
+    await Media.saveVideo({ path });
+  }
+};
+
 /**
  * Saves the session's reel to the phone's gallery as soon as it exists, so
  * it is kept without anyone having to remember to. iOS asks once for

@@ -16,7 +16,68 @@ export interface MotionSample {
   at: number;
   /** Mean change from the previous frame, 0 (still) to 1. */
   m: number;
+  /**
+   * Something happened to the camera rather than in front of it: see
+   * isDisturbance.
+   */
+  disturbed?: boolean;
 }
+
+/** A pixel this much brighter or darker than last sample counts as changed. */
+export const CHANGED_PIXEL = 0.1;
+
+/**
+ * Whether a frame-to-frame change is the camera being disturbed — picked up,
+ * set down, walked up to, a hand or a dog's nose over the lens — rather than
+ * someone training in front of it.
+ *
+ * Measured on real sessions (10 samples a second): a fighter, even a head
+ * kick close to the lens, changes at most about a quarter of the frame and
+ * shifts its overall brightness by 0.02 at most. Every disturbance changed
+ * 30–90% of it, or shifted the brightness by 0.03–0.47 as the exposure
+ * swung. Scored as movement, disturbances were the "best" clips in the reel,
+ * and for a minute after one the movement threshold sat above every real
+ * strike, so every clip came back empty.
+ *
+ * `wide`: share of pixels changed by more than CHANGED_PIXEL; `lumShift`:
+ * change in the frame's mean brightness (0–1).
+ */
+export const isDisturbance = (wide: number, lumShift: number): boolean =>
+  wide >= 0.3 || lumShift >= 0.03;
+
+/**
+ * How long either side of a disturbance is also written off: someone walking
+ * up to the phone, or away from it, is a disturbance before and after the
+ * frames that show it most.
+ */
+export const DISTURBANCE_PAD_MS = 1500;
+
+/**
+ * Whether any sample within DISTURBANCE_PAD_MS of [from, to] was disturbed.
+ * `samples` oldest first, times in the same clock as from/to.
+ */
+export const disturbedNear = (
+  samples: { at: number; disturbed?: boolean }[],
+  from: number,
+  to: number
+): boolean =>
+  samples.some(
+    (s) =>
+      s.disturbed &&
+      s.at >= from - DISTURBANCE_PAD_MS &&
+      s.at <= to + DISTURBANCE_PAD_MS
+  );
+
+/** The samples nowhere near a disturbance, for judging what movement is. */
+export const undisturbed = <T extends { at: number; disturbed?: boolean }>(
+  samples: T[]
+): T[] => {
+  const marks = samples.filter((s) => s.disturbed).map((s) => s.at);
+  if (!marks.length) return samples;
+  return samples.filter(
+    (s) => !marks.some((m) => Math.abs(s.at - m) <= DISTURBANCE_PAD_MS)
+  );
+};
 
 export const SAMPLE_MS = 100;
 /** Long side of the sampling frame, in pixels. */
@@ -101,6 +162,7 @@ export class MotionMeter {
   private readonly canvas = document.createElement("canvas");
   private ctx: CanvasRenderingContext2D | null = null;
   private prev: Float32Array | null = null;
+  private prevMean = 0;
   private weights: Float32Array | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private samples: MotionSample[] = [];
@@ -123,9 +185,18 @@ export class MotionMeter {
     return this.samples.filter((s) => s.at >= from && s.at <= to);
   }
 
-  /** Where "still" and "busy" sit, from the last minute of movement. */
+  /**
+   * Where "still" and "busy" sit, from the last minute of movement, leaving
+   * out disturbances: one walk up to the phone had set "busy" eight times
+   * higher than any strike.
+   */
   levels(): MotionLevels {
-    return motionLevels(this.samples.map((s) => s.m));
+    return motionLevels(undisturbed(this.samples).map((s) => s.m));
+  }
+
+  /** Whether the camera was disturbed during, or close to, [from, to]. */
+  disturbed(from: number, to: number): boolean {
+    return disturbedNear(this.samples, from, to);
   }
 
   /** Where in the frame things moved between two moments, summed. */
@@ -162,12 +233,16 @@ export class MotionMeter {
       ctx.drawImage(v, 0, 0, w, h);
       const { data } = ctx.getImageData(0, 0, w, h);
       const lum = new Float32Array(w * h);
+      let mean = 0;
       for (let i = 0, p = 0; i < lum.length; i++, p += 4) {
         lum[i] = (0.299 * data[p]! + 0.587 * data[p + 1]! + 0.114 * data[p + 2]!) / 255;
+        mean += lum[i]!;
       }
+      mean /= lum.length;
       if (this.prev && this.weights) {
         let sum = 0;
         let wsum = 0;
+        let changed = 0;
         const diff = new Float32Array(lum.length);
         for (let i = 0; i < lum.length; i++) {
           const wt = this.weights[i]!;
@@ -175,9 +250,14 @@ export class MotionMeter {
           diff[i] = d;
           sum += d * wt;
           wsum += wt;
+          if (d > CHANGED_PIXEL) changed += 1;
         }
         const at = performance.now();
-        this.samples.push({ at, m: sum / wsum });
+        this.samples.push({
+          at,
+          m: sum / wsum,
+          disturbed: isDisturbance(changed / lum.length, Math.abs(mean - this.prevMean)),
+        });
         if (this.samples.length > HISTORY * 4) {
           this.samples = this.samples.slice(-HISTORY * 2);
         }
@@ -187,6 +267,7 @@ export class MotionMeter {
         if (this.maps.length > MAP_HISTORY) this.maps.shift();
       }
       this.prev = lum;
+      this.prevMean = mean;
     } catch {
       /* a frame that cannot be read is a frame without a reading */
     }

@@ -1,7 +1,5 @@
 import { useSyncExternalStore } from "react";
 
-import type { Card, ReelSegment } from "./reelRenderer";
-
 export interface SessionReel {
   blob: Blob;
   url: string;
@@ -16,15 +14,6 @@ export interface SessionReel {
    * gallery to save to (the browser build).
    */
   gallery?: "saving" | "saved" | "failed";
-  /** Where each clip landed, for cutting a shorter version from the reel. */
-  cut?: {
-    segments: ReelSegment[];
-    endCardFromMs: number | null;
-    title: Card;
-    withAudio: boolean;
-  };
-  /** The ~15s version, once it has been cut (after the reel itself). */
-  short?: SessionReel;
 }
 
 /**
@@ -47,10 +36,7 @@ const subscribe = (cb: () => void) => {
 };
 
 export const setSessionReel = (reel: SessionReel | null): void => {
-  if (current && current.url !== reel?.url) {
-    URL.revokeObjectURL(current.url);
-    if (current.short) URL.revokeObjectURL(current.short.url);
-  }
+  if (current && current.url !== reel?.url) URL.revokeObjectURL(current.url);
   current = reel;
   if (!reel) viewerOpen = false;
   emit();
@@ -59,7 +45,7 @@ export const setSessionReel = (reel: SessionReel | null): void => {
 /** Updates the current reel, if it is still `reel` (not a newer session's). */
 export const patchSessionReel = (
   reel: SessionReel,
-  patch: Partial<Pick<SessionReel, "fileUri" | "gallery" | "short">>
+  patch: Partial<Pick<SessionReel, "fileUri" | "gallery">>
 ): SessionReel | null => {
   if (!current || current.url !== reel.url) return null;
   current = { ...current, ...patch };

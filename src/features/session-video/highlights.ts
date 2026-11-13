@@ -22,19 +22,23 @@ import type { Crop } from "./reelRenderer";
  * its best clip.
  */
 export const REEL_MIN_MS = 12000;
-export const REEL_MAX_MS = 60000;
-/** Reel per minute of work. 5 × 3 minutes makes the full minute. */
-const REEL_MS_PER_WORK_MINUTE = 4000;
+export const REEL_MAX_MS = 20000;
+/** Added per minute of work, above the minimum. */
+const REEL_MS_PER_WORK_MINUTE = 600;
 
 /**
- * How long the reel runs, from how much work went into it. A flat 30s cap
- * shared over five rounds left two or three clips a round, and a 15-minute
- * session came out as 17 seconds.
+ * How long the reel runs: 12s, growing a little with the work (a 5 × 3
+ * session reaches the 20s cap). A longer session makes a pickier reel, not
+ * a longer one.
+ *
+ * It used to be 4s a minute, up to a minute: a 5 × 3 session came out as
+ * 15+ clips with bursts of jump cuts. The reel the user liked best in a
+ * side-by-side (2026-11-13) was a 14s, three-clip cut of one round.
  */
 export const reelBudgetMs = (workMs: number): number =>
   Math.min(
     REEL_MAX_MS,
-    Math.max(REEL_MIN_MS, (REEL_MS_PER_WORK_MINUTE * workMs) / 60000)
+    REEL_MIN_MS + (REEL_MS_PER_WORK_MINUTE * workMs) / 60000
   );
 
 export const roundBudgetMs = (workMs: number, rounds: number): number =>
@@ -112,8 +116,6 @@ export interface Candidate {
   score: number;
   /** Where in the frame to show; the whole frame if absent. */
   crop?: Crop;
-  /** The clip's busiest moment, ms from its start: where slow motion goes. */
-  peakMs?: number;
   /** The clip's video. */
   url: string;
   /** Lets go of the clip's video. */
@@ -201,8 +203,8 @@ export class RoundPicker {
     const picked: Candidate[] = [];
     const counts = new Map(soFar.shown);
     // Once a round: the same combination twice in one round is the same
-    // shot twice — same spot, same light — and back to back, with the
-    // second in slow motion, it read as one clip replayed by mistake.
+    // shot twice — same spot, same light — and back to back it read as one
+    // clip replayed by mistake.
     const thisRound = new Set<string>();
     let used = 0;
     for (const c of byScore) {

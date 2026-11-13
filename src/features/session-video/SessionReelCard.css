@@ -250,36 +250,6 @@
   text-align: center;
 }
 
-/* Full reel or the short cut: a pill pair at the top, clear of the close
-   button, over the video. */
-.reel-viewer-cuts {
-  position: absolute;
-  top: calc(0.9rem + env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.reel-viewer-cut {
-  all: unset;
-  padding: 0.4rem 0.85rem;
-  border-radius: 999px;
-  color: #d8cde3;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.reel-viewer-cut.is-on {
-  background: #f4eef6;
-  color: #140c1c;
-}
-
 /* No reel when one was due: the row, and what happened under it. */
 .reel-failed {
   margin: 1rem 0 1.1rem;

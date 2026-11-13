@@ -11,7 +11,7 @@ import { openBuiltInMic } from "./micChoice";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
-import { MotionMeter, cropFromHeat, cutClip } from "./motion";
+import { MotionMeter, cropFromHeat, cutClip, undisturbed } from "./motion";
 import {
   ReelRenderer,
   errText,
@@ -22,6 +22,7 @@ import {
 import type { SessionReel } from "./reelStore";
 import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
+import { RawCapture, rawCaptureWanted } from "./rawCapture";
 
 /**
  * Whether a session ended with enough work in it for a reel: about one
@@ -90,6 +91,16 @@ export class ReelRecorder {
   private withAudio = false;
   private title: Card | null = null;
   private workingSince: number | null = null;
+  /** Paused, resting or counting down: the engine's calls are ignored. */
+  private held = false;
+  /** The last call scheduled while held (see resume). */
+  private heldSchedule: {
+    at: number;
+    delayMs: number;
+    e: Extract<CalloutEvent, { type: "scheduled" }>;
+  } | null = null;
+  /** DEBUG ONLY: the whole session uncut, when its flag is set. */
+  private raw: RawCapture | null = null;
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
@@ -138,6 +149,10 @@ export class ReelRecorder {
     this.notes.log(
       `clips mime "${this.mimeType}", preview ${preview.videoWidth}x${preview.videoHeight}`
     );
+    if (rawCaptureWanted()) {
+      this.raw = new RawCapture((line) => this.notes.log(line));
+      this.raw.start(this.camera, this.mimeType);
+    }
     this.meter = new MotionMeter(preview);
     this.meter.start();
     if (withAudio) {
@@ -166,6 +181,21 @@ export class ReelRecorder {
   /** The callout engine's timing and calls. */
   event(e: CalloutEvent): void {
     const now = performance.now();
+    if (e.type === "called") {
+      this.raw?.mark({ type: "called", text: e.call.text, between: e.call.between });
+    } else if (e.type === "spoken") {
+      this.raw?.mark({ type: "spoken" });
+    } else if (e.type === "sound") {
+      this.raw?.mark({ type: "sound", durationMs: e.durationMs });
+    }
+    if (this.held && (e.type === "scheduled" || e.type === "called")) {
+      // The engine often schedules its next call just as a round ends; that
+      // arrived after the hold, restarted the work clock (a 4 × 3 session's
+      // end card said 14 minutes) and filmed the rest. Kept, in case it is
+      // the next round's first call and still due when the round starts.
+      if (e.type === "scheduled") this.heldSchedule = { at: now, delayMs: e.delayMs, e };
+      return;
+    }
     if ((e.type === "scheduled" || e.type === "called") && this.workingSince === null) {
       this.workingSince = now;
     }
@@ -187,14 +217,33 @@ export class ReelRecorder {
     this.scheduler?.event(e);
   }
 
-  /** Paused, or between rounds: stop filming. */
+  /** Paused, resting or counting down: stop filming. */
   hold(): void {
+    this.raw?.mark({ type: "hold" });
+    this.held = true;
+    this.heldSchedule = null;
     this.stopWorkClock();
     this.scheduler?.hold();
   }
 
+  /**
+   * Working again. A call the engine scheduled while held is passed on if
+   * it's still to come, so the round's first call gets its head start.
+   */
+  resume(): void {
+    this.held = false;
+    const s = this.heldSchedule;
+    this.heldSchedule = null;
+    if (!s) return;
+    const left = s.delayMs - (performance.now() - s.at);
+    if (left > 0) this.event({ ...s.e, delayMs: left });
+  }
+
   /** A round ended: pick its best clips and add them to the reel. */
   roundOver(): void {
+    this.raw?.mark({ type: "roundOver" });
+    this.held = true;
+    this.heldSchedule = null;
     this.stopWorkClock();
     this.scheduler?.hold();
     this.rounds = this.rounds.then(() => this.closeRound());
@@ -246,14 +295,6 @@ export class ReelRecorder {
       ext: remuxed || out.type.includes("mp4") ? "mp4" : "webm",
       durationMs: Math.round(renderer.renderedMs),
       clips: renderer.clips,
-      cut: this.title
-        ? {
-            segments: [...renderer.segments],
-            endCardFromMs: renderer.endCardFromMs,
-            title: this.title,
-            withAudio: this.withAudio,
-          }
-        : undefined,
     };
   }
 
@@ -292,6 +333,9 @@ export class ReelRecorder {
   }
 
   private stopCapture(): void {
+    // Before the camera's tracks end, or the raw file loses its tail.
+    this.raw?.stop(this.hits?.between(0, Infinity) ?? []);
+    this.raw = null;
     this.meter?.stop();
     this.meter = null;
     this.hits?.stop();
@@ -318,21 +362,11 @@ export class ReelRecorder {
     }
     // Queued, not awaited: the next round starts filming while this one is
     // still being assembled.
-    // The round's best comes last; it gets slow motion at its peak.
-    const best = picks[picks.length - 1];
     const clips: RenderClip[] = picks.map((p) => ({
       url: p.url,
       startMs: p.cut.startMs,
       endMs: p.cut.endMs,
       crop: p.crop,
-      score: p.score,
-      slow:
-        p === best && p.peakMs !== undefined
-          ? {
-              fromMs: Math.max(p.cut.startMs, p.peakMs - 450),
-              toMs: Math.min(p.cut.endMs, p.peakMs + 350),
-            }
-          : undefined,
     }));
     void this.renderer.add(clips, (clip) =>
       picks.find((p) => p.url === clip.url)?.release()
@@ -428,9 +462,11 @@ export class ReelRecorder {
       this.notes.log(`clip ${seq}: ${chunks.length ? "no motion meter" : "recorder gave no data"}`);
       return;
     }
-    const samples = meter
-      .between(startedAt, stoppedAt)
-      .map((s) => ({ t: s.at - startedAt, m: s.m }));
+    // Trimmed on what happened in front of the camera, not to it.
+    const samples = undisturbed(meter.between(startedAt, stoppedAt)).map((s) => ({
+      t: s.at - startedAt,
+      m: s.m,
+    }));
     const heard = this.hits?.between(startedAt, stoppedAt) ?? [];
     const hits = heard.map((t) => t - startedAt);
     const cleanHits = heard
@@ -449,6 +485,13 @@ export class ReelRecorder {
       this.notes.clip(seq, calls, cut, 0, 0);
       return;
     }
+    // The phone being set down, a hand or a dog at the lens: never a
+    // highlight, however much it moved.
+    if (meter.disturbed(startedAt + cut.startMs, startedAt + cut.endMs)) {
+      this.notes.clip(seq, calls, cut, 0, 0);
+      this.notes.log(`clip ${seq}: camera disturbed, dropped`);
+      return;
+    }
 
     // What an ordinary clip's movement amounts to in this session so far.
     this.motionSeen.push(cut.motion);
@@ -464,20 +507,10 @@ export class ReelRecorder {
     );
     if (score <= 0) return;
 
-    // Framed around where the fighter moved in the kept part, and its
-    // busiest moment marked in case it's the round's best.
+    // Framed around where the fighter moved in the kept part.
     const crop = cropFromHeat(
       meter.heat(startedAt + cut.startMs, startedAt + cut.endMs)
     );
-    let peakMs: number | undefined;
-    let peak = -1;
-    for (const s of samples) {
-      if (s.t < cut.startMs || s.t > cut.endMs) continue;
-      if (s.m > peak) {
-        peak = s.m;
-        peakMs = s.t;
-      }
-    }
 
     const blobType = type || chunks[0]?.type || this.mimeType || "video/mp4";
     const url = URL.createObjectURL(new Blob(chunks, { type: blobType }));
@@ -487,7 +520,6 @@ export class ReelRecorder {
       calls,
       score,
       crop,
-      peakMs,
       url,
       release: () => URL.revokeObjectURL(url),
     } satisfies Candidate);

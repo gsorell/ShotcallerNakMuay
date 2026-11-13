@@ -13,13 +13,17 @@ import {
   type Candidate,
 } from "@/features/session-video/highlights";
 import {
+  DISTURBANCE_PAD_MS,
   MAX_KEEP_MS,
   MIN_CROP,
   MIN_KEEP_MS,
   cropFromHeat,
   cutClip,
+  disturbedNear,
+  isDisturbance,
   keepCapMs,
   motionLevels,
+  undisturbed,
 } from "@/features/session-video/motion";
 import { cropAt } from "@/features/session-video/reelRenderer";
 import { endCard, titleCard } from "@/features/session-video/cards";
@@ -381,13 +385,58 @@ describe("picking a round's best", () => {
 });
 
 describe("reel length", () => {
-  it("runs about 4 seconds per minute of work, 12s to 60s", () => {
-    expect(reelBudgetMs(2 * 60_000)).toBe(12000);
-    expect(reelBudgetMs(10 * 60_000)).toBe(40000);
-    expect(reelBudgetMs(15 * 60_000)).toBe(60000);
-    expect(reelBudgetMs(60 * 60_000)).toBe(60000);
-    // 5 × 3 minutes: 12 seconds from each round.
-    expect(roundBudgetMs(15 * 60_000, 5)).toBe(12000);
+  it("stays short: 12s, growing slowly to a 20s cap", () => {
+    expect(reelBudgetMs(0)).toBe(12000);
+    expect(reelBudgetMs(2 * 60_000)).toBeCloseTo(13200);
+    expect(reelBudgetMs(10 * 60_000)).toBeCloseTo(18000);
+    expect(reelBudgetMs(15 * 60_000)).toBe(20000);
+    expect(reelBudgetMs(60 * 60_000)).toBe(20000);
+    // 5 × 3 minutes: a clip or so from each round, not a burst of cuts.
+    expect(roundBudgetMs(15 * 60_000, 5)).toBe(4000);
+  });
+});
+
+describe("the camera being disturbed", () => {
+  // Thresholds measured on real sessions (2026-11-12/13): see isDisturbance.
+  it("tells training from the camera being handled", () => {
+    // A head kick close to the lens: a quarter of the frame, steady light.
+    expect(isDisturbance(0.25, 0.02)).toBe(false);
+    // Shadowboxing across a room.
+    expect(isDisturbance(0.03, 0.01)).toBe(false);
+    // A dog's nose over the lens; the phone being set down.
+    expect(isDisturbance(0.75, 0.06)).toBe(true);
+    expect(isDisturbance(0.85, 0.26)).toBe(true);
+    // Walking away from the phone: the exposure swings.
+    expect(isDisturbance(0.24, 0.034)).toBe(true);
+  });
+
+  it("writes off the moments either side of a disturbance", () => {
+    const samples = Array.from({ length: 100 }, (_, i) => ({
+      at: i * 100,
+      m: 0.01,
+      disturbed: i === 50,
+    }));
+    const kept = undisturbed(samples);
+    expect(kept.some((s) => Math.abs(s.at - 5000) <= DISTURBANCE_PAD_MS)).toBe(false);
+    expect(kept.length).toBe(100 - 31);
+    expect(disturbedNear(samples, 6000, 7000)).toBe(true);
+    expect(disturbedNear(samples, 7000, 8000)).toBe(false);
+  });
+
+  it("keeps a disturbance from setting the bar for real movement", () => {
+    // Strikes at 0.015 after a walk up to the phone at 0.13: judged with
+    // the walk in, every strike fell under the threshold for a minute.
+    const samples = [
+      ...Array.from({ length: 40 }, (_, i) => ({ at: i * 100, m: 0.13, disturbed: i % 4 === 0 })),
+      ...Array.from({ length: 560 }, (_, i) => ({
+        at: 4000 + i * 100,
+        m: i % 10 === 0 ? 0.015 : 0.004,
+      })),
+    ];
+    const naive = motionLevels(samples.map((s) => s.m));
+    const fair = motionLevels(undisturbed(samples).map((s) => s.m));
+    expect(naive.threshold).toBeGreaterThan(0.015);
+    expect(fair.threshold).toBeLessThan(0.015);
   });
 });
 
