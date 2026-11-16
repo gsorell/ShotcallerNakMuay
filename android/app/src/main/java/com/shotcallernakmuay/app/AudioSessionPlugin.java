@@ -5,6 +5,8 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -28,6 +30,20 @@ public class AudioSessionPlugin extends Plugin {
   private AudioManager audioManager;
   private AudioFocusRequest audioFocusRequest;
   private static final String TAG = "AudioSessionPlugin";
+
+  // --- Call watch -----------------------------------------------------------
+  // A ringing phone call, seen through the audio mode Telecom sets: RINGTONE
+  // (or CALL_SCREENING) while it rings, IN_CALL once it is answered, NORMAL
+  // when it is over. Needs no permission, unlike the phone state APIs (which
+  // would ask the user to let a timer "make and manage phone calls").
+  //
+  // IN_COMMUNICATION (VoIP) is left out on purpose: the WebView can set it
+  // for its own microphone while a session films, which would read as a call.
+  private static final int MODE_CALL_SCREENING = 4;
+  private Handler callPoll;
+  private Runnable callPollTick;
+  private Object modeListener;
+  private String lastCallState = null;
   
   @Override
   public void load() {
@@ -161,5 +177,79 @@ public class AudioSessionPlugin extends Plugin {
         android.util.Log.d(TAG, "Audio focus lost transiently - can duck");
         break;
     }
+  }
+
+  /**
+   * Starts telling the web layer about phone calls: a "callState" event with
+   * state "ringing", "inCall" or "idle", sent when it changes (and once at
+   * the start). Android 12+ is told by the system; older versions are polled.
+   */
+  @PluginMethod
+  public void startCallWatch(PluginCall call) {
+    if (audioManager == null) {
+      audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+    }
+    stopWatching();
+    lastCallState = null;
+    reportMode(audioManager.getMode());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      AudioManager.OnModeChangedListener l = this::reportMode;
+      audioManager.addOnModeChangedListener(getContext().getMainExecutor(), l);
+      modeListener = l;
+    } else {
+      callPoll = new Handler(Looper.getMainLooper());
+      callPollTick = new Runnable() {
+        @Override
+        public void run() {
+          reportMode(audioManager.getMode());
+          if (callPoll != null) callPoll.postDelayed(this, 1000);
+        }
+      };
+      callPoll.postDelayed(callPollTick, 1000);
+    }
+    call.resolve();
+  }
+
+  @PluginMethod
+  public void stopCallWatch(PluginCall call) {
+    stopWatching();
+    call.resolve();
+  }
+
+  @Override
+  protected void handleOnDestroy() {
+    stopWatching();
+    super.handleOnDestroy();
+  }
+
+  private void stopWatching() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && modeListener != null && audioManager != null) {
+      try {
+        audioManager.removeOnModeChangedListener((AudioManager.OnModeChangedListener) modeListener);
+      } catch (Exception ignored) {
+        // not registered
+      }
+    }
+    modeListener = null;
+    if (callPoll != null && callPollTick != null) callPoll.removeCallbacks(callPollTick);
+    callPoll = null;
+    callPollTick = null;
+  }
+
+  private void reportMode(int mode) {
+    String state;
+    if (mode == AudioManager.MODE_RINGTONE || mode == MODE_CALL_SCREENING) {
+      state = "ringing";
+    } else if (mode == AudioManager.MODE_IN_CALL) {
+      state = "inCall";
+    } else {
+      state = "idle";
+    }
+    if (state.equals(lastCallState)) return;
+    lastCallState = state;
+    android.util.Log.d(TAG, "Call state " + state + " (audio mode " + mode + ")");
+    JSObject data = new JSObject();
+    data.put("state", state);
+    notifyListeners("callState", data);
   }
 }

@@ -29,6 +29,7 @@ import { scrollContentToTop } from "@/utils/scroll";
 import React, { createContext, useCallback, useContext, useMemo, useState, useRef, useEffect } from "react";
 import { useHomeStats } from "../../logs";
 import { useAudioSystem, useUIContext, useWakeLock, usePhoneCallDetection } from "../../shared";
+import { useRingingCall, type CallState } from "../../shared/hooks/useRingingCall";
 import { useEmphasisList, useTechniqueData } from "../../technique-editor";
 import { useCalloutEngine } from "../hooks/useCalloutEngine";
 import { useClackEngine } from "../hooks/useClackEngine";
@@ -171,6 +172,9 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
   // Call interruption state
   const [isInterruptedByCall, setIsInterruptedByCall] = useState(false);
   const pauseSessionRef = useRef<(() => void) | null>(null);
+  // A ringing call paused the session, and it has not been answered (yet):
+  // if it stops ringing unanswered, the session picks back up on its own.
+  const pausedForRingRef = useRef(false);
 
   // --- Guided path state ---
   // The ref is what the timer callbacks read (they must not re-create on every
@@ -572,6 +576,33 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     // The isInterruptedByCall flag will show the UI notification
   }, []);
 
+  // Android tells us the moment a call rings, before anyone touches it. The
+  // callouts (and the camera, which holds whenever the timer pauses) stop at
+  // the first ring. Ignored or declined, the session resumes by itself;
+  // answered, it waits for Resume.
+  const callTimerRef = useRef({ live: false, paused: false });
+  callTimerRef.current = {
+    live: timer.running || timer.isPreRound,
+    paused: timer.paused,
+  };
+  const handleRingingCall = useCallback((state: CallState) => {
+    const { live, paused } = callTimerRef.current;
+    if (state === "ringing" || state === "inCall") {
+      if (state === "inCall") pausedForRingRef.current = false;
+      if (!live || paused) return;
+      pausedForRingRef.current = state === "ringing";
+      setIsInterruptedByCall(true);
+      pauseSessionRef.current?.();
+      return;
+    }
+    // Over. Resume only a pause the ring itself made.
+    if (pausedForRingRef.current && live && paused) {
+      pauseSessionRef.current?.();
+    }
+    pausedForRingRef.current = false;
+  }, []);
+  useRingingCall(timer.running || timer.isPreRound, handleRingingCall);
+
   usePhoneCallDetection({
     enabled: timer.running,
     onCallStart: handleCallStart,
@@ -784,6 +815,7 @@ export const WorkoutProvider: React.FC<WorkoutProviderProps> = ({
     if (timer.paused) {
       timer.pauseTimer(); // Toggle to unpause
       setIsInterruptedByCall(false); // Clear call interruption flag on resume
+      pausedForRingRef.current = false;
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try {
           window.speechSynthesis.resume();

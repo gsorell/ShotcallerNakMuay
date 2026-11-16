@@ -1,8 +1,13 @@
 import React from "react";
+import { Capacitor } from "@capacitor/core";
 import { type EmphasisKey } from "@/types";
 import { ImageWithFallback } from "../../shared";
 import StatusTimer from "./StatusTimer";
 import "./ActiveSessionUI.css";
+
+// Android sees a ringing call (useRingingCall) and resumes if it goes
+// unanswered; elsewhere a call is only noticed once it takes over the screen.
+const callResumesItself = Capacitor.getPlatform() === "android";
 
 
 interface ActiveSessionUIProps {
@@ -83,7 +88,9 @@ export default function ActiveSessionUI({
             Session paused due to incoming call
           </div>
           <div className="call-interruption-hint">
-            Tap Resume to continue your workout
+            {callResumesItself
+              ? "Ignore it and the session picks back up. Answer, and tap Resume when you're done."
+              : "Tap Resume to continue your workout"}
           </div>
         </div>
       )}
