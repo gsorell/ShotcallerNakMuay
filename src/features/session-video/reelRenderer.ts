@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+
 import { cardAssetsReady, drawWatermark, loadWatermark } from "./watermark";
 
 /** Part of the frame, as fractions of its width and height. */
@@ -26,6 +28,13 @@ export interface RendererOptions {
   master?: boolean;
   /** Told what went wrong (and how it ended), for when no reel comes out. */
   log?: (line: string) => void;
+  /**
+   * Where the clips' sound comes from: the playing element (taken over by
+   * the graph), or each clip's track decoded and played into the graph
+   * beside the muted element. Decoded by default on Android (see
+   * ReelRenderer); for tests.
+   */
+  decodeAudio?: boolean;
 }
 
 /** A card: a few lines of text under the logo, on the brand's dark. */
@@ -105,6 +114,17 @@ export class ReelRenderer {
   private started = false;
   private sized = false;
   private audioCtx: AudioContext | null = null;
+  /**
+   * Android: the clips' sound is decoded and played into this node, and the
+   * element stays muted. An unmuted <video> playing in the WebView takes
+   * the phone's audio focus, and Spotify and the rest treat that as being
+   * told to stop: music over Bluetooth stopped at every rest bell (when the
+   * round's clips are assembled) and stayed stopped (2026-11-16). Web Audio
+   * takes no focus; the bells have always played over music.
+   */
+  private audioIn: AudioNode | null = null;
+  /** The clip's sound, playing while its picture does. */
+  private voice: AudioBufferSourceNode | null = null;
   private queue: Promise<void> = Promise.resolve();
   /** What the canvas shows: a clip, a card, or nothing new. */
   private scene:
@@ -126,6 +146,7 @@ export class ReelRenderer {
       watermark = true,
       master = true,
       log = () => {},
+      decodeAudio = Capacitor.getPlatform() === "android",
     } = typeof opts === "boolean" ? { withAudio: opts } : opts;
     this.watermark = watermark;
     this.log = log;
@@ -168,16 +189,20 @@ export class ReelRenderer {
         // speaker, and this graph never reaches a speaker anyway.
         const actx = new Ctx({ latencyHint: "playback" });
         const dest = actx.createMediaStreamDestination();
-        const source = actx.createMediaElementSource(v);
+        let input: AudioNode = dest;
         if (master) {
           const [into, out] = masterChain(actx);
-          source.connect(into);
           out.connect(dest);
+          input = into;
+        }
+        if (decodeAudio) {
+          // The element stays muted; see audioIn.
+          this.audioIn = input;
         } else {
-          source.connect(dest);
+          actx.createMediaElementSource(v).connect(input);
+          v.muted = false;
         }
         dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
-        v.muted = false;
         void actx.resume().catch(() => undefined);
         this.audioCtx = actx;
         audio = true;
@@ -274,6 +299,7 @@ export class ReelRenderer {
     } catch {
       /* already stopped */
     }
+    this.silence();
     this.video.pause();
     this.video.removeAttribute("src");
     this.video.remove();
@@ -338,6 +364,43 @@ export class ReelRenderer {
     if (this.recorder.state === "recording") this.recorder.pause();
   }
 
+  /** The clip's sound, decoded; null (a silent clip) if it can't be. */
+  private async decode(url: string): Promise<AudioBuffer | null> {
+    const actx = this.audioCtx;
+    if (!actx || !this.audioIn) return null;
+    try {
+      const bytes = await (await fetch(url)).arrayBuffer();
+      return await actx.decodeAudioData(bytes);
+    } catch (e) {
+      this.log(`clip sound could not be decoded: ${errText(e)}`);
+      return null;
+    }
+  }
+
+  /** Starts `buffer` where the picture is, into the reel's sound. */
+  private speak(buffer: AudioBuffer | null, fromS: number): void {
+    const actx = this.audioCtx;
+    if (!buffer || !actx || !this.audioIn) return;
+    if (fromS >= buffer.duration) return;
+    const src = actx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(this.audioIn);
+    src.start(0, Math.max(0, fromS));
+    this.voice = src;
+  }
+
+  private silence(): void {
+    const src = this.voice;
+    this.voice = null;
+    if (!src) return;
+    try {
+      src.stop();
+    } catch {
+      /* never started, or already over */
+    }
+    src.disconnect();
+  }
+
   private async renderCard(card: Card): Promise<void> {
     await cardAssetsReady();
     this.scene = { kind: "card", card, startedAt: performance.now() };
@@ -354,6 +417,8 @@ export class ReelRenderer {
 
   private async renderOne(clip: RenderClip): Promise<void> {
     const v = this.video;
+    // Decoded while the picture loads and runs up to the kept part.
+    const sound = this.audioIn ? this.decode(clip.url) : null;
     await loadFrames(v, clip.url);
     // The reel takes the shape of the camera's frame, set once.
     if (!this.sized && v.videoWidth) {
@@ -387,11 +452,13 @@ export class ReelRenderer {
     // Let the canvas catch the first kept frame before the tape rolls, so
     // the reel never opens a clip on the last frame of the one before.
     await nextFrames(2);
+    const buffer = sound ? await sound : null;
 
     this.roll();
     const rolledAt = performance.now();
     if (this.overlay) this.overlay.until = rolledAt + this.overlay.card.durationMs;
     await playSafely(v);
+    this.speak(buffer, v.currentTime);
     const limit = (endS - startS) * 1000 * 2 + 3000;
     // A clip whose picture stops moving is cut where it stalled: a phone
     // starved of power once filmed one frozen frame into the reel for 11s.
@@ -399,6 +466,7 @@ export class ReelRenderer {
     // 2026-11-13: it read as random, not as emphasis.)
     await playTo(v, endS, limit);
     this.cut();
+    this.silence();
     v.pause();
     this.overlay = null;
     this.renderedMs += performance.now() - rolledAt;
