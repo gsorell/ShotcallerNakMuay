@@ -42,6 +42,38 @@ describe("Image Utils", () => {
         "shotcaller-workout-2025-10-21-16-01-56-heavy-bag-work-medium"
       );
     });
+
+    it("stays under Android's 255-byte limit with every style picked", () => {
+      // The session that failed to share on a Pixel: writeFile refused the
+      // card with "File name too long".
+      const stats = {
+        ...mockStats,
+        difficulty: "hard",
+        emphases: [
+          "Muay Khao", "Muay Mat", "Muay Tae", "Muay Femur", "Muay Sok",
+          "Boxing", "Two-Piece Combos", "Meat & Potatoes", "Buakaw's Corner",
+          "Dutch Kickboxing", "The Answer Back", "Low Kick Legends",
+          "KO Setups", "Elbow Arsenal", "Feints and Fakeouts",
+          "Tricky Traps and Spinning Shit",
+        ],
+      };
+      const filename = generateWorkoutFilename(stats);
+      // The share path appends "-<Date.now()>.png".
+      const onDisk = `${filename}-1793474399170.png`;
+      expect(new TextEncoder().encode(onDisk).length).toBeLessThanOrEqual(255);
+      expect(filename).toMatch(/^shotcaller-workout-2025-10-21-16-01-56-muay-khao-/);
+      expect(filename).toMatch(/[a-z]-hard$/);
+    });
+
+    it("keeps only letters, digits and hyphens", () => {
+      const stats = {
+        ...mockStats,
+        emphases: ["Meat & Potatoes", "Buakaw's Corner"],
+      };
+      expect(generateWorkoutFilename(stats)).toBe(
+        "shotcaller-workout-2025-10-21-16-01-56-meat-potatoes-buakaws-corner-medium"
+      );
+    });
   });
 
   describe("formatRoundLength", () => {

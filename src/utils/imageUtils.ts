@@ -140,7 +140,7 @@ export const shareStreakImage = async (
     }
   } catch (error) {
     console.error("Error sharing streak:", error);
-    if (error instanceof Error && error.name !== "AbortError") {
+    if (!isShareDismissal(error)) {
       alert("Unable to share. Try Save instead.");
     }
   }
@@ -337,9 +337,40 @@ export const generateWorkoutFilename = (stats: WorkoutStats): string => {
     .split("T")[1]!
     .replace(/:/g, "-")
     .split(".")[0]; // HH-MM-SS
-  const emphases = stats.emphases.join("-").replace(/\s+/g, "-").toLowerCase();
+  const slug = stats.emphases
+    .join(" ")
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  // Android refuses a file name over 255 bytes, and a session with every
+  // style picked spells out well past that. Cut at a word boundary.
+  const emphases =
+    slug.length <= MAX_EMPHASIS_SLUG
+      ? slug
+      : slug.slice(0, MAX_EMPHASIS_SLUG + 1).replace(/-[^-]*$/, "");
 
-  return `shotcaller-workout-${dateStr}-${timeStr}-${emphases}-${stats.difficulty}`;
+  return ["shotcaller-workout", dateStr, timeStr, emphases, stats.difficulty]
+    .filter(Boolean)
+    .join("-");
+};
+
+/** Room for the styles in a card's file name; the rest stays well under 255. */
+const MAX_EMPHASIS_SLUG = 80;
+
+/**
+ * `Share.share` rejects when the sheet is closed without picking an app, and
+ * Android words that "Share canceled" rather than raising an AbortError. That
+ * is not a failure, so it must not raise the "Unable to share" alert.
+ */
+const isShareDismissal = (error: unknown): boolean => {
+  if ((error as Error)?.name === "AbortError") return true;
+  const message = String((error as Error)?.message ?? error).toLowerCase();
+  return (
+    message.includes("cancel") ||
+    message.includes("abort") ||
+    message.includes("dismiss")
+  );
 };
 
 /**
@@ -395,7 +426,7 @@ export const shareCharmImage = async (
     }
   } catch (error) {
     console.error("Error sharing charm:", error);
-    if (error instanceof Error && error.name !== "AbortError") {
+    if (!isShareDismissal(error)) {
       alert("Unable to share. Try using the Download button instead.");
     }
   }
@@ -572,7 +603,7 @@ export const shareWorkoutImage = async (
   } catch (error) {
     console.error("Error sharing workout:", error);
     // Don't throw if user cancelled
-    if (error instanceof Error && error.name !== "AbortError") {
+    if (!isShareDismissal(error)) {
       // Show user-friendly message instead of throwing
       alert("Unable to share. Try using the Download button instead.");
     }
