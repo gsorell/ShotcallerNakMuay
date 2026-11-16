@@ -15,6 +15,7 @@ public class MainActivity extends BridgeActivity {
         // never appears in the bridge and every call from JS fails.
         registerPlugin(AudioSessionPlugin.class);
         registerPlugin(InstallInfoPlugin.class);
+        registerPlugin(VideoRemuxPlugin.class);
 
         super.onCreate(savedInstanceState);
     }

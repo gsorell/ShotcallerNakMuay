@@ -1,7 +1,16 @@
 import { createPortal } from "react-dom";
 
+import { App } from "@capacitor/app";
+import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { useEffect, useRef } from "react";
+
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
+import {
+  setKeepFullSession,
+  useKeepFullSession,
+  useRecordToggle,
+} from "@/features/session-video";
 import { AnalyticsEvents, trackEvent } from "@/utils/analytics";
 import { humanizeKey } from "@/utils/techniqueUtils";
 import "@/styles/modal.css";
@@ -118,6 +127,35 @@ export default function RoundStructureSheet({
   const callsTechniques =
     !selectedEmphases.timer_only && !selectedEmphases.freestyle;
   const proTag = !isPro && <span className="rs-pro-tag">🔒 Pro</span>;
+  const record = useRecordToggle();
+  const keepFull = useKeepFullSession();
+  // The full session is written to disk as it is filmed and saved to the
+  // gallery: a phone thing. The browser build only ever has the reel.
+  const canKeepFull = Capacitor.isNativePlatform();
+
+  // The phone's Back closes the sheet, back to the round settings, rather
+  // than leaving the app. (Escape on a desktop.)
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    let handle: PluginListenerHandle | null = null;
+    let gone = false;
+    if (Capacitor.isNativePlatform()) {
+      void App.addListener("backButton", () => closeRef.current()).then((h) => {
+        if (gone) void h.remove();
+        else handle = h;
+      });
+    }
+    return () => {
+      gone = true;
+      window.removeEventListener("keydown", onKey);
+      void handle?.remove();
+    };
+  }, []);
 
   // Free users see the controls at rest, the way the training options show
   // theirs; choosing anything opens the paywall instead.
@@ -405,6 +443,45 @@ export default function RoundStructureSheet({
             Swaps left and right in every callout, for left-handed fighters.
           </p>
         </section>
+
+        {/* Free, like the reel itself. The same switch as the Rec button on
+            the setup screen; the full-session option only lives here. */}
+        {record.supported && (
+          <section className="rs-section">
+            <h4 className="rs-label">Recording</h4>
+            <label className="rs-toggle">
+              <input
+                type="checkbox"
+                checked={record.on}
+                disabled={record.asking}
+                onChange={() => void record.toggle()}
+              />
+              Record my session
+            </label>
+            <p className="rs-hint">
+              {record.denied && !record.on
+                ? "Camera access is off. Allow it in Settings."
+                : "The camera films you in the corner, and a highlight reel is cut at the end."}
+            </p>
+            {record.on && canKeepFull && (
+              <>
+                <label className="rs-toggle rs-toggle--spaced">
+                  <input
+                    type="checkbox"
+                    checked={keepFull}
+                    onChange={(e) => setKeepFullSession(e.target.checked)}
+                  />
+                  Also keep the full session
+                </label>
+                <p className="rs-hint">
+                  Saves the whole session, uncut, to your gallery beside the
+                  reel. Rests are kept; pauses are not. Runs to a few hundred
+                  MB.
+                </p>
+              </>
+            )}
+          </section>
+        )}
 
         <section className="rs-section">
           <h4 className="rs-label">Voice</h4>

@@ -22,7 +22,7 @@ import {
 import type { SessionReel } from "./reelStore";
 import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
-import { RawCapture, rawCaptureWanted } from "./rawCapture";
+import { RawCapture, fullSessionWanted } from "./rawCapture";
 
 /**
  * Whether a session ended with enough work in it for a reel: about one
@@ -99,8 +99,10 @@ export class ReelRecorder {
     delayMs: number;
     e: Extract<CalloutEvent, { type: "scheduled" }>;
   } | null = null;
-  /** DEBUG ONLY: the whole session uncut, when its flag is set. */
+  /** The whole session uncut, when it is to be kept (see rawCapture.ts). */
   private raw: RawCapture | null = null;
+  /** False once the session is known to be too short to keep anything. */
+  private keepFull = true;
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
@@ -149,7 +151,7 @@ export class ReelRecorder {
     this.notes.log(
       `clips mime "${this.mimeType}", preview ${preview.videoWidth}x${preview.videoHeight}`
     );
-    if (rawCaptureWanted()) {
+    if (fullSessionWanted()) {
       this.raw = new RawCapture((line) => this.notes.log(line));
       this.raw.start(this.camera, this.mimeType);
     }
@@ -182,6 +184,10 @@ export class ReelRecorder {
   event(e: CalloutEvent): void {
     const now = performance.now();
     if (e.type === "called") {
+      // Every call, between-calls and calls while held included: the same
+      // count as the completion screen's "shots called" (shotsCalledOutRef
+      // in useCalloutEngine), or the two disagree (2026-11-16).
+      this.callsMade += 1;
       this.raw?.mark({ type: "called", text: e.call.text, between: e.call.between });
     } else if (e.type === "spoken") {
       this.raw?.mark({ type: "spoken" });
@@ -205,7 +211,6 @@ export class ReelRecorder {
       return;
     }
     if (e.type === "called") {
-      if (!e.call.between) this.callsMade += 1;
       // Open-ended until the voice says it's done (or a backstop).
       this.speech.push({ from: now, to: now + 6000 });
       if (this.speech.length > 400) this.speech = this.speech.slice(-200);
@@ -257,6 +262,7 @@ export class ReelRecorder {
     // up isn't a session, and its reel would land in the gallery anyway.
     this.notes.log(`finish: worked ${Math.round(this.workedMs / 1000)}s of ${Math.round(this.roundMs / 1000)}s rounds`);
     if (!keepsReel(this.workedMs, this.roundMs)) {
+      this.keepFull = false;
       this.notes.round(this.round + 1, []);
       void this.notes.save();
       this.release();
@@ -334,7 +340,7 @@ export class ReelRecorder {
 
   private stopCapture(): void {
     // Before the camera's tracks end, or the raw file loses its tail.
-    this.raw?.stop(this.hits?.between(0, Infinity) ?? []);
+    this.raw?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull);
     this.raw = null;
     this.meter?.stop();
     this.meter = null;

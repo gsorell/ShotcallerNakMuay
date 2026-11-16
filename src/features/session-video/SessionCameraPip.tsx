@@ -31,7 +31,8 @@ interface SessionCameraPipProps {
 /**
  * The camera in the corner of the session screen, and the recorder behind it.
  *
- * Shown only while a session runs and "Record my session" is on in the menu.
+ * Shown only while a session runs and "Record my session" is on (the Rec
+ * button on the setup screen, or Session Settings).
  * The reel it builds is handed to the reel store when the session ends, for
  * the completion screen to play.
  */

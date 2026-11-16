@@ -195,3 +195,69 @@
   outline: 2px solid #60a5fa;
   outline-offset: 2px;
 }
+
+/* "Record my session", in the panel's top-left corner, opposite the ×.
+   Icon only: a labelled pill reaches the Rounds stepper on narrow phones. */
+.rs-rec {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0.5rem;
+  left: 0.625rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.rs-rec svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.rs-rec.is-on {
+  color: #fff;
+  border-color: rgba(239, 68, 68, 0.7);
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.rs-rec-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.rs-rec.is-on .rs-rec-dot {
+  background: #ef4444;
+}
+
+.rs-rec:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.rs-rec:focus-visible {
+  outline: 2px solid #f9a8d4;
+  outline-offset: 2px;
+}
+
+.rs-rec-note {
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  font-size: 0.66rem;
+  text-align: center;
+  color: #fca5a5;
+}

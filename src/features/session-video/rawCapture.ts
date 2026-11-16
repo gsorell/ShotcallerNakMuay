@@ -1,35 +1,45 @@
 import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
+import { getKeepFullSession } from "./recordPreference";
 import { writeBlobInPieces } from "./reelFile";
+import { remuxFileToMp4 } from "./remux";
 import { saveFileToGallery } from "./saveToGallery";
 
 /**
- * DEBUG ONLY: films the whole session, uncut, next to the reel.
+ * The whole session, uncut, saved to the gallery beside the reel ("Also keep
+ * the full session", on unless turned off in Session Settings).
  *
- * This is for comparing reel styles cut from the same real footage, not a
- * feature. It is off unless this flag is set in the app's localStorage,
- * which only happens by hand over the WebView devtools:
- *   localStorage.setItem("shotcaller_debug_raw_session", "1")
+ * Filmed straight off the camera, rests and pauses included. It is never
+ * paused: on the Pixel, MediaRecorder's MP4 writer garbles the file after a
+ * pause()/resume() (audio frames written into the video track, the length
+ * tripled, no usable picture; 2026-11-16), and the gallery then hides it.
  *
  * The file is appended to in the app cache as the recorder hands over each
  * chunk (a session runs to hundreds of MB, too much to hold in memory),
- * saved to the gallery as `…_raw` when the session ends, then deleted from
- * the cache. Beside it, `files/raw-session.json` holds what was called and
- * when, the app's own sounds and the hits heard, in ms from the first frame:
+ * saved to the gallery as `..._full` when the session ends, then deleted from
+ * the cache. A session too short to keep a reel keeps no full video either.
+ *
+ * DEBUG: with this flag set in the app's localStorage (by hand, over the
+ * WebView devtools), it is filmed even with the setting off, and beside it
+ * `files/raw-session.json` holds what was called and when, the app's own
+ * sounds and the hits heard, in ms from the first frame:
+ *   localStorage.setItem("shotcaller_debug_raw_session", "1")
  *   adb shell run-as com.shotcallernakmuay.app cat files/raw-session.json
  */
 export const RAW_FLAG = "shotcaller_debug_raw_session";
 
-export const rawCaptureWanted = (): boolean => {
+const debugFlag = (): boolean => {
   try {
-    return (
-      Capacitor.isNativePlatform() && localStorage.getItem(RAW_FLAG) === "1"
-    );
+    return localStorage.getItem(RAW_FLAG) === "1";
   } catch {
     return false;
   }
 };
+
+/** Whether this session is filmed in full as well as cut into a reel. */
+export const fullSessionWanted = (): boolean =>
+  Capacitor.isNativePlatform() && (getKeepFullSession() || debugFlag());
 
 export type RawMark =
   | { t: number; type: "called"; text: string; between: boolean }
@@ -42,11 +52,13 @@ export class RawCapture {
   private readonly path = `shotcaller-raw-${Date.now()}`;
   private ext = "mp4";
   private bytes = 0;
+  private chunks = 0;
   private wrote = false;
   private broken = false;
   /** performance.now() of the first frame; marks are relative to it. */
   private began = 0;
   private marks: RawMark[] = [];
+  private readonly sidecar = debugFlag();
 
   constructor(private readonly log: (line: string) => void) {}
 
@@ -86,15 +98,16 @@ export class RawCapture {
   /** Something the reel recorder saw, stamped against the raw video. */
   mark(m: RawMark extends infer M ? (M extends RawMark ? Omit<M, "t"> : never) : never): void {
     if (!this.rec) return;
+    if (!this.sidecar) return;
     this.marks.push({ ...m, t: Math.round(performance.now() - this.began) } as RawMark);
   }
 
   /**
    * Stops filming. Call before the camera's tracks stop. The save to the
-   * gallery runs on in the background; `hitTimes` (performance.now()) are
-   * written to the sidecar.
+   * gallery runs on in the background, or with `keep` false the file is
+   * thrown away; `hitTimes` (performance.now()) go to the debug sidecar.
    */
-  stop(hitTimes: number[]): void {
+  stop(hitTimes: number[], keep: boolean): void {
     const rec = this.rec;
     if (!rec) return;
     this.rec = null;
@@ -110,7 +123,7 @@ export class RawCapture {
     const hits = hitTimes.map((t) => Math.round(t - this.began)).filter((t) => t >= 0);
     void stopped
       .then(() => this.writes)
-      .then(() => this.finish(hits));
+      .then(() => (keep ? this.finish(hits) : this.discard()));
   }
 
   /** Adds a chunk to the file (in pieces: see writeBlobInPieces). */
@@ -120,14 +133,24 @@ export class RawCapture {
       await writeBlobInPieces(`${this.path}.${this.ext}`, Directory.Cache, chunk, this.wrote);
       this.wrote = true;
       this.bytes += chunk.size;
+      this.chunks += 1;
     } catch (e) {
       this.broken = true;
       this.log(`raw capture write failed after ${this.bytes} bytes: ${String(e)}`);
     }
   }
 
+  private async discard(): Promise<void> {
+    if (!this.wrote) return;
+    this.log("full session not kept: too short");
+    await Filesystem.deleteFile({
+      path: `${this.path}.${this.ext}`,
+      directory: Directory.Cache,
+    }).catch(() => undefined);
+  }
+
   private async finish(hits: number[]): Promise<void> {
-    try {
+    if (this.sidecar) try {
       await Filesystem.writeFile({
         path: "raw-session.json",
         directory: Directory.Data,
@@ -143,15 +166,22 @@ export class RawCapture {
     } catch {
       /* the video matters more */
     }
+    this.log(`full session recorded: ${this.chunks} chunks, ${this.bytes} bytes${this.broken ? ", write failed" : ""}`);
     if (!this.wrote) return;
     const file = { path: `${this.path}.${this.ext}`, directory: Directory.Cache };
+    const indexed = { path: `${this.path}_indexed.mp4`, directory: Directory.Cache };
     try {
       const { uri } = await Filesystem.getUri(file);
-      await saveFileToGallery(uri, "_raw");
+      // As recorded it plays but can't be scrubbed; see remuxFileToMp4.
+      const { uri: to } = await Filesystem.getUri(indexed);
+      const saved = (await remuxFileToMp4(uri, to, this.log)) ?? uri;
+      await saveFileToGallery(saved, "_full");
     } catch (e) {
-      this.log(`raw capture gallery save failed: ${String(e)}`);
+      this.log(`full session gallery save failed: ${String(e)}`);
     } finally {
-      await Filesystem.deleteFile(file).catch(() => undefined);
+      // DEBUG: the recording as it came, kept for a look over adb.
+      if (!this.sidecar) await Filesystem.deleteFile(file).catch(() => undefined);
+      await Filesystem.deleteFile(indexed).catch(() => undefined);
     }
   }
 }

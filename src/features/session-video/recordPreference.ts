@@ -1,13 +1,17 @@
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
+
+import { trackEvent } from "@/utils/analytics";
 
 import { releaseHeadsetRoute } from "./micChoice";
 
 const KEY = "shotcaller_record_session";
+/** Absent means on: the full session is kept unless someone says not to. */
+const FULL_KEY = "shotcaller_keep_full_session";
 
 /**
  * Whether this device can record a reel at all: a camera API, a recorder, and
- * a canvas that can be recorded (the watermark is drawn on one). The menu
- * hides the switch where any is missing rather than offering a broken one.
+ * a canvas that can be recorded (the watermark is drawn on one). The setup
+ * screen hides the switch where any is missing rather than offering a broken one.
  */
 export const isReelRecordingSupported = (): boolean => {
   try {
@@ -46,15 +50,73 @@ export const setRecordSession = (on: boolean): void => {
 export const getRecordSession = (): boolean =>
   isReelRecordingSupported() && read();
 
+const subscribe = (cb: () => void) => {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+};
+
 export const useRecordSession = (): boolean =>
-  useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    getRecordSession,
-    () => false
-  );
+  useSyncExternalStore(subscribe, getRecordSession, () => false);
+
+/**
+ * Whether the whole session, uncut, is saved to the gallery beside the reel.
+ * On unless turned off: it is hundreds of MB, so it can be.
+ */
+export const getKeepFullSession = (): boolean => {
+  try {
+    return localStorage.getItem(FULL_KEY) !== "0";
+  } catch {
+    return true;
+  }
+};
+
+export const setKeepFullSession = (on: boolean): void => {
+  try {
+    if (on) localStorage.removeItem(FULL_KEY);
+    else localStorage.setItem(FULL_KEY, "0");
+  } catch {
+    /* falls back to on next launch */
+  }
+  listeners.forEach((l) => l());
+  try {
+    trackEvent("session_full_video_toggle", { on });
+  } catch { /* analytics must never break the tap it measures */ }
+};
+
+export const useKeepFullSession = (): boolean =>
+  useSyncExternalStore(subscribe, getKeepFullSession, () => true);
+
+/**
+ * The "Record my session" switch, wherever it is shown. Turning it on asks
+ * for the camera there and then, so the system prompt never lands in the
+ * middle of a countdown.
+ */
+export const useRecordToggle = () => {
+  const on = useRecordSession();
+  const [asking, setAsking] = useState(false);
+  const [denied, setDenied] = useState(false);
+  const toggle = async () => {
+    if (asking) return;
+    if (on) {
+      setRecordSession(false);
+      try {
+        trackEvent("session_reel_toggle", { on: false });
+      } catch { /* analytics must never break the tap it measures */ }
+      return;
+    }
+    setAsking(true);
+    const granted = await requestCameraAccess();
+    setAsking(false);
+    setDenied(!granted);
+    if (granted) setRecordSession(true);
+    try {
+      trackEvent("session_reel_toggle", { on: granted, denied: !granted });
+    } catch { /* analytics must never break the tap it measures */ }
+  };
+  return { supported: isReelRecordingSupported(), on, asking, denied, toggle };
+};
 
 /**
  * Asks for the camera and microphone now, while the user is looking at the

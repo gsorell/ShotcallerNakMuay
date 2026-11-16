@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useEntitlement } from "@/features/entitlement";
+import { useRecordToggle } from "@/features/session-video";
 import { type Difficulty, type EmphasisKey } from "@/types";
 import { trackEvent } from "@/utils/analytics";
 import { useWorkoutContext } from "../contexts/WorkoutProvider";
@@ -43,6 +44,7 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
   } = settings;
   const { isPro } = useEntitlement();
   const [showStructure, setShowStructure] = useState(false);
+  const record = useRecordToggle();
 
   const stepRoundMin = (dir: 1 | -1) => {
     const next = Math.min(30, Math.max(0.25, roundMin + dir * ROUND_MIN_STEP));
@@ -62,7 +64,10 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
         position: "relative",
         width: "100%",
         padding:
-          "0.75rem 1rem calc(2.25rem + env(safe-area-inset-bottom, 0px)) 1rem",
+          // Capacitor (Android 15+) writes the nav bar's height into
+          // --safe-area-inset-bottom; the WebView's own env() reads 0 there,
+          // which put Let's Go under the nav buttons.
+          "0.75rem 1rem calc(1.5rem + max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px))) 1rem",
         background:
           "linear-gradient(180deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.98) 100%)",
         backdropFilter: "blur(24px)",
@@ -180,6 +185,26 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
       {/* One line, however much is set behind it. A bare timer or freestyle
           round has no rounds to structure, but the voice still lives in the
           same sheet, so the line stays and says what it opens. */}
+      {/* Chosen per workout, in the corner opposite the ×. The full-session
+          option lives in the Session settings sheet. */}
+      {record.supported && (
+        <button
+          type="button"
+          className={`rs-rec ${record.on ? "is-on" : ""}`}
+          aria-pressed={record.on}
+          aria-label="Record my session"
+          title={record.on ? "Recording this session" : "Record my session"}
+          disabled={record.asking}
+          onClick={() => void record.toggle()}
+        >
+          <span className="rs-rec-dot" aria-hidden="true" />
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <rect x="2" y="5" width="11" height="10" rx="2" />
+            <path d="M13 9l5-3v8l-5-3z" />
+          </svg>
+        </button>
+      )}
+
       <button
         type="button"
         className="rs-entry"
@@ -204,6 +229,11 @@ export const StickyStartControls: React.FC<StickyStartControlsProps> = ({
         )}
         <span aria-hidden="true">›</span>
       </button>
+      {record.denied && !record.on && (
+        <p className="rs-rec-note" role="status">
+          Camera access is off. Allow it in Settings.
+        </p>
+      )}
       {showStructure && (
         <RoundStructureSheet onClose={() => setShowStructure(false)} />
       )}
