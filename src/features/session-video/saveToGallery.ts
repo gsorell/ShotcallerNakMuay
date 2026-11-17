@@ -33,7 +33,7 @@ const stamp = (): string => {
   );
 };
 
-/** Saves a video file that is already on disk (see rawCapture.ts). */
+/** Saves a video file that is already on disk (see fullSession.ts). */
 export const saveFileToGallery = async (path: string, suffix: string): Promise<void> => {
   if (Capacitor.getPlatform() === "android") {
     await Media.saveVideo({

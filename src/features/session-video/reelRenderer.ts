@@ -529,7 +529,7 @@ export const softClipCurve = (ceiling: number, n = 2048): Float32Array<ArrayBuff
  * middle, and in it the logo, the session and the day. In full from the
  * first frame.
  */
-const drawTitleOverlay = (
+export const drawTitleOverlay = (
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
@@ -584,7 +584,7 @@ const drawCardContent = (
  * because the title card's first frame is the reel's thumbnail in a gallery
  * and a feed, and faded it read as an empty reel.
  */
-const drawCard = (
+export const drawCard = (
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,

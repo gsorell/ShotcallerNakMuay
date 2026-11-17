@@ -5,6 +5,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.net.Uri;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -13,7 +14,9 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONObject;
 
 /**
  * VideoRemuxPlugin: rewrites a recorder-made video, on disk, as an ordinary
@@ -30,6 +33,11 @@ import java.util.List;
  * all with full sample tables. Stream copy, no re-encode: under a second for
  * a 50 s session.
  *
+ * Given `keep` (the stretches of the session that were work), only those
+ * are written, back to back: the full session's rests are cut (KeepCut).
+ * Still a stream copy. If the cut leaves a track empty or fails, the whole
+ * file is written instead, uncut, rather than nothing.
+ *
  * Runs on its own thread: Capacitor calls every plugin on one shared thread,
  * and a long session would hold up every other plugin call behind it.
  */
@@ -40,8 +48,9 @@ public class VideoRemuxPlugin extends Plugin {
   private static final int START_BUFFER = 4 * 1024 * 1024;
 
   /**
-   * `{ from, to }`: file:// URIs (or paths). Resolves `{ uri }` of the
-   * written file. Rejects on any failure, leaving `from` untouched and
+   * `{ from, to, keep? }`: file:// URIs (or paths), and the stretches to keep
+   * as `[{ fromMs, toMs }]` from the first frame. Resolves `{ uri, summary }`
+   * of the written file. Rejects on any failure, leaving `from` untouched and
    * removing a half-written `to`.
    */
   @PluginMethod
@@ -54,10 +63,22 @@ public class VideoRemuxPlugin extends Plugin {
     }
     final String inPath = toPath(from);
     final String outPath = toPath(to);
+    final long[][] keep = readSpans(call.getArray("keep", null));
     new Thread(
       () -> {
         try {
-          String summary = remux(inPath, outPath);
+          String summary;
+          if (keep != null) {
+            try {
+              summary = remux(inPath, outPath, keep);
+            } catch (Throwable cutFailed) {
+              //noinspection ResultOfMethodCallIgnored
+              new File(outPath).delete();
+              summary = remux(inPath, outPath, null) + ", uncut (" + cutFailed.getMessage() + ")";
+            }
+          } else {
+            summary = remux(inPath, outPath, null);
+          }
           JSObject result = new JSObject();
           result.put("uri", Uri.fromFile(new File(outPath)).toString());
           result.put("summary", summary);
@@ -72,6 +93,18 @@ public class VideoRemuxPlugin extends Plugin {
     ).start();
   }
 
+  /** `[{ fromMs, toMs }]` as pairs; null if absent or empty. */
+  private static long[][] readSpans(JSArray arr) {
+    if (arr == null || arr.length() == 0) return null;
+    List<long[]> out = new ArrayList<>();
+    for (int i = 0; i < arr.length(); i++) {
+      JSONObject o = arr.optJSONObject(i);
+      if (o == null || !o.has("fromMs") || !o.has("toMs")) continue;
+      out.add(new long[] { o.optLong("fromMs"), o.optLong("toMs") });
+    }
+    return out.isEmpty() ? null : out.toArray(new long[0][]);
+  }
+
   private static String toPath(String uriOrPath) {
     if (uriOrPath.startsWith("file:")) {
       String p = Uri.parse(uriOrPath).getPath();
@@ -81,7 +114,7 @@ public class VideoRemuxPlugin extends Plugin {
   }
 
   /** Returns what was copied, e.g. "video/avc 1500, audio/mp4a-latm 2400 from 16.2MB". */
-  private static String remux(String inPath, String outPath) throws Exception {
+  private static String remux(String inPath, String outPath, long[][] keep) throws Exception {
     MediaExtractor extractor = new MediaExtractor();
     MediaMuxer muxer = null;
     boolean started = false;
@@ -117,11 +150,16 @@ public class VideoRemuxPlugin extends Plugin {
       started = true;
 
       long samples;
+      KeepCut cut = null;
       try (RandomAccessFile file = new RandomAccessFile(inPath, "r")) {
         Fmp4Index index = Fmp4Index.read(file);
         if (index.fragments > 0) {
-          samples = copyFromIndex(index, file, extractor, trackMap, perTrack, muxer);
+          cut = keep != null ? planCut(index, trackMap, keep) : null;
+          if (keep != null && cut == null) throw new IllegalStateException("nothing to keep");
+          samples = copyFromIndex(index, file, extractor, trackMap, perTrack, muxer, cut);
         } else {
+          // Not what MediaRecorder writes; copied whole.
+          if (keep != null) throw new IllegalStateException("can't cut an unfragmented file");
           samples = copyFromExtractor(extractor, trackMap, perTrack, muxer, bufferSize);
         }
       }
@@ -134,6 +172,9 @@ public class VideoRemuxPlugin extends Plugin {
         if (perTrack[i] == 0) emptyTrack = true;
       }
       summary.append(String.format(java.util.Locale.ROOT, " from %.1fMB", new File(inPath).length() / 1e6));
+      if (cut != null) {
+        summary.append(String.format(java.util.Locale.ROOT, ", %d spans kept (%.0fs)", cut.fromUs.length, cut.keptUs() / 1e6));
+      }
       // A track with nothing in it makes a file the gallery won't show (a
       // full session once came out as sound only): keep the original instead.
       if (samples == 0 || emptyTrack) throw new IllegalStateException("empty track: " + summary);
@@ -167,7 +208,8 @@ public class VideoRemuxPlugin extends Plugin {
     MediaExtractor extractor,
     int[] trackMap,
     long[] perTrack,
-    MediaMuxer muxer
+    MediaMuxer muxer,
+    KeepCut cut
   ) throws Exception {
     // Extractor track i is the i-th trak; checked against its kind.
     int n = extractor.getTrackCount();
@@ -209,6 +251,8 @@ public class VideoRemuxPlugin extends Plugin {
       if (pick < 0) break;
       Fmp4Index.Sample s = index.tracks.get(pick).samples.get(next[pick]++);
       if (s.size <= 0) continue;
+      long ptsUs = cut != null ? cut.map(s.ptsUs) : s.ptsUs;
+      if (ptsUs < 0) continue;
       file.seek(s.offset);
       file.readFully(bytes, 0, s.size);
       if (toAnnexB[pick]) lengthsToStartCodes(bytes, s.size);
@@ -216,13 +260,38 @@ public class VideoRemuxPlugin extends Plugin {
       buffer.limit(s.size);
       info.offset = 0;
       info.size = s.size;
-      info.presentationTimeUs = s.ptsUs;
+      info.presentationTimeUs = ptsUs;
       info.flags = s.sync ? MediaCodec.BUFFER_FLAG_KEY_FRAME : 0;
       muxer.writeSampleData(trackMap[pick], buffer, info);
       samples++;
       perTrack[pick]++;
     }
     return samples;
+  }
+
+  /**
+   * The cut for `keep`: the file's first frame is the earliest sample of any
+   * kept track, and stretches start on the first video track's keyframes.
+   */
+  private static KeepCut planCut(Fmp4Index index, int[] trackMap, long[][] keep) {
+    long t0 = Long.MAX_VALUE;
+    long[] sync = new long[0];
+    boolean haveVideo = false;
+    for (int i = 0; i < index.tracks.size(); i++) {
+      if (trackMap[i] < 0) continue;
+      Fmp4Index.Track t = index.tracks.get(i);
+      for (Fmp4Index.Sample s : t.samples) t0 = Math.min(t0, s.ptsUs);
+      if (!haveVideo && t.handler.equals("vide")) {
+        haveVideo = true;
+        List<Long> keys = new ArrayList<>();
+        for (Fmp4Index.Sample s : t.samples) if (s.sync) keys.add(s.ptsUs);
+        sync = new long[keys.size()];
+        for (int k = 0; k < sync.length; k++) sync[k] = keys.get(k);
+        java.util.Arrays.sort(sync);
+      }
+    }
+    if (t0 == Long.MAX_VALUE) return null;
+    return KeepCut.plan(keep, t0, sync);
   }
 
   /**

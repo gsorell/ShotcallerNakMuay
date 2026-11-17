@@ -139,3 +139,169 @@ public class AudioSessionPlugin: CAPPlugin, CAPBridgedPlugin {
         ])
     }
 }
+
+/// The app's own Capacitor plugins, registered by hand.
+///
+/// Capacitor on iOS loads only the plugins named in the generated
+/// capacitor.config.json's `packageClassList`, which `cap sync` rewrites from
+/// the npm plugins alone: a plugin class that lives in the app is found by
+/// nobody, with no error. (So AudioSessionPlugin above has never been
+/// registered on iOS; nothing in the web layer calls it either.) The app's
+/// storyboard uses this subclass, which registers them as the bridge loads.
+/// The `@objc` name lets Main.storyboard find it without a module name.
+@objc(MainViewController)
+class MainViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        bridge?.registerPluginInstance(VideoRemuxPlugin())
+    }
+}
+
+/// Rewrites the full session (see fullSession.ts) as an ordinary MP4 that
+/// Photos can scrub, with only the stretches that were work in it: the rests
+/// are cut, and what's left is joined back to back.
+///
+/// The same job as VideoRemuxPlugin.java on Android, done with AVFoundation:
+/// the kept stretches go into a composition, exported with the passthrough
+/// preset, so nothing is re-encoded. If the cut fails, the whole file is
+/// exported instead (the summary says "uncut"); if that fails too, the call
+/// rejects and the caller saves the file as it was recorded.
+@objc(VideoRemuxPlugin)
+public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "VideoRemuxPlugin"
+    public let jsName = "VideoRemux"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "remuxToMp4", returnType: CAPPluginReturnPromise)
+    ]
+
+    /// `{ from, to, keep? }`: file:// URIs, and the stretches to keep as
+    /// `[{ fromMs, toMs }]` from the first frame. Resolves `{ uri, summary }`.
+    @objc func remuxToMp4(_ call: CAPPluginCall) {
+        guard let from = call.getString("from"), let to = call.getString("to"),
+              let inURL = VideoRemuxPlugin.fileURL(from),
+              let outURL = VideoRemuxPlugin.fileURL(to) else {
+            call.reject("from and to are required")
+            return
+        }
+        var spans: [(Double, Double)] = []
+        for item in call.getArray("keep") ?? [] {
+            guard let o = item as? JSObject,
+                  let f = (o["fromMs"] as? NSNumber)?.doubleValue,
+                  let t = (o["toMs"] as? NSNumber)?.doubleValue,
+                  t > f else { continue }
+            spans.append((f, t))
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let started = Date()
+            VideoRemuxPlugin.export(inURL, to: outURL, keep: spans) { cutError in
+                if let cutError = cutError, !spans.isEmpty {
+                    // The cut failed: the whole file, rather than nothing.
+                    VideoRemuxPlugin.export(inURL, to: outURL, keep: []) { wholeError in
+                        if let wholeError = wholeError {
+                            call.reject("remux failed: \(wholeError.localizedDescription)")
+                        } else {
+                            call.resolve([
+                                "uri": outURL.absoluteString,
+                                "summary": "uncut (\(cutError.localizedDescription))"
+                            ])
+                        }
+                    }
+                    return
+                }
+                if let cutError = cutError {
+                    call.reject("remux failed: \(cutError.localizedDescription)")
+                    return
+                }
+                let ms = Int(Date().timeIntervalSince(started) * 1000)
+                call.resolve([
+                    "uri": outURL.absoluteString,
+                    "summary": spans.isEmpty ? "whole, \(ms)ms" : "\(spans.count) spans kept, \(ms)ms"
+                ])
+            }
+        }
+    }
+
+    private static func fileURL(_ s: String) -> URL? {
+        if s.hasPrefix("file:") { return URL(string: s) }
+        return URL(fileURLWithPath: s)
+    }
+
+    private struct RemuxError: LocalizedError {
+        let errorDescription: String?
+        init(_ message: String) { errorDescription = message }
+    }
+
+    /// Exports `keep` (all of it, if empty) from `inURL` to `outURL`; calls
+    /// back with nil once written, or the error.
+    private static func export(
+        _ inURL: URL,
+        to outURL: URL,
+        keep: [(Double, Double)],
+        done: @escaping (Error?) -> Void
+    ) {
+        try? FileManager.default.removeItem(at: outURL)
+        let asset = AVURLAsset(url: inURL)
+        let tracks = asset.tracks.filter { $0.mediaType == .video || $0.mediaType == .audio }
+        guard !tracks.isEmpty else {
+            done(RemuxError("no audio or video tracks"))
+            return
+        }
+        // The file's first frame: what the spans count from.
+        let t0 = tracks.map { $0.timeRange.start }.min() ?? .zero
+        let end = tracks.map { $0.timeRange.end }.max() ?? asset.duration
+        var ranges: [CMTimeRange] = keep.map { span in
+            let a = CMTimeAdd(t0, CMTime(seconds: span.0 / 1000, preferredTimescale: 600))
+            let b = CMTimeMinimum(end, CMTimeAdd(t0, CMTime(seconds: span.1 / 1000, preferredTimescale: 600)))
+            return CMTimeRange(start: a, end: b)
+        }.filter { $0.duration > .zero }
+        if !keep.isEmpty && ranges.isEmpty {
+            done(RemuxError("nothing to keep"))
+            return
+        }
+        if ranges.isEmpty { ranges = [CMTimeRange(start: t0, end: end)] }
+
+        let composition = AVMutableComposition()
+        do {
+            for track in tracks {
+                guard let into = composition.addMutableTrack(
+                    withMediaType: track.mediaType,
+                    preferredTrackID: kCMPersistentTrackID_Invalid
+                ) else { continue }
+                var cursor = CMTime.zero
+                for range in ranges {
+                    let part = range.intersection(track.timeRange)
+                    if part.duration > .zero {
+                        // Where in the span this track's part starts, so a
+                        // track that starts late stays in step.
+                        let at = CMTimeAdd(cursor, CMTimeSubtract(part.start, range.start))
+                        try into.insertTimeRange(part, of: track, at: at)
+                    }
+                    cursor = CMTimeAdd(cursor, range.duration)
+                }
+                if track.mediaType == .video { into.preferredTransform = track.preferredTransform }
+            }
+        } catch {
+            done(error)
+            return
+        }
+        guard let session = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough) else {
+            done(RemuxError("no export session"))
+            return
+        }
+        guard session.supportedFileTypes.contains(.mp4) else {
+            done(RemuxError("passthrough can't write mp4 for this file"))
+            return
+        }
+        session.outputURL = outURL
+        session.outputFileType = .mp4
+        // The index up front, so Photos can scrub it straight away.
+        session.shouldOptimizeForNetworkUse = true
+        session.exportAsynchronously {
+            if session.status == .completed {
+                done(nil)
+            } else {
+                try? FileManager.default.removeItem(at: outURL)
+                done(session.error ?? RemuxError("export ended \(session.status.rawValue)"))
+            }
+        }
+    }
+}

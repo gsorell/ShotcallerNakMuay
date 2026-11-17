@@ -48,28 +48,47 @@ export const remuxToMp4 = async (
   }
 };
 
+/** A stretch of a recording to keep, in ms from its first frame. */
+export interface KeepSpan {
+  fromMs: number;
+  toMs: number;
+}
+
 interface VideoRemuxPlugin {
-  remuxToMp4(opts: { from: string; to: string }): Promise<{ uri: string; summary?: string }>;
+  remuxToMp4(opts: {
+    from: string;
+    to: string;
+    keep?: KeepSpan[];
+  }): Promise<{ uri: string; summary?: string }>;
 }
 
 const VideoRemux = registerPlugin<VideoRemuxPlugin>("VideoRemux");
 
 /**
  * The same fix for a video already on disk and too big to hold in memory:
- * the full session (see rawCapture.ts). Done natively, file to file
- * (VideoRemuxPlugin.java), since the WebView can't read a large file a piece
- * at a time. Android only for now; elsewhere, and on any failure, null is
- * returned and the caller keeps the original.
+ * the full session (see fullSession.ts). Done natively, file to file
+ * (VideoRemuxPlugin.java on Android, VideoRemuxPlugin in AppDelegate.swift on
+ * iOS), since the WebView can't read a large file a piece at a time. With
+ * `keep`, only those stretches are written, back to back: the rests are cut.
+ * If the cut fails the plugin writes the whole file instead (the summary says
+ * "uncut"). On any other failure, and in the browser, null is returned and
+ * the caller keeps the original.
  */
 export const remuxFileToMp4 = async (
   from: string,
   to: string,
-  log: (line: string) => void = () => {}
+  log: (line: string) => void = () => {},
+  keep?: KeepSpan[]
 ): Promise<string | null> => {
-  if (Capacitor.getPlatform() !== "android") return null;
+  const platform = Capacitor.getPlatform();
+  if (platform !== "android" && platform !== "ios") return null;
   try {
     const startedAt = Date.now();
-    const { uri, summary } = await VideoRemux.remuxToMp4({ from, to });
+    const { uri, summary } = await VideoRemux.remuxToMp4({
+      from,
+      to,
+      ...(keep?.length ? { keep } : {}),
+    });
     log(`full session indexed in ${Date.now() - startedAt}ms: ${summary ?? "?"}`);
     return uri;
   } catch (e) {

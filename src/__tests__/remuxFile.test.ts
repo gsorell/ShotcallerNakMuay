@@ -34,8 +34,28 @@ describe("remuxFileToMp4 (the full session, made scrubbable)", () => {
     expect(log).toHaveBeenCalledWith(expect.stringContaining("left as recorded"));
   });
 
-  it("does nothing off Android", async () => {
+  it("passes the stretches to keep, so the rests are cut", async () => {
+    native.remuxToMp4.mockResolvedValue({ uri: "file:///cache/b.mp4" });
+    const keep = [
+      { fromMs: 5000, toMs: 185000 },
+      { fromMs: 245000, toMs: 427500 },
+    ];
+    await remuxFileToMp4("file:///cache/a.mp4", "file:///cache/b.mp4", () => {}, keep);
+    expect(native.remuxToMp4).toHaveBeenCalledWith({
+      from: "file:///cache/a.mp4",
+      to: "file:///cache/b.mp4",
+      keep,
+    });
+  });
+
+  it("runs on iOS too (VideoRemuxPlugin in AppDelegate.swift)", async () => {
     platform.name = "ios";
+    native.remuxToMp4.mockResolvedValue({ uri: "file:///cache/b.mp4" });
+    await expect(remuxFileToMp4("a", "b")).resolves.toBe("file:///cache/b.mp4");
+  });
+
+  it("does nothing in the browser", async () => {
+    platform.name = "web";
     await expect(remuxFileToMp4("a", "b")).resolves.toBeNull();
     expect(native.remuxToMp4).not.toHaveBeenCalled();
   });

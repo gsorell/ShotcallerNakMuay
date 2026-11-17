@@ -22,7 +22,7 @@ import {
 import type { SessionReel } from "./reelStore";
 import { remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
-import { RawCapture, fullSessionWanted } from "./rawCapture";
+import { FullSession, fullSessionWanted } from "./fullSession";
 
 /**
  * Whether a session ended with enough work in it for a reel: about one
@@ -99,8 +99,8 @@ export class ReelRecorder {
     delayMs: number;
     e: Extract<CalloutEvent, { type: "scheduled" }>;
   } | null = null;
-  /** The whole session uncut, when it is to be kept (see rawCapture.ts). */
-  private raw: RawCapture | null = null;
+  /** The whole session, rests cut, when it is to be kept (see fullSession.ts). */
+  private full: FullSession | null = null;
   /** False once the session is known to be too short to keep anything. */
   private keepFull = true;
   /** Told when filming starts or stops, for the preview's red dot. */
@@ -151,10 +151,6 @@ export class ReelRecorder {
     this.notes.log(
       `clips mime "${this.mimeType}", preview ${preview.videoWidth}x${preview.videoHeight}`
     );
-    if (fullSessionWanted()) {
-      this.raw = new RawCapture((line) => this.notes.log(line));
-      this.raw.start(this.camera, this.mimeType);
-    }
     this.meter = new MotionMeter(preview);
     this.meter.start();
     if (withAudio) {
@@ -174,6 +170,10 @@ export class ReelRecorder {
     this.withAudio = withAudio;
     this.title = titleCard(this.roundCount, this.roundMs);
     this.renderer.setTitle(this.title);
+    if (fullSessionWanted()) {
+      this.full = new FullSession((line) => this.notes.log(line), this.roundCount);
+      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title);
+    }
     this.scheduler = new SegmentScheduler(
       () => this.openSegment(),
       (on) => this.onRecordingChange(on)
@@ -188,11 +188,11 @@ export class ReelRecorder {
       // count as the completion screen's "shots called" (shotsCalledOutRef
       // in useCalloutEngine), or the two disagree (2026-11-16).
       this.callsMade += 1;
-      this.raw?.mark({ type: "called", text: e.call.text, between: e.call.between });
+      this.full?.mark({ type: "called", text: e.call.text, between: e.call.between });
     } else if (e.type === "spoken") {
-      this.raw?.mark({ type: "spoken" });
+      this.full?.mark({ type: "spoken" });
     } else if (e.type === "sound") {
-      this.raw?.mark({ type: "sound", durationMs: e.durationMs });
+      this.full?.mark({ type: "sound", durationMs: e.durationMs });
     }
     if (this.held && (e.type === "scheduled" || e.type === "called")) {
       // The engine often schedules its next call just as a round ends; that
@@ -224,7 +224,7 @@ export class ReelRecorder {
 
   /** Paused, resting or counting down: stop filming. */
   hold(): void {
-    this.raw?.mark({ type: "hold" });
+    this.full?.hold();
     this.held = true;
     this.heldSchedule = null;
     this.stopWorkClock();
@@ -237,6 +237,7 @@ export class ReelRecorder {
    */
   resume(): void {
     this.held = false;
+    this.full?.resume();
     const s = this.heldSchedule;
     this.heldSchedule = null;
     if (!s) return;
@@ -246,7 +247,7 @@ export class ReelRecorder {
 
   /** A round ended: pick its best clips and add them to the reel. */
   roundOver(): void {
-    this.raw?.mark({ type: "roundOver" });
+    this.full?.roundOver();
     this.held = true;
     this.heldSchedule = null;
     this.stopWorkClock();
@@ -270,8 +271,12 @@ export class ReelRecorder {
       this.failure = null;
       return null;
     }
+    // The full session closes on the reel's end card, while the last round
+    // is picked.
+    const fullEnded = this.full?.end(endCard(this.callsMade, this.workedMs));
     this.rounds = this.rounds.then(() => this.closeRound());
     await this.rounds;
+    await fullEnded;
     // Nothing more is filmed; the camera can go before the last assembly.
     this.stopCapture();
     const renderer = this.renderer;
@@ -339,9 +344,9 @@ export class ReelRecorder {
   }
 
   private stopCapture(): void {
-    // Before the camera's tracks end, or the raw file loses its tail.
-    this.raw?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull);
-    this.raw = null;
+    // Before the camera's tracks end, or the full session loses its tail.
+    this.full?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull);
+    this.full = null;
     this.meter?.stop();
     this.meter = null;
     this.hits?.stop();
