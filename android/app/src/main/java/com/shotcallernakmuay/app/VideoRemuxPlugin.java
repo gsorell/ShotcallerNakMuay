@@ -82,6 +82,8 @@ public class VideoRemuxPlugin extends Plugin {
           JSObject result = new JSObject();
           result.put("uri", Uri.fromFile(new File(outPath)).toString());
           result.put("summary", summary);
+          // Whether any sound made it in (see remux's summary: "audio/... N").
+          result.put("audio", summary.matches("(?s).*audio/\\S+ [1-9].*"));
           call.resolve(result);
         } catch (Throwable e) {
           //noinspection ResultOfMethodCallIgnored

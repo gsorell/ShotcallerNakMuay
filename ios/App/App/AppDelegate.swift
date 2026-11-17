@@ -47,6 +47,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     static func applyAudioSessionCategory() {
         do {
             let session = AVAudioSession.sharedInstance()
+            // Never while a session is being filmed: WebKit moves the session
+            // to .playAndRecord while the microphone is open, and .playback
+            // has no input, so putting it back mid-session (coming back from
+            // Control Center or a notification fires applicationDidBecomeActive)
+            // would leave the rest of the reel and the full session silent.
+            // .playAndRecord isn't muted by the Ring/Silent switch either.
+            if session.category == .playAndRecord { return }
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
         } catch {
@@ -140,22 +147,13 @@ public class AudioSessionPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-/// The app's own Capacitor plugins, registered by hand.
+/// Registered by scripts/register-ios-app-plugins.mjs, which adds it to the
+/// generated capacitor.config.json's packageClassList after every cap sync:
+/// iOS registers only the classes named there, and cap sync lists the npm
+/// plugins alone. (AudioSessionPlugin above isn't listed, so it has never been
+/// registered; the web layer's call to it fails quietly. Left that way on
+/// purpose for now: see applyAudioSessionCategory.)
 ///
-/// Capacitor on iOS loads only the plugins named in the generated
-/// capacitor.config.json's `packageClassList`, which `cap sync` rewrites from
-/// the npm plugins alone: a plugin class that lives in the app is found by
-/// nobody, with no error. (So AudioSessionPlugin above has never been
-/// registered on iOS; nothing in the web layer calls it either.) The app's
-/// storyboard uses this subclass, which registers them as the bridge loads.
-/// The `@objc` name lets Main.storyboard find it without a module name.
-@objc(MainViewController)
-class MainViewController: CAPBridgeViewController {
-    override func capacitorDidLoad() {
-        bridge?.registerPluginInstance(VideoRemuxPlugin())
-    }
-}
-
 /// Rewrites the full session (see fullSession.ts) as an ordinary MP4 that
 /// Photos can scrub, with only the stretches that were work in it: the rests
 /// are cut, and what's left is joined back to back.
@@ -192,16 +190,17 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         DispatchQueue.global(qos: .userInitiated).async {
             let started = Date()
-            VideoRemuxPlugin.export(inURL, to: outURL, keep: spans) { cutError in
+            VideoRemuxPlugin.export(inURL, to: outURL, keep: spans) { cutError, cutAudio in
                 if let cutError = cutError, !spans.isEmpty {
                     // The cut failed: the whole file, rather than nothing.
-                    VideoRemuxPlugin.export(inURL, to: outURL, keep: []) { wholeError in
+                    VideoRemuxPlugin.export(inURL, to: outURL, keep: []) { wholeError, wholeAudio in
                         if let wholeError = wholeError {
                             call.reject("remux failed: \(wholeError.localizedDescription)")
                         } else {
                             call.resolve([
                                 "uri": outURL.absoluteString,
-                                "summary": "uncut (\(cutError.localizedDescription))"
+                                "audio": wholeAudio,
+                                "summary": "uncut (\(cutError.localizedDescription)), audio \(wholeAudio)"
                             ])
                         }
                     }
@@ -214,7 +213,8 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
                 let ms = Int(Date().timeIntervalSince(started) * 1000)
                 call.resolve([
                     "uri": outURL.absoluteString,
-                    "summary": spans.isEmpty ? "whole, \(ms)ms" : "\(spans.count) spans kept, \(ms)ms"
+                    "audio": cutAudio,
+                    "summary": (spans.isEmpty ? "whole" : "\(spans.count) spans kept") + ", audio \(cutAudio), \(ms)ms"
                 ])
             }
         }
@@ -236,13 +236,13 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
         _ inURL: URL,
         to outURL: URL,
         keep: [(Double, Double)],
-        done: @escaping (Error?) -> Void
+        done: @escaping (Error?, Bool) -> Void
     ) {
         try? FileManager.default.removeItem(at: outURL)
         let asset = AVURLAsset(url: inURL)
         let tracks = asset.tracks.filter { $0.mediaType == .video || $0.mediaType == .audio }
         guard !tracks.isEmpty else {
-            done(RemuxError("no audio or video tracks"))
+            done(RemuxError("no audio or video tracks"), false)
             return
         }
         // The file's first frame: what the spans count from.
@@ -254,7 +254,7 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
             return CMTimeRange(start: a, end: b)
         }.filter { $0.duration > .zero }
         if !keep.isEmpty && ranges.isEmpty {
-            done(RemuxError("nothing to keep"))
+            done(RemuxError("nothing to keep"), false)
             return
         }
         if ranges.isEmpty { ranges = [CMTimeRange(start: t0, end: end)] }
@@ -280,27 +280,29 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
                 if track.mediaType == .video { into.preferredTransform = track.preferredTransform }
             }
         } catch {
-            done(error)
+            done(error, false)
             return
         }
         guard let session = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough) else {
-            done(RemuxError("no export session"))
+            done(RemuxError("no export session"), false)
             return
         }
         guard session.supportedFileTypes.contains(.mp4) else {
-            done(RemuxError("passthrough can't write mp4 for this file"))
+            done(RemuxError("passthrough can't write mp4 for this file"), false)
             return
         }
         session.outputURL = outURL
         session.outputFileType = .mp4
         // The index up front, so Photos can scrub it straight away.
         session.shouldOptimizeForNetworkUse = true
+        // Whether any sound made it in: the microphone's, kept with the picture.
+        let audio = composition.tracks(withMediaType: .audio).contains { $0.timeRange.duration > .zero }
         session.exportAsynchronously {
             if session.status == .completed {
-                done(nil)
+                done(nil, audio)
             } else {
                 try? FileManager.default.removeItem(at: outURL)
-                done(session.error ?? RemuxError("export ended \(session.status.rawValue)"))
+                done(session.error ?? RemuxError("export ended \(session.status.rawValue)"), false)
             }
         }
     }

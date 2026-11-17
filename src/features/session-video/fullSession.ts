@@ -4,6 +4,7 @@ import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import { getKeepFullSession } from "./recordPreference";
 import { writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
+import { patchFullSession, setFullSession } from "./reelStore";
 import { remuxFileToMp4, type KeepSpan } from "./remux";
 import { saveFileToGallery } from "./saveToGallery";
 import { cardAssetsReady, drawWatermark, loadWatermark } from "./watermark";
@@ -131,6 +132,9 @@ export class FullSession {
   private readonly layer = document.createElement("canvas");
   /** What the layer shows, so it's redrawn only when that changes. */
   private layerKey = "";
+  /** The microphone went into the recording (it was granted). */
+  private withMic = false;
+  private micTracks: MediaStreamTrack[] = [];
 
   constructor(
     private readonly log: (line: string) => void,
@@ -170,6 +174,15 @@ export class FullSession {
 
       const stream = this.canvas.captureStream(30);
       audio.forEach((t) => stream.addTrack(t));
+      this.withMic = audio.length > 0;
+      this.micTracks = audio;
+      // The sound stopping mid-session (iOS hands the microphone to a call,
+      // or the audio session is changed under it) shows up as a mute.
+      audio.forEach((t) => {
+        t.addEventListener("mute", () => this.log(`full session mic muted at ${Math.round(this.now() / 1000)}s`));
+        t.addEventListener("unmute", () => this.log(`full session mic back at ${Math.round(this.now() / 1000)}s`));
+        t.addEventListener("ended", () => this.log(`full session mic ended at ${Math.round(this.now() / 1000)}s`));
+      });
       // The MP4 writer only hands over finished fragments, and a fragment
       // ends at a keyframe. Left to itself the Pixel's encoder sent none
       // after the first, so the whole session arrived as one chunk at the
@@ -199,6 +212,7 @@ export class FullSession {
       if (!held) this.work();
       this.log(
         `full session on, ${rec.mimeType}, ${this.canvas.width}x${this.canvas.height}, ` +
+          `mic ${audio.map((t) => `${t.readyState}${t.muted ? " muted" : ""}`).join(",") || "none"}, ` +
           `${"requestVideoFrameCallback" in source ? "per frame" : "per animation frame"}`
       );
     } catch (e) {
@@ -260,6 +274,11 @@ export class FullSession {
     if (!rec) return;
     this.rec = null;
     const spans = this.spans.all(this.now());
+    this.log(
+      `full session stopping, mic ${
+        this.micTracks.map((t) => `${t.readyState}${t.muted ? " muted" : ""}`).join(",") || "none"
+      }`
+    );
     const stopped = new Promise<void>((resolve) => {
       rec.addEventListener("stop", () => resolve(), { once: true });
       setTimeout(resolve, 5000);
@@ -270,6 +289,15 @@ export class FullSession {
       /* already stopped */
     }
     const hits = hitTimes.map((t) => Math.round(t - this.began)).filter((t) => t >= 0);
+    // Said on the completion screen from the moment the session ends, so
+    // nobody finds it in the gallery days later by surprise.
+    if (keep) {
+      setFullSession({
+        id: this.path,
+        status: "saving",
+        durationMs: spans.reduce((n, s) => n + s.toMs - s.fromMs, 0),
+      });
+    }
     void stopped
       .then(() => {
         this.drawing = false;
@@ -401,17 +429,26 @@ export class FullSession {
       `full session recorded: ${this.chunks} chunks, ${this.bytes} bytes, ` +
         `${spans.length} spans (${keptS}s) to keep${this.broken ? ", write failed" : ""}`
     );
-    if (!this.wrote) return;
+    if (!this.wrote) {
+      patchFullSession(this.path, "failed");
+      return;
+    }
     const file = { path: `${this.path}.${this.ext}`, directory: Directory.Cache };
     const indexed = { path: `${this.path}_indexed.mp4`, directory: Directory.Cache };
     try {
       const { uri } = await Filesystem.getUri(file);
       // As recorded it can't be scrubbed and still has the rests in it.
       const { uri: to } = await Filesystem.getUri(indexed);
-      const saved = (await remuxFileToMp4(uri, to, this.log, spans)) ?? uri;
-      await saveFileToGallery(saved, "_full");
+      const remuxed = await remuxFileToMp4(uri, to, this.log, spans);
+      await saveFileToGallery(remuxed?.uri ?? uri, "_full");
+      // Said, not hidden: a session filmed with the microphone that saved
+      // without sound is a fault to hear about.
+      const silent = this.withMic && remuxed?.audio === false;
+      if (silent) this.log("full session saved WITHOUT sound");
+      patchFullSession(this.path, "saved", silent);
     } catch (e) {
       this.log(`full session gallery save failed: ${String(e)}`);
+      patchFullSession(this.path, "failed");
     } finally {
       // DEBUG: the recording as it came, kept for a look over adb.
       if (!this.sidecar) await Filesystem.deleteFile(file).catch(() => undefined);

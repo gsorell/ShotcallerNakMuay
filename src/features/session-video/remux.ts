@@ -59,7 +59,7 @@ interface VideoRemuxPlugin {
     from: string;
     to: string;
     keep?: KeepSpan[];
-  }): Promise<{ uri: string; summary?: string }>;
+  }): Promise<{ uri: string; summary?: string; audio?: boolean }>;
 }
 
 const VideoRemux = registerPlugin<VideoRemuxPlugin>("VideoRemux");
@@ -72,25 +72,26 @@ const VideoRemux = registerPlugin<VideoRemuxPlugin>("VideoRemux");
  * `keep`, only those stretches are written, back to back: the rests are cut.
  * If the cut fails the plugin writes the whole file instead (the summary says
  * "uncut"). On any other failure, and in the browser, null is returned and
- * the caller keeps the original.
+ * the caller keeps the original. `audio`: whether the written file has any
+ * sound in it, where the plugin says.
  */
 export const remuxFileToMp4 = async (
   from: string,
   to: string,
   log: (line: string) => void = () => {},
   keep?: KeepSpan[]
-): Promise<string | null> => {
+): Promise<{ uri: string; audio?: boolean } | null> => {
   const platform = Capacitor.getPlatform();
   if (platform !== "android" && platform !== "ios") return null;
   try {
     const startedAt = Date.now();
-    const { uri, summary } = await VideoRemux.remuxToMp4({
+    const { uri, summary, audio } = await VideoRemux.remuxToMp4({
       from,
       to,
       ...(keep?.length ? { keep } : {}),
     });
     log(`full session indexed in ${Date.now() - startedAt}ms: ${summary ?? "?"}`);
-    return uri;
+    return { uri, ...(typeof audio === "boolean" ? { audio } : {}) };
   } catch (e) {
     log(`full session left as recorded (could not remux): ${String(e)}`);
     return null;

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { KeepSpans, roundTag } from "@/features/session-video/fullSession";
+import {
+  clearSessionReel,
+  fullSessionText,
+  getFullSession,
+  patchFullSession,
+  setFullSession,
+} from "@/features/session-video/reelStore";
 
 describe("KeepSpans", () => {
   it("keeps each stretch of work, from start to stop", () => {
@@ -58,5 +65,35 @@ describe("roundTag", () => {
 
   it("never counts past the last round", () => {
     expect(roundTag(5, 5)).toBe("ROUND 5 / 5");
+  });
+});
+
+describe("the full session's line on the completion screen", () => {
+  it("says it's saving, then where it went and how long it runs", () => {
+    expect(fullSessionText({ status: "saving", durationMs: 0 }, "android")).toBe(
+      "Saving your full session…"
+    );
+    expect(fullSessionText({ status: "saved", durationMs: 14.4 * 60000 }, "android")).toBe(
+      "Full session · 14 min · saved to your gallery"
+    );
+    expect(fullSessionText({ status: "saved", durationMs: 50000 }, "ios")).toBe(
+      "Full session · 1 min · saved to Photos"
+    );
+    expect(
+      fullSessionText({ status: "saved", durationMs: 50000, silent: true }, "ios")
+    ).toBe("Full session · 1 min · saved to Photos, without sound");
+    expect(fullSessionText({ status: "failed", durationMs: 50000 }, "ios")).toBe(
+      "Full session · couldn't save to Photos"
+    );
+  });
+
+  it("ignores a late update from an earlier session's recording", () => {
+    setFullSession({ id: "new", status: "saving", durationMs: 1000 });
+    patchFullSession("old", "saved");
+    expect(getFullSession()?.status).toBe("saving");
+    patchFullSession("new", "saved");
+    expect(getFullSession()?.status).toBe("saved");
+    clearSessionReel();
+    expect(getFullSession()).toBeNull();
   });
 });

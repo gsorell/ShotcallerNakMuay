@@ -20,7 +20,7 @@ describe("remuxFileToMp4 (the full session, made scrubbable)", () => {
     native.remuxToMp4.mockResolvedValue({ uri: "file:///cache/a_indexed.mp4" });
     await expect(
       remuxFileToMp4("file:///cache/a.mp4", "file:///cache/a_indexed.mp4")
-    ).resolves.toBe("file:///cache/a_indexed.mp4");
+    ).resolves.toEqual({ uri: "file:///cache/a_indexed.mp4" });
     expect(native.remuxToMp4).toHaveBeenCalledWith({
       from: "file:///cache/a.mp4",
       to: "file:///cache/a_indexed.mp4",
@@ -50,8 +50,11 @@ describe("remuxFileToMp4 (the full session, made scrubbable)", () => {
 
   it("runs on iOS too (VideoRemuxPlugin in AppDelegate.swift)", async () => {
     platform.name = "ios";
-    native.remuxToMp4.mockResolvedValue({ uri: "file:///cache/b.mp4" });
-    await expect(remuxFileToMp4("a", "b")).resolves.toBe("file:///cache/b.mp4");
+    native.remuxToMp4.mockResolvedValue({ uri: "file:///cache/b.mp4", audio: true });
+    await expect(remuxFileToMp4("a", "b")).resolves.toEqual({
+      uri: "file:///cache/b.mp4",
+      audio: true,
+    });
   });
 
   it("does nothing in the browser", async () => {

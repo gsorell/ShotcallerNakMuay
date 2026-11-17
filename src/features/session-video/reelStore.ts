@@ -55,8 +55,63 @@ export const patchSessionReel = (
 
 export const clearSessionReel = (): void => {
   failure = null;
+  full = null;
   setSessionReel(null);
 };
+
+/**
+ * The full session from the session that just ended (see fullSession.ts),
+ * for the line on the completion screen that says it is being saved, then
+ * that it has been: it goes to the gallery, never played in the app.
+ */
+export interface FullSessionVideo {
+  /** Which recording this is, so a late update from an old one is ignored. */
+  id: string;
+  status: "saving" | "saved" | "failed";
+  /** How long it runs once the rests are cut. */
+  durationMs: number;
+  /** Saved, but the microphone's sound didn't make it in. */
+  silent?: boolean;
+}
+
+let full: FullSessionVideo | null = null;
+
+export const setFullSession = (f: FullSessionVideo | null): void => {
+  full = f;
+  emit();
+};
+
+/** Updates the full session's status, if it is still recording `id`. */
+export const patchFullSession = (
+  id: string,
+  status: FullSessionVideo["status"],
+  silent = false
+): void => {
+  if (!full || full.id !== id) return;
+  full = { ...full, status, ...(silent ? { silent } : {}) };
+  emit();
+};
+
+/**
+ * The completion screen's line: "Saving your full session…", then "Full
+ * session · 14 min · saved to your gallery" ("Photos" on iOS).
+ */
+export const fullSessionText = (
+  f: Pick<FullSessionVideo, "status" | "durationMs" | "silent">,
+  platform: string
+): string => {
+  const gallery = platform === "ios" ? "Photos" : "your gallery";
+  if (f.status === "saving") return "Saving your full session…";
+  const minutes = Math.max(1, Math.round(f.durationMs / 60000));
+  return f.status === "saved"
+    ? `Full session · ${minutes} min · saved to ${gallery}${f.silent ? ", without sound" : ""}`
+    : `Full session · couldn't save to ${gallery}`;
+};
+
+export const getFullSession = (): FullSessionVideo | null => full;
+
+export const useFullSession = (): FullSessionVideo | null =>
+  useSyncExternalStore(subscribe, () => full, () => null);
 
 export const getSessionReel = (): SessionReel | null => current;
 

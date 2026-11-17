@@ -6,10 +6,12 @@ import { trackEvent } from "@/utils/analytics";
 import {
   closeReelViewer,
   openReelViewer,
+  useFullSession,
   useReelBuilding,
   useReelFailure,
   useReelViewerOpen,
   useSessionReel,
+  fullSessionText,
   type ReelFailure,
   type SessionReel,
 } from "./reelStore";
@@ -17,12 +19,44 @@ import { shareReel } from "./shareReel";
 import "./SessionReelCard.css";
 
 /**
+ * The session's video on the completion screen: the reel's row, and under
+ * it a line for the full session, which goes to the gallery only.
+ */
+export default function SessionReelCard() {
+  return (
+    <>
+      <ReelRow />
+      <FullSessionLine />
+    </>
+  );
+}
+
+/**
+ * "Saving your full session…", then "Full session · 14 min · saved to your
+ * gallery": just said, not played here, so nobody finds it in the gallery
+ * days later wondering where it came from.
+ */
+function FullSessionLine() {
+  const full = useFullSession();
+  if (!full) return null;
+  return (
+    <p
+      className={`full-session-line is-${full.status}`}
+      role="status"
+      aria-live="polite"
+    >
+      {fullSessionText(full, Capacitor.getPlatform())}
+    </p>
+  );
+}
+
+/**
  * "Your reel is ready" — a single row on the completion screen, under the
  * result. The result comes first; the reel is an offer, not a takeover, so
  * the card and its Share / Train again keep the screen. Tapping the row opens
  * the reel full screen.
  */
-export default function SessionReelCard() {
+function ReelRow() {
   const reel = useSessionReel();
   const viewerOpen = useReelViewerOpen();
   const building = useReelBuilding();
