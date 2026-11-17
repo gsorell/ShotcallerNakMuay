@@ -7,7 +7,7 @@ import {
   strikesIn,
   type Candidate,
 } from "./highlights";
-import { openBuiltInMic } from "./micChoice";
+import { allowRecordingAudio, openBuiltInMic } from "./micChoice";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
@@ -103,6 +103,8 @@ export class ReelRecorder {
   private full: FullSession | null = null;
   /** False once the session is known to be too short to keep anything. */
   private keepFull = true;
+  /** Puts the page's audio session back once filming is over (iOS). */
+  private restoreAudioSession: () => void = () => {};
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
@@ -127,7 +129,9 @@ export class ReelRecorder {
     const cam = this.camera.getVideoTracks()[0]?.getSettings?.();
     this.notes.log(`camera ${cam?.width}x${cam?.height}@${cam?.frameRate}`);
     // The phone's own microphone, never a headset's (see micChoice.ts). No
-    // microphone (refused, or none): film silent.
+    // microphone (refused, or none): film silent. On iOS the page's audio
+    // session has to be one that records first, or the sound is silence.
+    this.restoreAudioSession = allowRecordingAudio((line) => this.notes.log(line));
     const mic = await openBuiltInMic();
     mic?.getAudioTracks().forEach((t) => this.camera?.addTrack(t));
     this.notes.log(`mic ${mic?.getAudioTracks()[0]?.label ?? "none"}`);
@@ -353,6 +357,7 @@ export class ReelRecorder {
     this.hits = null;
     this.camera?.getTracks().forEach((t) => t.stop());
     this.camera = null;
+    this.restoreAudioSession();
   }
 
   private async closeRound(): Promise<void> {
