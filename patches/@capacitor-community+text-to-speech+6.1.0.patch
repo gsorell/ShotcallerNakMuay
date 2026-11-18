@@ -15,7 +15,7 @@ diff --git a/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextTo
 index 90444f4..bbe7e83 100644
 --- a/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
 +++ b/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
-@@ -13,16 +13,15 @@ enum QUEUE_STRATEGY: Int {
+@@ -13,16 +13,23 @@ enum QUEUE_STRATEGY: Int {
      override init() {
          super.init()
          self.synthesizer.delegate = self
@@ -38,6 +38,14 @@ index 90444f4..bbe7e83 100644
 +        // user's music on every spoken callout. Leaving the session alone makes
 +        // AppDelegate the single owner. AVSpeechSynthesizer plays fine under
 +        // the .playback + .mixWithOthers session AppDelegate installs.
++        //
++        // PATCHED (patch-package), and speaks on a session of its own, not the
++        // app's. While a session is filmed the app's session records the
++        // microphone (RecordingAudioPlugin), and speech on a recording session
++        // finished every phrase without a sound (TestFlight build 95: calls
++        // 14, spoken 13, nothing heard), until the app was restarted. Earlier
++        // the same happened when WebKit's recording interrupted it (build 93).
++        self.synthesizer.usesApplicationAudioSession = false
      }
  
      public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {

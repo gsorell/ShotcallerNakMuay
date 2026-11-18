@@ -290,6 +290,9 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
         if ranges.isEmpty { ranges = [CMTimeRange(start: t0, end: end)] }
 
         let composition = AVMutableComposition()
+        // The sound's file, held (with `asset`) until the export is done: a
+        // composition's source let go of mid-export can fail it.
+        let soundAsset = sound.map { AVURLAsset(url: $0.0) }
         do {
             for track in tracks {
                 guard let into = composition.addMutableTrack(
@@ -310,7 +313,7 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
                 if track.mediaType == .video { into.preferredTransform = track.preferredTransform }
             }
             if let sound = sound,
-               let soundTrack = AVURLAsset(url: sound.0).tracks(withMediaType: .audio).first,
+               let soundTrack = soundAsset?.tracks(withMediaType: .audio).first,
                let into = composition.addMutableTrack(withMediaType: .audio,
                                                       preferredTrackID: kCMPersistentTrackID_Invalid) {
                 // Video time v is sound time v - offset (the sound started
@@ -347,6 +350,7 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
         // Whether any sound made it in: the microphone's, kept with the picture.
         let audio = composition.tracks(withMediaType: .audio).contains { $0.timeRange.duration > .zero }
         session.exportAsynchronously {
+            withExtendedLifetime((asset, soundAsset)) {}
             if session.status == .completed {
                 done(nil, audio)
             } else {

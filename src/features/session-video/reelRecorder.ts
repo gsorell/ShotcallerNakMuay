@@ -25,12 +25,14 @@ import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentSched
 import { FullSession, fullSessionWanted } from "./fullSession";
 
 /**
- * iOS: record the full session's sound natively (RecordingAudioPlugin). Off:
- * in TestFlight build 95 it left the callouts silent until the app was
- * restarted, and the full session never exported with it. Turned back on
- * by itself, once the silent video works, so its effect is plain.
+ * iOS: record the full session's sound natively (RecordingAudioPlugin). In
+ * TestFlight build 95 it left the callouts silent until the app was
+ * restarted (they now speak on a session of their own: see the
+ * text-to-speech patch), and the full session never exported with it (the
+ * export now falls back to the picture alone, and says why). Off, the
+ * iPhone films silent; build 96 showed that much works.
  */
-const NATIVE_SOUND_ON_IOS = false;
+const NATIVE_SOUND_ON_IOS = true;
 
 /**
  * Whether a session ended with enough work in it for a reel: about one
