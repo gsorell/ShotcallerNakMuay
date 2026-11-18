@@ -25,6 +25,14 @@ import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentSched
 import { FullSession, fullSessionWanted } from "./fullSession";
 
 /**
+ * iOS: record the full session's sound natively (RecordingAudioPlugin). Off:
+ * in TestFlight build 95 it left the callouts silent until the app was
+ * restarted, and the full session never exported with it. Turned back on
+ * by itself, once the silent video works, so its effect is plain.
+ */
+const NATIVE_SOUND_ON_IOS = false;
+
+/**
  * Whether a session ended with enough work in it for a reel: about one
  * round's worth (a completed session always has). Callouts start a moment
  * into a round, so "a round" allows for that.
@@ -131,12 +139,18 @@ export class ReelRecorder {
     this.notes.log(`camera ${cam?.width}x${cam?.height}@${cam?.frameRate}`);
     // The phone's own microphone, never a headset's (see micChoice.ts). No
     // microphone (refused, or none): film silent. Never on iOS: there the
-    // full session's sound is recorded natively (FullSession), and the clips
-    // are filmed silent.
+    // web view's microphone stops the music and silences the callouts. The
+    // full session's sound can be recorded natively (FullSession), but that's
+    // off until it's shown to leave the callouts and the music alone
+    // (NATIVE_SOUND_ON_IOS); till then an iPhone films silent.
     const native = recordsSoundNatively();
     const mic = native ? null : await openBuiltInMic();
     mic?.getAudioTracks().forEach((t) => this.camera?.addTrack(t));
-    this.notes.log(native ? "mic: native, full session only" : `mic ${mic?.getAudioTracks()[0]?.label ?? "none"}`);
+    this.notes.log(
+      native
+        ? `mic: ${NATIVE_SOUND_ON_IOS ? "native, full session only" : "none (iPhone films silent for now)"}`
+        : `mic ${mic?.getAudioTracks()[0]?.label ?? "none"}`
+    );
     if (native) {
       const log = (line: string) => this.notes.log(line);
       // Once "Get ready" and the first calls have had time to play.
@@ -183,7 +197,7 @@ export class ReelRecorder {
     this.renderer.setTitle(this.title);
     if (fullSessionWanted()) {
       this.full = new FullSession((line) => this.notes.log(line), this.roundCount);
-      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, native);
+      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, native && NATIVE_SOUND_ON_IOS);
     }
     this.scheduler = new SegmentScheduler(
       () => this.openSegment(),

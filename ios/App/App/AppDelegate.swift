@@ -196,36 +196,53 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
            let off = (a["offsetMs"] as? NSNumber)?.doubleValue {
             sound = (url, off)
         }
+        // Tried in turn until one writes: the cut with the native sound, the
+        // cut alone, then the whole file alone. Every failure goes in the
+        // summary, with the error's domain and code: "The operation could not
+        // be completed" alone said nothing (build 95).
+        var steps: [(String, [(Double, Double)], (URL, Double)?)] = []
+        if !spans.isEmpty && sound != nil { steps.append(("cut+sound", spans, sound)) }
+        if !spans.isEmpty { steps.append(("cut", spans, nil)) }
+        if spans.isEmpty && sound != nil { steps.append(("whole+sound", [], sound)) }
+        steps.append(("whole", [], nil))
         DispatchQueue.global(qos: .userInitiated).async {
             let started = Date()
-            VideoRemuxPlugin.export(inURL, to: outURL, keep: spans, sound: sound) { cutError, cutAudio in
-                if let cutError = cutError, !spans.isEmpty {
-                    // The cut failed: the whole file, rather than nothing.
-                    VideoRemuxPlugin.export(inURL, to: outURL, keep: [], sound: sound) { wholeError, wholeAudio in
-                        if let wholeError = wholeError {
-                            call.reject("remux failed: \(wholeError.localizedDescription)")
-                        } else {
-                            call.resolve([
-                                "uri": outURL.absoluteString,
-                                "audio": wholeAudio,
-                                "summary": "uncut (\(cutError.localizedDescription)), audio \(wholeAudio)"
-                            ])
-                        }
+            var failures: [String] = []
+            func attempt(_ i: Int) {
+                guard i < steps.count else {
+                    call.reject("remux failed: " + failures.joined(separator: "; "))
+                    return
+                }
+                let (name, keep, withSound) = steps[i]
+                VideoRemuxPlugin.export(inURL, to: outURL, keep: keep, sound: withSound) { error, audio in
+                    if let error = error {
+                        failures.append("\(name): \(VideoRemuxPlugin.describe(error))")
+                        attempt(i + 1)
+                        return
                     }
-                    return
+                    let ms = Int(Date().timeIntervalSince(started) * 1000)
+                    let tried = failures.isEmpty ? "" : " after " + failures.joined(separator: "; ")
+                    call.resolve([
+                        "uri": outURL.absoluteString,
+                        "audio": audio,
+                        "summary": (keep.isEmpty ? "whole" : "\(keep.count) spans kept")
+                            + " (\(name)), audio \(audio), \(ms)ms" + tried
+                    ])
                 }
-                if let cutError = cutError {
-                    call.reject("remux failed: \(cutError.localizedDescription)")
-                    return
-                }
-                let ms = Int(Date().timeIntervalSince(started) * 1000)
-                call.resolve([
-                    "uri": outURL.absoluteString,
-                    "audio": cutAudio,
-                    "summary": (spans.isEmpty ? "whole" : "\(spans.count) spans kept") + ", audio \(cutAudio), \(ms)ms"
-                ])
             }
+            attempt(0)
         }
+    }
+
+    /// An error as domain, code and message, with what lay under it.
+    private static func describe(_ error: Error) -> String {
+        let e = error as NSError
+        var text = "\(e.domain) \(e.code) \(e.localizedDescription)"
+        if let reason = e.localizedFailureReason { text += " (\(reason))" }
+        if let under = e.userInfo[NSUnderlyingErrorKey] as? NSError {
+            text += " <- \(under.domain) \(under.code)"
+        }
+        return text
     }
 
     private static func fileURL(_ s: String) -> URL? {
