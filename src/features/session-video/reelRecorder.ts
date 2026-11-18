@@ -7,7 +7,13 @@ import {
   strikesIn,
   type Candidate,
 } from "./highlights";
-import { openBuiltInMic } from "./micChoice";
+import {
+  allowRecordingAudio,
+  allowRecordingNatively,
+  logAudioSession,
+  openBuiltInMic,
+  releaseRecordingNatively,
+} from "./micChoice";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
@@ -103,6 +109,13 @@ export class ReelRecorder {
   private full: FullSession | null = null;
   /** False once the session is known to be too short to keep anything. */
   private keepFull = true;
+  /** Puts the page's audio session back once filming is over (iOS). */
+  private restoreAudioSession: () => void = () => {};
+  private audioCheck: ReturnType<typeof setTimeout> | undefined;
+  /** The audio session is set for recording, and is to be put back. */
+  private audioHeld = false;
+  /** Calls the voice finished saying, beside callsMade: heard or not. */
+  private spokenCount = 0;
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
@@ -127,10 +140,19 @@ export class ReelRecorder {
     const cam = this.camera.getVideoTracks()[0]?.getSettings?.();
     this.notes.log(`camera ${cam?.width}x${cam?.height}@${cam?.frameRate}`);
     // The phone's own microphone, never a headset's (see micChoice.ts). No
-    // microphone (refused, or none): film silent.
+    // microphone (refused, or none): film silent. On iOS the page's audio
+    // session has to be one that records first, or the sound is silence.
+    this.restoreAudioSession = allowRecordingAudio((line) => this.notes.log(line));
+    this.audioHeld = true;
     const mic = await openBuiltInMic();
     mic?.getAudioTracks().forEach((t) => this.camera?.addTrack(t));
     this.notes.log(`mic ${mic?.getAudioTracks()[0]?.label ?? "none"}`);
+    if (mic) {
+      const log = (line: string) => this.notes.log(line);
+      await allowRecordingNatively(log);
+      // Once "Get ready" and the first calls have had time to play.
+      this.audioCheck = setTimeout(() => void logAudioSession(log, "after 8s"), 8000);
+    }
     // The picture only. Given the microphone too, the muted preview still
     // opened a low-latency output to "play" it, and that crackled a
     // Bluetooth speaker all session (see micChoice.ts).
@@ -190,6 +212,7 @@ export class ReelRecorder {
       this.callsMade += 1;
       this.full?.mark({ type: "called", text: e.call.text, between: e.call.between });
     } else if (e.type === "spoken") {
+      this.spokenCount += 1;
       this.full?.mark({ type: "spoken" });
     } else if (e.type === "sound") {
       this.full?.mark({ type: "sound", durationMs: e.durationMs });
@@ -248,6 +271,7 @@ export class ReelRecorder {
   /** A round ended: pick its best clips and add them to the reel. */
   roundOver(): void {
     this.full?.roundOver();
+    void logAudioSession((line) => this.notes.log(line), `round ${this.round + 1} over`);
     this.held = true;
     this.heldSchedule = null;
     this.stopWorkClock();
@@ -262,6 +286,7 @@ export class ReelRecorder {
     // Stopped before a round's worth of work: no reel. A minute of warming
     // up isn't a session, and its reel would land in the gallery anyway.
     this.notes.log(`finish: worked ${Math.round(this.workedMs / 1000)}s of ${Math.round(this.roundMs / 1000)}s rounds`);
+    this.notes.log(`calls ${this.callsMade}, spoken ${this.spokenCount}`);
     if (!keepsReel(this.workedMs, this.roundMs)) {
       this.keepFull = false;
       this.notes.round(this.round + 1, []);
@@ -353,6 +378,18 @@ export class ReelRecorder {
     this.hits = null;
     this.camera?.getTracks().forEach((t) => t.stop());
     this.camera = null;
+    if (this.audioCheck) clearTimeout(this.audioCheck);
+    if (this.audioHeld) {
+      // Read before it's put back, then the page's type, then the app's.
+      this.audioHeld = false;
+      const restorePage = this.restoreAudioSession;
+      this.restoreAudioSession = () => {};
+      const log = (line: string) => this.notes.log(line);
+      void logAudioSession(log, "at the end").then(() => {
+        restorePage();
+        return releaseRecordingNatively(log);
+      });
+    }
   }
 
   private async closeRound(): Promise<void> {

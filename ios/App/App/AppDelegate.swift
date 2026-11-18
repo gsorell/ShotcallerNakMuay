@@ -307,3 +307,136 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 }
+
+/// The app's audio session while a session is filmed: recording AND playing,
+/// out of the loudspeaker, alongside the user's music.
+///
+/// The microphone is opened by WebKit, and while it records WebKit puts the
+/// session into .playAndRecord with options of its own. With nothing more
+/// done, the callouts (AVSpeechSynthesizer, on this session) went silent
+/// while the bell (Web Audio) still played (TestFlight build 91). So once the
+/// microphone is open the session is set here to .playAndRecord with
+/// .defaultToSpeaker (or it plays from the earpiece), .mixWithOthers (or it
+/// stops the user's music) and Bluetooth, and set again whenever something
+/// changes it (a route change for a new category is how that shows). Put
+/// back to AppDelegate's .playback + .mixWithOthers when filming is over.
+///
+/// What the session was, and every interruption and route change meanwhile,
+/// is kept for status(), which the reel's trace prints: from Windows there's
+/// no other way to see an iPhone's audio session.
+///
+/// Registered by scripts/register-ios-app-plugins.mjs.
+@objc(RecordingAudioPlugin)
+public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "RecordingAudioPlugin"
+    public let jsName = "RecordingAudio"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "allowRecording", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "release", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise)
+    ]
+
+    private static let options: AVAudioSession.CategoryOptions = [
+        .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP
+    ]
+    /// Filming: keep the session recording-and-playing.
+    private var holding = false
+    private var events: [String] = []
+    private let started = Date()
+
+    override public func load() {
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(onInterruption(_:)),
+                           name: AVAudioSession.interruptionNotification, object: nil)
+        center.addObserver(self, selector: #selector(onRouteChange(_:)),
+                           name: AVAudioSession.routeChangeNotification, object: nil)
+    }
+
+    @objc func allowRecording(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.holding = true
+            self.note("allow (was \(RecordingAudioPlugin.describe()))")
+            self.apply()
+            call.resolve(["status": RecordingAudioPlugin.describe()])
+        }
+    }
+
+    @objc func release(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.holding = false
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+                try session.setActive(true)
+                self.note("released -> \(RecordingAudioPlugin.describe())")
+            } catch {
+                self.note("release failed: \(error.localizedDescription)")
+            }
+            call.resolve(["status": RecordingAudioPlugin.describe()])
+        }
+    }
+
+    @objc func status(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let recent = self.events.suffix(30)
+            self.events.removeAll()
+            call.resolve([
+                "status": RecordingAudioPlugin.describe(),
+                "events": Array(recent)
+            ])
+        }
+    }
+
+    /// .playAndRecord with our options, unless it already is.
+    private func apply() {
+        let session = AVAudioSession.sharedInstance()
+        if session.category == .playAndRecord && session.categoryOptions.isSuperset(of: RecordingAudioPlugin.options) {
+            return
+        }
+        do {
+            try session.setCategory(.playAndRecord, mode: .default, options: RecordingAudioPlugin.options)
+            try session.setActive(true)
+            note("applied -> \(RecordingAudioPlugin.describe())")
+        } catch {
+            note("apply failed: \(error.localizedDescription)")
+        }
+    }
+
+    @objc private func onInterruption(_ n: Notification) {
+        let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt ?? 99
+        let kind = AVAudioSession.InterruptionType(rawValue: raw) == .began ? "began" : "ended"
+        DispatchQueue.main.async { self.note("interruption \(kind)") }
+    }
+
+    @objc private func onRouteChange(_ n: Notification) {
+        let raw = n.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt ?? 99
+        DispatchQueue.main.async {
+            self.note("route change \(raw) -> \(RecordingAudioPlugin.describe())")
+            // Reason 3 is a new category: someone (WebKit) set the session.
+            if self.holding { self.apply() }
+        }
+    }
+
+    private func note(_ line: String) {
+        let s = Int(Date().timeIntervalSince(started))
+        events.append("\(s)s \(line)")
+        if events.count > 60 { events.removeFirst(events.count - 60) }
+    }
+
+    /// "PlayAndRecord/Default [speaker,mix,a2dp] out Speaker in MicrophoneBuiltIn"
+    static func describe() -> String {
+        let s = AVAudioSession.sharedInstance()
+        var opts: [String] = []
+        let o = s.categoryOptions
+        if o.contains(.mixWithOthers) { opts.append("mix") }
+        if o.contains(.duckOthers) { opts.append("duck") }
+        if o.contains(.defaultToSpeaker) { opts.append("speaker") }
+        if o.contains(.allowBluetoothA2DP) { opts.append("a2dp") }
+        if o.contains(.allowBluetooth) { opts.append("hfp") }
+        let outs = s.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")
+        let ins = s.currentRoute.inputs.map { $0.portType.rawValue }.joined(separator: ",")
+        let cat = s.category.rawValue.replacingOccurrences(of: "AVAudioSessionCategory", with: "")
+        let mode = s.mode.rawValue.replacingOccurrences(of: "AVAudioSessionMode", with: "")
+        return "\(cat)/\(mode) [\(opts.joined(separator: ","))] out \(outs) in \(ins.isEmpty ? "none" : ins)"
+    }
+}

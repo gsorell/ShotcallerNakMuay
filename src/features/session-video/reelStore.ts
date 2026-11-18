@@ -56,6 +56,7 @@ export const patchSessionReel = (
 export const clearSessionReel = (): void => {
   failure = null;
   full = null;
+  traceSource = null;
   setSessionReel(null);
 };
 
@@ -107,6 +108,19 @@ export const fullSessionText = (
     ? `Full session · ${minutes} min · saved to ${gallery}${f.silent ? ", without sound" : ""}`
     : `Full session · couldn't save to ${gallery}`;
 };
+
+/**
+ * The session's recording trace, read when asked (it runs on while the full
+ * session is cut and saved): what the full session's line shows when tapped,
+ * since on an iPhone there's no other way to read it.
+ */
+let traceSource: (() => string) | null = null;
+
+export const setSessionTrace = (source: (() => string) | null): void => {
+  traceSource = source;
+};
+
+export const sessionTrace = (): string => traceSource?.() ?? "";
 
 export const getFullSession = (): FullSessionVideo | null => full;
 

@@ -1,3 +1,5 @@
+import { Capacitor, registerPlugin } from "@capacitor/core";
+
 /**
  * Which microphone a session films with: always the phone's own.
  *
@@ -127,5 +129,101 @@ export const releaseHeadsetRoute = async (): Promise<void> => {
     s.getTracks().forEach((t) => t.stop());
   } catch {
     /* nothing to release */
+  }
+};
+
+type PageAudioSession = { type: string };
+
+/**
+ * iOS: lets the page record while a session is filmed, and hands back what
+ * undoes it.
+ *
+ * The app sets the page's audio session to "playback" when its sounds first
+ * start (useSoundEffects: it's what keeps the Ring/Silent switch from muting
+ * the bell). WebKit holds to that type even with the microphone open, and
+ * playback has no input: every reel and full session filmed on an iPhone
+ * came out silent, the microphone track there but empty (TestFlight build 90,
+ * 2026-11-17). "play-and-record" is the type that records, and the switch
+ * doesn't mute it either. Put back to what it was once filming is over.
+ *
+ * Safari before 16.4 has no navigator.audioSession and needs none of this:
+ * left on "auto", WebKit records while the microphone is open.
+ */
+export const allowRecordingAudio = (log: (line: string) => void = () => {}): (() => void) => {
+  if (Capacitor.getPlatform() !== "ios") return () => {};
+  const session = (navigator as Navigator & { audioSession?: PageAudioSession }).audioSession;
+  if (!session) {
+    log("audio session: none (before iOS 16.4)");
+    return () => {};
+  }
+  const before = session.type;
+  try {
+    session.type = "play-and-record";
+  } catch (e) {
+    log(`audio session: could not record (${String(e)})`);
+    return () => {};
+  }
+  log(`audio session ${before} -> ${session.type}`);
+  let undone = false;
+  return () => {
+    if (undone) return;
+    undone = true;
+    try {
+      if (session.type === "play-and-record") {
+        session.type = before === "play-and-record" ? "playback" : before;
+      }
+    } catch {
+      /* left recording-capable: still audible, still not muted by the switch */
+    }
+  };
+};
+
+interface RecordingAudioPlugin {
+  allowRecording(): Promise<{ status: string }>;
+  release(): Promise<{ status: string }>;
+  status(): Promise<{ status: string; events: string[] }>;
+}
+
+/** RecordingAudioPlugin in ios/App/App/AppDelegate.swift. */
+const RecordingAudio = registerPlugin<RecordingAudioPlugin>("RecordingAudio");
+
+const onIOS = () => Capacitor.getPlatform() === "ios";
+
+/**
+ * iOS, once the microphone is open: the app's own audio session set to
+ * record and play together, out of the loudspeaker and alongside music.
+ * WebKit's own setting for a recording page left the callouts (native
+ * speech) silent while the bell still played (TestFlight build 91).
+ */
+export const allowRecordingNatively = async (log: (line: string) => void): Promise<void> => {
+  if (!onIOS()) return;
+  try {
+    const { status } = await RecordingAudio.allowRecording();
+    log(`native audio: ${status}`);
+  } catch (e) {
+    log(`native audio could not be set: ${String(e)}`);
+  }
+};
+
+/** Back to AppDelegate's playback + mix, once filming is over (iOS). */
+export const releaseRecordingNatively = async (log: (line: string) => void): Promise<void> => {
+  if (!onIOS()) return;
+  try {
+    const { status } = await RecordingAudio.release();
+    log(`native audio released: ${status}`);
+  } catch (e) {
+    log(`native audio could not be released: ${String(e)}`);
+  }
+};
+
+/** The iOS audio session now, and what happened to it since last asked. */
+export const logAudioSession = async (log: (line: string) => void, when: string): Promise<void> => {
+  if (!onIOS()) return;
+  try {
+    const { status, events } = await RecordingAudio.status();
+    events.forEach((e) => log(`audio: ${e}`));
+    log(`audio ${when}: ${status}`);
+  } catch (e) {
+    log(`audio ${when}: unknown (${String(e)})`);
   }
 };

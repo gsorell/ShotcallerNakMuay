@@ -12,6 +12,7 @@ import {
   useReelViewerOpen,
   useSessionReel,
   fullSessionText,
+  sessionTrace,
   type ReelFailure,
   type SessionReel,
 } from "./reelStore";
@@ -38,15 +39,23 @@ export default function SessionReelCard() {
  */
 function FullSessionLine() {
   const full = useFullSession();
+  // Tapped, the line shows the recording's trace: on an iPhone the only way
+  // to see what the camera, microphone and audio session did.
+  const [trace, setTrace] = useState<string | null>(null);
   if (!full) return null;
   return (
-    <p
-      className={`full-session-line is-${full.status}`}
-      role="status"
-      aria-live="polite"
-    >
-      {fullSessionText(full, Capacitor.getPlatform())}
-    </p>
+    <>
+      <button
+        type="button"
+        className={`full-session-line is-${full.status}`}
+        aria-live="polite"
+        aria-expanded={trace !== null}
+        onClick={() => setTrace((t) => (t === null ? sessionTrace() : null))}
+      >
+        {fullSessionText(full, Capacitor.getPlatform())}
+      </button>
+      {trace !== null && <pre className="reel-failed-details">{trace}</pre>}
+    </>
   );
 }
 

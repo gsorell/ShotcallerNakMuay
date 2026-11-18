@@ -10,6 +10,7 @@ import {
   setReelBuilding,
   setReelFailure,
   setSessionReel,
+  setSessionTrace,
 } from "./reelStore";
 import { errText } from "./reelRenderer";
 import { autoSaveReel } from "./saveToGallery";
@@ -196,6 +197,7 @@ async function batteryTooLow(): Promise<boolean> {
 async function handOver(rec: ReelRecorder): Promise<void> {
   // The completion screen says "Cutting your reel…" until it is ready.
   setReelBuilding(true);
+  setSessionTrace(() => rec.trace());
   try {
     const reel = await rec.finish();
     if (!reel && rec.failure) reportFailure(rec.failure.reason, rec.failure.trace);

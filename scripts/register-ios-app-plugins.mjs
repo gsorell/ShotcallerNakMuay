@@ -14,7 +14,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** The `@objc(...)` names of the app's own plugin classes. */
-const APP_PLUGINS = ["VideoRemuxPlugin"];
+const APP_PLUGINS = ["VideoRemuxPlugin", "RecordingAudioPlugin"];
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const file = resolve(root, "ios/App/App/capacitor.config.json");
