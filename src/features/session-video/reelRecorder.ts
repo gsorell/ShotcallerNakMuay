@@ -132,6 +132,9 @@ export class ReelRecorder {
   private readonly reelSoundUsed = new Promise<void>((r) => (this.reelDoneWithSound = r));
   /** Calls the voice finished saying, beside callsMade: heard or not. */
   private spokenCount = 0;
+  /** When the last call went out, and how long each took to say (ms). */
+  private lastCalledAt: number | null = null;
+  private speechMs: number[] = [];
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
 
@@ -244,9 +247,12 @@ export class ReelRecorder {
       // count as the completion screen's "shots called" (shotsCalledOutRef
       // in useCalloutEngine), or the two disagree (2026-11-16).
       this.callsMade += 1;
+      this.lastCalledAt = now;
       this.full?.mark({ type: "called", text: e.call.text, between: e.call.between });
     } else if (e.type === "spoken") {
       this.spokenCount += 1;
+      if (this.lastCalledAt !== null) this.speechMs.push(now - this.lastCalledAt);
+      this.lastCalledAt = null;
       this.full?.mark({ type: "spoken" });
     } else if (e.type === "sound") {
       this.full?.mark({ type: "sound", durationMs: e.durationMs });
@@ -328,7 +334,13 @@ export class ReelRecorder {
     // Stopped before a round's worth of work: no reel. A minute of warming
     // up isn't a session, and its reel would land in the gallery anyway.
     this.notes.log(`finish: worked ${Math.round(this.workedMs / 1000)}s of ${Math.round(this.roundMs / 1000)}s rounds`);
-    this.notes.log(`calls ${this.callsMade}, spoken ${this.spokenCount}`);
+    // A voice that has gone silent "finishes" each call at once: speech
+    // that took a few ms was never heard.
+    const said = [...this.speechMs].sort((a, b) => a - b).map(Math.round);
+    this.notes.log(
+      `calls ${this.callsMade}, spoken ${this.spokenCount}` +
+        (said.length ? `, speech took ${said[0]}-${said[said.length - 1]}ms (median ${said[Math.floor(said.length / 2)]})` : "")
+    );
     if (!keepsReel(this.workedMs, this.roundMs)) {
       this.keepFull = false;
       this.notes.round(this.round + 1, []);
@@ -363,13 +375,14 @@ export class ReelRecorder {
       );
       return null;
     }
-    // iOS: the clips were filmed silent; the session's sound goes under
-    // them, natively, which also gives the file its index.
-    const withSound = await this.laySound(out.blob, renderer.segments);
     // Recorder output can't be scrubbed in a gallery; give it an index.
-    const { blob, remuxed } = withSound
-      ? { blob: withSound, remuxed: true }
-      : await remuxToMp4(out.blob);
+    const remux = await remuxToMp4(out.blob);
+    // iOS: the clips were filmed silent; the session's sound goes under
+    // them, natively. Laid under the rewritten file, not the recorder's:
+    // straight from a recorder paused between clips, the picture came out
+    // stuttering, with frozen frames (TestFlight build 99).
+    const withSound = await this.laySound(remux.blob, renderer.segments);
+    const { blob, remuxed } = withSound ? { blob: withSound, remuxed: remux.remuxed } : remux;
     this.notes.log(`reel ${out.type}, ${blob.size} bytes, remuxed ${remuxed}`);
     void this.notes.save();
     return {
