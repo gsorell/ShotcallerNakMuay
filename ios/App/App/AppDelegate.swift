@@ -633,3 +633,76 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         return "\(cat)/\(mode) [\(opts.joined(separator: ","))] out \(outs) in \(ins.isEmpty ? "none" : ins)"
     }
 }
+
+/// Registered by scripts/register-ios-app-plugins.mjs (see VideoRemuxPlugin).
+///
+/// Plays the bell, the 10-second warning and the clack natively, on the app's
+/// own audio session, instead of through Web Audio. After a filmed session
+/// (the native recorder switches the session to recording and back), WebKit's
+/// audio output stopped: from the second filmed session after a launch the
+/// bell and the clack were silent, and both came out at once when the app
+/// was left and opened again (TestFlight builds 107 and 108). Rebuilding the
+/// AudioContext didn't help; the output under it is WebKit's, out of reach of
+/// the page. The callouts had the same trouble and also play natively now.
+///
+/// Sounds are the web build's files in the app bundle (public/), loaded once.
+@objc(NativeSoundsPlugin)
+public class NativeSoundsPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NativeSoundsPlugin"
+    public let jsName = "NativeSounds"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "preload", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise)
+    ]
+
+    private var players: [String: AVAudioPlayer] = [:]
+
+    private func player(_ file: String) -> AVAudioPlayer? {
+        if let p = players[file] { return p }
+        let name = file.hasPrefix("/") ? String(file.dropFirst()) : file
+        let url = Bundle.main.bundleURL.appendingPathComponent("public").appendingPathComponent(name)
+        guard let p = try? AVAudioPlayer(contentsOf: url) else { return nil }
+        p.prepareToPlay()
+        players[file] = p
+        return p
+    }
+
+    /// `{ files: ["/big-bell-330719.mp3", ...] }`: loads them ahead of the first cue.
+    @objc func preload(_ call: CAPPluginCall) {
+        let files = call.getArray("files", String.self) ?? []
+        DispatchQueue.main.async {
+            let loaded = files.filter { self.player($0) != nil }
+            call.resolve(["loaded": loaded.count])
+        }
+    }
+
+    /// `{ file, volume }`: plays it from the start. Resolves `{ durationMs }`
+    /// once it has started, or rejects if it couldn't be loaded or started.
+    @objc func play(_ call: CAPPluginCall) {
+        guard let file = call.getString("file") else {
+            call.reject("no file")
+            return
+        }
+        let volume = call.getFloat("volume") ?? 1.0
+        DispatchQueue.main.async {
+            guard let p = self.player(file) else {
+                call.reject("could not load \(file)")
+                return
+            }
+            p.volume = volume
+            p.currentTime = 0
+            var started = p.play()
+            if !started {
+                // A session someone else left inactive: put the app's back.
+                AppDelegate.applyAudioSessionCategory()
+                try? AVAudioSession.sharedInstance().setActive(true)
+                started = p.play()
+            }
+            if started {
+                call.resolve(["durationMs": p.duration * 1000])
+            } else {
+                call.reject("could not play \(file)")
+            }
+        }
+    }
+}

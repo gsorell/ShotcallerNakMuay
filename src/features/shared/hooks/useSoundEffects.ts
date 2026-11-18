@@ -27,7 +27,7 @@ const fetchEncoded = async (url: string): Promise<ArrayBuffer | null> => {
 };
 
 // decodeAudioData detaches the ArrayBuffer, so each one may only be decoded
-// once. The readyRef guard in ensureMediaUnlocked is what enforces that.
+// once. The readyRef guard in unlockWebAudio is what enforces that.
 const decodeInto = async (
   bytes: ArrayBuffer | null,
   ctx: AudioContext
@@ -74,6 +74,21 @@ const PAGE_AUDIO_SESSION_TYPE = "playback";
 const NativeAudioSession = registerPlugin<{
   apply(): Promise<{ category: string; mixesWithOthers: boolean }>;
 }>("AudioSession");
+
+// iOS plays the cues natively (NativeSoundsPlugin in AppDelegate.swift), on
+// the app's own audio session, not through Web Audio. After a filmed session
+// WebKit's audio output stopped: from the second filmed session after a
+// launch the bell and the clack were silent, and both came out at once when
+// the app was left and opened again (TestFlight builds 107 and 108).
+// Rebuilding the AudioContext didn't help: the output under it is WebKit's,
+// out of the page's reach. Web Audio stays as the fallback if a native call
+// fails.
+const NativeSounds = registerPlugin<{
+  preload(opts: { files: string[] }): Promise<{ loaded: number }>;
+  play(opts: { file: string; volume: number }): Promise<{ durationMs: number }>;
+}>("NativeSounds");
+
+const playsNatively = (): boolean => Capacitor.getPlatform() === "ios";
 
 const reclaimNativeAudioSession = async () => {
   if (Capacitor.getPlatform() !== "ios") return;
@@ -139,6 +154,8 @@ export function useSoundEffects(_iosAudioSession: any) {
   const encodedRef = useRef<Promise<(ArrayBuffer | null)[]> | null>(null);
   // Resolves once the context exists and every buffer is decoded into it.
   const readyRef = useRef<Promise<void> | null>(null);
+  // iOS: the native cues are loaded (see NativeSounds).
+  const nativeReadyRef = useRef<Promise<unknown> | null>(null);
 
   // Prefetch only. Deliberately does NOT construct an AudioContext.
   //
@@ -147,7 +164,7 @@ export function useSoundEffects(_iosAudioSession: any) {
   // of *suspended*, opening the output path during launch. That is audible over
   // other apps' audio, and the owner compared it directly against opening at
   // workout start and preferred the latter. Creation is therefore deferred to
-  // ensureMediaUnlocked, which runs inside the workout-start gesture.
+  // unlockWebAudio (via ensureMediaUnlocked), inside the workout-start gesture.
   //
   // decodeAudioData detaches the ArrayBuffers, so these can only be decoded
   // once. That is fine while one context lives for the whole app run; if the
@@ -181,7 +198,7 @@ export function useSoundEffects(_iosAudioSession: any) {
   // Create the context and decode into it, once. Must be called from the
   // workout-start gesture — see the note on prefetch for why this cannot happen
   // at mount.
-  const ensureMediaUnlocked = useCallback(async () => {
+  const unlockWebAudio = useCallback(async () => {
     if (!readyRef.current) {
       readyRef.current = (async () => {
         const AudioCtx =
@@ -236,6 +253,16 @@ export function useSoundEffects(_iosAudioSession: any) {
       // Context resume failed
     }
   }, []);
+
+  // iOS: the native cues are loaded, and Web Audio isn't opened at all;
+  // everywhere else, the Web Audio context and its buffers.
+  const ensureMediaUnlocked = useCallback(async () => {
+    if (!playsNatively()) return unlockWebAudio();
+    nativeReadyRef.current ??= NativeSounds.preload({
+      files: [SOUND_URLS.bell, SOUND_URLS.warning, SOUND_URLS.clack],
+    }).catch((error) => console.warn("[NativeSounds] preload failed:", error));
+    await nativeReadyRef.current;
+  }, [unlockWebAudio]);
 
   // Simple Web Audio fallback chime (synthesized), used when a sound file
   // failed to load. Reuses the shared context — constructing a throwaway one
@@ -299,12 +326,24 @@ export function useSoundEffects(_iosAudioSession: any) {
   // which is still long after launch.
   const playBuffered = useCallback(
     (
+      file: string,
       bufferRef: React.RefObject<AudioBuffer | null>,
       volume: number,
       fallbackToChime: boolean
     ) => {
       void (async () => {
-        await ensureMediaUnlocked();
+        if (playsNatively()) {
+          try {
+            await ensureMediaUnlocked();
+            const { durationMs } = await NativeSounds.play({ file, volume });
+            // So a session reel doesn't take the bell for a strike landing.
+            notifyAppSound(durationMs);
+            return;
+          } catch (error) {
+            console.warn("[NativeSounds] falling back to Web Audio:", error);
+          }
+        }
+        await unlockWebAudio();
         if (bufferRef.current) {
           await playWebAudioBuffer(bufferRef.current, volume);
         } else if (fallbackToChime) {
@@ -312,23 +351,23 @@ export function useSoundEffects(_iosAudioSession: any) {
         }
       })();
     },
-    [ensureMediaUnlocked, playWebAudioBuffer, webAudioChime]
+    [ensureMediaUnlocked, unlockWebAudio, playWebAudioBuffer, webAudioChime]
   );
 
   // Bell sound
   const playBell = useCallback(() => {
-    playBuffered(bellBufferRef, 0.3, true);
+    playBuffered(SOUND_URLS.bell, bellBufferRef, 0.3, true);
   }, [playBuffered]);
 
   // 10-second warning sound (no chime fallback — a substitute tone here would
   // read as a different cue)
   const playWarningSound = useCallback(() => {
-    playBuffered(warningBufferRef, 0.2, false);
+    playBuffered(SOUND_URLS.warning, warningBufferRef, 0.2, false);
   }, [playBuffered]);
 
   // Clapperboard clack for freestyle mode
   const playClack = useCallback(() => {
-    playBuffered(clackBufferRef, 0.3, true);
+    playBuffered(SOUND_URLS.clack, clackBufferRef, 0.3, true);
   }, [playBuffered]);
 
   // Hold the output path open from the first workout until the app goes away.
