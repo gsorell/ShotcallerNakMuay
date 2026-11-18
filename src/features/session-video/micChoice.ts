@@ -1,5 +1,3 @@
-import { Capacitor } from "@capacitor/core";
-
 /**
  * Which microphone a session films with: always the phone's own.
  *
@@ -130,50 +128,4 @@ export const releaseHeadsetRoute = async (): Promise<void> => {
   } catch {
     /* nothing to release */
   }
-};
-
-type PageAudioSession = { type: string };
-
-/**
- * iOS: lets the page record while a session is filmed, and hands back what
- * undoes it.
- *
- * The app sets the page's audio session to "playback" when its sounds first
- * start (useSoundEffects: it's what keeps the Ring/Silent switch from muting
- * the bell). WebKit holds to that type even with the microphone open, and
- * playback has no input: every reel and full session filmed on an iPhone
- * came out silent, the microphone track there but empty (TestFlight build 90,
- * 2026-11-17). "play-and-record" is the type that records, and the switch
- * doesn't mute it either. Put back to what it was once filming is over.
- *
- * Safari before 16.4 has no navigator.audioSession and needs none of this:
- * left on "auto", WebKit records while the microphone is open.
- */
-export const allowRecordingAudio = (log: (line: string) => void = () => {}): (() => void) => {
-  if (Capacitor.getPlatform() !== "ios") return () => {};
-  const session = (navigator as Navigator & { audioSession?: PageAudioSession }).audioSession;
-  if (!session) {
-    log("audio session: none (before iOS 16.4)");
-    return () => {};
-  }
-  const before = session.type;
-  try {
-    session.type = "play-and-record";
-  } catch (e) {
-    log(`audio session: could not record (${String(e)})`);
-    return () => {};
-  }
-  log(`audio session ${before} -> ${session.type}`);
-  let undone = false;
-  return () => {
-    if (undone) return;
-    undone = true;
-    try {
-      if (session.type === "play-and-record") {
-        session.type = before === "play-and-record" ? "playback" : before;
-      }
-    } catch {
-      /* left recording-capable: still audible, still not muted by the switch */
-    }
-  };
 };
