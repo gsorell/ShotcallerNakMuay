@@ -2,6 +2,12 @@
 import { Capacitor } from "@capacitor/core";
 import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
+/**
+ * Longest a native phrase may take. A callout takes under 2 s; the iOS
+ * plugin may spend 4 s more replacing a stuck voice and saying it again.
+ */
+export const NATIVE_SPEAK_TIMEOUT_MS = 8000;
+
 // This service uses browser TTS for web builds and Capacitor TTS for native apps
 
 // Voice interface for unified TTS
@@ -410,7 +416,7 @@ class TTSService {
           voiceParam = Number.isFinite(asNum) ? asNum : voiceToUse.id;
         }
 
-        await TextToSpeech.speak({
+        const said = TextToSpeech.speak({
           text: text, // Use text as-is - TTS engines handle sentence endings properly
           lang: voiceToUse?.language || "en-US",
           rate: rate,
@@ -418,6 +424,19 @@ class TTSService {
           volume: volume,
           voice: voiceParam,
         });
+        // A phrase the native voice never finishes must not hold up the rest:
+        // every later call waits behind it (iOS, second session after a
+        // launch, TestFlight build 104: calls 4, spoken 0).
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timedOut = new Promise<"timeout">((r) => {
+          timer = setTimeout(() => r("timeout"), NATIVE_SPEAK_TIMEOUT_MS);
+        });
+        const outcome = await Promise.race([said.then(() => "said" as const), timedOut]);
+        clearTimeout(timer);
+        if (outcome === "timeout") {
+          void TextToSpeech.stop().catch(() => undefined);
+          throw new Error(`native speech did not finish in ${NATIVE_SPEAK_TIMEOUT_MS}ms`);
+        }
 
         const durationMs = Date.now() - startTime;
         options.onDone?.(durationMs);

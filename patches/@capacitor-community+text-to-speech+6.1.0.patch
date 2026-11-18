@@ -12,13 +12,35 @@ index d0d24fb..0391b52 100644
      targets: [
          .target(
 diff --git a/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift b/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
-index 90444f4..bbe7e83 100644
+index 90444f4..eedd59a 100644
 --- a/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
 +++ b/node_modules/@capacitor-community/text-to-speech/ios/Sources/TextToSpeechPlugin/TextToSpeech.swift
-@@ -13,16 +13,23 @@ enum QUEUE_STRATEGY: Int {
+@@ -6,39 +6,90 @@ enum QUEUE_STRATEGY: Int {
+ }
+ 
+ @objc public class TextToSpeech: NSObject, AVSpeechSynthesizerDelegate {
+-    let synthesizer = AVSpeechSynthesizer()
+-    var calls: [CAPPluginCall] = []
++    // PATCHED (patch-package): replaceable, and each call is kept with its
++    // own utterance. In the second session after a launch the synthesizer
++    // never started or finished a phrase again (TestFlight build 104: calls 4,
++    // spoken 0, every session until the app was restarted): the first call
++    // never resolved, and every one after it waited behind it. Each filmed
++    // session switches the app's audio session to recording and back, and
++    // the synthesizer doesn't come back from that; a new one does.
++    var synthesizer = AVSpeechSynthesizer()
++    var calls: [ObjectIdentifier: CAPPluginCall] = [:]
++    /** Phrases not yet started, and whether each has been said again once. */
++    var waiting: [ObjectIdentifier: Bool] = [:]
++    /** The app's audio session changed since the synthesizer was made. */
++    var stale = false
++    /** How long a phrase may take to start before the synthesizer is replaced. */
++    let startTimeout: TimeInterval = 2.0
+     let queue = DispatchQueue(label: "backgroundAudioSetup", qos: .userInitiated, attributes: [], autoreleaseFrequency: .inherit, target: nil)
+ 
      override init() {
          super.init()
-         self.synthesizer.delegate = self
+-        self.synthesizer.delegate = self
 -        // set session in background to avoid UI hangs.
 -        queue.async {
 -            do {
@@ -38,14 +60,134 @@ index 90444f4..bbe7e83 100644
 +        // user's music on every spoken callout. Leaving the session alone makes
 +        // AppDelegate the single owner. AVSpeechSynthesizer plays fine under
 +        // the .playback + .mixWithOthers session AppDelegate installs.
-+        //
++        self.synthesizer = self.makeSynthesizer()
++        NotificationCenter.default.addObserver(
++            self, selector: #selector(onRouteChange(_:)),
++            name: AVAudioSession.routeChangeNotification, object: nil)
++    }
++
++    private func makeSynthesizer() -> AVSpeechSynthesizer {
++        let s = AVSpeechSynthesizer()
++        s.delegate = self
 +        // PATCHED (patch-package), and speaks on a session of its own, not the
 +        // app's. While a session is filmed the app's session records the
 +        // microphone (RecordingAudioPlugin), and speech on a recording session
 +        // finished every phrase without a sound (TestFlight build 95: calls
 +        // 14, spoken 13, nothing heard), until the app was restarted. Earlier
 +        // the same happened when WebKit's recording interrupted it (build 93).
-+        self.synthesizer.usesApplicationAudioSession = false
++        s.usesApplicationAudioSession = false
++        return s
++    }
++
++    /// A new synthesizer. Whatever the old one still owed is resolved, so
++    /// nothing waits on it.
++    private func replaceSynthesizer() {
++        let old = self.synthesizer
++        old.delegate = nil
++        old.stopSpeaking(at: .immediate)
++        self.synthesizer = self.makeSynthesizer()
++        self.stale = false
++        let owed = self.calls
++        self.calls.removeAll()
++        self.waiting.removeAll()
++        owed.values.forEach { $0.resolve() }
++    }
++
++    @objc private func onRouteChange(_ n: Notification) {
++        let raw = n.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt ?? 0
++        guard AVAudioSession.RouteChangeReason(rawValue: raw) == .categoryChange else { return }
++        // Replaced before the next phrase, not now: mid-phrase would cut it.
++        DispatchQueue.main.async { self.stale = true }
++    }
++
++    public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
++        guard synthesizer === self.synthesizer else { return }
++        self.waiting.removeValue(forKey: ObjectIdentifier(utterance))
      }
  
      public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+-        self.resolveCurrentCall()
++        guard synthesizer === self.synthesizer else { return }
++        self.resolve(utterance)
+     }
+ 
+     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+-        self.resolveCurrentCall()
++        guard synthesizer === self.synthesizer else { return }
++        self.resolve(utterance)
+     }
+ 
+     @objc public func speak(_ text: String, _ lang: String, _ rate: Float, _ pitch: Float, _ category: String, _ volume: Float, _ voice: Int, _ queueStrategy: Int, _ call: CAPPluginCall) throws {
+-        if queueStrategy == QUEUE_STRATEGY.QUEUE_FLUSH.rawValue {
+-            self.synthesizer.stopSpeaking(at: .immediate)
+-        }
+-        self.calls.append(call)
+-
+         let utterance = AVSpeechUtterance(string: text)
+         utterance.voice = AVSpeechSynthesisVoice(language: lang)
+         utterance.rate = adjustRate(rate)
+@@ -54,11 +105,46 @@ enum QUEUE_STRATEGY: Int {
+             }
+         }
+ 
+-        synthesizer.speak(utterance)
++        DispatchQueue.main.async {
++            if self.stale && !self.synthesizer.isSpeaking {
++                self.replaceSynthesizer()
++            }
++            if queueStrategy == QUEUE_STRATEGY.QUEUE_FLUSH.rawValue {
++                self.synthesizer.stopSpeaking(at: .immediate)
++            }
++            let id = ObjectIdentifier(utterance)
++            self.calls[id] = call
++            self.say(utterance, again: false)
++        }
++    }
++
++    /// Speaks, and if the phrase hasn't started in startTimeout, replaces
++    /// the synthesizer and says it once more; if that fails too, lets it go.
++    private func say(_ utterance: AVSpeechUtterance, again: Bool) {
++        let id = ObjectIdentifier(utterance)
++        self.waiting[id] = again
++        self.synthesizer.speak(utterance)
++        DispatchQueue.main.asyncAfter(deadline: .now() + self.startTimeout) {
++            // The app says one phrase at a time (each call flushes the last),
++            // so one not started by now never will be on this synthesizer.
++            guard let saidAgain = self.waiting[id] else { return }
++            let call = self.calls.removeValue(forKey: id)
++            self.waiting.removeValue(forKey: id)
++            self.replaceSynthesizer()
++            guard let call = call else { return }
++            if saidAgain {
++                call.resolve()
++            } else {
++                self.calls[id] = call
++                self.say(utterance, again: true)
++            }
++        }
+     }
+ 
+     @objc public func stop() {
+-        synthesizer.stopSpeaking(at: .immediate)
++        DispatchQueue.main.async {
++            self.synthesizer.stopSpeaking(at: .immediate)
++        }
+     }
+ 
+     @objc public func getSupportedLanguages() -> [String] {
+@@ -81,11 +167,9 @@ enum QUEUE_STRATEGY: Int {
+         return rate * baseRate
+     }
+ 
+-    @objc private func resolveCurrentCall() {
+-        guard let call = calls.first else {
+-            return
+-        }
+-        call.resolve()
+-        calls.removeFirst()
++    private func resolve(_ utterance: AVSpeechUtterance) {
++        let id = ObjectIdentifier(utterance)
++        self.waiting.removeValue(forKey: id)
++        self.calls.removeValue(forKey: id)?.resolve()
+     }
+ }
