@@ -23,8 +23,8 @@ export interface SessionReel {
  * the next launch.
  */
 let current: SessionReel | null = null;
-/** Whether the full-screen player is up — the back button closes it first. */
-let viewerOpen = false;
+/** What the full-screen player shows, if it's up — the back button closes it first. */
+let viewing: "reel" | "full" | null = null;
 const listeners = new Set<() => void>();
 
 const emit = () => listeners.forEach((l) => l());
@@ -38,7 +38,7 @@ const subscribe = (cb: () => void) => {
 export const setSessionReel = (reel: SessionReel | null): void => {
   if (current && current.url !== reel?.url) URL.revokeObjectURL(current.url);
   current = reel;
-  if (!reel) viewerOpen = false;
+  if (!reel && viewing === "reel") viewing = null;
   emit();
 };
 
@@ -56,6 +56,7 @@ export const patchSessionReel = (
 export const clearSessionReel = (): void => {
   failure = null;
   full = null;
+  viewing = null;
   traceSource = null;
   setSessionReel(null);
 };
@@ -63,7 +64,7 @@ export const clearSessionReel = (): void => {
 /**
  * The full session from the session that just ended (see fullSession.ts),
  * for the line on the completion screen that says it is being saved, then
- * that it has been: it goes to the gallery, never played in the app.
+ * that it has been, and plays it once it is.
  */
 export interface FullSessionVideo {
   /** Which recording this is, so a late update from an old one is ignored. */
@@ -73,12 +74,15 @@ export interface FullSessionVideo {
   durationMs: number;
   /** Saved, but the microphone's sound didn't make it in. */
   silent?: boolean;
+  /** A copy in the app's cache, to play and share, until the next session. */
+  uri?: string;
 }
 
 let full: FullSessionVideo | null = null;
 
 export const setFullSession = (f: FullSessionVideo | null): void => {
   full = f;
+  if (viewing === "full") viewing = null;
   emit();
 };
 
@@ -86,10 +90,11 @@ export const setFullSession = (f: FullSessionVideo | null): void => {
 export const patchFullSession = (
   id: string,
   status: FullSessionVideo["status"],
-  silent = false
+  silent = false,
+  uri?: string
 ): void => {
   if (!full || full.id !== id) return;
-  full = { ...full, status, ...(silent ? { silent } : {}) };
+  full = { ...full, status, ...(silent ? { silent } : {}), ...(uri ? { uri } : {}) };
   emit();
 };
 
@@ -165,21 +170,24 @@ export const setReelBuilding = (on: boolean): void => {
 export const useReelBuilding = (): boolean =>
   useSyncExternalStore(subscribe, () => building, () => false);
 
-export const openReelViewer = (): void => {
-  if (!current || viewerOpen) return;
-  viewerOpen = true;
+/** Opens the player on the reel, or on the full session once it's saved. */
+export const openReelViewer = (which: "reel" | "full" = "reel"): void => {
+  if (viewing) return;
+  if (which === "reel" ? !current : !full?.uri) return;
+  viewing = which;
   emit();
 };
 
 /** Closes the player. Returns whether it was open, for the back button. */
 export const closeReelViewer = (): boolean => {
-  if (!viewerOpen) return false;
-  viewerOpen = false;
+  if (!viewing) return false;
+  viewing = null;
   emit();
   return true;
 };
 
-export const isReelViewerOpen = (): boolean => viewerOpen;
+export const isReelViewerOpen = (): boolean => viewing !== null;
 
-export const useReelViewerOpen = (): boolean =>
-  useSyncExternalStore(subscribe, () => viewerOpen, () => false);
+/** What the player shows: the reel, the full session, or nothing. */
+export const useReelViewer = (): "reel" | "full" | null =>
+  useSyncExternalStore(subscribe, () => viewing, () => null);

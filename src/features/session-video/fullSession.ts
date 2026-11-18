@@ -472,6 +472,8 @@ export class FullSession {
     }
     const file = { path: `${this.path}.${this.ext}`, directory: Directory.Cache };
     const indexed = { path: `${this.path}_indexed.mp4`, directory: Directory.Cache };
+    /** The copy kept to play on the completion screen, if any. */
+    let kept: string | null = null;
     try {
       const { uri } = await Filesystem.getUri(file);
       // As recorded it can't be scrubbed and still has the rests in it.
@@ -483,17 +485,50 @@ export class FullSession {
       // without sound is a fault to hear about.
       const silent = this.withMic && remuxed?.audio === false;
       if (silent) this.log("full session saved WITHOUT sound");
-      patchFullSession(this.path, "saved", silent);
+      // Kept in the cache to watch and share from the completion screen,
+      // until the next session saves its own.
+      kept = remuxed ? indexed.path : file.path;
+      patchFullSession(this.path, "saved", silent, remuxed?.uri ?? uri);
     } catch (e) {
       this.log(`full session gallery save failed: ${String(e)}`);
       patchFullSession(this.path, "failed");
     } finally {
       // DEBUG: the recording as it came, kept for a look over adb.
-      if (!this.sidecar) await Filesystem.deleteFile(file).catch(() => undefined);
-      await Filesystem.deleteFile(indexed).catch(() => undefined);
+      if (!this.sidecar && kept !== file.path) {
+        await Filesystem.deleteFile(file).catch(() => undefined);
+      }
+      if (kept !== indexed.path) await Filesystem.deleteFile(indexed).catch(() => undefined);
+      await pruneKeptSessions(kept, this.sidecar, this.path);
     }
   }
 }
+
+/**
+ * Deletes earlier sessions' recordings from the cache: only the latest is
+ * kept, to watch on the completion screen. They run to hundreds of MB.
+ * `keepRaw`: leave the recordings as they came (the debug sidecar's). Only
+ * sessions older than `upTo` (this one's name) go: never one being filmed.
+ */
+const pruneKeptSessions = async (
+  except: string | null,
+  keepRaw: boolean,
+  upTo: string
+): Promise<void> => {
+  const stamp = (name: string) => Number(/^shotcaller-raw-(\d+)/.exec(name)?.[1] ?? NaN);
+  const newest = stamp(upTo);
+  try {
+    const { files } = await Filesystem.readdir({ path: "", directory: Directory.Cache });
+    for (const f of files) {
+      const name = typeof f === "string" ? f : f.name;
+      if (name === except || !/^shotcaller-raw-\d+(_indexed\.mp4|\.\w+)$/.test(name)) continue;
+      if (keepRaw && !name.endsWith("_indexed.mp4")) continue;
+      if (!(stamp(name) <= newest)) continue;
+      await Filesystem.deleteFile({ path: name, directory: Directory.Cache }).catch(() => undefined);
+    }
+  } catch {
+    /* the cache is the system's to clear too */
+  }
+};
 
 const watermarkLoaded = (): boolean => {
   const img = loadWatermark();

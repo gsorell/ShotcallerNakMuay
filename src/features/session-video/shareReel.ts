@@ -18,6 +18,28 @@ const isDismissal = (error: unknown): boolean => {
 };
 
 /**
+ * Opens the share sheet with a video already on disk: the reel's copy, or
+ * the full session (too big to read into the web view). Native only.
+ */
+export const shareVideoFile = async (
+  uri: string
+): Promise<"shared" | "dismissed" | "failed"> => {
+  try {
+    await Share.share({
+      title: "My Shot Caller session",
+      text: SHARE_TEXT,
+      files: [uri],
+      dialogTitle: "Share your session",
+    });
+    return "shared";
+  } catch (error) {
+    if (isDismissal(error)) return "dismissed";
+    console.error("Error sharing video:", error);
+    return "failed";
+  }
+};
+
+/**
  * Opens the share sheet with the reel. On native the sheet is also a way to
  * save it somewhere else (Files, Drive) — the gallery copy is made
  * automatically when the session ends.
@@ -29,15 +51,7 @@ export const shareReel = async (
 ): Promise<"shared" | "dismissed" | "failed"> => {
   const name = `shotcaller-reel.${reel.ext}`;
   try {
-    if (Capacitor.isNativePlatform()) {
-      await Share.share({
-        title: "My Shot Caller session",
-        text: SHARE_TEXT,
-        files: [await ensureReelFile(reel)],
-        dialogTitle: "Share your reel",
-      });
-      return "shared";
-    }
+    if (Capacitor.isNativePlatform()) return await shareVideoFile(await ensureReelFile(reel));
 
     const file = new File([reel.blob], name, { type: reel.blob.type });
     if (navigator.canShare?.({ files: [file] })) {

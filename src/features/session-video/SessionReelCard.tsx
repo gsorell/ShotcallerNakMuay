@@ -9,14 +9,13 @@ import {
   useFullSession,
   useReelBuilding,
   useReelFailure,
-  useReelViewerOpen,
+  useReelViewer,
   useSessionReel,
   fullSessionText,
   sessionTrace,
   type ReelFailure,
-  type SessionReel,
 } from "./reelStore";
-import { shareReel } from "./shareReel";
+import { shareReel, shareVideoFile } from "./shareReel";
 import "./SessionReelCard.css";
 
 /**
@@ -24,25 +23,97 @@ import "./SessionReelCard.css";
  * it a line for the full session, which goes to the gallery only.
  */
 export default function SessionReelCard() {
+  const viewing = useReelViewer();
+  const reel = useSessionReel();
+  const full = useFullSession();
+
+  // Leaving the completion screen leaves the player shut, so coming back to
+  // the screen later doesn't land in it.
+  useEffect(() => () => void closeReelViewer(), []);
+
   return (
     <>
       <ReelRow />
       <FullSessionLine />
+      {viewing === "reel" && reel && (
+        <VideoViewer
+          src={reel.url}
+          label="Your reel"
+          share={() => shareReel(reel)}
+          format={reel.ext}
+        />
+      )}
+      {viewing === "full" && full?.uri && (
+        <VideoViewer
+          src={Capacitor.convertFileSrc(full.uri)}
+          label="Your session"
+          share={() => shareVideoFile(full.uri!)}
+          format="full"
+        />
+      )}
     </>
   );
 }
 
 /**
- * "Saving your full session…", then "Full session · 14 min · saved to your
- * gallery": just said, not played here, so nobody finds it in the gallery
- * days later wondering where it came from.
+ * "Saving your full session…", then, saved, a row to watch it: "Watch your
+ * session · 14 min · saved to Photos". Said from the moment the session
+ * ends, so nobody finds it in the gallery days later by surprise.
  */
 function FullSessionLine() {
   const full = useFullSession();
-  // Tapped, the line shows the recording's trace: on an iPhone the only way
-  // to see what the camera, microphone and audio session did.
+  // The recording's trace, under "Details" (or the line itself until it's
+  // saved): on an iPhone the only way to see what the camera, microphone
+  // and audio session did.
   const [trace, setTrace] = useState<string | null>(null);
   if (!full) return null;
+  const toggleTrace = () => setTrace((t) => (t === null ? sessionTrace() : null));
+  if (full.status === "saved" && full.uri) {
+    const src = Capacitor.convertFileSrc(full.uri);
+    const minutes = Math.max(1, Math.round(full.durationMs / 60000));
+    const gallery = Capacitor.getPlatform() === "ios" ? "Photos" : "your gallery";
+    return (
+      <>
+        <button
+          type="button"
+          className="reel-ready"
+          onClick={() => {
+            openReelViewer("full");
+            try {
+              trackEvent("session_full_video_open", { minutes });
+            } catch { /* analytics must never break the tap it measures */ }
+          }}
+        >
+          <span className="reel-ready-thumb" aria-hidden="true">
+            <video src={`${src}#t=0.1`} muted playsInline preload="metadata" />
+            <span className="reel-ready-play">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+          </span>
+          <span className="reel-ready-text">
+            <span className="reel-ready-title">Watch your session</span>
+            <span className="reel-ready-sub is-saved">
+              {`${minutes} min · saved to ${gallery}${full.silent ? ", without sound" : ""}`}
+            </span>
+          </span>
+          <span className="reel-ready-chevron" aria-hidden="true">
+            ›
+          </span>
+        </button>
+        <button
+          type="button"
+          className="full-session-line full-session-details"
+          aria-expanded={trace !== null}
+          onClick={toggleTrace}
+        >
+          {trace === null ? "Details" : "Hide details"}
+        </button>
+        {trace !== null && <pre className="reel-failed-details">{trace}</pre>}
+      </>
+    );
+  }
   return (
     <>
       <button
@@ -50,7 +121,7 @@ function FullSessionLine() {
         className={`full-session-line is-${full.status}`}
         aria-live="polite"
         aria-expanded={trace !== null}
-        onClick={() => setTrace((t) => (t === null ? sessionTrace() : null))}
+        onClick={toggleTrace}
       >
         {fullSessionText(full, Capacitor.getPlatform())}
       </button>
@@ -67,13 +138,8 @@ function FullSessionLine() {
  */
 function ReelRow() {
   const reel = useSessionReel();
-  const viewerOpen = useReelViewerOpen();
   const building = useReelBuilding();
   const failure = useReelFailure();
-
-  // Leaving the completion screen leaves the player shut, so coming back to
-  // the screen later doesn't land in it.
-  useEffect(() => () => void closeReelViewer(), []);
 
   // The last round's best moments are still being cut in: a few seconds.
   if (!reel && building) {
@@ -104,43 +170,39 @@ function ReelRow() {
       : `${seconds}s of today's rounds · tap to watch`;
 
   return (
-    <>
-      <button
-        type="button"
-        className="reel-ready"
-        onClick={() => {
-          openReelViewer();
-          try {
-            trackEvent("session_reel_open", { clips: reel.clips });
-          } catch { /* analytics must never break the tap it measures */ }
-        }}
-      >
-        <span className="reel-ready-thumb" aria-hidden="true">
-          {/* The first frame, as a poster. #t nudges Safari into drawing it. */}
-          <video src={`${reel.url}#t=0.1`} muted playsInline preload="metadata" />
-          <span className="reel-ready-play">
-            <svg viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </span>
+    <button
+      type="button"
+      className="reel-ready"
+      onClick={() => {
+        openReelViewer("reel");
+        try {
+          trackEvent("session_reel_open", { clips: reel.clips });
+        } catch { /* analytics must never break the tap it measures */ }
+      }}
+    >
+      <span className="reel-ready-thumb" aria-hidden="true">
+        {/* The first frame, as a poster. #t nudges Safari into drawing it. */}
+        <video src={`${reel.url}#t=0.1`} muted playsInline preload="metadata" />
+        <span className="reel-ready-play">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
         </span>
-        <span className="reel-ready-text">
-          <span className="reel-ready-title">Your reel is ready</span>
-          <span
-            className={`reel-ready-sub ${
-              reel.gallery === "saved" ? "is-saved" : ""
-            }`}
-          >
-            {status}
-          </span>
+      </span>
+      <span className="reel-ready-text">
+        <span className="reel-ready-title">Your reel is ready</span>
+        <span
+          className={`reel-ready-sub ${
+            reel.gallery === "saved" ? "is-saved" : ""
+          }`}
+        >
+          {status}
         </span>
-        <span className="reel-ready-chevron" aria-hidden="true">
-          ›
-        </span>
-      </button>
-
-      {viewerOpen && <ReelViewer reel={reel} />}
-    </>
+      </span>
+      <span className="reel-ready-chevron" aria-hidden="true">
+        ›
+      </span>
+    </button>
   );
 }
 
@@ -178,8 +240,19 @@ function ReelFailed({ failure }: { failure: ReelFailure }) {
   );
 }
 
-/** The reel, full screen, with Share / Save and Watch again. */
-function ReelViewer({ reel }: { reel: SessionReel }) {
+/** A video full screen (the reel, or the full session), with Share and Watch again. */
+function VideoViewer({
+  src,
+  label,
+  share,
+  format,
+}: {
+  src: string;
+  label: string;
+  share: () => Promise<"shared" | "dismissed" | "failed">;
+  /** For the analytics event: the reel's file type, or "full". */
+  format: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ended, setEnded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -208,7 +281,7 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
       v.muted = true;
       void v.play().catch(() => undefined);
     });
-  }, [reel.url]);
+  }, [src]);
 
   const replay = () => {
     const v = videoRef.current;
@@ -235,20 +308,20 @@ function ReelViewer({ reel }: { reel: SessionReel }) {
     setBusy(true);
     setFailed(false);
     videoRef.current?.pause();
-    const outcome = await shareReel(reel);
+    const outcome = await share();
     setBusy(false);
     if (outcome === "failed") setFailed(true);
     try {
-      trackEvent("session_reel_share", { outcome, format: reel.ext });
+      trackEvent("session_reel_share", { outcome, format });
     } catch { /* analytics must never break the tap it measures */ }
   };
 
   return createPortal(
-    <div className="reel-viewer" role="dialog" aria-modal="true" aria-label="Your reel">
+    <div className="reel-viewer" role="dialog" aria-modal="true" aria-label={label}>
       <video
         ref={videoRef}
         className="reel-viewer-video"
-        src={reel.url}
+        src={src}
         playsInline
         onEnded={() => setEnded(true)}
         onClick={togglePlay}
