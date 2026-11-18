@@ -2,6 +2,7 @@ import { Capacitor, registerPlugin } from "@capacitor/core";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { notifyAppSound } from "@/features/session-video/calloutSignal";
+import { nativeRecordingStops } from "@/utils/nativeRecordingStops";
 
 // All sounds use Web Audio API to avoid:
 // 1. iOS Safari autoplay blocking in setTimeout/setInterval
@@ -139,6 +140,8 @@ export function useSoundEffects(_iosAudioSession: any) {
   const encodedRef = useRef<Promise<(ArrayBuffer | null)[]> | null>(null);
   // Resolves once the context exists and every buffer is decoded into it.
   const readyRef = useRef<Promise<void> | null>(null);
+  // nativeRecordingStops() when the context was built (see below).
+  const builtAtStopsRef = useRef(0);
 
   // Prefetch only. Deliberately does NOT construct an AudioContext.
   //
@@ -182,7 +185,27 @@ export function useSoundEffects(_iosAudioSession: any) {
   // workout-start gesture — see the note on prefetch for why this cannot happen
   // at mount.
   const ensureMediaUnlocked = useCallback(async () => {
+    // iOS: a filmed session has ended since the context was built, and its
+    // switch from recording back to playback left the context "running" and
+    // silent (no bell from the second filmed session after a launch,
+    // TestFlight build 107). Built again, as at the first workout start:
+    // fresh bytes, since decoding used the last ones up.
+    if (
+      readyRef.current &&
+      Capacitor.getPlatform() === "ios" &&
+      builtAtStopsRef.current !== nativeRecordingStops()
+    ) {
+      const stale = audioContextRef.current;
+      audioContextRef.current = null;
+      readyRef.current = null;
+      bellBufferRef.current = null;
+      warningBufferRef.current = null;
+      clackBufferRef.current = null;
+      void stale?.close().catch(() => undefined);
+      prefetch();
+    }
     if (!readyRef.current) {
+      builtAtStopsRef.current = nativeRecordingStops();
       readyRef.current = (async () => {
         const AudioCtx =
           (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -235,7 +258,7 @@ export function useSoundEffects(_iosAudioSession: any) {
     } catch {
       // Context resume failed
     }
-  }, []);
+  }, [prefetch]);
 
   // Simple Web Audio fallback chime (synthesized), used when a sound file
   // failed to load. Reuses the shared context — constructing a throwaway one
