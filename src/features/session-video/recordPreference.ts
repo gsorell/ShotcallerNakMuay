@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from "react";
 
 import { trackEvent } from "@/utils/analytics";
 
-import { releaseHeadsetRoute } from "./micChoice";
+import { recordsSoundNatively, releaseHeadsetRoute, requestNativeMicrophone } from "./micChoice";
 
 const KEY = "shotcaller_record_session";
 /** Absent means on: the full session is kept unless someone says not to. */
@@ -134,6 +134,17 @@ export const requestCameraAccess = async (): Promise<boolean> => {
     });
     stream.getTracks().forEach((t) => t.stop());
   };
+  if (recordsSoundNatively()) {
+    // iOS: the camera here, the microphone natively (see micChoice.ts): a
+    // microphone opened by the web view, even this briefly, stops music.
+    try {
+      await tryOpen(false);
+    } catch {
+      return false;
+    }
+    await requestNativeMicrophone();
+    return true;
+  }
   try {
     await tryOpen(true);
     // That asked for "a microphone", which may have put a Bluetooth speaker

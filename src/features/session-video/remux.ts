@@ -59,6 +59,8 @@ interface VideoRemuxPlugin {
     from: string;
     to: string;
     keep?: KeepSpan[];
+    /** iOS: sound recorded natively, starting offsetMs after the first frame. */
+    audio?: { uri: string; offsetMs: number };
   }): Promise<{ uri: string; summary?: string; audio?: boolean }>;
 }
 
@@ -79,7 +81,8 @@ export const remuxFileToMp4 = async (
   from: string,
   to: string,
   log: (line: string) => void = () => {},
-  keep?: KeepSpan[]
+  keep?: KeepSpan[],
+  sound?: { uri: string; offsetMs: number }
 ): Promise<{ uri: string; audio?: boolean } | null> => {
   const platform = Capacitor.getPlatform();
   if (platform !== "android" && platform !== "ios") return null;
@@ -89,6 +92,7 @@ export const remuxFileToMp4 = async (
       from,
       to,
       ...(keep?.length ? { keep } : {}),
+      ...(sound ? { audio: sound } : {}),
     });
     log(`full session indexed in ${Date.now() - startedAt}ms: ${summary ?? "?"}`);
     return { uri, ...(typeof audio === "boolean" ? { audio } : {}) };

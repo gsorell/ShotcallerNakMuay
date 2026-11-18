@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
+import { startNativeSound, stopNativeSound } from "./micChoice";
 import { getKeepFullSession } from "./recordPreference";
 import { writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
@@ -134,6 +135,10 @@ export class FullSession {
   private layerKey = "";
   /** The microphone went into the recording (it was granted). */
   private withMic = false;
+  /** iOS: the sound is recorded natively, and when it started (epoch ms). */
+  private nativeSound: Promise<number | null> | null = null;
+  /** Date.now() of the first frame, against the native sound's start. */
+  private beganEpoch = 0;
   private micTracks: MediaStreamTrack[] = [];
 
   constructor(
@@ -151,7 +156,9 @@ export class FullSession {
     audio: MediaStreamTrack[],
     mimeType: string,
     held: boolean,
-    title: Card
+    title: Card,
+    /** iOS: record the sound natively (see micChoice.recordsSoundNatively). */
+    nativeSound = false
   ): void {
     try {
       const ctx = this.canvas.getContext("2d");
@@ -197,6 +204,7 @@ export class FullSession {
       this.ext = rec.mimeType.includes("webm") ? "webm" : "mp4";
       rec.onstart = () => {
         this.began = performance.now();
+        this.beganEpoch = Date.now();
       };
       rec.ondataavailable = (e) => {
         if (!e.data?.size) return;
@@ -208,7 +216,14 @@ export class FullSession {
       // Handed over every 10 s, so at most that much sits in memory.
       rec.start(10_000);
       this.began = performance.now();
+      this.beganEpoch = Date.now();
       this.rec = rec;
+      if (nativeSound) {
+        this.nativeSound = startNativeSound(this.log);
+        void this.nativeSound.then((at) => {
+          if (at !== null) this.withMic = true;
+        });
+      }
       if (!held) this.work();
       this.log(
         `full session on, ${rec.mimeType}, ${this.canvas.width}x${this.canvas.height}, ` +
@@ -289,6 +304,14 @@ export class FullSession {
       /* already stopped */
     }
     const hits = hitTimes.map((t) => Math.round(t - this.began)).filter((t) => t >= 0);
+    // The native sound, stopped with the picture; where it starts against
+    // the first frame, for the remux to lay it under.
+    const sound = this.nativeSound
+      ? this.nativeSound.then(async (at) => {
+          const uri = await stopNativeSound(this.log);
+          return uri && at !== null ? { uri, offsetMs: at - this.beganEpoch } : undefined;
+        })
+      : Promise.resolve(undefined);
     // Said on the completion screen from the moment the session ends, so
     // nobody finds it in the gallery days later by surprise.
     if (keep) {
@@ -303,7 +326,12 @@ export class FullSession {
         this.drawing = false;
         return this.writes;
       })
-      .then(() => (keep ? this.finish(hits, spans) : this.discard()));
+      .then(() => sound)
+      .then(async (audio) => {
+        if (keep) await this.finish(hits, spans, audio);
+        else await this.discard();
+        if (audio) await Filesystem.deleteFile({ path: audio.uri }).catch(() => undefined);
+      });
   }
 
   private now(): number {
@@ -406,7 +434,11 @@ export class FullSession {
     }).catch(() => undefined);
   }
 
-  private async finish(hits: number[], spans: KeepSpan[]): Promise<void> {
+  private async finish(
+    hits: number[],
+    spans: KeepSpan[],
+    audio?: { uri: string; offsetMs: number }
+  ): Promise<void> {
     if (this.sidecar) try {
       await Filesystem.writeFile({
         path: "raw-session.json",
@@ -439,7 +471,8 @@ export class FullSession {
       const { uri } = await Filesystem.getUri(file);
       // As recorded it can't be scrubbed and still has the rests in it.
       const { uri: to } = await Filesystem.getUri(indexed);
-      const remuxed = await remuxFileToMp4(uri, to, this.log, spans);
+      if (audio) this.log(`native sound starts ${Math.round(audio.offsetMs)}ms after the first frame`);
+      const remuxed = await remuxFileToMp4(uri, to, this.log, spans, audio);
       await saveFileToGallery(remuxed?.uri ?? uri, "_full");
       // Said, not hidden: a session filmed with the microphone that saved
       // without sound is a fault to hear about.

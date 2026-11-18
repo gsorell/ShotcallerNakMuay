@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const platform = vi.hoisted(() => ({ name: "ios" }));
 const native = vi.hoisted(() => ({
-  allowRecording: vi.fn(),
-  release: vi.fn(),
+  requestMicrophone: vi.fn(),
+  startRecording: vi.fn(),
+  stopRecording: vi.fn(),
   status: vi.fn(),
 }));
 vi.mock("@capacitor/core", () => ({
@@ -12,68 +13,46 @@ vi.mock("@capacitor/core", () => ({
 }));
 
 import {
-  allowRecordingAudio,
-  allowRecordingNatively,
   logAudioSession,
-  releaseRecordingNatively,
+  recordsSoundNatively,
+  requestNativeMicrophone,
+  startNativeSound,
+  stopNativeSound,
 } from "@/features/session-video/micChoice";
 
-type Nav = { audioSession?: { type: string } };
-
-describe("allowRecordingAudio (iOS: the page's audio session can record)", () => {
-  beforeEach(() => {
-    platform.name = "ios";
-    (navigator as unknown as Nav).audioSession = { type: "playback" };
-  });
-  afterEach(() => {
-    delete (navigator as unknown as Nav).audioSession;
-  });
-
-  it("records while filming, then goes back to playback", () => {
-    const restore = allowRecordingAudio();
-    expect((navigator as unknown as Nav).audioSession?.type).toBe("play-and-record");
-    restore();
-    expect((navigator as unknown as Nav).audioSession?.type).toBe("playback");
-  });
-
-  it("puts back whatever it was, once only", () => {
-    (navigator as unknown as Nav).audioSession = { type: "auto" };
-    const restore = allowRecordingAudio();
-    restore();
-    expect((navigator as unknown as Nav).audioSession?.type).toBe("auto");
-    (navigator as unknown as Nav).audioSession!.type = "playback";
-    restore();
-    expect((navigator as unknown as Nav).audioSession?.type).toBe("playback");
-  });
-
-  it("leaves Android alone", () => {
-    platform.name = "android";
-    allowRecordingAudio();
-    expect((navigator as unknown as Nav).audioSession?.type).toBe("playback");
-  });
-
-  it("does nothing where there is no audio session (before iOS 16.4)", () => {
-    delete (navigator as unknown as Nav).audioSession;
-    const log = vi.fn();
-    expect(() => allowRecordingAudio(log)()).not.toThrow();
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("none"));
-  });
-});
-
-describe("the app's audio session while filming (iOS, RecordingAudioPlugin)", () => {
+describe("the full session's sound on iOS (RecordingAudioPlugin)", () => {
   beforeEach(() => {
     platform.name = "ios";
     Object.values(native).forEach((f) => f.mockReset());
   });
 
-  it("is set to record once the microphone is open, and released after", async () => {
-    native.allowRecording.mockResolvedValue({ status: "PlayAndRecord/Default [mix,speaker]" });
-    native.release.mockResolvedValue({ status: "Playback/Default [mix]" });
+  it("is recorded natively on iOS only", () => {
+    expect(recordsSoundNatively()).toBe(true);
+    platform.name = "android";
+    expect(recordsSoundNatively()).toBe(false);
+  });
+
+  it("starts, says when, and stops with the file", async () => {
+    native.startRecording.mockResolvedValue({ startedAtMs: 1234, status: "PlayAndRecord" });
+    native.stopRecording.mockResolvedValue({ uri: "file:///tmp/a.m4a", durationMs: 30000 });
     const log = vi.fn();
-    await allowRecordingNatively(log);
-    await releaseRecordingNatively(log);
-    expect(log).toHaveBeenCalledWith("native audio: PlayAndRecord/Default [mix,speaker]");
-    expect(log).toHaveBeenCalledWith("native audio released: Playback/Default [mix]");
+    await expect(startNativeSound(log)).resolves.toBe(1234);
+    await expect(stopNativeSound(log)).resolves.toBe("file:///tmp/a.m4a");
+    expect(log).toHaveBeenCalledWith("native sound stopped: 30s");
+  });
+
+  it("films silent rather than failing when the recorder won't start", async () => {
+    native.startRecording.mockRejectedValue(new Error("microphone not granted"));
+    const log = vi.fn();
+    await expect(startNativeSound(log)).resolves.toBeNull();
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("not recorded"));
+  });
+
+  it("asks for the microphone natively, false if it can't", async () => {
+    native.requestMicrophone.mockResolvedValue({ granted: true });
+    await expect(requestNativeMicrophone()).resolves.toBe(true);
+    native.requestMicrophone.mockRejectedValue(new Error("no plugin"));
+    await expect(requestNativeMicrophone()).resolves.toBe(false);
   });
 
   it("logs what happened to the session, for the trace", async () => {
@@ -83,18 +62,11 @@ describe("the app's audio session while filming (iOS, RecordingAudioPlugin)", ()
     expect(log.mock.calls.map((c) => c[0])).toEqual(["audio: 3s route change 3", "audio after 8s: now"]);
   });
 
-  it("never throws if the plugin is missing", async () => {
-    native.allowRecording.mockRejectedValue(new Error("not implemented"));
-    const log = vi.fn();
-    await expect(allowRecordingNatively(log)).resolves.toBeUndefined();
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("could not be set"));
-  });
-
   it("does nothing off iOS", async () => {
     platform.name = "android";
-    await allowRecordingNatively(() => {});
-    await logAudioSession(() => {}, "x");
-    expect(native.allowRecording).not.toHaveBeenCalled();
-    expect(native.status).not.toHaveBeenCalled();
+    await expect(startNativeSound(() => {})).resolves.toBeNull();
+    await expect(stopNativeSound(() => {})).resolves.toBeUndefined();
+    expect(native.startRecording).not.toHaveBeenCalled();
+    expect(native.stopRecording).not.toHaveBeenCalled();
   });
 });

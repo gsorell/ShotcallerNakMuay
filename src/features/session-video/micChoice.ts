@@ -132,91 +132,64 @@ export const releaseHeadsetRoute = async (): Promise<void> => {
   }
 };
 
-type PageAudioSession = { type: string };
-
-/**
- * iOS: lets the page record while a session is filmed, and hands back what
- * undoes it.
- *
- * The app sets the page's audio session to "playback" when its sounds first
- * start (useSoundEffects: it's what keeps the Ring/Silent switch from muting
- * the bell). WebKit holds to that type even with the microphone open, and
- * playback has no input: every reel and full session filmed on an iPhone
- * came out silent, the microphone track there but empty (TestFlight build 90,
- * 2026-11-17). "play-and-record" is the type that records, and the switch
- * doesn't mute it either. Put back to what it was once filming is over.
- *
- * Safari before 16.4 has no navigator.audioSession and needs none of this:
- * left on "auto", WebKit records while the microphone is open.
- */
-export const allowRecordingAudio = (log: (line: string) => void = () => {}): (() => void) => {
-  if (Capacitor.getPlatform() !== "ios") return () => {};
-  const session = (navigator as Navigator & { audioSession?: PageAudioSession }).audioSession;
-  if (!session) {
-    log("audio session: none (before iOS 16.4)");
-    return () => {};
-  }
-  const before = session.type;
-  try {
-    session.type = "play-and-record";
-  } catch (e) {
-    log(`audio session: could not record (${String(e)})`);
-    return () => {};
-  }
-  log(`audio session ${before} -> ${session.type}`);
-  let undone = false;
-  return () => {
-    if (undone) return;
-    undone = true;
-    try {
-      if (session.type === "play-and-record") {
-        session.type = before === "play-and-record" ? "playback" : before;
-      }
-    } catch {
-      /* left recording-capable: still audible, still not muted by the switch */
-    }
-  };
-};
-
 interface RecordingAudioPlugin {
-  allowRecording(): Promise<{ status: string }>;
-  release(): Promise<{ status: string }>;
+  requestMicrophone(): Promise<{ granted: boolean }>;
+  startRecording(): Promise<{ startedAtMs: number; status: string }>;
+  stopRecording(): Promise<{ uri?: string; durationMs: number }>;
   status(): Promise<{ status: string; events: string[] }>;
 }
 
 /** RecordingAudioPlugin in ios/App/App/AppDelegate.swift. */
 const RecordingAudio = registerPlugin<RecordingAudioPlugin>("RecordingAudio");
 
-const onIOS = () => Capacitor.getPlatform() === "ios";
-
 /**
- * iOS, once the microphone is open: notes the app's audio session in the
- * trace (RecordingAudioPlugin only watches; see there).
+ * iOS records the full session's sound natively, never through the web
+ * view: WebKit's microphone stops the user's music and silences the
+ * callouts (builds 91-94; see RecordingAudioPlugin). So on an iPhone the web
+ * view films the picture only, the clips and the reel are silent, and the
+ * hit detector is off.
  */
-export const allowRecordingNatively = async (log: (line: string) => void): Promise<void> => {
-  if (!onIOS()) return;
+export const recordsSoundNatively = (): boolean => Capacitor.getPlatform() === "ios";
+
+/** iOS: asks for the microphone, natively. False if refused or unavailable. */
+export const requestNativeMicrophone = async (): Promise<boolean> => {
+  if (!recordsSoundNatively()) return false;
   try {
-    const { status } = await RecordingAudio.allowRecording();
-    log(`native audio: ${status}`);
-  } catch (e) {
-    log(`native audio could not be set: ${String(e)}`);
+    return (await RecordingAudio.requestMicrophone()).granted;
+  } catch {
+    return false;
   }
 };
 
-/** Back to AppDelegate's playback + mix, once filming is over (iOS). */
-export const releaseRecordingNatively = async (log: (line: string) => void): Promise<void> => {
-  if (!onIOS()) return;
+/** Starts the native recording; when it started (epoch ms), or null. */
+export const startNativeSound = async (log: (line: string) => void): Promise<number | null> => {
+  if (!recordsSoundNatively()) return null;
   try {
-    const { status } = await RecordingAudio.release();
-    log(`native audio released: ${status}`);
+    const { startedAtMs, status } = await RecordingAudio.startRecording();
+    log(`native sound recording: ${status}`);
+    return startedAtMs;
   } catch (e) {
-    log(`native audio could not be released: ${String(e)}`);
+    log(`native sound not recorded: ${String(e)}`);
+    return null;
+  }
+};
+
+/** Stops it; the file's URI, if anything was recorded. */
+export const stopNativeSound = async (log: (line: string) => void): Promise<string | undefined> => {
+  if (!recordsSoundNatively()) return undefined;
+  try {
+    const { uri, durationMs } = await RecordingAudio.stopRecording();
+    log(`native sound stopped: ${Math.round(durationMs / 1000)}s${uri ? "" : ", no file"}`);
+    return uri;
+  } catch (e) {
+    log(`native sound could not be stopped: ${String(e)}`);
+    return undefined;
   }
 };
 
 /** The iOS audio session now, and what happened to it since last asked. */
 export const logAudioSession = async (log: (line: string) => void, when: string): Promise<void> => {
-  if (!onIOS()) return;
+  if (!recordsSoundNatively()) return;
   try {
     const { status, events } = await RecordingAudio.status();
     events.forEach((e) => log(`audio: ${e}`));

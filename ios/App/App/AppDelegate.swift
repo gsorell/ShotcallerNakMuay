@@ -188,12 +188,20 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
                   t > f else { continue }
             spans.append((f, t))
         }
+        // The sound recorded natively (RecordingAudioPlugin), and how many ms
+        // after the video's first frame it started.
+        var sound: (URL, Double)?
+        if let a = call.getObject("audio"), let u = a["uri"] as? String,
+           let url = VideoRemuxPlugin.fileURL(u),
+           let off = (a["offsetMs"] as? NSNumber)?.doubleValue {
+            sound = (url, off)
+        }
         DispatchQueue.global(qos: .userInitiated).async {
             let started = Date()
-            VideoRemuxPlugin.export(inURL, to: outURL, keep: spans) { cutError, cutAudio in
+            VideoRemuxPlugin.export(inURL, to: outURL, keep: spans, sound: sound) { cutError, cutAudio in
                 if let cutError = cutError, !spans.isEmpty {
                     // The cut failed: the whole file, rather than nothing.
-                    VideoRemuxPlugin.export(inURL, to: outURL, keep: []) { wholeError, wholeAudio in
+                    VideoRemuxPlugin.export(inURL, to: outURL, keep: [], sound: sound) { wholeError, wholeAudio in
                         if let wholeError = wholeError {
                             call.reject("remux failed: \(wholeError.localizedDescription)")
                         } else {
@@ -236,11 +244,16 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
         _ inURL: URL,
         to outURL: URL,
         keep: [(Double, Double)],
+        sound: (URL, Double)? = nil,
         done: @escaping (Error?, Bool) -> Void
     ) {
         try? FileManager.default.removeItem(at: outURL)
         let asset = AVURLAsset(url: inURL)
-        let tracks = asset.tracks.filter { $0.mediaType == .video || $0.mediaType == .audio }
+        // With the sound recorded natively, the video's own (silent, if any)
+        // sound track is left out.
+        let tracks = asset.tracks.filter {
+            $0.mediaType == .video || ($0.mediaType == .audio && sound == nil)
+        }
         guard !tracks.isEmpty else {
             done(RemuxError("no audio or video tracks"), false)
             return
@@ -279,6 +292,25 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
                 if track.mediaType == .video { into.preferredTransform = track.preferredTransform }
             }
+            if let sound = sound,
+               let soundTrack = AVURLAsset(url: sound.0).tracks(withMediaType: .audio).first,
+               let into = composition.addMutableTrack(withMediaType: .audio,
+                                                      preferredTrackID: kCMPersistentTrackID_Invalid) {
+                // Video time v is sound time v - offset (the sound started
+                // offset ms after the first frame), less where the video starts.
+                let shift = CMTimeAdd(t0, CMTime(seconds: sound.1 / 1000, preferredTimescale: 600))
+                var cursor = CMTime.zero
+                for range in ranges {
+                    let inSound = CMTimeRange(start: CMTimeSubtract(range.start, shift),
+                                              end: CMTimeSubtract(range.end, shift))
+                    let part = inSound.intersection(soundTrack.timeRange)
+                    if part.duration > .zero {
+                        let at = CMTimeAdd(cursor, CMTimeSubtract(part.start, inSound.start))
+                        try into.insertTimeRange(part, of: soundTrack, at: at)
+                    }
+                    cursor = CMTimeAdd(cursor, range.duration)
+                }
+            }
         } catch {
             done(error, false)
             return
@@ -308,18 +340,22 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-/// Watches the app's audio session while a session is filmed, for the reel's
-/// trace: from Windows there's no other way to see an iPhone's.
+/// The full session's sound on iOS, recorded here rather than by the web view.
 ///
-/// WebKit records the microphone on an audio session of its own, and
-/// starting it interrupts the app's (build 93's trace). The callouts' speech
-/// used to play on the app's session and went silent with it; it now has a
-/// session of its own (patches/@capacitor-community+text-to-speech+6.1.0.patch).
-/// Setting the app's session to .playAndRecord here was tried (build 93) and
-/// changed nothing, so this only reports: the category, options and route,
-/// and every interruption and route change. release() activates the app's
-/// session again as AppDelegate sets it, clearing an interruption that never
-/// ended.
+/// WebKit can't record the microphone without stopping the user's music: it
+/// records on an audio session of its own that doesn't mix (WebKit bug
+/// 264473, closed as intended), and while it records, iOS sidelines spoken
+/// audio, so the callouts went silent too (TestFlight builds 91-94). Recorded
+/// here, on the app's session set to .playAndRecord with .mixWithOthers, the
+/// music plays on, the callouts (AVSpeechSynthesizer, on this same session)
+/// play out of the loudspeaker (.defaultToSpeaker), and
+/// a Bluetooth speaker stays a speaker (.allowBluetoothA2DP; not
+/// .allowBluetooth, which would put it into call mode). The web view films
+/// the picture; VideoRemuxPlugin lays this file under it when the rests are
+/// cut, offset by when each started.
+///
+/// Also reports the session, its interruptions and route changes, for the
+/// reel's trace: from Windows there's no other way to see an iPhone's.
 ///
 /// Registered by scripts/register-ios-app-plugins.mjs.
 @objc(RecordingAudioPlugin)
@@ -327,13 +363,16 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "RecordingAudioPlugin"
     public let jsName = "RecordingAudio"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "allowRecording", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "release", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestMicrophone", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startRecording", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopRecording", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise)
     ]
 
     private var events: [String] = []
     private let started = Date()
+    private var recorder: AVAudioRecorder?
+    private var recordingURL: URL?
 
     override public func load() {
         let center = NotificationCenter.default
@@ -343,24 +382,80 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
                            name: AVAudioSession.routeChangeNotification, object: nil)
     }
 
-    @objc func allowRecording(_ call: CAPPluginCall) {
-        DispatchQueue.main.async {
-            self.note("filming (\(RecordingAudioPlugin.describe()))")
-            call.resolve(["status": RecordingAudioPlugin.describe()])
+    /// Asks for the microphone if it hasn't been yet. Resolves `{ granted }`.
+    @objc func requestMicrophone(_ call: CAPPluginCall) {
+        let session = AVAudioSession.sharedInstance()
+        switch session.recordPermission {
+        case .granted: call.resolve(["granted": true])
+        case .denied: call.resolve(["granted": false])
+        default:
+            session.requestRecordPermission { granted in
+                call.resolve(["granted": granted])
+            }
         }
     }
 
-    @objc func release(_ call: CAPPluginCall) {
+    /// Starts recording. Resolves `{ startedAtMs }` (epoch ms, when the
+    /// recorder started) or rejects: no microphone, or it wouldn't start.
+    @objc func startRecording(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
+            let session = AVAudioSession.sharedInstance()
+            guard session.recordPermission == .granted else {
+                call.reject("microphone not granted")
+                return
+            }
+            self.recorder?.stop()
+            do {
+                try session.setCategory(.playAndRecord, mode: .default,
+                                        options: [.mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP])
+                try session.setActive(true)
+                let url = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("full-audio-\(UUID().uuidString).m4a")
+                let recorder = try AVAudioRecorder(url: url, settings: [
+                    AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                    AVSampleRateKey: 44_100,
+                    AVNumberOfChannelsKey: 1,
+                    AVEncoderBitRateKey: 128_000
+                ])
+                recorder.prepareToRecord()
+                guard recorder.record() else {
+                    try? FileManager.default.removeItem(at: url)
+                    self.note("recorder would not start")
+                    call.reject("recorder would not start")
+                    return
+                }
+                let at = Date().timeIntervalSince1970 * 1000
+                self.recorder = recorder
+                self.recordingURL = url
+                self.note("recording (\(RecordingAudioPlugin.describe()))")
+                call.resolve(["startedAtMs": at, "status": RecordingAudioPlugin.describe()])
+            } catch {
+                self.note("recording failed: \(error.localizedDescription)")
+                call.reject("recording failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Stops recording, puts the session back as AppDelegate has it, and
+    /// resolves `{ uri, durationMs }` (no uri if nothing was recording).
+    @objc func stopRecording(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            let duration = self.recorder?.currentTime ?? 0
+            self.recorder?.stop()
+            self.recorder = nil
+            let url = self.recordingURL
+            self.recordingURL = nil
             do {
                 let session = AVAudioSession.sharedInstance()
                 try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
                 try session.setActive(true)
-                self.note("released -> \(RecordingAudioPlugin.describe())")
             } catch {
-                self.note("release failed: \(error.localizedDescription)")
+                self.note("session not put back: \(error.localizedDescription)")
             }
-            call.resolve(["status": RecordingAudioPlugin.describe()])
+            self.note("stopped after \(Int(duration))s -> \(RecordingAudioPlugin.describe())")
+            var result: [String: Any] = ["durationMs": duration * 1000]
+            if let url = url { result["uri"] = url.absoluteString }
+            call.resolve(result)
         }
     }
 
@@ -378,7 +473,16 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc private func onInterruption(_ n: Notification) {
         let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt ?? 99
         let kind = AVAudioSession.InterruptionType(rawValue: raw) == .began ? "began" : "ended"
-        DispatchQueue.main.async { self.note("interruption \(kind)") }
+        DispatchQueue.main.async {
+            self.note("interruption \(kind)")
+            // A call or Siri pauses the recorder; carry on once it's over.
+            // (The time it was out is missing from the file, so the sound
+            // after it runs early by that much: rare enough to leave.)
+            if kind == "ended", let recorder = self.recorder, !recorder.isRecording {
+                try? AVAudioSession.sharedInstance().setActive(true)
+                self.note(recorder.record() ? "recording again" : "could not record again")
+            }
+        }
     }
 
     @objc private func onRouteChange(_ n: Notification) {
