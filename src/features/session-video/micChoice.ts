@@ -1,7 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
-import { noteNativeRecordingStopped } from "@/utils/nativeRecordingStops";
-
 /**
  * Which microphone a session films with: always the phone's own.
  *
@@ -192,9 +190,6 @@ export const stopNativeSound = async (log: (line: string) => void): Promise<stri
   } catch (e) {
     log(`native sound could not be stopped: ${String(e)}`);
     return undefined;
-  } finally {
-    // The session is back to playback either way: the bell's context goes stale.
-    noteNativeRecordingStopped();
   }
 };
 
