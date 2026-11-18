@@ -29,6 +29,7 @@ import {
   type RenderClip,
 } from "./reelRenderer";
 import type { SessionReel } from "./reelStore";
+import { closeHolesInParts, type Hole } from "./reelHoles";
 import { laySoundUnderReel, remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
 import { FullSession, fullSessionWanted } from "./fullSession";
@@ -376,12 +377,12 @@ export class ReelRecorder {
       return null;
     }
     // Recorder output can't be scrubbed in a gallery; give it an index.
-    const remux = await remuxToMp4(out.blob);
+    const remux = await remuxToMp4(out.blob, (line) => this.notes.log(line));
     // iOS: the clips were filmed silent; the session's sound goes under
     // them, natively. Laid under the rewritten file, not the recorder's:
     // straight from a recorder paused between clips, the picture came out
     // stuttering, with frozen frames (TestFlight build 99).
-    const withSound = await this.laySound(remux.blob, renderer.segments);
+    const withSound = await this.laySound(remux.blob, renderer.segments, remux.holes);
     const { blob, remuxed } = withSound ? { blob: withSound, remuxed: remux.remuxed } : remux;
     this.notes.log(`reel ${out.type}, ${blob.size} bytes, remuxed ${remuxed}`);
     void this.notes.save();
@@ -389,21 +390,29 @@ export class ReelRecorder {
       blob,
       url: URL.createObjectURL(blob),
       ext: remuxed || out.type.includes("mp4") ? "mp4" : "webm",
-      durationMs: Math.round(renderer.renderedMs),
+      durationMs: Math.round(
+        renderer.renderedMs - remux.holes.reduce((n, h) => n + h.cutS * 1000, 0)
+      ),
       clips: renderer.clips,
     };
   }
 
   /** iOS: the reel with the session's sound under it, or null to keep it silent. */
-  private async laySound(reel: Blob, segments: ReelSegment[]): Promise<Blob | null> {
+  private async laySound(
+    reel: Blob,
+    segments: ReelSegment[],
+    holes: Hole[]
+  ): Promise<Blob | null> {
     const sound = await this.sessionSound;
     if (!sound) return null;
-    const parts = segments.map((s) => ({
+    const recorded = segments.map((s) => ({
       durMs: Math.round(s.durMs),
       ...(s.sourceEpochMs !== undefined
         ? { soundFromMs: Math.round(s.sourceEpochMs - sound.startedAtMs) }
         : {}),
     }));
+    // The holes closed in the picture come out of the sound too.
+    const parts = closeHolesInParts(recorded, holes);
     if (!parts.some((p) => p.soundFromMs !== undefined)) return null;
     return laySoundUnderReel(reel, sound.uri, parts, (line) => this.notes.log(line));
   }

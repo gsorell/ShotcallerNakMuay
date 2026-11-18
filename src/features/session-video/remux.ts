@@ -1,5 +1,7 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
+import { closedTime, findHoles, type Hole } from "./reelHoles";
+
 /**
  * Rewrites a recorder-made video as an ordinary, indexed MP4.
  *
@@ -15,8 +17,25 @@ import { Capacitor, registerPlugin } from "@capacitor/core";
  * a reel that can't be scrubbed beats no reel.
  */
 export const remuxToMp4 = async (
-  blob: Blob
-): Promise<{ blob: Blob; remuxed: boolean }> => {
+  blob: Blob,
+  log: (line: string) => void = () => {}
+): Promise<{ blob: Blob; remuxed: boolean; holes: Hole[] }> => {
+  try {
+    const closed = await remuxClosingHoles(blob);
+    if (closed) {
+      if (closed.holes.length) {
+        const cut = closed.holes.reduce((n, h) => n + h.cutS, 0);
+        log(
+          `reel holes closed: ${closed.holes.length} (${closed.holes
+            .map((h) => `${h.cutS.toFixed(2)}s at ${h.atS.toFixed(2)}s`)
+            .join(", ")}), ${Math.round(cut * 1000)}ms cut`
+        );
+      }
+      return { blob: closed.blob, remuxed: true, holes: closed.holes };
+    }
+  } catch (e) {
+    log(`reel holes left open: ${String(e)}`);
+  }
   try {
     const {
       Input,
@@ -41,11 +60,64 @@ export const remuxToMp4 = async (
     return {
       blob: new Blob([target.buffer], { type: "video/mp4" }),
       remuxed: true,
+      holes: [],
     };
   } catch (e) {
     console.warn("Reel left as recorded (could not remux):", e);
-    return { blob, remuxed: false };
+    return { blob, remuxed: false, holes: [] };
   }
+};
+
+/**
+ * The same rewrite, packet by packet, with the reel's holes closed (see
+ * reelHoles.ts). Only for a reel that is picture alone, as an iPhone's is
+ * (its sound is laid under it afterwards): with a sound track of its own the
+ * sound would have to be cut too. Null when it doesn't apply.
+ */
+const remuxClosingHoles = async (
+  blob: Blob
+): Promise<{ blob: Blob; holes: Hole[] } | null> => {
+  const {
+    Input,
+    Output,
+    BlobSource,
+    BufferTarget,
+    Mp4OutputFormat,
+    EncodedPacketSink,
+    EncodedVideoPacketSource,
+    MP4,
+    WEBM,
+  } = await import("mediabunny");
+  const input = new Input({ source: new BlobSource(blob), formats: [MP4, WEBM] });
+  const tracks = await input.getTracks();
+  const video = await input.getPrimaryVideoTrack();
+  if (!video || tracks.length !== 1 || !video.codec) return null;
+  const config = await video.getDecoderConfig();
+  if (!config) return null;
+  const packets = [];
+  for await (const p of new EncodedPacketSink(video).packets()) packets.push(p);
+  if (!packets.length) return null;
+  const { holes, stepS } = findHoles(packets.map((p) => p.timestamp));
+  const source = new EncodedVideoPacketSource(video.codec);
+  const target = new BufferTarget();
+  const output = new Output({
+    format: new Mp4OutputFormat({ fastStart: "in-memory" }),
+    target,
+  });
+  output.addVideoTrack(source, { rotation: await video.getRotation() });
+  await output.start();
+  let first = true;
+  for (const p of packets) {
+    const timestamp = closedTime(p.timestamp, holes);
+    // The frame before a hole now runs one step, not the length of the hole.
+    const before = holes.some((h) => Math.abs(h.atS - stepS - p.timestamp) < 1e-6);
+    const packet = p.clone({ timestamp, ...(before ? { duration: stepS } : {}) });
+    await source.add(packet, first ? { decoderConfig: config } : undefined);
+    first = false;
+  }
+  await output.finalize();
+  if (!target.buffer) throw new Error("Empty output");
+  return { blob: new Blob([target.buffer], { type: "video/mp4" }), holes };
 };
 
 /** A stretch of a recording to keep, in ms from its first frame. */
