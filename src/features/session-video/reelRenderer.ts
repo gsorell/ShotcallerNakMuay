@@ -472,8 +472,22 @@ export class ReelRenderer {
 
     this.roll();
     const rolledAt = performance.now();
-    // Where the picture stands as the tape rolls.
-    const fromS = v.currentTime;
+    // Each stretch the tape rolls: when it started, and where the picture
+    // stood then (for laying the session's sound under it).
+    let stretchAt = rolledAt;
+    let stretchFromS = v.currentTime;
+    let rolling = true;
+    let hiccups = 0;
+    const endStretch = () => {
+      const now = performance.now();
+      this.renderedMs += now - stretchAt;
+      this.segments.push({
+        durMs: now - stretchAt,
+        ...(clip.sourceEpochMs !== undefined
+          ? { sourceEpochMs: clip.sourceEpochMs + stretchFromS * 1000 }
+          : {}),
+      });
+    };
     if (this.overlay) this.overlay.until = rolledAt + this.overlay.card.durationMs;
     await playSafely(v);
     this.speak(buffer, v.currentTime);
@@ -481,19 +495,31 @@ export class ReelRenderer {
     // A clip whose picture stops moving is cut where it stalled: a phone
     // starved of power once filmed one frozen frame into the reel for 11s.
     // (Slow motion at each round's best moment was tried and dropped,
-    // 2026-11-13: it read as random, not as emphasis.)
-    await playTo(v, endS, limit);
+    // 2026-11-13: it read as random, not as emphasis.) A shorter hiccup
+    // stops the tape until the picture moves again (see HICCUP_MS).
+    await playTo(v, endS, limit, (stopped) => {
+      if (stopped && rolling) {
+        // The frozen frame has been up HICCUP_MS already; that much stays.
+        this.cut();
+        this.silence();
+        endStretch();
+        rolling = false;
+        hiccups += 1;
+      } else if (!stopped && !rolling) {
+        stretchAt = performance.now();
+        stretchFromS = v.currentTime;
+        this.roll();
+        // The clip's own sound (Android) picks up where the picture is.
+        this.speak(buffer, v.currentTime);
+        rolling = true;
+      }
+    });
     this.cut();
     this.silence();
     v.pause();
     this.overlay = null;
-    this.renderedMs += performance.now() - rolledAt;
-    this.segments.push({
-      durMs: performance.now() - rolledAt,
-      ...(clip.sourceEpochMs !== undefined
-        ? { sourceEpochMs: clip.sourceEpochMs + fromS * 1000 }
-        : {}),
-    });
+    if (rolling) endStretch();
+    if (hiccups) this.log(`render: clip paused over ${hiccups} hiccup${hiccups > 1 ? "s" : ""}`);
   }
 }
 
@@ -704,27 +730,50 @@ export const STALL_MS = 700;
  * Plays on until `targetS`, the end, or the time limit. Resolves true if the
  * video stopped advancing for STALL_MS on the way: decoding fell behind.
  */
-const playTo = (v: HTMLVideoElement, targetS: number, timeoutMs: number) =>
+const playTo = (
+  v: HTMLVideoElement,
+  targetS: number,
+  timeoutMs: number,
+  /** The picture stopped for HICCUP_MS (true), or moves again (false). */
+  onHiccup: (stopped: boolean) => void = () => {}
+) =>
   new Promise<boolean>((resolve) => {
     const started = performance.now();
     let lastT = v.currentTime;
     let movedAt = started;
+    let stopped = false;
     const tick = () => {
       const now = performance.now();
       if (v.currentTime !== lastT) {
         lastT = v.currentTime;
         movedAt = now;
+        if (stopped) {
+          stopped = false;
+          onHiccup(false);
+        }
       }
       if (v.currentTime >= targetS || v.ended || now - started > timeoutMs) {
         resolve(false);
       } else if (now - movedAt > STALL_MS) {
         resolve(true);
       } else {
+        if (!stopped && now - movedAt > HICCUP_MS) {
+          stopped = true;
+          onHiccup(true);
+        }
         requestAnimationFrame(tick);
       }
     };
     tick();
   });
+
+/**
+ * A clip's picture standing still this long is a decoding hiccup, not the
+ * fighter: the reel stops recording until it moves again. Recorded, each
+ * one was a frozen frame in the reel (0.7 s and 1 s in one iPhone reel,
+ * TestFlight build 100).
+ */
+export const HICCUP_MS = 120;
 
 const nextFrames = (n: number) =>
   new Promise<void>((resolve) => {

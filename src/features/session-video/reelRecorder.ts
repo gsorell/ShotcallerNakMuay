@@ -457,7 +457,12 @@ export class ReelRecorder {
     }
     // Before the camera's tracks end, or the full session loses its tail.
     const fullDone =
-      this.full?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull, this.sessionSound) ??
+      this.full?.stop(
+        this.hits?.between(0, Infinity) ?? [],
+        this.keepFull,
+        this.sessionSound,
+        this.reelSoundUsed
+      ) ??
       Promise.resolve();
     this.full = null;
     const sound = this.sessionSound;

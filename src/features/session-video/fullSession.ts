@@ -284,7 +284,12 @@ export class FullSession {
     hitTimes: number[],
     keep: boolean,
     /** iOS: the session's sound, recorded natively; laid under the picture. */
-    nativeSound: Promise<NativeSound | undefined> = Promise.resolve(undefined)
+    nativeSound: Promise<NativeSound | undefined> = Promise.resolve(undefined),
+    /**
+     * Held until this settles (the reel's done): cut, exported and saved
+     * while the last round's clips were assembled, the reel froze (build 100).
+     */
+    after: Promise<void> = Promise.resolve()
   ): Promise<void> {
     const rec = this.rec;
     if (!rec) return Promise.resolve();
@@ -326,6 +331,7 @@ export class FullSession {
       })
       .then(() => sound)
       .then(async (audio) => {
+        await after;
         if (keep) await this.finish(hits, spans, audio);
         else await this.discard();
       })
