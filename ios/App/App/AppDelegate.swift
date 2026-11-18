@@ -168,8 +168,105 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "VideoRemuxPlugin"
     public let jsName = "VideoRemux"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "remuxToMp4", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "remuxToMp4", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "laySound", returnType: CAPPluginReturnPromise)
     ]
+
+    /// `{ from, to, sound, parts }`: lays the session's sound (recorded by
+    /// RecordingAudioPlugin) under a finished reel, whose clips were filmed
+    /// silent. `parts`, in order, are the reel's stretches: `durMs` long,
+    /// and for a clip, `soundFromMs`, where in the sound file it was filmed
+    /// (none for a card: silence). The picture is copied as it is. Resolves
+    /// `{ uri, summary }`; rejects with the error's domain and code.
+    @objc func laySound(_ call: CAPPluginCall) {
+        guard let from = call.getString("from"), let to = call.getString("to"),
+              let soundPath = call.getString("sound"),
+              let inURL = VideoRemuxPlugin.fileURL(from),
+              let outURL = VideoRemuxPlugin.fileURL(to),
+              let soundURL = VideoRemuxPlugin.fileURL(soundPath) else {
+            call.reject("from, to and sound are required")
+            return
+        }
+        var parts: [(Double, Double?)] = []
+        for item in call.getArray("parts") ?? [] {
+            guard let o = item as? JSObject,
+                  let d = (o["durMs"] as? NSNumber)?.doubleValue, d > 0 else { continue }
+            parts.append((d, (o["soundFromMs"] as? NSNumber)?.doubleValue))
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let started = Date()
+            try? FileManager.default.removeItem(at: outURL)
+            let asset = AVURLAsset(url: inURL)
+            let soundAsset = AVURLAsset(url: soundURL)
+            guard let video = asset.tracks(withMediaType: .video).first else {
+                call.reject("lay sound: the reel has no picture")
+                return
+            }
+            guard let soundTrack = soundAsset.tracks(withMediaType: .audio).first else {
+                call.reject("lay sound: the sound file has no sound")
+                return
+            }
+            let ms = { (v: Double) in CMTime(seconds: v / 1000, preferredTimescale: 600) }
+            let composition = AVMutableComposition()
+            var laid = 0
+            do {
+                guard let pic = composition.addMutableTrack(withMediaType: .video,
+                                                            preferredTrackID: kCMPersistentTrackID_Invalid),
+                      let snd = composition.addMutableTrack(withMediaType: .audio,
+                                                            preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                    call.reject("lay sound: no composition tracks")
+                    return
+                }
+                try pic.insertTimeRange(video.timeRange, of: video, at: .zero)
+                pic.preferredTransform = video.preferredTransform
+                let length = video.timeRange.duration
+                var cursor = CMTime.zero
+                for (dur, soundFrom) in parts {
+                    if let soundFrom = soundFrom, cursor < length {
+                        // Not past the picture's end.
+                        let take = CMTimeMinimum(ms(dur), CMTimeSubtract(length, cursor))
+                        let want = CMTimeRange(start: ms(soundFrom), duration: take)
+                        let part = want.intersection(soundTrack.timeRange)
+                        if part.duration > .zero {
+                            let at = CMTimeAdd(cursor, CMTimeSubtract(part.start, want.start))
+                            try snd.insertTimeRange(part, of: soundTrack, at: at)
+                            laid += 1
+                        }
+                    }
+                    cursor = CMTimeAdd(cursor, ms(dur))
+                }
+            } catch {
+                call.reject("lay sound: \(VideoRemuxPlugin.describe(error))")
+                return
+            }
+            guard laid > 0 else {
+                call.reject("lay sound: no part of the reel falls within the sound")
+                return
+            }
+            guard let session = AVAssetExportSession(asset: composition,
+                                                     presetName: AVAssetExportPresetPassthrough) else {
+                call.reject("lay sound: no export session")
+                return
+            }
+            session.outputURL = outURL
+            session.outputFileType = .mp4
+            session.shouldOptimizeForNetworkUse = true
+            session.exportAsynchronously {
+                withExtendedLifetime((asset, soundAsset)) {}
+                if session.status == .completed {
+                    let took = Int(Date().timeIntervalSince(started) * 1000)
+                    call.resolve([
+                        "uri": outURL.absoluteString,
+                        "summary": "\(laid) of \(parts.count) parts, \(took)ms"
+                    ])
+                } else {
+                    try? FileManager.default.removeItem(at: outURL)
+                    let e = session.error.map { VideoRemuxPlugin.describe($0) } ?? "ended \(session.status.rawValue)"
+                    call.reject("lay sound: \(e)")
+                }
+            }
+        }
+    }
 
     /// `{ from, to, keep? }`: file:// URIs, and the stretches to keep as
     /// `[{ fromMs, toMs }]` from the first frame. Resolves `{ uri, summary }`.

@@ -161,6 +161,12 @@ export const requestNativeMicrophone = async (): Promise<boolean> => {
   }
 };
 
+/** The session's sound, recorded natively: its file, and when it started (epoch ms). */
+export interface NativeSound {
+  uri: string;
+  startedAtMs: number;
+}
+
 /** Starts the native recording; when it started (epoch ms), or null. */
 export const startNativeSound = async (log: (line: string) => void): Promise<number | null> => {
   if (!recordsSoundNatively()) return null;

@@ -7,12 +7,14 @@ import {
   strikesIn,
   type Candidate,
 } from "./highlights";
+import { Filesystem } from "@capacitor/filesystem";
 import {
   logAudioSession,
   openBuiltInMic,
   recordsSoundNatively,
   startNativeSound,
   stopNativeSound,
+  type NativeSound,
 } from "./micChoice";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
@@ -23,10 +25,11 @@ import {
   errText,
   pickMime,
   type Card,
+  type ReelSegment,
   type RenderClip,
 } from "./reelRenderer";
 import type { SessionReel } from "./reelStore";
-import { remuxToMp4 } from "./remux";
+import { laySoundUnderReel, remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
 import { FullSession, fullSessionWanted } from "./fullSession";
 
@@ -122,6 +125,11 @@ export class ReelRecorder {
   private audioCheck: ReturnType<typeof setTimeout> | undefined;
   /** iOS: the native recording of the session's sound, once started. */
   private nativeSound: Promise<number | null> | null = null;
+  /** iOS: the session's sound once stopped, for the full session and the reel. */
+  private sessionSound: Promise<NativeSound | undefined> = Promise.resolve(undefined);
+  /** Settled once the reel is done with the session's sound (or never needed it). */
+  private reelDoneWithSound!: () => void;
+  private readonly reelSoundUsed = new Promise<void>((r) => (this.reelDoneWithSound = r));
   /** Calls the voice finished saying, beside callsMade: heard or not. */
   private spokenCount = 0;
   /** Told when filming starts or stops, for the preview's red dot. */
@@ -149,7 +157,7 @@ export class ReelRecorder {
     // after, it switched the audio session under a running camera, and the
     // web view's camera stopped: a black preview, one frame for the whole
     // session (TestFlight builds 95 and 97).
-    if (native && NATIVE_SOUND_ON_IOS && fullSessionWanted()) {
+    if (native && NATIVE_SOUND_ON_IOS) {
       this.nativeSound = startNativeSound((line) => this.notes.log(line));
       await this.nativeSound;
     }
@@ -220,8 +228,7 @@ export class ReelRecorder {
     this.renderer.setTitle(this.title);
     if (fullSessionWanted()) {
       this.full = new FullSession((line) => this.notes.log(line), this.roundCount);
-      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, this.nativeSound);
-      this.nativeSound = null;
+      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, this.nativeSound !== null);
     }
     this.scheduler = new SegmentScheduler(
       () => this.openSegment(),
@@ -308,6 +315,14 @@ export class ReelRecorder {
 
   /** Stops everything and hands back the reel, or null if nothing was kept. */
   async finish(): Promise<SessionReel | null> {
+    try {
+      return await this.finishReel();
+    } finally {
+      this.reelDoneWithSound();
+    }
+  }
+
+  private async finishReel(): Promise<SessionReel | null> {
     this.stopWorkClock();
     this.scheduler?.stop();
     // Stopped before a round's worth of work: no reel. A minute of warming
@@ -348,8 +363,13 @@ export class ReelRecorder {
       );
       return null;
     }
+    // iOS: the clips were filmed silent; the session's sound goes under
+    // them, natively, which also gives the file its index.
+    const withSound = await this.laySound(out.blob, renderer.segments);
     // Recorder output can't be scrubbed in a gallery; give it an index.
-    const { blob, remuxed } = await remuxToMp4(out.blob);
+    const { blob, remuxed } = withSound
+      ? { blob: withSound, remuxed: true }
+      : await remuxToMp4(out.blob);
     this.notes.log(`reel ${out.type}, ${blob.size} bytes, remuxed ${remuxed}`);
     void this.notes.save();
     return {
@@ -359,6 +379,20 @@ export class ReelRecorder {
       durationMs: Math.round(renderer.renderedMs),
       clips: renderer.clips,
     };
+  }
+
+  /** iOS: the reel with the session's sound under it, or null to keep it silent. */
+  private async laySound(reel: Blob, segments: ReelSegment[]): Promise<Blob | null> {
+    const sound = await this.sessionSound;
+    if (!sound) return null;
+    const parts = segments.map((s) => ({
+      durMs: Math.round(s.durMs),
+      ...(s.sourceEpochMs !== undefined
+        ? { soundFromMs: Math.round(s.sourceEpochMs - sound.startedAtMs) }
+        : {}),
+    }));
+    if (!parts.some((p) => p.soundFromMs !== undefined)) return null;
+    return laySoundUnderReel(reel, sound.uri, parts, (line) => this.notes.log(line));
   }
 
   /**
@@ -387,6 +421,7 @@ export class ReelRecorder {
     this.renderer?.dispose();
     this.renderer = null;
     this.stopCapture();
+    this.reelDoneWithSound();
   }
 
   private stopWorkClock(): void {
@@ -396,15 +431,26 @@ export class ReelRecorder {
   }
 
   private stopCapture(): void {
-    // Before the camera's tracks end, or the full session loses its tail.
-    this.full?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull);
-    this.full = null;
-    // Started, but never handed to a full session (it failed to start).
+    // iOS: the sound stops with the picture. The full session and the reel
+    // both lay it under theirs; the file goes once both are done.
     if (this.nativeSound) {
       const log = (line: string) => this.notes.log(line);
-      void this.nativeSound.then(() => stopNativeSound(log));
+      const started = this.nativeSound;
       this.nativeSound = null;
+      this.sessionSound = started.then(async (at) => {
+        const uri = await stopNativeSound(log);
+        return uri && at !== null ? { uri, startedAtMs: at } : undefined;
+      });
     }
+    // Before the camera's tracks end, or the full session loses its tail.
+    const fullDone =
+      this.full?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull, this.sessionSound) ??
+      Promise.resolve();
+    this.full = null;
+    const sound = this.sessionSound;
+    void Promise.all([fullDone, this.reelSoundUsed, sound]).then(([, , s]) =>
+      s ? Filesystem.deleteFile({ path: s.uri }).catch(() => undefined) : undefined
+    );
     this.meter?.stop();
     this.meter = null;
     this.hits?.stop();
@@ -441,6 +487,7 @@ export class ReelRecorder {
       startMs: p.cut.startMs,
       endMs: p.cut.endMs,
       crop: p.crop,
+      sourceEpochMs: p.sourceEpochMs,
     }));
     void this.renderer.add(clips, (clip) =>
       picks.find((p) => p.url === clip.url)?.release()
@@ -595,6 +642,8 @@ export class ReelRecorder {
       score,
       crop,
       url,
+      // performance.now() to the wall clock the native sound is timed by.
+      sourceEpochMs: startedAt + (Date.now() - performance.now()),
       release: () => URL.revokeObjectURL(url),
     } satisfies Candidate);
   }

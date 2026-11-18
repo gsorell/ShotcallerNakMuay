@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
-import { stopNativeSound } from "./micChoice";
+import type { NativeSound } from "./micChoice";
 import { getKeepFullSession } from "./recordPreference";
 import { writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
@@ -135,8 +135,6 @@ export class FullSession {
   private layerKey = "";
   /** The microphone went into the recording (it was granted). */
   private withMic = false;
-  /** iOS: the sound is recorded natively, and when it started (epoch ms). */
-  private nativeSound: Promise<number | null> | null = null;
   /** Date.now() of the first frame, against the native sound's start. */
   private beganEpoch = 0;
   private micTracks: MediaStreamTrack[] = [];
@@ -158,10 +156,10 @@ export class FullSession {
     held: boolean,
     title: Card,
     /**
-     * iOS: the session's sound, being recorded natively since before the
-     * camera opened (see micChoice.recordsSoundNatively); this stops it.
+     * iOS: the session's sound is being recorded natively (ReelRecorder
+     * starts and stops it, and hands it over at stop()).
      */
-    nativeSound: Promise<number | null> | null = null
+    nativeSound = false
   ): void {
     try {
       const ctx = this.canvas.getContext("2d");
@@ -221,12 +219,7 @@ export class FullSession {
       this.began = performance.now();
       this.beganEpoch = Date.now();
       this.rec = rec;
-      if (nativeSound) {
-        this.nativeSound = nativeSound;
-        void this.nativeSound.then((at) => {
-          if (at !== null) this.withMic = true;
-        });
-      }
+      if (nativeSound) this.withMic = true;
       if (!held) this.work();
       this.log(
         `full session on, ${rec.mimeType}, ${this.canvas.width}x${this.canvas.height}, ` +
@@ -236,11 +229,6 @@ export class FullSession {
     } catch (e) {
       this.drawing = false;
       this.log(`full session could not start: ${String(e)}`);
-      // Nothing to lay the sound under: stop recording it.
-      if (nativeSound) {
-        this.nativeSound = null;
-        void nativeSound.then(() => stopNativeSound(this.log));
-      }
     }
   }
 
@@ -292,9 +280,14 @@ export class FullSession {
    * file is thrown away; `hitTimes` (performance.now()) go to the debug
    * sidecar.
    */
-  stop(hitTimes: number[], keep: boolean): void {
+  stop(
+    hitTimes: number[],
+    keep: boolean,
+    /** iOS: the session's sound, recorded natively; laid under the picture. */
+    nativeSound: Promise<NativeSound | undefined> = Promise.resolve(undefined)
+  ): Promise<void> {
     const rec = this.rec;
-    if (!rec) return;
+    if (!rec) return Promise.resolve();
     this.rec = null;
     const spans = this.spans.all(this.now());
     this.log(
@@ -314,12 +307,9 @@ export class FullSession {
     const hits = hitTimes.map((t) => Math.round(t - this.began)).filter((t) => t >= 0);
     // The native sound, stopped with the picture; where it starts against
     // the first frame, for the remux to lay it under.
-    const sound = this.nativeSound
-      ? this.nativeSound.then(async (at) => {
-          const uri = await stopNativeSound(this.log);
-          return uri && at !== null ? { uri, offsetMs: at - this.beganEpoch } : undefined;
-        })
-      : Promise.resolve(undefined);
+    const sound = nativeSound.then((s) =>
+      s ? { uri: s.uri, offsetMs: s.startedAtMs - this.beganEpoch } : undefined
+    );
     // Said on the completion screen from the moment the session ends, so
     // nobody finds it in the gallery days later by surprise.
     if (keep) {
@@ -329,7 +319,7 @@ export class FullSession {
         durationMs: spans.reduce((n, s) => n + s.toMs - s.fromMs, 0),
       });
     }
-    void stopped
+    return stopped
       .then(() => {
         this.drawing = false;
         return this.writes;
@@ -338,8 +328,8 @@ export class FullSession {
       .then(async (audio) => {
         if (keep) await this.finish(hits, spans, audio);
         else await this.discard();
-        if (audio) await Filesystem.deleteFile({ path: audio.uri }).catch(() => undefined);
-      });
+      })
+      .catch((e) => this.log(`full session could not be finished: ${String(e)}`));
   }
 
   private now(): number {

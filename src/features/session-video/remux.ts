@@ -62,6 +62,12 @@ interface VideoRemuxPlugin {
     /** iOS: sound recorded natively, starting offsetMs after the first frame. */
     audio?: { uri: string; offsetMs: number };
   }): Promise<{ uri: string; summary?: string; audio?: boolean }>;
+  laySound(opts: {
+    from: string;
+    to: string;
+    sound: string;
+    parts: { durMs: number; soundFromMs?: number }[];
+  }): Promise<{ uri: string; summary?: string }>;
 }
 
 const VideoRemux = registerPlugin<VideoRemuxPlugin>("VideoRemux");
@@ -99,5 +105,42 @@ export const remuxFileToMp4 = async (
   } catch (e) {
     log(`full session left as recorded (could not remux): ${String(e)}`);
     return null;
+  }
+};
+
+/**
+ * iOS: lays the session's sound, recorded natively, under a finished reel.
+ * The reel's clips were filmed silent (the web view never opens the
+ * microphone on an iPhone: see micChoice.ts), but each stretch of the reel
+ * knows when in the session it was filmed; `parts` says, in order, how long
+ * each runs and where in the sound file it starts (none: a card, silent).
+ * The result is an indexed MP4, read back as a Blob; null, and the silent
+ * reel stands, on any failure or off iOS.
+ */
+export const laySoundUnderReel = async (
+  reel: Blob,
+  soundUri: string,
+  parts: { durMs: number; soundFromMs?: number }[],
+  log: (line: string) => void = () => {}
+): Promise<Blob | null> => {
+  if (Capacitor.getPlatform() !== "ios") return null;
+  const { Directory, Filesystem } = await import("@capacitor/filesystem");
+  const { writeBlobInPieces } = await import("./reelFile");
+  const name = `reel-silent-${Date.now()}`;
+  const from = `${name}.mp4`;
+  const to = `${name}-sound.mp4`;
+  try {
+    const fromUri = await writeBlobInPieces(from, Directory.Cache, reel);
+    const toUri = (await Filesystem.getUri({ path: to, directory: Directory.Cache })).uri;
+    const { uri, summary } = await VideoRemux.laySound({ from: fromUri, to: toUri, sound: soundUri, parts });
+    const blob = await (await fetch(Capacitor.convertFileSrc(uri))).blob();
+    log(`reel sound laid: ${summary ?? "?"}, ${blob.size} bytes`);
+    return blob.size ? new Blob([blob], { type: "video/mp4" }) : null;
+  } catch (e) {
+    log(`reel left silent (sound not laid): ${String(e)}`);
+    return null;
+  } finally {
+    await Filesystem.deleteFile({ path: from, directory: Directory.Cache }).catch(() => undefined);
+    await Filesystem.deleteFile({ path: to, directory: Directory.Cache }).catch(() => undefined);
   }
 };

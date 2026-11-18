@@ -17,6 +17,18 @@ export interface RenderClip {
   endMs: number;
   /** The part of the frame the fighter is in; the whole frame if absent. */
   crop?: Crop;
+  /** When the clip's video began (epoch ms): where its moments sit in the session. */
+  sourceEpochMs?: number;
+}
+
+/**
+ * One stretch of the finished reel, in order: how long it runs, and for a
+ * clip, when in the session (epoch ms) its first frame was filmed. Cards
+ * have no source. Lets the session's sound be laid under the reel.
+ */
+export interface ReelSegment {
+  durMs: number;
+  sourceEpochMs?: number;
 }
 
 export interface RendererOptions {
@@ -237,6 +249,9 @@ export class ReelRenderer {
    * gallery and a feed, and a feed decides in a second whether to stay — so
    * the reel opens on action with the title over it, not on a black card.
    */
+  /** The reel's stretches so far, in order (see ReelSegment). */
+  readonly segments: ReelSegment[] = [];
+
   setTitle(card: Card): void {
     this.title = card;
   }
@@ -412,6 +427,7 @@ export class ReelRenderer {
     await wait(card.durationMs);
     this.cut();
     this.renderedMs += performance.now() - rolledAt;
+    this.segments.push({ durMs: performance.now() - rolledAt });
     this.scene = null;
   }
 
@@ -456,6 +472,8 @@ export class ReelRenderer {
 
     this.roll();
     const rolledAt = performance.now();
+    // Where the picture stands as the tape rolls.
+    const fromS = v.currentTime;
     if (this.overlay) this.overlay.until = rolledAt + this.overlay.card.durationMs;
     await playSafely(v);
     this.speak(buffer, v.currentTime);
@@ -470,6 +488,12 @@ export class ReelRenderer {
     v.pause();
     this.overlay = null;
     this.renderedMs += performance.now() - rolledAt;
+    this.segments.push({
+      durMs: performance.now() - rolledAt,
+      ...(clip.sourceEpochMs !== undefined
+        ? { sourceEpochMs: clip.sourceEpochMs + fromS * 1000 }
+        : {}),
+    });
   }
 }
 

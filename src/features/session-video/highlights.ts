@@ -118,6 +118,8 @@ export interface Candidate {
   crop?: Crop;
   /** The clip's video. */
   url: string;
+  /** When the clip's video began (epoch ms). */
+  sourceEpochMs?: number;
   /** Lets go of the clip's video. */
   release(): void;
 }
