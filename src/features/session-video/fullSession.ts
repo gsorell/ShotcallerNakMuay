@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
-import { startNativeSound, stopNativeSound } from "./micChoice";
+import { stopNativeSound } from "./micChoice";
 import { getKeepFullSession } from "./recordPreference";
 import { writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
@@ -157,8 +157,11 @@ export class FullSession {
     mimeType: string,
     held: boolean,
     title: Card,
-    /** iOS: record the sound natively (see micChoice.recordsSoundNatively). */
-    nativeSound = false
+    /**
+     * iOS: the session's sound, being recorded natively since before the
+     * camera opened (see micChoice.recordsSoundNatively); this stops it.
+     */
+    nativeSound: Promise<number | null> | null = null
   ): void {
     try {
       const ctx = this.canvas.getContext("2d");
@@ -219,7 +222,7 @@ export class FullSession {
       this.beganEpoch = Date.now();
       this.rec = rec;
       if (nativeSound) {
-        this.nativeSound = startNativeSound(this.log);
+        this.nativeSound = nativeSound;
         void this.nativeSound.then((at) => {
           if (at !== null) this.withMic = true;
         });
@@ -233,6 +236,11 @@ export class FullSession {
     } catch (e) {
       this.drawing = false;
       this.log(`full session could not start: ${String(e)}`);
+      // Nothing to lay the sound under: stop recording it.
+      if (nativeSound) {
+        this.nativeSound = null;
+        void nativeSound.then(() => stopNativeSound(this.log));
+      }
     }
   }
 

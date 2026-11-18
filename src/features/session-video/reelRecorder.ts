@@ -7,7 +7,13 @@ import {
   strikesIn,
   type Candidate,
 } from "./highlights";
-import { logAudioSession, openBuiltInMic, recordsSoundNatively } from "./micChoice";
+import {
+  logAudioSession,
+  openBuiltInMic,
+  recordsSoundNatively,
+  startNativeSound,
+  stopNativeSound,
+} from "./micChoice";
 import { ReelNotes } from "./reelNotes";
 import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
@@ -114,6 +120,8 @@ export class ReelRecorder {
   /** False once the session is known to be too short to keep anything. */
   private keepFull = true;
   private audioCheck: ReturnType<typeof setTimeout> | undefined;
+  /** iOS: the native recording of the session's sound, once started. */
+  private nativeSound: Promise<number | null> | null = null;
   /** Calls the voice finished saying, beside callsMade: heard or not. */
   private spokenCount = 0;
   /** Told when filming starts or stops, for the preview's red dot. */
@@ -136,16 +144,29 @@ export class ReelRecorder {
       height: { ideal: 720 },
       frameRate: { ideal: 30 },
     };
+    const native = recordsSoundNatively();
+    // iOS: the sound's recording starts before the camera opens. Started
+    // after, it switched the audio session under a running camera, and the
+    // web view's camera stopped: a black preview, one frame for the whole
+    // session (TestFlight builds 95 and 97).
+    if (native && NATIVE_SOUND_ON_IOS && fullSessionWanted()) {
+      this.nativeSound = startNativeSound((line) => this.notes.log(line));
+      await this.nativeSound;
+    }
     this.camera = await navigator.mediaDevices.getUserMedia({ video, audio: false });
-    const cam = this.camera.getVideoTracks()[0]?.getSettings?.();
+    const camTrack = this.camera.getVideoTracks()[0];
+    const cam = camTrack?.getSettings?.();
     this.notes.log(`camera ${cam?.width}x${cam?.height}@${cam?.frameRate}`);
+    // A camera that stops sending pictures shows up as a mute.
+    camTrack?.addEventListener("mute", () => this.notes.log("camera muted"));
+    camTrack?.addEventListener("unmute", () => this.notes.log("camera back"));
+    camTrack?.addEventListener("ended", () => this.notes.log("camera ended"));
     // The phone's own microphone, never a headset's (see micChoice.ts). No
     // microphone (refused, or none): film silent. Never on iOS: there the
     // web view's microphone stops the music and silences the callouts. The
     // full session's sound can be recorded natively (FullSession), but that's
     // off until it's shown to leave the callouts and the music alone
     // (NATIVE_SOUND_ON_IOS); till then an iPhone films silent.
-    const native = recordsSoundNatively();
     const mic = native ? null : await openBuiltInMic();
     mic?.getAudioTracks().forEach((t) => this.camera?.addTrack(t));
     this.notes.log(
@@ -199,7 +220,8 @@ export class ReelRecorder {
     this.renderer.setTitle(this.title);
     if (fullSessionWanted()) {
       this.full = new FullSession((line) => this.notes.log(line), this.roundCount);
-      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, native && NATIVE_SOUND_ON_IOS);
+      this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, this.nativeSound);
+      this.nativeSound = null;
     }
     this.scheduler = new SegmentScheduler(
       () => this.openSegment(),
@@ -377,6 +399,12 @@ export class ReelRecorder {
     // Before the camera's tracks end, or the full session loses its tail.
     this.full?.stop(this.hits?.between(0, Infinity) ?? [], this.keepFull);
     this.full = null;
+    // Started, but never handed to a full session (it failed to start).
+    if (this.nativeSound) {
+      const log = (line: string) => this.notes.log(line);
+      void this.nativeSound.then(() => stopNativeSound(log));
+      this.nativeSound = null;
+    }
     this.meter?.stop();
     this.meter = null;
     this.hits?.stop();
