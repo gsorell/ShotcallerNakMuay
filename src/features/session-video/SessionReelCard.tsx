@@ -12,8 +12,6 @@ import {
   useReelViewer,
   useSessionReel,
   fullSessionText,
-  sessionTrace,
-  type ReelFailure,
 } from "./reelStore";
 import { shareReel, shareVideoFile } from "./shareReel";
 import "./SessionReelCard.css";
@@ -62,71 +60,46 @@ export default function SessionReelCard() {
  */
 function FullSessionLine() {
   const full = useFullSession();
-  // The recording's trace, under "Details" (or the line itself until it's
-  // saved): on an iPhone the only way to see what the camera, microphone
-  // and audio session did.
-  const [trace, setTrace] = useState<string | null>(null);
   if (!full) return null;
-  const toggleTrace = () => setTrace((t) => (t === null ? sessionTrace() : null));
   if (full.status === "saved" && full.uri) {
     const src = Capacitor.convertFileSrc(full.uri);
     const minutes = Math.max(1, Math.round(full.durationMs / 60000));
     const gallery = Capacitor.getPlatform() === "ios" ? "Photos" : "your gallery";
     return (
-      <>
-        <button
-          type="button"
-          className="reel-ready"
-          onClick={() => {
-            openReelViewer("full");
-            try {
-              trackEvent("session_full_video_open", { minutes });
-            } catch { /* analytics must never break the tap it measures */ }
-          }}
-        >
-          <span className="reel-ready-thumb" aria-hidden="true">
-            <video src={`${src}#t=0.1`} muted playsInline preload="metadata" />
-            <span className="reel-ready-play">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </span>
+      <button
+        type="button"
+        className="reel-ready"
+        onClick={() => {
+          openReelViewer("full");
+          try {
+            trackEvent("session_full_video_open", { minutes });
+          } catch { /* analytics must never break the tap it measures */ }
+        }}
+      >
+        <span className="reel-ready-thumb" aria-hidden="true">
+          <video src={`${src}#t=0.1`} muted playsInline preload="metadata" />
+          <span className="reel-ready-play">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
           </span>
-          <span className="reel-ready-text">
-            <span className="reel-ready-title">Watch your session</span>
-            <span className="reel-ready-sub is-saved">
-              {`${minutes} min · saved to ${gallery}${full.silent ? ", without sound" : ""}`}
-            </span>
+        </span>
+        <span className="reel-ready-text">
+          <span className="reel-ready-title">Watch your session</span>
+          <span className="reel-ready-sub is-saved">
+            {`${minutes} min · saved to ${gallery}${full.silent ? ", without sound" : ""}`}
           </span>
-          <span className="reel-ready-chevron" aria-hidden="true">
-            ›
-          </span>
-        </button>
-        <button
-          type="button"
-          className="full-session-line full-session-details"
-          aria-expanded={trace !== null}
-          onClick={toggleTrace}
-        >
-          {trace === null ? "Details" : "Hide details"}
-        </button>
-        {trace !== null && <pre className="reel-failed-details">{trace}</pre>}
-      </>
+        </span>
+        <span className="reel-ready-chevron" aria-hidden="true">
+          ›
+        </span>
+      </button>
     );
   }
   return (
-    <>
-      <button
-        type="button"
-        className={`full-session-line is-${full.status}`}
-        aria-live="polite"
-        aria-expanded={trace !== null}
-        onClick={toggleTrace}
-      >
-        {fullSessionText(full, Capacitor.getPlatform())}
-      </button>
-      {trace !== null && <pre className="reel-failed-details">{trace}</pre>}
-    </>
+    <p className={`full-session-line is-${full.status}`} aria-live="polite">
+      {fullSessionText(full, Capacitor.getPlatform())}
+    </p>
   );
 }
 
@@ -154,7 +127,7 @@ function ReelRow() {
     );
   }
 
-  if (!reel && failure) return <ReelFailed failure={failure} />;
+  if (!reel && failure) return <ReelFailed />;
 
   if (!reel) return null;
 
@@ -208,34 +181,19 @@ function ReelRow() {
 
 /**
  * The session was filmed but no reel came out. Said plainly rather than the
- * row just vanishing, with what happened behind "Details" — on an iPhone
- * there is no other way to see why.
+ * row just vanishing; what happened is in the session's saved trace.
  */
-function ReelFailed({ failure }: { failure: ReelFailure }) {
-  const [open, setOpen] = useState(false);
+function ReelFailed() {
   return (
     <div className="reel-failed">
-      <button
-        type="button"
-        className="reel-ready is-failed"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
+      <div className="reel-ready is-failed" role="status">
         <span className="reel-ready-thumb reel-failed-mark" aria-hidden="true">
           !
         </span>
         <span className="reel-ready-text">
           <span className="reel-ready-title">Couldn't make your reel this time</span>
-          <span className="reel-ready-sub">
-            {open ? "Hide details" : "Tap for details"}
-          </span>
         </span>
-      </button>
-      {open && (
-        <pre className="reel-failed-details">
-          {`${failure.reason}\n\n${failure.trace}`}
-        </pre>
-      )}
+      </div>
     </div>
   );
 }
