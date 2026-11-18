@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
+import { Capacitor } from "@capacitor/core";
 
 import { trackEvent } from "@/utils/analytics";
 
@@ -59,6 +60,16 @@ const subscribe = (cb: () => void) => {
 
 export const useRecordSession = (): boolean =>
   useSyncExternalStore(subscribe, getRecordSession, () => false);
+
+/**
+ * iPhone: no reel, the full session only (2026-11-18). Re-filming the clips
+ * in the web view froze for up to a second at a time (TestFlight builds
+ * 100-104), so for now an iPhone saves the session as it was filmed.
+ */
+export const REEL_ON_IOS = false;
+
+/** Whether a highlight reel is cut on this platform. */
+export const reelWanted = (): boolean => Capacitor.getPlatform() !== "ios" || REEL_ON_IOS;
 
 /**
  * Whether the whole session, uncut, is saved to the gallery beside the reel.

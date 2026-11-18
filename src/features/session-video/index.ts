@@ -7,6 +7,7 @@ export {
   useKeepFullSession,
   useRecordSession,
   useRecordToggle,
+  reelWanted,
 } from "./recordPreference";
 export { clearSessionReel, closeReelViewer, useSessionReel } from "./reelStore";
 export { default as SessionCameraPip } from "./SessionCameraPip";

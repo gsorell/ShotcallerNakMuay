@@ -33,6 +33,7 @@ import { closeHolesInParts, type Hole } from "./reelHoles";
 import { laySoundUnderReel, remuxToMp4 } from "./remux";
 import { OVERLAP_MS, SegmentScheduler, type SegmentHandle } from "./segmentScheduler";
 import { FullSession, fullSessionWanted } from "./fullSession";
+import { reelWanted } from "./recordPreference";
 
 /**
  * iOS: record the full session's sound natively (RecordingAudioPlugin). In
@@ -138,6 +139,8 @@ export class ReelRecorder {
   private speechMs: number[] = [];
   /** Told when filming starts or stops, for the preview's red dot. */
   onRecordingChange: (recording: boolean) => void = () => {};
+  /** A reel is cut this session; without one, only the full session (iOS). */
+  readonly makesReel = reelWanted();
 
   /** `roundMs`: one round's length; with the count, the session's work. */
   constructor(
@@ -211,33 +214,41 @@ export class ReelRecorder {
     this.notes.log(
       `clips mime "${this.mimeType}", preview ${preview.videoWidth}x${preview.videoHeight}`
     );
-    this.meter = new MotionMeter(preview);
-    this.meter.start();
-    if (withAudio) {
+    if (this.makesReel) {
+      this.meter = new MotionMeter(preview);
+      this.meter.start();
+    }
+    if (withAudio && this.makesReel) {
       this.hits = new HitDetector();
       if (!(await this.hits.start(this.camera))) this.hits = null;
       this.notes.log(`hit detector ${this.hits ? "on" : "off"}`);
     }
-    try {
-      this.renderer = new ReelRenderer({
-        withAudio,
-        log: (line) => this.notes.log(line),
-      });
-    } catch (e) {
-      this.notes.log(`renderer failed: ${errText(e)}`);
-      throw e;
+    if (this.makesReel) {
+      try {
+        this.renderer = new ReelRenderer({
+          withAudio,
+          log: (line) => this.notes.log(line),
+        });
+      } catch (e) {
+        this.notes.log(`renderer failed: ${errText(e)}`);
+        throw e;
+      }
+    } else {
+      this.notes.log("no reel on this platform: full session only");
     }
     this.withAudio = withAudio;
     this.title = titleCard(this.roundCount, this.roundMs);
-    this.renderer.setTitle(this.title);
+    this.renderer?.setTitle(this.title);
     if (fullSessionWanted()) {
       this.full = new FullSession((line) => this.notes.log(line), this.roundCount);
       this.full.start(preview, this.camera.getAudioTracks(), this.mimeType, this.held, this.title, this.nativeSound !== null);
     }
-    this.scheduler = new SegmentScheduler(
-      () => this.openSegment(),
-      (on) => this.onRecordingChange(on)
-    );
+    if (this.makesReel) {
+      this.scheduler = new SegmentScheduler(
+        () => this.openSegment(),
+        (on) => this.onRecordingChange(on)
+      );
+    }
   }
 
   /** The callout engine's timing and calls. */
@@ -268,6 +279,8 @@ export class ReelRecorder {
     }
     if ((e.type === "scheduled" || e.type === "called") && this.workingSince === null) {
       this.workingSince = now;
+      // No clips to film: the red dot follows the work instead.
+      if (!this.scheduler && this.full) this.onRecordingChange(true);
     }
     if (e.type === "sound") {
       // A bell rings on: its tail is as loud as its strike.
@@ -361,6 +374,12 @@ export class ReelRecorder {
     this.stopCapture();
     const renderer = this.renderer;
     this.renderer = null;
+    if (!renderer && !this.makesReel) {
+      // On purpose: the full session is the video.
+      void this.notes.save();
+      this.failure = null;
+      return null;
+    }
     if (!renderer) {
       this.fail("no renderer");
       return null;
@@ -448,6 +467,7 @@ export class ReelRecorder {
 
   private stopWorkClock(): void {
     if (this.workingSince === null) return;
+    if (!this.scheduler && this.full) this.onRecordingChange(false);
     this.workedMs += performance.now() - this.workingSince;
     this.workingSince = null;
   }

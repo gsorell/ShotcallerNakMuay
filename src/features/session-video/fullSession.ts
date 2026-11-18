@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
 import type { NativeSound } from "./micChoice";
-import { getKeepFullSession } from "./recordPreference";
+import { getKeepFullSession, reelWanted } from "./recordPreference";
 import { writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
 import { patchFullSession, setFullSession } from "./reelStore";
@@ -53,8 +53,9 @@ const debugFlag = (): boolean => {
 };
 
 /** Whether this session is filmed in full as well as cut into a reel. */
+/** Without a reel, the full session is the video: always kept. */
 export const fullSessionWanted = (): boolean =>
-  Capacitor.isNativePlatform() && (getKeepFullSession() || debugFlag());
+  Capacitor.isNativePlatform() && (!reelWanted() || getKeepFullSession() || debugFlag());
 
 export type RawMark =
   | { t: number; type: "called"; text: string; between: boolean }

@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 import { useEntitlement } from "@/features/entitlement";
 import { usePaywall } from "@/features/paywall";
 import {
+  reelWanted,
   setKeepFullSession,
   useKeepFullSession,
   useRecordToggle,
@@ -131,7 +132,9 @@ export default function RoundStructureSheet({
   const keepFull = useKeepFullSession();
   // The full session is written to disk as it is filmed and saved to the
   // gallery: a phone thing. The browser build only ever has the reel.
-  const canKeepFull = Capacitor.isNativePlatform();
+  // Without a reel (iOS) the full session is the video, so there is no choice.
+  const makesReel = reelWanted();
+  const canKeepFull = Capacitor.isNativePlatform() && makesReel;
 
   // The phone's Back closes the sheet, back to the round settings, rather
   // than leaving the app. (Escape on a desktop.)
@@ -461,7 +464,9 @@ export default function RoundStructureSheet({
             <p className="rs-hint">
               {record.denied && !record.on
                 ? "Camera access is off. Allow it in Settings."
-                : "The camera films you in the corner, and a highlight reel is cut at the end."}
+                : makesReel
+                ? "The camera films you in the corner, and a highlight reel is cut at the end."
+                : "The camera films you in the corner, and the session is saved to Photos at the end."}
             </p>
             {record.on && canKeepFull && (
               <>

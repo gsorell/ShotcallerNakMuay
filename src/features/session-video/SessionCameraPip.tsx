@@ -196,7 +196,7 @@ async function batteryTooLow(): Promise<boolean> {
 
 async function handOver(rec: ReelRecorder): Promise<void> {
   // The completion screen says "Cutting your reel…" until it is ready.
-  setReelBuilding(true);
+  if (rec.makesReel) setReelBuilding(true);
   setSessionTrace(() => rec.trace());
   try {
     const reel = await rec.finish();
