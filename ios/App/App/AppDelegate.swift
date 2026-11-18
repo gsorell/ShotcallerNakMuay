@@ -308,22 +308,18 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-/// The app's audio session while a session is filmed: recording AND playing,
-/// out of the loudspeaker, alongside the user's music.
+/// Watches the app's audio session while a session is filmed, for the reel's
+/// trace: from Windows there's no other way to see an iPhone's.
 ///
-/// The microphone is opened by WebKit, and while it records WebKit puts the
-/// session into .playAndRecord with options of its own. With nothing more
-/// done, the callouts (AVSpeechSynthesizer, on this session) went silent
-/// while the bell (Web Audio) still played (TestFlight build 91). So once the
-/// microphone is open the session is set here to .playAndRecord with
-/// .defaultToSpeaker (or it plays from the earpiece), .mixWithOthers (or it
-/// stops the user's music) and Bluetooth, and set again whenever something
-/// changes it (a route change for a new category is how that shows). Put
-/// back to AppDelegate's .playback + .mixWithOthers when filming is over.
-///
-/// What the session was, and every interruption and route change meanwhile,
-/// is kept for status(), which the reel's trace prints: from Windows there's
-/// no other way to see an iPhone's audio session.
+/// WebKit records the microphone on an audio session of its own, and
+/// starting it interrupts the app's (build 93's trace). The callouts' speech
+/// used to play on the app's session and went silent with it; it now has a
+/// session of its own (patches/@capacitor-community+text-to-speech+6.1.0.patch).
+/// Setting the app's session to .playAndRecord here was tried (build 93) and
+/// changed nothing, so this only reports: the category, options and route,
+/// and every interruption and route change. release() activates the app's
+/// session again as AppDelegate sets it, clearing an interruption that never
+/// ended.
 ///
 /// Registered by scripts/register-ios-app-plugins.mjs.
 @objc(RecordingAudioPlugin)
@@ -336,11 +332,6 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise)
     ]
 
-    private static let options: AVAudioSession.CategoryOptions = [
-        .defaultToSpeaker, .mixWithOthers, .allowBluetoothA2DP
-    ]
-    /// Filming: keep the session recording-and-playing.
-    private var holding = false
     private var events: [String] = []
     private let started = Date()
 
@@ -354,16 +345,13 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func allowRecording(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            self.holding = true
-            self.note("allow (was \(RecordingAudioPlugin.describe()))")
-            self.apply()
+            self.note("filming (\(RecordingAudioPlugin.describe()))")
             call.resolve(["status": RecordingAudioPlugin.describe()])
         }
     }
 
     @objc func release(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            self.holding = false
             do {
                 let session = AVAudioSession.sharedInstance()
                 try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
@@ -387,21 +375,6 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// .playAndRecord with our options, unless it already is.
-    private func apply() {
-        let session = AVAudioSession.sharedInstance()
-        if session.category == .playAndRecord && session.categoryOptions.isSuperset(of: RecordingAudioPlugin.options) {
-            return
-        }
-        do {
-            try session.setCategory(.playAndRecord, mode: .default, options: RecordingAudioPlugin.options)
-            try session.setActive(true)
-            note("applied -> \(RecordingAudioPlugin.describe())")
-        } catch {
-            note("apply failed: \(error.localizedDescription)")
-        }
-    }
-
     @objc private func onInterruption(_ n: Notification) {
         let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt ?? 99
         let kind = AVAudioSession.InterruptionType(rawValue: raw) == .began ? "began" : "ended"
@@ -412,8 +385,6 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         let raw = n.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt ?? 99
         DispatchQueue.main.async {
             self.note("route change \(raw) -> \(RecordingAudioPlugin.describe())")
-            // Reason 3 is a new category: someone (WebKit) set the session.
-            if self.holding { self.apply() }
         }
     }
 

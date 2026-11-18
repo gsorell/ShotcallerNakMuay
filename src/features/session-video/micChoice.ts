@@ -190,10 +190,8 @@ const RecordingAudio = registerPlugin<RecordingAudioPlugin>("RecordingAudio");
 const onIOS = () => Capacitor.getPlatform() === "ios";
 
 /**
- * iOS, once the microphone is open: the app's own audio session set to
- * record and play together, out of the loudspeaker and alongside music.
- * WebKit's own setting for a recording page left the callouts (native
- * speech) silent while the bell still played (TestFlight build 91).
+ * iOS, once the microphone is open: notes the app's audio session in the
+ * trace (RecordingAudioPlugin only watches; see there).
  */
 export const allowRecordingNatively = async (log: (line: string) => void): Promise<void> => {
   if (!onIOS()) return;
