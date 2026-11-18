@@ -470,6 +470,13 @@ export class ReelRenderer {
     await nextFrames(2);
     const buffer = sound ? await sound : null;
 
+    // Playing before the tape rolls, and rolled only once a new frame is on
+    // screen: an iPhone took 0.75-1s to show one after play(), and with the
+    // tape already rolling each clip opened on a frozen frame (TestFlight
+    // builds 100 and 102: no frames for 0.7-1s after each clip's resume
+    // keyframe).
+    await playSafely(v);
+    if (!(await pictureMoves(v, 2000))) this.log("render: clip slow to start");
     this.roll();
     const rolledAt = performance.now();
     // Each stretch the tape rolls: when it started, and where the picture
@@ -489,7 +496,6 @@ export class ReelRenderer {
       });
     };
     if (this.overlay) this.overlay.until = rolledAt + this.overlay.card.durationMs;
-    await playSafely(v);
     this.speak(buffer, v.currentTime);
     const limit = (endS - startS) * 1000 * 2 + 3000;
     // A clip whose picture stops moving is cut where it stalled: a phone
@@ -774,6 +780,31 @@ const playTo = (
  * TestFlight build 100).
  */
 export const HICCUP_MS = 120;
+
+/**
+ * Resolves true once a playing video shows a new frame (presented, where
+ * requestVideoFrameCallback exists; its clock moving, where not), or false
+ * after `timeoutMs`.
+ */
+const pictureMoves = (v: HTMLVideoElement, timeoutMs: number) =>
+  new Promise<boolean>((resolve) => {
+    const rvfc = (
+      v as HTMLVideoElement & {
+        requestVideoFrameCallback?: (cb: () => void) => number;
+      }
+    ).requestVideoFrameCallback;
+    const t = setTimeout(() => resolve(false), timeoutMs);
+    const done = () => {
+      clearTimeout(t);
+      resolve(true);
+    };
+    if (rvfc) {
+      rvfc.call(v, done);
+    } else {
+      const at = v.currentTime;
+      void until(() => v.currentTime !== at, timeoutMs).then((ok) => ok && done());
+    }
+  });
 
 const nextFrames = (n: number) =>
   new Promise<void>((resolve) => {
