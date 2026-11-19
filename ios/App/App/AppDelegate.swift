@@ -492,7 +492,7 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
     private var recorder: AVAudioRecorder?
 
     /// Adds a line to the trace the web layer reads (status()), from any
-    /// plugin: NativeSoundsPlugin reports each cue here.
+    /// plugin.
     static func trace(_ line: String) {
         let s = Int(Date().timeIntervalSince(started))
         events.append("\(s)s \(line)")
@@ -717,17 +717,6 @@ public class NativeSoundsPlugin: CAPPlugin, CAPBridgedPlugin {
                 AppDelegate.applyAudioSessionCategory()
                 try? AVAudioSession.sharedInstance().setActive(true)
                 started = p.play()
-            }
-            let name = (file as NSString).lastPathComponent
-            let didStart = started
-            // Whether it is really sounding: a stalled output still says
-            // started. Read in the trace (DEBUG, TestFlight 110).
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                let s = AVAudioSession.sharedInstance()
-                RecordingAudioPlugin.trace(
-                    "cue \(name): started \(didStart), playing \(p.isPlaying), at " +
-                    String(format: "%.2f", p.currentTime) + "s, other audio \(s.isOtherAudioPlaying), " +
-                    RecordingAudioPlugin.describe())
             }
             if started {
                 call.resolve(["durationMs": p.duration * 1000])

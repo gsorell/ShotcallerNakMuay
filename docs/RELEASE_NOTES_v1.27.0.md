@@ -47,6 +47,26 @@ patch-package can't regenerate this patch on the Windows machine (the
 `android/build` paths are too long). It was built with `git diff --no-index`
 against `npm pack` output, then checked against a fresh copy.
 
+## Bell, warning and clack silent from the second filmed session (`AppDelegate.swift`, `useSoundEffects.ts`)
+
+iOS: from the second filmed session after a launch, the bell and the
+clack were silent. They came out all at once when the app was left and
+opened again (TestFlight 107-109). It was the app's own audio output that
+stalled, not WebKit's. Rebuilding the AudioContext (108) and playing the
+cues natively (109) each failed in the same way on their own.
+
+The fix (110) is in `RecordingAudioPlugin.reactivate`: the session is
+deactivated and activated again into the new category when recording
+starts and stops, instead of only switching the category. The trace
+showed that the deactivation at recording *start* succeeds and is the
+part that matters. At stop it fails ("Session deactivation failed": the
+camera is still running), which is harmless.
+
+On iOS the cues also now play natively through `NativeSoundsPlugin`
+(AVAudioPlayer, files from the bundle's `public/`, preloaded at workout
+start), with Web Audio as the fallback. Android and the web are
+unchanged.
+
 ## Watch and share the full session (`SessionReelCard.tsx`, `fullSession.ts`, `shareReel.ts`, `reelStore.ts`)
 
 Once the full session is saved, the completion screen shows a "Watch your
@@ -65,13 +85,13 @@ and the reel failure's "Tap for details". It is still saved with the notes.
 - [x] Unit tests: 453 passing (new: `reelHoles.test.ts`, `nativeSpeechTimeout.test.ts`, `reelSound.test.ts`).
 - [x] iPhone (TestFlight 105): the full session saves to Photos with sound and no reel is made.
 - [x] iPhone (TestFlight 106): watch and share the full session from the completion screen.
-- [ ] iPhone: callouts in three sessions in a row without restarting the app.
+- [x] iPhone (TestFlight 110): bell, warning and callouts in a second filmed session without restarting the app.
 - [ ] Pixel: a session with recording on still makes a reel; the full session row plays.
 
 ## Store notes
 
 **App Store:**
-On iPhone, Shot Caller now saves your whole session to Photos with sound: the rests are cut out and every round is labelled. Watch it or share it straight from the results screen when you finish. Callouts no longer go quiet when you train a second time without restarting the app.
+On iPhone, Shot Caller now saves your whole session to Photos with sound: the rests are cut out and every round is labelled. Watch it or share it straight from the results screen when you finish. Callouts and the bell no longer go quiet when you train a second time without restarting the app.
 
 **Play (≤500 chars):**
 Watch your full session right from the results screen when you finish, and share it from there. Callouts are more reliable: one that gets stuck no longer silences the rest of your round.
