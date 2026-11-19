@@ -62,11 +62,12 @@ export const useRecordSession = (): boolean =>
   useSyncExternalStore(subscribe, getRecordSession, () => false);
 
 /**
- * iPhone: no reel, the full session only (2026-11-18). Re-filming the clips
+ * iPhone: a reel again. It was off (2026-11-18) because re-filming the clips
  * in the web view froze for up to a second at a time (TestFlight builds
- * 100-104), so for now an iPhone saves the session as it was filmed.
+ * 100-104); the reel is now cut from the recording natively after the
+ * session, with nothing re-filmed.
  */
-export const REEL_ON_IOS = false;
+export const REEL_ON_IOS = true;
 
 /** Whether a highlight reel is cut on this platform. */
 export const reelWanted = (): boolean => Capacitor.getPlatform() !== "ios" || REEL_ON_IOS;

@@ -1,23 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import type { CallInfo } from "@/features/session-video/calloutSignal";
-import {
-  RoundPicker,
-  avoidRepeatsInARow,
-  newReelSoFar,
-  reelBudgetMs,
-  roundBudgetMs,
-  scoreClip,
-  techniqueKey,
-  techniqueWeight,
-  type Candidate,
-} from "@/features/session-video/highlights";
+import { scoreClip, techniqueWeight } from "@/features/session-video/highlights";
 import {
   DISTURBANCE_PAD_MS,
   MAX_KEEP_MS,
-  MIN_CROP,
   MIN_KEEP_MS,
-  cropFromHeat,
   cutClip,
   disturbedNear,
   isDisturbance,
@@ -25,121 +13,12 @@ import {
   motionLevels,
   undisturbed,
 } from "@/features/session-video/motion";
-import { cropAt } from "@/features/session-video/reelRenderer";
 import { endCard, titleCard } from "@/features/session-video/cards";
-import {
-  MAX_SEGMENT_MS,
-  OVERLAP_MS,
-  PREROLL_MS,
-  SegmentScheduler,
-} from "@/features/session-video/segmentScheduler";
 
 const call = (text: string, between = false): CallInfo => ({
   text,
   between,
   combo: text.includes(","),
-});
-
-/** Records when clips open, close and what they were tagged with. */
-const makeOpener = () => {
-  const log: string[] = [];
-  const t0 = Date.now();
-  let n = 0;
-  const open = () => {
-    const id = (n += 1);
-    log.push(`open${id}@${Date.now() - t0}`);
-    return {
-      tag: (c: CallInfo) => log.push(`tag${id}:${c.text}`),
-      close: () => log.push(`close${id}@${Date.now() - t0}`),
-    };
-  };
-  return { log, open };
-};
-
-describe("filming every callout", () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
-  it("opens each clip before its callout and overlaps the handover", () => {
-    const { log, open } = makeOpener();
-    const s = new SegmentScheduler(open);
-    s.event({ type: "scheduled", delayMs: 3000, nextIsBetween: false });
-    vi.advanceTimersByTime(3000);
-    s.event({ type: "called", call: call("Jab, Cross") });
-    vi.advanceTimersByTime(1500);
-    s.event({ type: "scheduled", delayMs: 2000, nextIsBetween: false });
-    vi.advanceTimersByTime(2000);
-    s.event({ type: "called", call: call("Teep") });
-    vi.advanceTimersByTime(OVERLAP_MS);
-
-    const nextOpen = 6500 - PREROLL_MS;
-    expect(log).toEqual([
-      `open1@${3000 - PREROLL_MS}`,
-      "tag1:Jab, Cross",
-      `open2@${nextOpen}`,
-      "tag2:Teep",
-      `close1@${nextOpen + OVERLAP_MS}`,
-    ]);
-  });
-
-  it("folds a between-call into the combination's clip", () => {
-    const { log, open } = makeOpener();
-    const s = new SegmentScheduler(open);
-    s.event({ type: "scheduled", delayMs: 1000, nextIsBetween: false });
-    vi.advanceTimersByTime(1000);
-    s.event({ type: "called", call: call("Jab, Cross, Left Kick") });
-    // The engine says the next call is the between-call.
-    s.event({ type: "scheduled", delayMs: 2500, nextIsBetween: true });
-    vi.advanceTimersByTime(2500);
-    s.event({ type: "called", call: call("Check", true) });
-    expect(log).toEqual([
-      `open1@${1000 - PREROLL_MS}`,
-      "tag1:Jab, Cross, Left Kick",
-      "tag1:Check",
-    ]);
-  });
-
-  it("keeps the clip open when its callout is pushed back", () => {
-    const { log, open } = makeOpener();
-    const s = new SegmentScheduler(open);
-    s.event({ type: "scheduled", delayMs: 1000, nextIsBetween: false });
-    vi.advanceTimersByTime(900);
-    s.event({ type: "scheduled", delayMs: 250, nextIsBetween: false });
-    vi.advanceTimersByTime(250);
-    s.event({ type: "called", call: call("Jab") });
-    expect(log).toEqual([`open1@${1000 - PREROLL_MS}`, "tag1:Jab"]);
-  });
-
-  it("closes at once on a pause or the end of a round", () => {
-    const { log, open } = makeOpener();
-    const s = new SegmentScheduler(open);
-    s.event({ type: "scheduled", delayMs: 1000, nextIsBetween: false });
-    vi.advanceTimersByTime(1000);
-    s.event({ type: "called", call: call("Jab") });
-    vi.advanceTimersByTime(1500);
-    s.hold();
-    expect(log).toEqual([`open1@${1000 - PREROLL_MS}`, "tag1:Jab", "close1@2500"]);
-  });
-
-  it("closes on a backstop when no next callout comes", () => {
-    const { log, open } = makeOpener();
-    const s = new SegmentScheduler(open);
-    s.event({ type: "scheduled", delayMs: 1000, nextIsBetween: false });
-    vi.advanceTimersByTime(1000);
-    s.event({ type: "called", call: call("Jab") });
-    vi.advanceTimersByTime(30_000);
-    expect(log[log.length - 1]).toBe(`close1@${1000 - PREROLL_MS + MAX_SEGMENT_MS}`);
-  });
-
-  it("opens nothing more once stopped", () => {
-    const { log, open } = makeOpener();
-    const s = new SegmentScheduler(open);
-    s.stop();
-    s.event({ type: "scheduled", delayMs: 1000, nextIsBetween: false });
-    vi.advanceTimersByTime(2000);
-    s.event({ type: "called", call: call("Jab") });
-    expect(log).toEqual([]);
-  });
 });
 
 /** Motion samples every 100ms: `busy` ranges are action, the rest is still. */
@@ -277,124 +156,7 @@ describe("what a clip is worth", () => {
   });
 });
 
-const candidate = (seq: number, score: number, text: string, lenMs = 2000) => {
-  const released = { value: false };
-  const c: Candidate = {
-    seq,
-    url: `blob:${seq}`,
-    calls: [call(text)],
-    cut: { startMs: 0, endMs: lenMs, motion: 1, hits: 0 },
-    score,
-    release: () => {
-      released.value = true;
-    },
-  };
-  return { c, released };
-};
 
-describe("picking a round's best", () => {
-  it("picks the best that fit and ends the round on the best", () => {
-    const p = new RoundPicker(6000);
-    const all = [
-      candidate(0, 3, "Jab"),
-      candidate(1, 9, "Jab, Cross, Left Kick"),
-      candidate(2, 1, "Teep"),
-      candidate(3, 7, "Right Knee"),
-      candidate(4, 5, "Jab, Cross"),
-    ];
-    all.forEach(({ c }) => p.offer(c));
-    const picked = p.pick(6000);
-    // 9, 7 and 5 fit; in film order, the best moved to the end.
-    expect(picked.map((c) => c.seq)).toEqual([3, 4, 1]);
-    expect(all.filter((x) => x.released.value).length).toBe(2);
-  });
-
-  it("opens the first round on its runner-up", () => {
-    const p = new RoundPicker(6000);
-    [
-      candidate(0, 3, "Jab"),
-      candidate(1, 9, "Jab, Cross, Left Kick"),
-      candidate(2, 7, "Right Knee"),
-    ].forEach(({ c }) => p.offer(c));
-    expect(p.pick(6000, newReelSoFar(), true).map((c) => c.seq)).toEqual([2, 0, 1]);
-  });
-
-  it("shows a technique once a round, and at most twice across the reel", () => {
-    const soFar = newReelSoFar();
-    const p = new RoundPicker(20000);
-    [
-      candidate(0, 9, "Jab, Cross"),
-      candidate(1, 8, "Jab, Cross"),
-      candidate(2, 7, "Jab, Cross"),
-      candidate(3, 2, "Teep"),
-    ].forEach(({ c }) => p.offer(c));
-    // The better take only: twice in a round, back to back, read as a replay.
-    expect(p.pick(20000, soFar).map((c) => c.seq)).toEqual([3, 0]);
-    // A later round may show it again...
-    const q = new RoundPicker(20000);
-    q.offer(candidate(4, 9, "Jab, Cross").c);
-    q.offer(candidate(5, 3, "Hook").c);
-    expect(q.pick(20000, soFar).map((c) => c.seq)).toEqual([5, 4]);
-    // ...but twice is enough.
-    const r = new RoundPicker(20000);
-    r.offer(candidate(6, 9, "Jab, Cross").c);
-    expect(r.pick(20000, soFar)).toEqual([]);
-  });
-
-  it("drops a clip rather than show the same technique twice running", () => {
-    const soFar = newReelSoFar();
-    const p = new RoundPicker(20000);
-    p.offer(candidate(0, 9, "Teep").c);
-    p.pick(20000, soFar);
-    // With something else to open on, the teep moves along...
-    const q = new RoundPicker(20000);
-    q.offer(candidate(1, 5, "Teep").c);
-    q.offer(candidate(2, 9, "Hook").c);
-    expect(q.pick(20000, soFar).map((c) => c.seq)).toEqual([2, 1]);
-    // ...and with nothing else, it goes.
-    const r = new RoundPicker(20000);
-    r.offer(candidate(3, 9, "Teep").c);
-    expect(r.pick(20000, soFar)).toEqual([]);
-  });
-
-  it("never runs the same technique twice in a row", () => {
-    const list = [
-      candidate(0, 1, "Teep").c,
-      candidate(1, 1, "Jab").c,
-      candidate(2, 1, "Jab").c,
-      candidate(3, 1, "Hook").c,
-    ];
-    const keys = avoidRepeatsInARow(list, "teep").map(techniqueKey);
-    for (let i = 1; i < keys.length; i++) expect(keys[i]).not.toBe(keys[i - 1]);
-    expect(keys[0]).not.toBe("teep");
-  });
-
-  it("lets go of clips with nothing in them straight away", () => {
-    const p = new RoundPicker(6000);
-    const stare = candidate(0, 0, "Jab");
-    p.offer(stare.c);
-    expect(stare.released.value).toBe(true);
-  });
-
-  it("holds only what the round could use, however long it runs", () => {
-    const p = new RoundPicker(6000);
-    const all = Array.from({ length: 60 }, (_, i) => candidate(i, i + 1, `T${i}`));
-    all.forEach(({ c }) => p.offer(c));
-    expect(all.filter((x) => !x.released.value).length).toBeLessThanOrEqual(12);
-  });
-});
-
-describe("reel length", () => {
-  it("stays short: 12s, growing slowly to a 20s cap", () => {
-    expect(reelBudgetMs(0)).toBe(12000);
-    expect(reelBudgetMs(2 * 60_000)).toBeCloseTo(13200);
-    expect(reelBudgetMs(10 * 60_000)).toBeCloseTo(18000);
-    expect(reelBudgetMs(15 * 60_000)).toBe(20000);
-    expect(reelBudgetMs(60 * 60_000)).toBe(20000);
-    // 5 × 3 minutes: a clip or so from each round, not a burst of cuts.
-    expect(roundBudgetMs(15 * 60_000, 5)).toBe(4000);
-  });
-});
 
 describe("the camera being disturbed", () => {
   // Thresholds measured on real sessions (2026-11-12/13): see isDisturbance.
@@ -440,52 +202,6 @@ describe("the camera being disturbed", () => {
   });
 });
 
-describe("framing the fighter", () => {
-  /** A 27×48 portrait grid with movement in one block of cells. */
-  const heatAt = (x0: number, x1: number, y0: number, y1: number) => {
-    const w = 27;
-    const h = 48;
-    const cells = new Float32Array(w * h);
-    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) cells[y * w + x] = 1;
-    return { w, h, cells };
-  };
-
-  it("closes in on where the fighter moved, keeping the frame's shape", () => {
-    const c = cropFromHeat(heatAt(11, 16, 18, 34));
-    expect(c.w).toBe(c.h);
-    expect(c.w).toBeLessThan(1);
-    expect(c.w).toBeGreaterThanOrEqual(MIN_CROP);
-    // The movement is inside the crop.
-    expect(c.x).toBeLessThanOrEqual(11 / 27);
-    expect(c.x + c.w).toBeGreaterThanOrEqual(16 / 27);
-    expect(c.y).toBeLessThanOrEqual(18 / 48);
-    expect(c.y + c.h).toBeGreaterThanOrEqual(34 / 48);
-  });
-
-  it("never zooms past the point where the picture goes soft", () => {
-    const c = cropFromHeat(heatAt(13, 14, 24, 25));
-    expect(c.w).toBe(MIN_CROP);
-  });
-
-  it("stays inside the frame when the fighter is at its edge", () => {
-    const c = cropFromHeat(heatAt(0, 4, 40, 48));
-    expect(c.x).toBeGreaterThanOrEqual(0);
-    expect(c.y + c.h).toBeLessThanOrEqual(1 + 1e-9);
-  });
-
-  it("shows the whole frame with nothing to go by", () => {
-    expect(cropFromHeat(null)).toEqual({ x: 0, y: 0, w: 1, h: 1 });
-  });
-
-  it("pushes in slowly through a clip, about its centre", () => {
-    const crop = { x: 0.2, y: 0.1, w: 0.6, h: 0.6 };
-    const start = cropAt(crop, 0);
-    const end = cropAt(crop, 1);
-    expect(start).toEqual(crop);
-    expect(end.w).toBeLessThan(start.w);
-    expect(end.x + end.w / 2).toBeCloseTo(start.x + start.w / 2);
-  });
-});
 
 describe("hits the voice could have made", () => {
   it("trims with every hit but scores only those away from the voice", () => {

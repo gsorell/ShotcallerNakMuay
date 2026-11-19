@@ -58,10 +58,11 @@ describe("native speech that never finishes", () => {
   });
 });
 
-describe("iPhone: the full session, no reel", () => {
-  it("cuts no reel on iOS and always keeps the full session", () => {
+describe("iPhone: a reel, cut natively after the session", () => {
+  it("cuts a reel on iOS, the full session kept as the setting says", () => {
     platform.name = "ios";
-    expect(reelWanted()).toBe(false);
+    expect(reelWanted()).toBe(true);
+    // On by default: kept beside the reel unless turned off.
     expect(fullSessionWanted()).toBe(true);
   });
 

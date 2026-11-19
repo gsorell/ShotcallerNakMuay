@@ -94,6 +94,15 @@ dependencies {
     // is how a Play install gets matched back to the click that caused it -
     // do not add that dependency again by hand.
     implementation "com.facebook.android:facebook-core:$facebookCoreVersion"
+
+    // The highlight reel is built after the session from the full recording
+    // (VideoRemuxPlugin.probeFraming / exportReel): ML Kit finds the fighter
+    // in candidate frames (bundled model, no Play Services download), Media3
+    // Transformer cuts and re-encodes the chosen clips on the hardware encoder.
+    implementation "androidx.media3:media3-transformer:1.8.0"
+    implementation "androidx.media3:media3-effect:1.8.0"
+    implementation "androidx.media3:media3-common:1.8.0"
+    implementation "com.google.mlkit:pose-detection:18.0.0-beta5"
 }
 
 apply from: 'capacitor.build.gradle'

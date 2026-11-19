@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import Vision
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -169,7 +170,9 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "VideoRemux"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "remuxToMp4", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "laySound", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "laySound", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "probeFraming", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "exportReel", returnType: CAPPluginReturnPromise)
     ]
 
     /// `{ from, to, sound, parts }`: lays the session's sound (recorded by
@@ -329,6 +332,505 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             attempt(0)
         }
+    }
+
+    /// `{ file, timesMs }`: whether the whole fighter is in shot at each time.
+    ///
+    /// For every time (ms from the file's first frame, kept inside the
+    /// picture) the exact frame is decoded (zero tolerance, turned upright by
+    /// the track's transform) and Vision's body-pose detector run on it. Of
+    /// the people found, the one with the most core joints showing counts.
+    /// `visible` is the share of the 13 core joints (nose, shoulders, elbows,
+    /// wrists, hips, knees, ankles) seen with confidence >= 0.5 and inside the
+    /// frame (within 1% of an edge counts as outside); `box` bounds the
+    /// confident joints, as fractions of the frame from its top-left. No
+    /// person: `person: false, visible: 0`, no box; a frame that couldn't be
+    /// decoded comes back the same, with `error`. Resolves
+    /// `{ frames: [{ tMs, person, visible, box? }], summary }`, in the order asked.
+    @objc func probeFraming(_ call: CAPPluginCall) {
+        guard let file = call.getString("file"), let url = VideoRemuxPlugin.fileURL(file) else {
+            call.reject("file is required")
+            return
+        }
+        let asked: [Double] = (call.getArray("timesMs") ?? []).compactMap { ($0 as? NSNumber)?.doubleValue }
+        guard !asked.isEmpty else {
+            call.resolve(["frames": [] as [Any], "summary": "no times asked"])
+            return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let started = Date()
+            let asset = AVURLAsset(url: url)
+            guard let video = asset.tracks(withMediaType: .video).first else {
+                call.reject("probe framing: the file has no picture")
+                return
+            }
+            let range = video.timeRange
+            let fps = video.nominalFrameRate > 0 ? Double(video.nominalFrameRate) : 30
+            let lastFrame = CMTimeMaximum(range.start,
+                                          CMTimeSubtract(range.end, CMTime(seconds: 1 / fps, preferredTimescale: 600)))
+            // ms → asset time, kept inside the picture.
+            let at = { (ms: Double) -> CMTime in
+                let t = CMTimeAdd(range.start, CMTime(seconds: max(0, ms) / 1000, preferredTimescale: 600))
+                return CMTimeMinimum(t, lastFrame)
+            }
+            // Each distinct time decoded once, in file order, so the decoder
+            // can run forward instead of seeking back for every frame.
+            var times: [CMTime] = []
+            for ms in asked {
+                let t = at(ms)
+                if !times.contains(where: { $0 == t }) { times.append(t) }
+            }
+            times.sort { $0 < $1 }
+
+            var generator: AVAssetImageGenerator? = AVAssetImageGenerator(asset: asset)
+            generator?.appliesPreferredTrackTransform = true
+            generator?.requestedTimeToleranceBefore = .zero
+            generator?.requestedTimeToleranceAfter = .zero
+            let lock = NSLock()
+            var found: [Int: [String: Any]] = [:]
+            var remaining = times.count
+            generator?.generateCGImagesAsynchronously(forTimes: times.map { NSValue(time: $0) }) {
+                requested, image, _, result, error in
+                let frame: [String: Any]
+                if let image = image, result == .succeeded {
+                    frame = VideoRemuxPlugin.framing(of: image)
+                } else {
+                    let why = error.map { VideoRemuxPlugin.describe($0) }
+                        ?? (result == .cancelled ? "cancelled" : "no frame")
+                    frame = ["person": false, "visible": 0, "error": why]
+                }
+                lock.lock()
+                if let i = times.firstIndex(where: { $0 == requested }) { found[i] = frame }
+                remaining -= 1
+                let done = remaining == 0
+                lock.unlock()
+                guard done else { return }
+                // Held until every frame is back: a generator let go of
+                // cancels what it hasn't handed over yet. Let go of after this
+                // callback returns, not from inside it.
+                DispatchQueue.global(qos: .utility).async {
+                    generator = nil
+                    withExtendedLifetime(asset) {}
+                }
+                var people = 0
+                let frames: [[String: Any]] = asked.map { ms in
+                    let t = at(ms)
+                    var f = times.firstIndex(where: { $0 == t }).flatMap { found[$0] }
+                        ?? ["person": false, "visible": 0, "error": "no frame returned"]
+                    f["tMs"] = ms
+                    if f["person"] as? Bool == true { people += 1 }
+                    return f
+                }
+                let took = Int(Date().timeIntervalSince(started) * 1000)
+                call.resolve([
+                    "frames": frames,
+                    "summary": "\(frames.count) frames (\(times.count) decoded), \(people) with a person, \(took)ms"
+                ])
+            }
+        }
+    }
+
+    /// The body joints whose showing decides whether a frame is usable.
+    private static let coreJoints: [VNHumanBodyPoseObservation.JointName] = [
+        .nose, .leftShoulder, .rightShoulder, .leftElbow, .rightElbow,
+        .leftWrist, .rightWrist, .leftHip, .rightHip,
+        .leftKnee, .rightKnee, .leftAnkle, .rightAnkle
+    ]
+
+    /// probeFraming's verdict on one upright frame.
+    private static func framing(of image: CGImage) -> [String: Any] {
+        // One request per frame: the generator may call back on more than
+        // one thread, and a request isn't safe to share between them.
+        let request = VNDetectHumanBodyPoseRequest()
+        let handler = VNImageRequestHandler(cgImage: image, orientation: .up, options: [:])
+        do {
+            try handler.perform([request])
+        } catch {
+            return ["person": false, "visible": 0, "error": describe(error)]
+        }
+        // Vision's points are fractions of the image from its bottom-left.
+        var best: (shown: Int, points: [CGPoint])?
+        for body in request.results ?? [] {
+            guard let joints = try? body.recognizedPoints(.all) else { continue }
+            var shown = 0
+            var points: [CGPoint] = []
+            for name in coreJoints {
+                guard let p = joints[name], p.confidence >= 0.5 else { continue }
+                points.append(p.location)
+                let inside = p.location.x > 0.01 && p.location.x < 0.99
+                    && p.location.y > 0.01 && p.location.y < 0.99
+                if inside { shown += 1 }
+            }
+            guard !points.isEmpty else { continue }
+            if let b = best, shown < b.shown || (shown == b.shown && points.count <= b.points.count) { continue }
+            best = (shown, points)
+        }
+        guard let b = best else { return ["person": false, "visible": 0] }
+        let xs = b.points.map { Double(min(1, max(0, $0.x))) }
+        let ys = b.points.map { Double(min(1, max(0, 1 - $0.y))) }   // flipped: from the top
+        let x0 = xs.min() ?? 0, x1 = xs.max() ?? 0
+        let y0 = ys.min() ?? 0, y1 = ys.max() ?? 0
+        return [
+            "person": true,
+            "visible": Double(b.shown) / Double(coreJoints.count),
+            "box": ["x": x0, "y": y0, "w": x1 - x0, "h": y1 - y0]
+        ]
+    }
+
+    /// `{ file, clips, out, width?, height?, fps?, videoBps?, targetLufs? }`:
+    /// the highlight reel, cut from the full session once it's over.
+    ///
+    /// `clips` (`[{ fromMs, toMs }]`, ms from the file's first frame, clamped
+    /// to the picture) are cut frame-accurately and joined back to back in the
+    /// order given. The picture is re-encoded, H.264 High at `videoBps`
+    /// (default 10 Mbps) and `fps` (30), at width×height (1080×1920), turned
+    /// upright by the source's transform and scaled to fill (centre-cropped).
+    /// The sound fades in and out over 20 ms at every cut, and gets one gain
+    /// toward `targetLufs` (-14): the chosen stretches are read first and
+    /// their RMS in dBFS stands in for LUFS; the gain is held down so the
+    /// loudest sample stays at or below -1 dBFS. AAC, 48 kHz stereo, 192 kbps.
+    /// A file with no sound makes a silent reel. The index goes up front; a
+    /// half-written `out` is removed on failure. Resolves
+    /// `{ uri, summary, durationMs }`; the summary gives the clips, length,
+    /// gain and bitrate.
+    @objc func exportReel(_ call: CAPPluginCall) {
+        guard let file = call.getString("file"), let to = call.getString("out"),
+              let inURL = VideoRemuxPlugin.fileURL(file),
+              let outURL = VideoRemuxPlugin.fileURL(to) else {
+            call.reject("file and out are required")
+            return
+        }
+        var spans: [(Double, Double)] = []
+        for item in call.getArray("clips") ?? [] {
+            guard let o = item as? JSObject,
+                  let f = (o["fromMs"] as? NSNumber)?.doubleValue,
+                  let t = (o["toMs"] as? NSNumber)?.doubleValue,
+                  t > f else { continue }
+            spans.append((f, t))
+        }
+        guard !spans.isEmpty else {
+            call.reject("export reel: no clips")
+            return
+        }
+        let width = max(2, call.getInt("width") ?? 1080)
+        let height = max(2, call.getInt("height") ?? 1920)
+        let fps = max(1, call.getInt("fps") ?? 30)
+        let videoBps = call.getDouble("videoBps") ?? 10_000_000
+        let targetLufs = call.getDouble("targetLufs") ?? -14
+        DispatchQueue.global(qos: .userInitiated).async {
+            let started = Date()
+            try? FileManager.default.removeItem(at: outURL)
+            let fail = { (why: String) in
+                try? FileManager.default.removeItem(at: outURL)
+                call.reject("export reel: " + why)
+            }
+            let asset = AVURLAsset(url: inURL)
+            guard let video = asset.tracks(withMediaType: .video).first else {
+                fail("the file has no picture")
+                return
+            }
+            let sound = asset.tracks(withMediaType: .audio).first
+            // The file's first frame: what the clips count from (as remuxToMp4).
+            let t0 = ([video] + (sound.map { [$0] } ?? [])).map { $0.timeRange.start }.min() ?? .zero
+            let ms = { (v: Double) in CMTime(seconds: v / 1000, preferredTimescale: 600) }
+            let ranges: [CMTimeRange] = spans.map { span in
+                CMTimeRange(start: CMTimeAdd(t0, ms(span.0)), end: CMTimeAdd(t0, ms(span.1)))
+                    .intersection(video.timeRange)
+            }.filter { $0.duration > .zero }
+            guard !ranges.isEmpty else {
+                fail("no clip falls within the picture")
+                return
+            }
+
+            // The cut: every clip's picture and sound, back to back.
+            let composition = AVMutableComposition()
+            guard let pic = composition.addMutableTrack(withMediaType: .video,
+                                                        preferredTrackID: kCMPersistentTrackID_Invalid) else {
+                fail("no composition track")
+                return
+            }
+            var snd: AVMutableCompositionTrack? = sound == nil ? nil
+                : composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+            var cuts: [CMTimeRange] = []   // each clip's place in the reel
+            var cursor = CMTime.zero
+            var soundLaid = false
+            do {
+                for range in ranges {
+                    try pic.insertTimeRange(range, of: video, at: cursor)
+                    if let snd = snd, let sound = sound {
+                        let part = range.intersection(sound.timeRange)
+                        if part.duration > .zero {
+                            try snd.insertTimeRange(part, of: sound,
+                                                    at: CMTimeAdd(cursor, CMTimeSubtract(part.start, range.start)))
+                            soundLaid = true
+                        }
+                    }
+                    cuts.append(CMTimeRange(start: cursor, duration: range.duration))
+                    cursor = CMTimeAdd(cursor, range.duration)
+                }
+            } catch {
+                fail(VideoRemuxPlugin.describe(error))
+                return
+            }
+            if let s = snd, !soundLaid {
+                composition.removeTrack(s)
+                snd = nil
+            }
+
+            // The picture: upright, scaled to fill the render size, centred.
+            let render = CGSize(width: width, height: height)
+            let upright = CGRect(origin: .zero, size: video.naturalSize).applying(video.preferredTransform)
+            guard upright.width > 0, upright.height > 0 else {
+                fail("the picture has no size")
+                return
+            }
+            let scale = max(render.width / upright.width, render.height / upright.height)
+            let fill = video.preferredTransform
+                .concatenating(CGAffineTransform(translationX: -upright.minX, y: -upright.minY))
+                .concatenating(CGAffineTransform(scaleX: scale, y: scale))
+                .concatenating(CGAffineTransform(translationX: (render.width - upright.width * scale) / 2,
+                                                 y: (render.height - upright.height * scale) / 2))
+            let layer = AVMutableVideoCompositionLayerInstruction(assetTrack: pic)
+            layer.setTransform(fill, at: .zero)
+            let instruction = AVMutableVideoCompositionInstruction()
+            instruction.timeRange = CMTimeRange(start: .zero, duration: cursor)
+            instruction.layerInstructions = [layer]
+            let videoComposition = AVMutableVideoComposition()
+            videoComposition.renderSize = render
+            videoComposition.frameDuration = CMTime(value: 1, timescale: CMTimeScale(fps))
+            videoComposition.instructions = [instruction]
+
+            // The sound: float PCM, 48 kHz stereo, both to measure and to encode.
+            let pcm: [String: Any] = [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 48_000,
+                AVNumberOfChannelsKey: 2,
+                AVLinearPCMBitDepthKey: 32,
+                AVLinearPCMIsFloatKey: true,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false
+            ]
+            var gainDb = 0.0
+            var loudness = "no sound"
+            if let snd = snd {
+                if let m = VideoRemuxPlugin.measure(composition, track: snd, settings: pcm) {
+                    let rmsDb = 20 * log10(max(m.rms, 1e-9))
+                    let peakDb = 20 * log10(max(m.peak, 1e-9))
+                    // Near-silence isn't lifted: there's nothing to bring up.
+                    if rmsDb > -70 { gainDb = min(targetLufs - rmsDb, -1 - peakDb) }
+                    loudness = String(format: "gain %+.1f dB (rms %.1f, peak %.1f dBFS)", gainDb, rmsDb, peakDb)
+                } else {
+                    loudness = "gain 0 dB (couldn't measure)"
+                }
+            }
+            let gain = Float(pow(10, gainDb / 20))
+
+            let reader: AVAssetReader
+            let writer: AVAssetWriter
+            do {
+                reader = try AVAssetReader(asset: composition)
+                writer = try AVAssetWriter(outputURL: outURL, fileType: .mp4)
+            } catch {
+                fail(VideoRemuxPlugin.describe(error))
+                return
+            }
+            let picOut = AVAssetReaderVideoCompositionOutput(videoTracks: [pic], videoSettings: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+            ])
+            picOut.videoComposition = videoComposition
+            picOut.alwaysCopiesSampleData = false
+            let picIn = AVAssetWriterInput(mediaType: .video, outputSettings: [
+                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoWidthKey: width,
+                AVVideoHeightKey: height,
+                AVVideoCompressionPropertiesKey: [
+                    AVVideoAverageBitRateKey: videoBps,
+                    AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+                    AVVideoExpectedSourceFrameRateKey: fps,
+                    AVVideoMaxKeyFrameIntervalKey: fps
+                ] as [String: Any]
+            ])
+            picIn.expectsMediaDataInRealTime = false
+            guard reader.canAdd(picOut), writer.canAdd(picIn) else {
+                fail("can't read or write the picture")
+                return
+            }
+            reader.add(picOut)
+            writer.add(picIn)
+
+            var sndOut: AVAssetReaderAudioMixOutput?
+            var sndIn: AVAssetWriterInput?
+            if let snd = snd {
+                // A 20 ms fade at both ends of every clip (half the clip, if
+                // it's shorter than 40 ms); the gain itself goes on the samples.
+                let ramps = AVMutableAudioMixInputParameters(track: snd)
+                let fade = CMTime(value: 20, timescale: 1000)
+                for cut in cuts {
+                    let f = CMTimeMinimum(fade, CMTimeMultiplyByRatio(cut.duration, multiplier: 1, divisor: 2))
+                    ramps.setVolumeRamp(fromStartVolume: 0, toEndVolume: 1,
+                                        timeRange: CMTimeRange(start: cut.start, duration: f))
+                    ramps.setVolumeRamp(fromStartVolume: 1, toEndVolume: 0,
+                                        timeRange: CMTimeRange(start: CMTimeSubtract(cut.end, f), duration: f))
+                }
+                let mix = AVMutableAudioMix()
+                mix.inputParameters = [ramps]
+                let o = AVAssetReaderAudioMixOutput(audioTracks: [snd], audioSettings: pcm)
+                o.audioMix = mix
+                o.alwaysCopiesSampleData = false
+                let i = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+                    AVFormatIDKey: kAudioFormatMPEG4AAC,
+                    AVSampleRateKey: 48_000,
+                    AVNumberOfChannelsKey: 2,
+                    AVEncoderBitRateKey: 192_000
+                ])
+                i.expectsMediaDataInRealTime = false
+                if reader.canAdd(o), writer.canAdd(i) {
+                    reader.add(o)
+                    writer.add(i)
+                    sndOut = o
+                    sndIn = i
+                } else {
+                    loudness = "sound dropped (can't read or write it)"
+                }
+            }
+
+            // The index up front, so the reel plays and scrubs straight away.
+            writer.shouldOptimizeForNetworkUse = true
+            guard writer.startWriting() else {
+                fail("writer: " + (writer.error.map { VideoRemuxPlugin.describe($0) } ?? "didn't start"))
+                return
+            }
+            guard reader.startReading() else {
+                writer.cancelWriting()
+                fail("reader: " + (reader.error.map { VideoRemuxPlugin.describe($0) } ?? "didn't start"))
+                return
+            }
+            writer.startSession(atSourceTime: .zero)
+
+            // Picture and sound are pulled side by side: a reader with two
+            // outputs stalls if one of them isn't read.
+            let group = DispatchGroup()
+            func pump(_ input: AVAssetWriterInput, from output: AVAssetReaderOutput, _ label: String,
+                      change: ((CMSampleBuffer) -> CMSampleBuffer?)? = nil) {
+                group.enter()
+                var finished = false
+                input.requestMediaDataWhenReady(on: DispatchQueue(label: "reel.export." + label)) {
+                    while !finished && input.isReadyForMoreMediaData {
+                        if reader.status == .reading, let sample = output.copyNextSampleBuffer() {
+                            if input.append(change?(sample) ?? sample) { continue }
+                            reader.cancelReading()   // the writer failed; frees the other output
+                        }
+                        finished = true
+                        input.markAsFinished()
+                        group.leave()
+                    }
+                }
+            }
+            pump(picIn, from: picOut, "picture")
+            if let sndIn = sndIn, let sndOut = sndOut {
+                pump(sndIn, from: sndOut, "sound",
+                     change: gain == 1 ? nil : { VideoRemuxPlugin.amplified($0, by: gain) })
+            }
+
+            group.notify(queue: DispatchQueue.global(qos: .userInitiated)) {
+                withExtendedLifetime((asset, composition)) {}
+                if reader.status != .completed || writer.status == .failed {
+                    let e = writer.error ?? reader.error
+                    writer.cancelWriting()
+                    fail(e.map { VideoRemuxPlugin.describe($0) } ?? "stopped (reader \(reader.status.rawValue))")
+                    return
+                }
+                writer.finishWriting {
+                    guard writer.status == .completed else {
+                        fail("finish: " + (writer.error.map { VideoRemuxPlugin.describe($0) }
+                                           ?? "ended \(writer.status.rawValue)"))
+                        return
+                    }
+                    let seconds = CMTimeGetSeconds(cursor)
+                    let took = Int(Date().timeIntervalSince(started) * 1000)
+                    let dropped = spans.count - ranges.count
+                    call.resolve([
+                        "uri": outURL.absoluteString,
+                        "durationMs": Int((seconds * 1000).rounded()),
+                        "summary": "\(ranges.count) clips" + (dropped > 0 ? " (\(dropped) outside the file)" : "")
+                            + String(format: ", %.1fs, ", seconds) + loudness
+                            + String(format: ", %.1f Mbps", videoBps / 1_000_000)
+                            + ", \(width)x\(height)@\(fps), \(took)ms"
+                    ])
+                }
+            }
+        }
+    }
+
+    /// The RMS and peak (linear, 1 = full scale) of a track's float PCM.
+    private static func measure(_ asset: AVAsset, track: AVAssetTrack,
+                                settings: [String: Any]) -> (rms: Double, peak: Double)? {
+        guard let reader = try? AVAssetReader(asset: asset) else { return nil }
+        let output = AVAssetReaderAudioMixOutput(audioTracks: [track], audioSettings: settings)
+        output.alwaysCopiesSampleData = false
+        guard reader.canAdd(output) else { return nil }
+        reader.add(output)
+        guard reader.startReading() else { return nil }
+        var sum = 0.0
+        var count = 0
+        var peak: Float = 0
+        var samples: [Float] = []
+        while let sample = output.copyNextSampleBuffer() {
+            guard let block = CMSampleBufferGetDataBuffer(sample) else { continue }
+            let n = CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size
+            guard n > 0 else { continue }
+            if samples.count < n { samples = [Float](repeating: 0, count: n) }
+            let status = samples.withUnsafeMutableBytes {
+                CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: n * MemoryLayout<Float>.size,
+                                           destination: $0.baseAddress!)
+            }
+            guard status == noErr else { continue }
+            for k in 0..<n {
+                let v = samples[k]
+                sum += Double(v * v)
+                peak = max(peak, abs(v))
+            }
+            count += n
+        }
+        guard reader.status == .completed, count > 0 else { return nil }
+        return ((sum / Double(count)).squareRoot(), Double(peak))
+    }
+
+    /// A copy of a float PCM sample buffer with every sample times `gain`,
+    /// clipped to full scale; nil if it can't be made (the caller then uses
+    /// the original).
+    private static func amplified(_ sample: CMSampleBuffer, by gain: Float) -> CMSampleBuffer? {
+        guard let source = CMSampleBufferGetDataBuffer(sample),
+              let format = CMSampleBufferGetFormatDescription(sample) else { return nil }
+        let length = CMBlockBufferGetDataLength(source)
+        let n = length / MemoryLayout<Float>.size
+        guard n > 0 else { return nil }
+        var samples = [Float](repeating: 0, count: n)
+        let read = samples.withUnsafeMutableBytes {
+            CMBlockBufferCopyDataBytes(source, atOffset: 0, dataLength: n * MemoryLayout<Float>.size,
+                                       destination: $0.baseAddress!)
+        }
+        guard read == noErr else { return nil }
+        for k in 0..<n { samples[k] = min(1, max(-1, samples[k] * gain)) }
+        var block: CMBlockBuffer?
+        guard CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault, memoryBlock: nil, blockLength: length,
+            blockAllocator: kCFAllocatorDefault, customBlockSource: nil, offsetToData: 0,
+            dataLength: length, flags: kCMBlockBufferAssureMemoryNowFlag, blockBufferOut: &block
+        ) == noErr, let block = block else { return nil }
+        let wrote = samples.withUnsafeBytes {
+            CMBlockBufferReplaceDataBytes(with: $0.baseAddress!, blockBuffer: block,
+                                          offsetIntoDestination: 0, dataLength: n * MemoryLayout<Float>.size)
+        }
+        guard wrote == noErr else { return nil }
+        var out: CMSampleBuffer?
+        guard CMAudioSampleBufferCreateReadyWithPacketDescriptions(
+            allocator: kCFAllocatorDefault, dataBuffer: block, formatDescription: format,
+            sampleCount: CMSampleBufferGetNumSamples(sample),
+            presentationTimeStamp: CMSampleBufferGetPresentationTimeStamp(sample),
+            packetDescriptions: nil, sampleBufferOut: &out
+        ) == noErr else { return nil }
+        return out
     }
 
     /// An error as domain, code and message, with what lay under it.

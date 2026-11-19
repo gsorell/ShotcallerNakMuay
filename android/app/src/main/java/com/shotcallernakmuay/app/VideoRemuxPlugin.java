@@ -95,6 +95,118 @@ public class VideoRemuxPlugin extends Plugin {
     ).start();
   }
 
+  /**
+   * `{ file, timesMs }`: for each time (ms from the file's first frame), is a
+   * person in the picture, how much of the body is visible, and where.
+   * Resolves `{ frames: [{ tMs, person, visible, box? }] }`; see ReelProbe.
+   */
+  @PluginMethod
+  public void probeFraming(PluginCall call) {
+    String file = call.getString("file");
+    JSArray times = call.getArray("timesMs", null);
+    if (file == null || times == null) {
+      call.reject("file and timesMs are required");
+      return;
+    }
+    final String path = toPath(file);
+    final long[] timesMs = new long[times.length()];
+    for (int i = 0; i < timesMs.length; i++) timesMs[i] = Math.max(0, Math.round(times.optDouble(i, 0)));
+    new Thread(
+      () -> {
+        try {
+          long started = System.currentTimeMillis();
+          JSArray frames = new JSArray();
+          for (ReelProbe.Frame f : ReelProbe.probe(path, timesMs)) {
+            JSObject o = new JSObject();
+            o.put("tMs", f.tMs);
+            o.put("person", f.person);
+            o.put("visible", f.visible);
+            if (f.box != null) {
+              JSObject box = new JSObject();
+              box.put("x", f.box[0]);
+              box.put("y", f.box[1]);
+              box.put("w", f.box[2]);
+              box.put("h", f.box[3]);
+              o.put("box", box);
+            }
+            frames.put(o);
+          }
+          JSObject result = new JSObject();
+          result.put("frames", frames);
+          result.put(
+            "summary",
+            String.format(java.util.Locale.ROOT, "%d frames in %.1fs", timesMs.length, (System.currentTimeMillis() - started) / 1000.0)
+          );
+          call.resolve(result);
+        } catch (Throwable e) {
+          call.reject("probeFraming failed: " + e);
+        }
+      },
+      "VideoRemuxProbe"
+    ).start();
+  }
+
+  /**
+   * `{ file, clips: [{ fromMs, toMs }], out, width?, height?, fps?, videoBps?,
+   * targetLufs? }`: the clips back to back, re-encoded (see ReelExport).
+   * Resolves `{ uri, summary, durationMs }`; rejects removing a half-written
+   * `out`.
+   */
+  @PluginMethod
+  @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+  public void exportReel(PluginCall call) {
+    String file = call.getString("file");
+    String out = call.getString("out");
+    long[][] clips = readSpans(call.getArray("clips", null));
+    if (file == null || out == null || clips == null) {
+      call.reject("file, clips and out are required");
+      return;
+    }
+    for (long[] c : clips) {
+      if (c[0] < 0 || c[1] <= c[0]) {
+        call.reject("bad clip " + c[0] + "-" + c[1]);
+        return;
+      }
+    }
+    final String inPath = toPath(file);
+    final String outPath = toPath(out);
+    final ReelExport.Options o = new ReelExport.Options();
+    o.width = call.getInt("width", o.width);
+    o.height = call.getInt("height", o.height);
+    o.fps = call.getFloat("fps", o.fps);
+    o.videoBps = call.getInt("videoBps", o.videoBps);
+    o.targetLufs = call.getDouble("targetLufs", o.targetLufs);
+    final android.content.Context context = getContext().getApplicationContext();
+    new Thread(
+      () ->
+        ReelExport.run(
+          context,
+          inPath,
+          clips,
+          outPath,
+          o,
+          new ReelExport.Callback() {
+            @Override
+            public void done(String uri, String summary, long durationMs) {
+              JSObject result = new JSObject();
+              result.put("uri", uri);
+              result.put("summary", summary);
+              result.put("durationMs", durationMs);
+              call.resolve(result);
+            }
+
+            @Override
+            public void failed(String message) {
+              //noinspection ResultOfMethodCallIgnored
+              new File(outPath).delete();
+              call.reject(message);
+            }
+          }
+        ),
+      "VideoRemuxExport"
+    ).start();
+  }
+
   /** `[{ fromMs, toMs }]` as pairs; null if absent or empty. */
   private static long[][] readSpans(JSArray arr) {
     if (arr == null || arr.length() == 0) return null;

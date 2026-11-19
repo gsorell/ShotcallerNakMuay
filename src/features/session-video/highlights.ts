@@ -1,9 +1,9 @@
 import type { CallInfo } from "./calloutSignal";
 import type { ClipCut } from "./motion";
-import type { Crop } from "./reelRenderer";
 
 /**
- * Which of a round's filmed callouts make the reel, and in what order.
+ * What a filmed callout is worth, and how long the reel runs. (Which ones
+ * make the reel, and in what order: reelPlan.ts.)
  *
  * A clip is judged on three things:
  *
@@ -17,23 +17,20 @@ import type { Crop } from "./reelRenderer";
  *                 had filled a reel with checks: a raised leg near the lens
  *                 changes more pixels than a jab–cross across the room.
  *
- * The reel gets a share of its length from every round, no technique twice,
- * a technique at most twice and never twice running, and each round ends on
- * its best clip.
  */
 export const REEL_MIN_MS = 12000;
-export const REEL_MAX_MS = 20000;
+export const REEL_MAX_MS = 40000;
 /** Added per minute of work, above the minimum. */
-const REEL_MS_PER_WORK_MINUTE = 600;
+const REEL_MS_PER_WORK_MINUTE = 2000;
 
 /**
- * How long the reel runs: 12s, growing a little with the work (a 5 × 3
- * session reaches the 20s cap). A longer session makes a pickier reel, not
- * a longer one.
+ * How long the reel runs: 12s, growing with the work (a 5 × 3 session
+ * reaches the 40s cap).
  *
- * It used to be 4s a minute, up to a minute: a 5 × 3 session came out as
- * 15+ clips with bursts of jump cuts. The reel the user liked best in a
- * side-by-side (2026-11-13) was a 14s, three-clip cut of one round.
+ * History: 4s a minute up to a minute made 15+ clips of jump cuts; then a
+ * 20s cap (2026-11-13) left two clips a round. A hand-cut 24–42s reel of a
+ * 5 × 3 session, one technique type at a time, was preferred (2026-11-19):
+ * the jump cuts came from repeats and bad framing, not from length.
  */
 export const reelBudgetMs = (workMs: number): number =>
   Math.min(
@@ -41,14 +38,8 @@ export const reelBudgetMs = (workMs: number): number =>
     REEL_MIN_MS + (REEL_MS_PER_WORK_MINUTE * workMs) / 60000
   );
 
-export const roundBudgetMs = (workMs: number, rounds: number): number =>
-  reelBudgetMs(workMs) / Math.max(1, rounds);
-
-/** A technique appears at most this many times in a reel. */
+/** A technique type (techniqueFamily) appears at most this many times in a reel. */
 export const MAX_SHOWINGS = 2;
-
-/** The rough length of a clip, for how many to hold while a round runs. */
-const TYPICAL_CLIP_MS = 2200;
 
 /** One hit counts for this much more than an ordinary clip's movement. */
 const HIT_WEIGHT = 1.2;
@@ -76,6 +67,32 @@ export const techniqueWeight = (text: string): number => {
   if (defenceOnly) return 0.25;
   const w = 1 + 0.35 * (ps.length - 1) + (ps.some((p) => POWER.test(p)) ? 0.4 : 0);
   return Math.min(2.5, w);
+};
+
+/** What kind of strike one part of a call is, for telling techniques apart on screen. */
+const strikeClass = (part: string): string => {
+  const p = part.toLowerCase();
+  if (DEFENCE.test(p) && !POWER.test(p)) return "defence";
+  if (/elbow/.test(p)) return "elbow";
+  if (/knee/.test(p)) return "knee";
+  if (/teep|push kick|front kick/.test(p)) return "teep";
+  if (/\b(low|leg|calf|inside)\b.*kick|kick.*\b(low|leg|calf)\b/.test(p)) return "low kick";
+  if (/kick/.test(p)) return "kick";
+  if (/jab|cross|hook|uppercut|overhand|punch|straight|superman|^\s*[1-6]\s*$/.test(p)) return "punch";
+  return p.trim().replace(/\s+/g, " ");
+};
+
+/**
+ * What a call looks like on camera: its strikes by kind, in order, repeats
+ * running together. "Jab, Cross, Left Kick" and "Cross, Right Kick" are both
+ * "punch→kick" — on the bag they look the same, though the words differ.
+ * Defence is left out unless it's all there is.
+ */
+export const techniqueFamily = (text: string): string => {
+  const classes = parts(text).map(strikeClass);
+  const attack = classes.filter((c) => c !== "defence");
+  const seq = (attack.length ? attack : classes).filter((c, i, all) => c !== all[i - 1]);
+  return seq.join("→") || text.toLowerCase().trim();
 };
 
 /** The clip's main call: the combination, not the check that followed it. */
@@ -107,158 +124,3 @@ export const strikesIn = (calls: CallInfo[]): number => {
   const n = main ? parts(main.text).length : 1;
   return Math.max(1, n) + (calls.some((c) => c.between) ? 1 : 0);
 };
-
-export interface Candidate {
-  /** Order filmed, for putting the picks back in time order. */
-  seq: number;
-  cut: ClipCut;
-  calls: CallInfo[];
-  score: number;
-  /** Where in the frame to show; the whole frame if absent. */
-  crop?: Crop;
-  /** The clip's video. */
-  url: string;
-  /** When the clip's video began (epoch ms). */
-  sourceEpochMs?: number;
-  /** Lets go of the clip's video. */
-  release(): void;
-}
-
-export const techniqueKey = (c: Candidate): string =>
-  (mainCall(c.calls)?.text ?? `#${c.seq}`).toLowerCase().replace(/\s+/g, " ");
-
-/** What the reel has shown so far, across rounds. */
-export interface ReelSoFar {
-  /** Times each technique has appeared. */
-  shown: Map<string, number>;
-  /** The technique the reel currently ends on. */
-  lastKey?: string;
-}
-
-export const newReelSoFar = (): ReelSoFar => ({ shown: new Map() });
-
-/**
- * Reorders so no technique follows itself, as far as the clips allow. `before`
- * is what the reel ends on already. The last clip (the round's best) stays
- * last unless it is the only thing that can move.
- */
-export const avoidRepeatsInARow = (
-  list: Candidate[],
-  before?: string
-): Candidate[] => {
-  const out = [...list];
-  const last = out.length - 1;
-  for (let i = 0; i < out.length; i++) {
-    const prev = i === 0 ? before : techniqueKey(out[i - 1]!);
-    if (prev === undefined || techniqueKey(out[i]!) !== prev) continue;
-    // Swap in the nearest later clip that differs, sparing the finale; the
-    // finale only if nothing else can.
-    let j = -1;
-    for (let k = i + 1; k < last; k++) {
-      if (techniqueKey(out[k]!) !== prev) {
-        j = k;
-        break;
-      }
-    }
-    if (j < 0 && i < last && techniqueKey(out[last]!) !== prev) j = last;
-    if (j >= 0) [out[i], out[j]] = [out[j]!, out[i]!];
-  }
-  return out;
-};
-
-export class RoundPicker {
-  private held: Candidate[] = [];
-  private readonly keep: number;
-
-  /** `budgetMs`: this round's share of the reel, for how many to hold. */
-  constructor(budgetMs: number) {
-    this.keep = Math.max(12, Math.ceil((budgetMs / TYPICAL_CLIP_MS) * 2.5));
-  }
-
-  /** Offers a filmed clip; keeps it only while it could still be picked. */
-  offer(c: Candidate): void {
-    if (c.score <= 0) {
-      c.release();
-      return;
-    }
-    this.held.push(c);
-    if (this.held.length > this.keep) {
-      this.held.sort((a, b) => b.score - a.score);
-      this.held.splice(this.keep).forEach((x) => x.release());
-    }
-  }
-
-  /**
-   * The round is over: the best clips that fit the round's share of the
-   * reel, with no technique past MAX_SHOWINGS across the reel (`soFar`,
-   * which this updates). In the order filmed, except that the round's best
-   * comes last — the reel builds to it — and with `openStrong` (the first
-   * round) the runner-up opens. No technique follows itself where the clips
-   * allow. Everything not picked is let go.
-   */
-  pick(
-    budgetMs: number,
-    soFar: ReelSoFar = newReelSoFar(),
-    openStrong = false
-  ): Candidate[] {
-    const byScore = [...this.held].sort((a, b) => b.score - a.score);
-    const picked: Candidate[] = [];
-    const counts = new Map(soFar.shown);
-    // Once a round: the same combination twice in one round is the same
-    // shot twice — same spot, same light — and back to back it read as one
-    // clip replayed by mistake.
-    const thisRound = new Set<string>();
-    let used = 0;
-    for (const c of byScore) {
-      const len = c.cut.endMs - c.cut.startMs;
-      const key = techniqueKey(c);
-      const times = counts.get(key) ?? 0;
-      if (
-        times >= MAX_SHOWINGS ||
-        thisRound.has(key) ||
-        (used + len > budgetMs && picked.length > 0)
-      ) {
-        c.release();
-        continue;
-      }
-      picked.push(c);
-      thisRound.add(key);
-      counts.set(key, times + 1);
-      used += len;
-    }
-    this.held = [];
-    if (!picked.length) return picked;
-
-    let ordered = picked;
-    if (picked.length >= 2) {
-      const best = picked[0]!;
-      const runnerUp = picked[1]!;
-      const middle = picked
-        .filter((c) => c !== best && !(openStrong && c === runnerUp))
-        .sort((a, b) => a.seq - b.seq);
-      ordered = [...(openStrong ? [runnerUp] : []), ...middle, best];
-    }
-    ordered = avoidRepeatsInARow(ordered, soFar.lastKey);
-    // Where a repeat couldn't be moved apart (a round of one clip, the same
-    // technique the last round ended on), it goes: a technique shown twice
-    // running looks like a mistake, not a highlight.
-    if (
-      soFar.lastKey !== undefined &&
-      techniqueKey(ordered[0]!) === soFar.lastKey
-    ) {
-      const [dropped] = ordered.splice(0, 1);
-      const key = techniqueKey(dropped!);
-      counts.set(key, (counts.get(key) ?? 1) - 1);
-      dropped!.release();
-    }
-    soFar.shown = counts;
-    if (ordered.length) soFar.lastKey = techniqueKey(ordered[ordered.length - 1]!);
-    return ordered;
-  }
-
-  /** Lets everything go without picking (the session was abandoned). */
-  clear(): void {
-    this.held.forEach((c) => c.release());
-    this.held = [];
-  }
-}

@@ -9,7 +9,6 @@
  * from one to the next. The centre of the frame counts for more than the
  * edges, where people walk past.
  */
-import type { Crop } from "./reelRenderer";
 
 export interface MotionSample {
   /** performance.now() when sampled. */
@@ -84,80 +83,8 @@ export const SAMPLE_MS = 100;
 const SAMPLE_SIZE = 48;
 /** How much history the noise floor and peak are judged against. */
 const HISTORY = 600; // 60s at 10/s
-/** Movement maps kept: longer than the longest clip. */
-const MAP_HISTORY = 150; // 15s at 10/s
-
-/** Where in the frame things moved: a grid of summed change. */
-export interface HeatMap {
-  w: number;
-  h: number;
-  cells: Float32Array;
-}
-
-/** The smallest crop, as a share of the frame: any closer and it's soft. */
-export const MIN_CROP = 0.6;
-
-/**
- * The part of the frame to show for a clip: around where the fighter moved,
- * with room for the head and feet that move less than the limbs, in the
- * frame's own shape. In shadowboxing the fighter fills well under half a
- * phone propped across the room; this brings them up to fill the reel.
- *
- * Returns fractions of the frame, square in those terms (so the frame's
- * aspect is kept), never smaller than MIN_CROP. With too little movement to
- * go by, the whole frame.
- */
-export const cropFromHeat = (heat: HeatMap | null): Crop => {
-  const whole = { x: 0, y: 0, w: 1, h: 1 };
-  if (!heat) return whole;
-  const { w, h, cells } = heat;
-  let total = 0;
-  const colMass = new Float32Array(w);
-  const rowMass = new Float32Array(h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const v = cells[y * w + x]!;
-      colMass[x]! += v;
-      rowMass[y]! += v;
-      total += v;
-    }
-  }
-  if (total <= 1e-6) return whole;
-  // Where the middle 90% of the movement was, along each axis.
-  const span = (mass: Float32Array): [number, number] => {
-    let acc = 0;
-    let lo = 0;
-    let hi = mass.length - 1;
-    let loSet = false;
-    for (let i = 0; i < mass.length; i++) {
-      acc += mass[i]!;
-      if (!loSet && acc >= total * 0.05) {
-        lo = i;
-        loSet = true;
-      }
-      if (acc >= total * 0.95) {
-        hi = i;
-        break;
-      }
-    }
-    return [lo / mass.length, (hi + 1) / mass.length];
-  };
-  const [x0, x1] = span(colMass);
-  const [y0, y1] = span(rowMass);
-  // Room around it: more above (the head) than below.
-  const bw = x1 - x0;
-  const bh = y1 - y0;
-  const left = x0 - bw * 0.35;
-  const right = x1 + bw * 0.35;
-  const top = y0 - bh * 0.3;
-  const bottom = y1 + bh * 0.2;
-  const s = Math.min(1, Math.max(MIN_CROP, right - left, bottom - top));
-  const cx = (left + right) / 2;
-  const cy = (top + bottom) / 2;
-  const clamp = (c: number) => Math.min(1 - s, Math.max(0, c - s / 2));
-  return { x: clamp(cx), y: clamp(cy), w: s, h: s };
-};
-
+/** Samples kept: an hour at 10/s. */
+const MAX_SAMPLES = 36000;
 export class MotionMeter {
   private readonly canvas = document.createElement("canvas");
   private ctx: CanvasRenderingContext2D | null = null;
@@ -166,7 +93,6 @@ export class MotionMeter {
   private weights: Float32Array | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private samples: MotionSample[] = [];
-  private maps: { at: number; diff: Float32Array; w: number; h: number }[] = [];
 
   constructor(private readonly video: HTMLVideoElement) {}
 
@@ -197,19 +123,6 @@ export class MotionMeter {
   /** Whether the camera was disturbed during, or close to, [from, to]. */
   disturbed(from: number, to: number): boolean {
     return disturbedNear(this.samples, from, to);
-  }
-
-  /** Where in the frame things moved between two moments, summed. */
-  heat(from: number, to: number): HeatMap | null {
-    let out: HeatMap | null = null;
-    for (const m of this.maps) {
-      if (m.at < from || m.at > to) continue;
-      if (!out || out.w !== m.w || out.h !== m.h) {
-        out = { w: m.w, h: m.h, cells: new Float32Array(m.w * m.h) };
-      }
-      for (let i = 0; i < m.diff.length; i++) out.cells[i]! += m.diff[i]!;
-    }
-    return out;
   }
 
   private sample(): void {
@@ -243,11 +156,9 @@ export class MotionMeter {
         let sum = 0;
         let wsum = 0;
         let changed = 0;
-        const diff = new Float32Array(lum.length);
         for (let i = 0; i < lum.length; i++) {
           const wt = this.weights[i]!;
           const d = Math.abs(lum[i]! - this.prev[i]!);
-          diff[i] = d;
           sum += d * wt;
           wsum += wt;
           if (d > CHANGED_PIXEL) changed += 1;
@@ -258,13 +169,10 @@ export class MotionMeter {
           m: sum / wsum,
           disturbed: isDisturbance(changed / lum.length, Math.abs(mean - this.prevMean)),
         });
-        if (this.samples.length > HISTORY * 4) {
-          this.samples = this.samples.slice(-HISTORY * 2);
+        // The whole session is kept: the reel is planned from it afterwards.
+        if (this.samples.length > MAX_SAMPLES) {
+          this.samples = this.samples.slice(-MAX_SAMPLES / 2);
         }
-        // Where it moved, kept for the last few seconds: a clip asks for its
-        // own stretch when it's finished, to frame the fighter.
-        this.maps.push({ at, diff, w, h });
-        if (this.maps.length > MAP_HISTORY) this.maps.shift();
       }
       this.prev = lum;
       this.prevMean = mean;

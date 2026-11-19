@@ -7,6 +7,7 @@ import { writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
 import { patchFullSession, setFullSession } from "./reelStore";
 import { remuxFileToMp4, type KeepSpan } from "./remux";
+import type { Span } from "./reelPlan";
 import { saveFileToGallery } from "./saveToGallery";
 import { cardAssetsReady, drawWatermark, loadWatermark } from "./watermark";
 
@@ -87,6 +88,11 @@ export class KeepSpans {
     else this.spans.push({ fromMs: Math.max(0, Math.round(from)), toMs: Math.round(t) });
   }
 
+  /** What's been kept so far, closed spans only, without closing anything. */
+  list(): KeepSpan[] {
+    return this.spans.map((s) => ({ ...s }));
+  }
+
   get isOpen(): boolean {
     return this.openAt !== null;
   }
@@ -139,11 +145,45 @@ export class FullSession {
   /** Date.now() of the first frame, against the native sound's start. */
   private beganEpoch = 0;
   private micTracks: MediaStreamTrack[] = [];
+  /** Camera frames drawn into the recording, for the frame rate it achieved. */
+  private frames = 0;
+  /** When the title was over the opening action, ms from the first frame. */
+  private titleSpan: Span | null = null;
+  /** When the end card was up. */
+  private endCardSpan: Span | null = null;
+  /**
+   * The recording uncut, as an indexed MP4 (rests and all, so its times are
+   * the timeline's): what the reel is cut from. Null if it couldn't be made.
+   */
+  readonly reelSource: Promise<string | null>;
+  private settleSource: (uri: string | null) => void = () => {};
 
   constructor(
     private readonly log: (line: string) => void,
-    private readonly roundCount: number
-  ) {}
+    private readonly roundCount: number,
+    /** Saved to the gallery as `_full` (the setting); otherwise only the reel is cut from it. */
+    private readonly toGallery = true,
+    /** A reel is to be cut from it: make `reelSource`. */
+    private readonly forReel = false
+  ) {
+    this.reelSource = new Promise((r) => (this.settleSource = r));
+    if (!forReel) this.settleSource(null);
+  }
+
+  /** performance.now() of the first frame: the timeline's zero. */
+  get startedAt(): number {
+    return this.began;
+  }
+
+  /** What was called and when, the rests, the title and the end card, from the first frame. */
+  timeline(): { marks: RawMark[]; spans: KeepSpan[]; title: Span | null; endCard: Span | null } {
+    return {
+      marks: [...this.marks],
+      spans: this.spans.list(),
+      title: this.titleSpan,
+      endCard: this.endCardSpan,
+    };
+  }
 
   /**
    * Starts filming `source` (the live preview, playing the camera) with
@@ -198,7 +238,8 @@ export class FullSession {
       // end (and crashed the app on its way to disk). Ask for one every 2 s;
       // it is also how close to a round's start a cut can land.
       const rec = new MediaRecorder(stream, {
-        videoBitsPerSecond: 2_500_000,
+        // The only encoder running now (the reel is cut from this afterwards).
+        videoBitsPerSecond: 6_000_000,
         ...(audio.length ? { audioBitsPerSecond: 128_000 } : {}),
         videoKeyFrameIntervalDuration: 2000,
         ...(mimeType ? { mimeType } : {}),
@@ -265,13 +306,14 @@ export class FullSession {
     this.card = card;
     this.spans.close(this.now());
     this.spans.open(this.now());
+    this.endCardSpan = { fromMs: Math.round(this.now()), toMs: Math.round(this.now() + card.durationMs) };
     await new Promise((r) => setTimeout(r, card.durationMs));
     this.spans.close(this.now());
   }
 
   /** Something the reel recorder saw, stamped against the video (debug). */
   mark(m: RawMark extends infer M ? (M extends RawMark ? Omit<M, "t"> : never) : never): void {
-    if (!this.rec || !this.sidecar) return;
+    if (!this.rec) return;
     this.marks.push({ ...m, t: Math.round(this.now()) } as RawMark);
   }
 
@@ -296,6 +338,8 @@ export class FullSession {
     if (!rec) return Promise.resolve();
     this.rec = null;
     const spans = this.spans.all(this.now());
+    const fps = this.now() > 0 ? (this.frames * 1000) / this.now() : 0;
+    this.log(`full session drew ${this.frames} frames, ${fps.toFixed(1)} fps`);
     this.log(
       `full session stopping, mic ${
         this.micTracks.map((t) => `${t.readyState}${t.muted ? " muted" : ""}`).join(",") || "none"
@@ -318,7 +362,7 @@ export class FullSession {
     );
     // Said on the completion screen from the moment the session ends, so
     // nobody finds it in the gallery days later by surprise.
-    if (keep) {
+    if (keep && this.toGallery) {
       setFullSession({
         id: this.path,
         status: "saving",
@@ -332,11 +376,34 @@ export class FullSession {
       })
       .then(() => sound)
       .then(async (audio) => {
+        const source = keep && this.forReel ? await this.makeReelSource(audio) : null;
+        this.settleSource(source);
         await after;
-        if (keep) await this.finish(hits, spans, audio);
-        else await this.discard();
+        if (source) await Filesystem.deleteFile({ path: source }).catch(() => undefined);
+        if (keep && this.toGallery) await this.finish(hits, spans, audio);
+        else await this.discard(!keep);
       })
-      .catch((e) => this.log(`full session could not be finished: ${String(e)}`));
+      .catch((e) => {
+        this.settleSource(null);
+        this.log(`full session could not be finished: ${String(e)}`);
+      });
+  }
+
+  /**
+   * The recording, uncut and indexed, for the reel to be cut from: its times
+   * are the timeline's. A stream copy, no re-encoding.
+   */
+  private async makeReelSource(audio?: { uri: string; offsetMs: number }): Promise<string | null> {
+    if (!this.wrote) return null;
+    try {
+      const { uri } = await Filesystem.getUri({ path: `${this.path}.${this.ext}`, directory: Directory.Cache });
+      const { uri: to } = await Filesystem.getUri({ path: `${this.path}_reelsrc.mp4`, directory: Directory.Cache });
+      const out = await remuxFileToMp4(uri, to, this.log, undefined, audio);
+      return out?.uri ?? null;
+    } catch (e) {
+      this.log(`reel source could not be made: ${String(e)}`);
+      return null;
+    }
   }
 
   private now(): number {
@@ -346,7 +413,10 @@ export class FullSession {
   private work(): void {
     this.spans.open(this.now());
     const t = this.title;
-    if (t && t.until === Infinity) t.until = performance.now() + t.card.durationMs;
+    if (t && t.until === Infinity) {
+      t.until = performance.now() + t.card.durationMs;
+      this.titleSpan = { fromMs: Math.round(this.now()), toMs: Math.round(this.now() + t.card.durationMs) };
+    }
   }
 
   /** Draws on every camera frame where the browser says when one lands. */
@@ -379,6 +449,7 @@ export class FullSession {
       return;
     }
     if (!v || v.readyState < 2 || !v.videoWidth) return;
+    this.frames += 1;
     // The true view, as the reel has it: only the live preview is mirrored.
     // Covering the frame if the camera's shape ever changes mid-session.
     const scale = Math.max(w / v.videoWidth, h / v.videoHeight);
@@ -430,9 +501,9 @@ export class FullSession {
     }
   }
 
-  private async discard(): Promise<void> {
+  private async discard(tooShort = true): Promise<void> {
     if (!this.wrote) return;
-    this.log("full session not kept: too short");
+    this.log(tooShort ? "full session not kept: too short" : "full session not kept (setting off): reel only");
     await Filesystem.deleteFile({
       path: `${this.path}.${this.ext}`,
       directory: Directory.Cache,
