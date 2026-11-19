@@ -487,9 +487,34 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise)
     ]
 
-    private var events: [String] = []
-    private let started = Date()
+    private static var events: [String] = []
+    private static let started = Date()
     private var recorder: AVAudioRecorder?
+
+    /// Adds a line to the trace the web layer reads (status()), from any
+    /// plugin: NativeSoundsPlugin reports each cue here.
+    static func trace(_ line: String) {
+        let s = Int(Date().timeIntervalSince(started))
+        events.append("\(s)s \(line)")
+        if events.count > 60 { events.removeFirst(events.count - 60) }
+    }
+
+    /// Switches the session off and on again into `category`, not just over.
+    /// From the second filmed session after a launch the app's own output
+    /// stalled (the bell queued and only came out once the app was left and
+    /// opened again, TestFlight builds 107-109); a full deactivation is the
+    /// nearest thing the app can do to what leaving it does.
+    static func reactivate(_ category: AVAudioSession.Category,
+                           options: AVAudioSession.CategoryOptions) throws {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            trace("deactivate failed: \(error.localizedDescription)")
+        }
+        try session.setCategory(category, mode: .default, options: options)
+        try session.setActive(true)
+    }
     private var recordingURL: URL?
 
     override public func load() {
@@ -524,9 +549,8 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             self.recorder?.stop()
             do {
-                try session.setCategory(.playAndRecord, mode: .default,
-                                        options: [.mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP])
-                try session.setActive(true)
+                try RecordingAudioPlugin.reactivate(.playAndRecord,
+                    options: [.mixWithOthers, .defaultToSpeaker, .allowBluetoothA2DP])
                 let url = FileManager.default.temporaryDirectory
                     .appendingPathComponent("full-audio-\(UUID().uuidString).m4a")
                 let recorder = try AVAudioRecorder(url: url, settings: [
@@ -564,9 +588,7 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             let url = self.recordingURL
             self.recordingURL = nil
             do {
-                let session = AVAudioSession.sharedInstance()
-                try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-                try session.setActive(true)
+                try RecordingAudioPlugin.reactivate(.playback, options: [.mixWithOthers])
             } catch {
                 self.note("session not put back: \(error.localizedDescription)")
             }
@@ -579,8 +601,8 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func status(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            let recent = self.events.suffix(30)
-            self.events.removeAll()
+            let recent = RecordingAudioPlugin.events.suffix(30)
+            RecordingAudioPlugin.events.removeAll()
             call.resolve([
                 "status": RecordingAudioPlugin.describe(),
                 "events": Array(recent)
@@ -611,9 +633,7 @@ public class RecordingAudioPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     private func note(_ line: String) {
-        let s = Int(Date().timeIntervalSince(started))
-        events.append("\(s)s \(line)")
-        if events.count > 60 { events.removeFirst(events.count - 60) }
+        RecordingAudioPlugin.trace(line)
     }
 
     /// "PlayAndRecord/Default [speaker,mix,a2dp] out Speaker in MicrophoneBuiltIn"
@@ -697,6 +717,17 @@ public class NativeSoundsPlugin: CAPPlugin, CAPBridgedPlugin {
                 AppDelegate.applyAudioSessionCategory()
                 try? AVAudioSession.sharedInstance().setActive(true)
                 started = p.play()
+            }
+            let name = (file as NSString).lastPathComponent
+            let didStart = started
+            // Whether it is really sounding: a stalled output still says
+            // started. Read in the trace (DEBUG, TestFlight 110).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                let s = AVAudioSession.sharedInstance()
+                RecordingAudioPlugin.trace(
+                    "cue \(name): started \(didStart), playing \(p.isPlaying), at " +
+                    String(format: "%.2f", p.currentTime) + "s, other audio \(s.isOtherAudioPlaying), " +
+                    RecordingAudioPlugin.describe())
             }
             if started {
                 call.resolve(["durationMs": p.duration * 1000])
