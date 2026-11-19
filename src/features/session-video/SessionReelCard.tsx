@@ -5,51 +5,99 @@ import { Capacitor } from "@capacitor/core";
 import { trackEvent } from "@/utils/analytics";
 import {
   closeReelViewer,
+  openReelEditor,
   openReelViewer,
+  showInReelViewer,
   useFullSession,
+  useReelEdit,
+  useReelEditorOpen,
   useReelBuilding,
   useReelFailure,
   useReelViewer,
   useSessionReel,
   fullSessionText,
 } from "./reelStore";
+import ReelEditor from "./ReelEditor";
 import { shareReel, shareVideoFile } from "./shareReel";
 import "./SessionReelCard.css";
 
 /**
  * The session's video on the completion screen: the reel's row, and under
- * it a line for the full session, which goes to the gallery only.
+ * it a line saying the full session went to the gallery. The reel's player
+ * switches between the two (Reel | Full session), and opens the clip picker.
+ * With no reel, the full session gets the row instead.
  */
 export default function SessionReelCard() {
   const viewing = useReelViewer();
   const reel = useSessionReel();
   const full = useFullSession();
+  const edit = useReelEdit();
+  const editing = useReelEditorOpen();
+  const building = useReelBuilding();
 
   // Leaving the completion screen leaves the player shut, so coming back to
   // the screen later doesn't land in it.
   useEffect(() => () => void closeReelViewer(), []);
 
+  const reelSrc = reel ? (reel.fileUri ? Capacitor.convertFileSrc(reel.fileUri) : reel.url) : null;
+  const fullSrc = full?.uri ? Capacitor.convertFileSrc(full.uri) : null;
+  // Both to switch between: the reel, and a full session (saved or on its way).
+  const tabs = reel && full ? (
+    <div className="reel-viewer-tabs" role="tablist">
+      {(["reel", "full"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          role="tab"
+          aria-selected={viewing === t}
+          className={`reel-viewer-tab ${viewing === t ? "is-on" : ""}`}
+          onClick={() => showInReelViewer(t)}
+        >
+          {t === "reel" ? "Reel" : "Full session"}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <>
-      <ReelRow />
-      <FullSessionLine />
-      {viewing === "reel" && reel && (
+      <ReelRow src={reelSrc} />
+      {reel || building ? <FullSessionNote /> : <FullSessionLine />}
+      {viewing === "reel" && reel && reelSrc && (
         <VideoViewer
-          src={reel.url}
+          key={reelSrc}
+          src={reelSrc}
           label="Your reel"
           share={() => shareReel(reel)}
           format={reel.ext}
+          tabs={tabs}
+          edit={edit ? () => openReelEditor() : undefined}
         />
       )}
-      {viewing === "full" && full?.uri && (
+      {viewing === "full" && (
         <VideoViewer
-          src={Capacitor.convertFileSrc(full.uri)}
+          key="full"
+          src={fullSrc}
           label="Your session"
-          share={() => shareVideoFile(full.uri!)}
+          share={() => (full?.uri ? shareVideoFile(full.uri) : Promise.resolve("failed" as const))}
           format="full"
+          tabs={tabs}
+          waiting={full ? fullSessionText(full, Capacitor.getPlatform()) : "No full session this time"}
         />
       )}
+      {editing && edit && <ReelEditor edit={edit} />}
     </>
+  );
+}
+
+/** With a reel: the full session is only said, "Full session · 14 min · saved to Photos". */
+function FullSessionNote() {
+  const full = useFullSession();
+  if (!full) return null;
+  return (
+    <p className={`full-session-line is-${full.status}`} aria-live="polite">
+      {fullSessionText(full, Capacitor.getPlatform())}
+    </p>
   );
 }
 
@@ -109,7 +157,7 @@ function FullSessionLine() {
  * the card and its Share / Train again keep the screen. Tapping the row opens
  * the reel full screen.
  */
-function ReelRow() {
+function ReelRow({ src }: { src: string | null }) {
   const reel = useSessionReel();
   const building = useReelBuilding();
   const failure = useReelFailure();
@@ -155,7 +203,7 @@ function ReelRow() {
     >
       <span className="reel-ready-thumb" aria-hidden="true">
         {/* The first frame, as a poster. #t nudges Safari into drawing it. */}
-        <video src={`${reel.url}#t=0.1`} muted playsInline preload="metadata" />
+        <video src={`${src ?? reel.url}#t=0.1`} muted playsInline preload="metadata" />
         <span className="reel-ready-play">
           <svg viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
@@ -198,18 +246,29 @@ function ReelFailed() {
   );
 }
 
-/** A video full screen (the reel, or the full session), with Share and Watch again. */
+/**
+ * A video full screen (the reel, or the full session), with Share and Watch
+ * again; the Reel | Full session switch over it, and for the reel, Edit clips.
+ */
 function VideoViewer({
   src,
   label,
   share,
   format,
+  tabs,
+  edit,
+  waiting,
 }: {
-  src: string;
+  /** Null while there's nothing to play yet: `waiting` says why. */
+  src: string | null;
   label: string;
   share: () => Promise<"shared" | "dismissed" | "failed">;
   /** For the analytics event: the reel's file type, or "full". */
   format: string;
+  tabs?: React.ReactNode;
+  /** Opens the clip picker. */
+  edit?: () => void;
+  waiting?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ended, setEnded] = useState(false);
@@ -233,7 +292,7 @@ function VideoViewer({
   // picture turns the sound on.
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v || !src) return;
     v.muted = false;
     v.play().catch(() => {
       v.muted = true;
@@ -276,14 +335,20 @@ function VideoViewer({
 
   return createPortal(
     <div className="reel-viewer" role="dialog" aria-modal="true" aria-label={label}>
-      <video
-        ref={videoRef}
-        className="reel-viewer-video"
-        src={src}
-        playsInline
-        onEnded={() => setEnded(true)}
-        onClick={togglePlay}
-      />
+      {src ? (
+        <video
+          ref={videoRef}
+          className="reel-viewer-video"
+          src={src}
+          playsInline
+          onEnded={() => setEnded(true)}
+          onClick={togglePlay}
+        />
+      ) : (
+        <p className="reel-viewer-waiting">{waiting}</p>
+      )}
+
+      {tabs}
 
       <button
         type="button"
@@ -294,7 +359,7 @@ function VideoViewer({
         ×
       </button>
 
-      {ended && (
+      {ended && src && (
         <button
           type="button"
           className="reel-viewer-replay-big"
@@ -317,13 +382,30 @@ function VideoViewer({
           type="button"
           className="reel-viewer-share"
           onClick={onShare}
-          disabled={busy}
+          disabled={busy || !src}
         >
           {busy ? "Preparing…" : "Share"}
         </button>
-        <button type="button" className="reel-viewer-again" onClick={replay}>
-          Watch again
-        </button>
+        <div className="reel-viewer-row">
+          <button type="button" className="reel-viewer-again" onClick={replay} disabled={!src}>
+            Watch again
+          </button>
+          {edit && (
+            <button
+              type="button"
+              className="reel-viewer-again"
+              onClick={() => {
+                videoRef.current?.pause();
+                edit();
+                try {
+                  trackEvent("session_reel_edit_open", {});
+                } catch { /* analytics must never break the tap it measures */ }
+              }}
+            >
+              Edit clips
+            </button>
+          )}
+        </div>
       </div>
     </div>,
     document.body

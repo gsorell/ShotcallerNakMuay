@@ -42,6 +42,7 @@ import {
   SessionCameraPip,
   SessionReelCard,
   closeReelViewer,
+  pruneReelSources,
 } from "@/features/session-video";
 import { TechniqueEditor } from "@/features/technique-editor";
 import {
@@ -256,6 +257,12 @@ export default function App() {
   useEffect(() => {
     if (page !== "completed") setCompletionFromLogs(false);
   }, [page]);
+
+  // Recordings an earlier launch kept for the reel's clip picker (each the
+  // length of a session, uncut): nothing can open them any more.
+  useEffect(() => {
+    void pruneReelSources();
+  }, []);
 
   // --- 4. UI Refs ---
   const isEditorRef = useRef(false);

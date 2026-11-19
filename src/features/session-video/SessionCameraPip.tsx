@@ -10,6 +10,7 @@ import {
   setReelBuilding,
   setReelFailure,
   setSessionReel,
+  setReelEdit,
   setSessionTrace,
 } from "./reelStore";
 import { errText } from "./reelRenderer";
@@ -203,6 +204,8 @@ async function handOver(rec: ReelRecorder): Promise<void> {
     if (!reel && rec.failure) reportFailure(rec.failure.reason, rec.failure.trace);
     if (reel) {
       setSessionReel(reel);
+      // The clip picker: the recording it was cut from, and what else was good.
+      setReelEdit(rec.edit);
       // Kept without anyone having to remember to: straight to the gallery.
       void autoSaveReel(reel);
       trackEvent("session_reel_created", {

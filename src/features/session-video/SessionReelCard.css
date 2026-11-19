@@ -303,3 +303,55 @@
 .full-session-line.is-saved {
   color: #7ee2a8;
 }
+
+/* Reel | Full session: over the top of the player, beside the close button. */
+.reel-viewer-tabs {
+  position: absolute;
+  top: calc(0.85rem + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.reel-viewer-tab {
+  all: unset;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cfc4d8;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.reel-viewer-tab.is-on {
+  background: #f4eef6;
+  color: #0c0710;
+}
+
+/* The full session still saving: said where the picture will be. */
+.reel-viewer-waiting {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0 2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #cfc4d8;
+}
+
+.reel-viewer-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.reel-viewer-again:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

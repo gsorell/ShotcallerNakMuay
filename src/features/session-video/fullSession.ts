@@ -331,8 +331,9 @@ export class FullSession {
     /**
      * Held until this settles (the reel's done): cut, exported and saved
      * while the last round's clips were assembled, the reel froze (build 100).
+     * True: the reel kept the uncut recording for its clip picker.
      */
-    after: Promise<void> = Promise.resolve()
+    after: Promise<boolean | void> = Promise.resolve()
   ): Promise<void> {
     const rec = this.rec;
     if (!rec) return Promise.resolve();
@@ -378,8 +379,9 @@ export class FullSession {
       .then(async (audio) => {
         const source = keep && this.forReel ? await this.makeReelSource(audio) : null;
         this.settleSource(source);
-        await after;
-        if (source) await Filesystem.deleteFile({ path: source }).catch(() => undefined);
+        // Kept when the reel took it for its clip picker (reelStore owns it then).
+        const kept = await after;
+        if (source && !kept) await Filesystem.deleteFile({ path: source }).catch(() => undefined);
         if (keep && this.toGallery) await this.finish(hits, spans, audio);
         else await this.discard(!keep);
       })

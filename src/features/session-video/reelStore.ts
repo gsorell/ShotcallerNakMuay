@@ -1,4 +1,8 @@
 import { useSyncExternalStore } from "react";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+
+import { forgetThumbs } from "./clipThumbs";
+import type { ReelCandidate, SessionTimeline } from "./reelPlan";
 
 export interface SessionReel {
   blob: Blob;
@@ -57,6 +61,8 @@ export const clearSessionReel = (): void => {
   failure = null;
   full = null;
   viewing = null;
+  editing = false;
+  setReelEdit(null);
   traceSource = null;
   setSessionReel(null);
 };
@@ -178,8 +184,23 @@ export const openReelViewer = (which: "reel" | "full" = "reel"): void => {
   emit();
 };
 
-/** Closes the player. Returns whether it was open, for the back button. */
+/** Switches the open player between the reel and the full session. */
+export const showInReelViewer = (which: "reel" | "full"): void => {
+  if (!viewing || viewing === which) return;
+  viewing = which;
+  emit();
+};
+
+/**
+ * Closes the clip picker if it's up, else the player. Returns whether
+ * either was open, for the back button.
+ */
 export const closeReelViewer = (): boolean => {
+  if (editing) {
+    editing = false;
+    emit();
+    return true;
+  }
   if (!viewing) return false;
   viewing = null;
   emit();
@@ -191,3 +212,71 @@ export const isReelViewerOpen = (): boolean => viewing !== null;
 /** What the player shows: the reel, the full session, or nothing. */
 export const useReelViewer = (): "reel" | "full" | null =>
   useSyncExternalStore(subscribe, () => viewing, () => null);
+
+/**
+ * What it takes to cut the reel again with other clips (the clip picker):
+ * the uncut recording in the app's cache, the session's timeline, and the
+ * clips worth offering. The recording is deleted when this is replaced or
+ * cleared (the next session), and any left by an earlier launch go at the
+ * next launch (pruneReelSources).
+ */
+export interface ReelEdit {
+  /** The uncut recording, indexed: its times are the timeline's. */
+  source: string;
+  timeline: SessionTimeline;
+  /** The shortlist, framing checked, in filmed order. */
+  candidates: ReelCandidate[];
+  /** The clips in the reel as it stands, by seq. */
+  picked: number[];
+}
+
+let edit: ReelEdit | null = null;
+
+export const setReelEdit = (e: ReelEdit | null): void => {
+  const old = edit;
+  edit = e;
+  if (!e) editing = false;
+  if (old && old.source !== e?.source) {
+    forgetThumbs();
+    void Filesystem.deleteFile({ path: old.source }).catch(() => undefined);
+  }
+  emit();
+};
+
+export const getReelEdit = (): ReelEdit | null => edit;
+
+export const useReelEdit = (): ReelEdit | null =>
+  useSyncExternalStore(subscribe, () => edit, () => null);
+
+/** Uncut recordings kept for the clip picker by an earlier launch. */
+export const pruneReelSources = async (): Promise<void> => {
+  try {
+    const { files } = await Filesystem.readdir({ path: "", directory: Directory.Cache });
+    await Promise.all(
+      files
+        .filter((f) => f.name.endsWith("_reelsrc.mp4") && !edit?.source.endsWith(f.name))
+        .map((f) => Filesystem.deleteFile({ path: f.name, directory: Directory.Cache }).catch(() => undefined))
+    );
+  } catch {
+    /* nothing worth surfacing */
+  }
+};
+
+/** The clip picker, over the player. */
+let editing = false;
+
+export const openReelEditor = (): void => {
+  if (editing || !edit || viewing !== "reel") return;
+  editing = true;
+  emit();
+};
+
+/** Closes the clip picker only, leaving the player up. */
+export const closeReelEditor = (): void => {
+  if (!editing) return;
+  editing = false;
+  emit();
+};
+
+export const useReelEditorOpen = (): boolean =>
+  useSyncExternalStore(subscribe, () => editing, () => false);

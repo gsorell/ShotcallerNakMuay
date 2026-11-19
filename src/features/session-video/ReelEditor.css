@@ -1,0 +1,247 @@
+/* ------------------------------------------------------ the clip picker -- */
+
+.reel-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 10001; /* over the player */
+  display: flex;
+  flex-direction: column;
+  background: #0c0710;
+  color: #f4eef6;
+  animation: reel-viewer-in 0.2s ease-out both;
+}
+
+.reel-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(0.6rem + env(safe-area-inset-top, 0px)) 0.75rem 0.6rem;
+}
+
+.reel-editor-title {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.reel-editor-cancel {
+  all: unset;
+  min-width: 4.5rem;
+  padding: 0.4rem 0.2rem;
+  font-size: 0.95rem;
+  color: #cfc4d8;
+  cursor: pointer;
+}
+
+.reel-editor-cancel:disabled {
+  opacity: 0.4;
+}
+
+.reel-editor-preview {
+  flex-shrink: 0;
+  background: #000;
+}
+
+.reel-editor-preview video {
+  display: block;
+  width: 100%;
+  height: 34vh;
+  object-fit: contain;
+  background: #000;
+}
+
+.reel-editor-focus {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  background: #120b18;
+}
+
+.reel-editor-focus-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: #cfc4d8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reel-editor-focus-toggle {
+  all: unset;
+  flex-shrink: 0;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: #ff5fb0;
+  color: #0c0710;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reel-editor-focus-toggle.is-in {
+  background: transparent;
+  border: 2px solid #2e2240;
+  color: #f4eef6;
+}
+
+.reel-editor-focus-toggle:disabled {
+  opacity: 0.5;
+}
+
+.reel-editor-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0.75rem 0.5rem;
+}
+
+.reel-editor-round {
+  margin: 0.9rem 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9d8fa9;
+}
+
+.reel-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.reel-editor-clip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.reel-editor-clip-thumb {
+  all: unset;
+  position: relative;
+  display: block;
+  aspect-ratio: 9 / 16;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  background: #1a1220;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.reel-editor-clip.is-focus .reel-editor-clip-thumb {
+  border-color: #f4eef6;
+}
+
+.reel-editor-clip-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reel-editor-clip:not(.is-in) .reel-editor-clip-thumb img {
+  opacity: 0.55;
+}
+
+.reel-editor-clip-wait {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, #1a1220 30%, #261a2e 50%, #1a1220 70%);
+  background-size: 200% 100%;
+  animation: reel-editor-shimmer 1.2s linear infinite;
+}
+
+@keyframes reel-editor-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.reel-editor-clip-len {
+  position: absolute;
+  left: 0.35rem;
+  bottom: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* The tick: empty ring out, the clip's place in the reel when in. A big
+   target for a thumb, over the thumbnail's corner. */
+.reel-editor-clip-check {
+  all: unset;
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0c0710;
+  cursor: pointer;
+}
+
+.reel-editor-clip-check::before {
+  content: "";
+  position: absolute;
+  inset: -0.6rem;
+}
+
+.reel-editor-clip.is-in .reel-editor-clip-check {
+  border-color: #ff5fb0;
+  background: #ff5fb0;
+}
+
+.reel-editor-clip-text {
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: #cfc4d8;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reel-editor-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #2e2240;
+  background: #0c0710;
+}
+
+.reel-editor-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.reel-editor-count {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: #cfc4d8;
+}
+
+.reel-editor-rebuild {
+  flex: 1;
+}
+
+.reel-editor-error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #ff8a8a;
+  text-align: center;
+}

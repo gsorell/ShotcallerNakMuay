@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Filesystem } from "@capacitor/filesystem";
 
 import type { CalloutEvent } from "./calloutSignal";
 import { reelBudgetMs } from "./highlights";
@@ -16,7 +16,8 @@ import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
 import { MotionMeter } from "./motion";
 import { errText, pickMime, type Card } from "./reelRenderer";
-import type { SessionReel } from "./reelStore";
+import type { ReelEdit, SessionReel } from "./reelStore";
+import { readExportedReel, reelOutUri } from "./reelEdit";
 import { exportReel, probeFraming } from "./remux";
 import { FullSession, fullSessionWanted } from "./fullSession";
 import { reelWanted } from "./recordPreference";
@@ -105,9 +106,14 @@ export class ReelRecorder {
   private nativeSound: Promise<number | null> | null = null;
   /** iOS: the session's sound once stopped, for the full session. */
   private sessionSound: Promise<NativeSound | undefined> = Promise.resolve(undefined);
-  /** Settled once the reel is done with the recording (or never needed it). */
-  private reelDone!: () => void;
-  private readonly reelFinished = new Promise<void>((r) => (this.reelDone = r));
+  /**
+   * Settled once the reel is done with the recording (or never needed it):
+   * true when the recording it was cut from is kept for the clip picker.
+   */
+  private reelDone!: (keepSource: boolean) => void;
+  private readonly reelFinished = new Promise<boolean>((r) => (this.reelDone = r));
+  /** What the clip picker needs, once a reel has been cut. */
+  edit: ReelEdit | null = null;
   /** Calls the voice finished saying, beside callsMade: heard or not. */
   private spokenCount = 0;
   /** When the last call went out, and how long each took to say (ms). */
@@ -273,10 +279,12 @@ export class ReelRecorder {
 
   /** Stops everything and hands back the reel, or null if none was made. */
   async finish(): Promise<SessionReel | null> {
+    let reel: SessionReel | null = null;
     try {
-      return await this.finishReel();
+      reel = await this.finishReel();
+      return reel;
     } finally {
-      this.reelDone();
+      this.reelDone(!!reel && !!this.edit);
     }
   }
 
@@ -295,7 +303,7 @@ export class ReelRecorder {
   /** Lets go of everything without keeping anything. */
   release(): void {
     this.stopCapture();
-    this.reelDone();
+    this.reelDone(false);
   }
 
   private async finishReel(): Promise<SessionReel | null> {
@@ -362,35 +370,32 @@ export class ReelRecorder {
       this.fail(cands.length ? "no clip had the whole of you in shot" : "no clips with action in them");
       return null;
     }
-    const { uri: out } = await Filesystem.getUri({
-      path: `shotcaller-reel-${Date.now()}.mp4`,
-      directory: Directory.Cache,
-    });
-    const made = await exportReel(source, exportRanges(tl, picks), out, log);
+    const ranges = exportRanges(tl, picks);
+    const made = await exportReel(source, ranges, await reelOutUri(), log);
     if (!made) {
       this.fail("the reel could not be exported");
       return null;
     }
     try {
-      const blob = await (await fetch(Capacitor.convertFileSrc(made.uri))).blob();
-      if (!blob.size) throw new Error("empty reel");
-      const reel = new Blob([blob], { type: "video/mp4" });
-      log(`reel ${reel.size} bytes, ${picks.length} clips`);
+      const reel = await readExportedReel(
+        made.uri,
+        made.durationMs ?? ranges.reduce((n, s) => n + s.toMs - s.fromMs, 0),
+        picks.length
+      );
+      log(`reel ${reel.blob.size} bytes, ${picks.length} clips`);
       void this.notes.save();
-      return {
-        blob: reel,
-        url: URL.createObjectURL(reel),
-        ext: "mp4",
-        durationMs:
-          made.durationMs ??
-          exportRanges(tl, picks).reduce((n, s) => n + s.toMs - s.fromMs, 0),
-        clips: picks.length,
+      // Kept for the clip picker: the recording, and the clips worth offering.
+      this.edit = {
+        source,
+        timeline: tl,
+        candidates: [...judged].sort((x, y) => x.fromMs - y.fromMs),
+        picked: picks.map((c) => c.seq),
       };
+      return reel;
     } catch (e) {
+      await Filesystem.deleteFile({ path: made.uri }).catch(() => undefined);
       this.fail(`the reel could not be read back: ${errText(e)}`);
       return null;
-    } finally {
-      await Filesystem.deleteFile({ path: made.uri }).catch(() => undefined);
     }
   }
 

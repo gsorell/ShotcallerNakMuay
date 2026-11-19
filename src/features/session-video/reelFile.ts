@@ -87,3 +87,15 @@ export const ensureReelFile = async (reel: SessionReel): Promise<string> => {
   reel.fileUri = uri;
   return uri;
 };
+
+/**
+ * A reel written to the cache by native code (exportReel): kept as this
+ * session's file rather than written out again, and pruned like the rest.
+ */
+export const adoptReelFile = (uri: string): void => {
+  const name = decodeURIComponent(uri.split("/").pop() ?? "");
+  if (!name.startsWith(REEL_PREFIX)) return;
+  recent.push(name);
+  recent.splice(0, Math.max(0, recent.length - 2));
+  void pruneOldReels();
+};
