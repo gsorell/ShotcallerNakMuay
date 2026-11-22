@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 
 import { adoptReelFile } from "./reelFile";
-import { arcOrder, exportRanges, type ReelCandidate } from "./reelPlan";
+import { exportRanges, type ReelCandidate } from "./reelPlan";
 import type { ReelEdit, SessionReel } from "./reelStore";
 import { exportReel } from "./remux";
 
@@ -42,15 +42,10 @@ export const readExportedReel = async (
   };
 };
 
-/**
- * The clips chosen, in the reel's arc like the automatic reel (arcOrder),
- * whatever order they were ticked in. Every clip picked stays, even one that
- * repeats the type before it.
- */
+/** The clips chosen, in filmed order (rounds stay in order). */
 export const chosenClips = (edit: ReelEdit, seqs: Iterable<number>): ReelCandidate[] => {
   const want = new Set(seqs);
-  const clips = edit.candidates.filter((c) => want.has(c.seq)).sort((a, b) => a.fromMs - b.fromMs);
-  return arcOrder(clips, { dropRepeats: false });
+  return edit.candidates.filter((c) => want.has(c.seq)).sort((a, b) => a.fromMs - b.fromMs);
 };
 
 export const clipsMs = (clips: ReelCandidate[]): number =>

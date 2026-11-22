@@ -360,11 +360,16 @@ export class ReelRecorder {
     const short = shortlist(cands, budget);
     log(`${tl.calls.length} calls, ${cands.length} clips with action, ${short.length} shortlisted, budget ${Math.round(budget / 1000)}s`);
     const frames = await probeFraming(source, short.flatMap(probeTimes), log);
+    void this.notes.saveReplay({ workedMs: this.workedMs, budget, timeline: tl, frames });
     const judged = frames ? applyFraming(short, frames) : short;
-    if (frames) log(`${judged.length} of ${short.length} shortlisted fully in shot`);
+    if (frames) log(`${judged.length} of ${short.length} shortlisted fully in shot and finishing in balance`);
     const picks = pickReel(judged, budget);
     picks.forEach((c) =>
-      log(`pick r${c.round + 1} #${c.seq} ${c.family} ${c.score.toFixed(2)} ${c.fromMs}-${c.toMs}ms ${c.calls.map((x) => x.text).join(" + ")}`)
+      log(
+        `pick r${c.round + 1} #${c.seq} ${c.family} ${c.score.toFixed(2)}` +
+          `${c.balance !== undefined ? ` bal ${c.balance.toFixed(2)}` : ""}` +
+          ` ${c.fromMs}-${c.toMs}ms ${c.calls.map((x) => x.text).join(" + ")}`
+      )
     );
     if (!picks.length) {
       this.fail(cands.length ? "no clip had the whole of you in shot" : "no clips with action in them");

@@ -31,15 +31,8 @@ const edit = (): ReelEdit => ({
 });
 
 describe("the clips someone picks", () => {
-  it("go in the reel's arc, whatever order they were ticked in", () => {
-    const e = edit();
-    e.candidates = [
-      { ...cand(1, 0, 5000), hits: 6 },
-      { ...cand(2, 0, 9000), hits: 1 },
-      { ...cand(3, 1, 80000), hits: 3 },
-    ];
-    // Quietest opens, busiest peaks, the middle one closes.
-    expect(chosenClips(e, [3, 1, 2]).map((c) => c.seq)).toEqual([2, 1, 3]);
+  it("go in filmed order, whatever order they were ticked in", () => {
+    expect(chosenClips(edit(), [3, 1, 2]).map((c) => c.seq)).toEqual([1, 2, 3]);
   });
 
   it("ignore anything that isn't on offer, and add up their length", () => {

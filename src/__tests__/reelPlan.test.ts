@@ -3,13 +3,12 @@ import { describe, expect, it } from "vitest";
 import { reelBudgetMs, techniqueFamily } from "@/features/session-video/highlights";
 import {
   MAX_SEGMENT_MS,
+  MIN_BALANCE,
   MIN_VISIBLE,
+  finishBalance,
   OVERLAP_MS,
   PREROLL_MS,
-  ARC_PEAK_AT,
   applyFraming,
-  arcOrder,
-  clipVolume,
   callWindows,
   exportRanges,
   pickReel,
@@ -197,6 +196,49 @@ describe("framing", () => {
   });
 });
 
+describe("finishing in balance", () => {
+  const stance = { x: 0.3, y: 0.2, w: 0.25, h: 0.6 };
+
+  it("rates a rep that ends where it began as clean", () => {
+    expect(finishBalance(stance, stance)).toBe(1);
+    // A small guard adjustment or a short step costs nothing.
+    expect(finishBalance(stance, { ...stance, x: 0.35, y: 0.22 })).toBe(1);
+  });
+
+  it("marks down a finish crouched, head dropped, or staggered off", () => {
+    const crouched = { ...stance, y: 0.32, h: 0.48 };
+    const staggered = { ...stance, x: 0.62 };
+    expect(finishBalance(stance, crouched)).toBeLessThan(0.5);
+    expect(finishBalance(stance, { ...stance, y: 0.4, h: 0.4 })).toBeLessThan(MIN_BALANCE);
+    expect(finishBalance(stance, staggered)).toBeLessThan(1);
+    expect(finishBalance(stance, staggered)).toBeGreaterThan(finishBalance(stance, crouched));
+  });
+
+  it("drops a clip that ends out of stance, and ranks a cleaner finish higher", () => {
+    const clean = cand({ seq: 1 });
+    const scrappy = cand({ seq: 2 });
+    const fallen = cand({ seq: 3 });
+    const at = (c: ReelCandidate, end: typeof stance): FramingFrame[] =>
+      probeTimes(c).map((tMs, i, all) => ({
+        tMs,
+        person: true,
+        visible: 1,
+        box: i === all.length - 1 ? end : stance,
+      }));
+    const out = applyFraming(
+      [clean, scrappy, fallen],
+      [
+        ...at(clean, stance),
+        ...at(scrappy, { ...stance, x: 0.62 }),
+        ...at(fallen, { ...stance, y: 0.4, h: 0.4 }),
+      ]
+    );
+    expect(out.map((c) => c.seq)).toEqual([1, 2]);
+    expect(out[0]!.score).toBeGreaterThan(out[1]!.score);
+    expect(out[0]!.balance).toBe(1);
+  });
+});
+
 describe("picking the reel", () => {
   it("never shows a technique type more than twice, or twice in a round", () => {
     const cands = Array.from({ length: 12 }, (_, i) =>
@@ -219,7 +261,7 @@ describe("picking the reel", () => {
     for (let i = 1; i < picks.length; i++) expect(picks[i]!.family).not.toBe(picks[i - 1]!.family);
   });
 
-  it("gives every round a clip", () => {
+  it("keeps rounds in order, each ending on its best, and gives every round a clip", () => {
     const cands = [
       cand({ seq: 1, round: 0, family: "a", score: 5 }),
       cand({ seq: 2, round: 0, family: "b", score: 9 }),
@@ -228,43 +270,10 @@ describe("picking the reel", () => {
       cand({ seq: 5, round: 2, family: "e", score: 4 }),
     ];
     const picks = pickReel(cands, 7000);
+    expect(picks.map((c) => c.round)).toEqual([...picks.map((c) => c.round)].sort());
     expect(new Set(picks.map((c) => c.round))).toEqual(new Set([0, 1, 2]));
-  });
-
-  it("opens slow, builds to its busiest clips three quarters through, then tapers", () => {
-    // Filmed busiest first, so filmed order would be the wrong shape.
-    const cands = Array.from({ length: 9 }, (_, i) =>
-      cand({ seq: i + 1, round: Math.floor(i / 3), family: `f${i}`, hits: 9 - i, score: 1 })
-    );
-    const volumes = pickReel(cands, 60000).map((c) => c.hits!);
-    expect(volumes).toHaveLength(9);
-    const peak = volumes.indexOf(9);
-    expect(peak / (volumes.length - 1)).toBeCloseTo(ARC_PEAK_AT, 1);
-    for (let i = 1; i <= peak; i++) expect(volumes[i]!).toBeGreaterThan(volumes[i - 1]!);
-    for (let i = peak + 1; i < volumes.length; i++) expect(volumes[i]!).toBeLessThan(volumes[i - 1]!);
-    expect(volumes[0]).toBe(1);
-    expect(volumes[volumes.length - 1]!).toBeGreaterThan(volumes[0]!);
-  });
-
-  it("closes on the better of two equally quiet clips", () => {
-    const cands = [
-      cand({ seq: 1, family: "a", hits: 1, score: 2 }),
-      cand({ seq: 2, family: "b", hits: 1, score: 8 }),
-      cand({ seq: 3, family: "c", hits: 5, score: 1 }),
-    ];
-    expect(arcOrder(cands).map((c) => c.seq)).toEqual([1, 3, 2]);
-  });
-
-  it("counts strikes called when none were heard", () => {
-    const combo = { text: "Jab, Cross, Hook, Left Kick", between: false, combo: true };
-    expect(clipVolume(cand({ seq: 1, calls: [combo] }))).toBe(4);
-    expect(clipVolume(cand({ seq: 1, calls: [combo], hits: 6 }))).toBe(6);
-  });
-
-  it("keeps every hand-picked clip, even a repeat it can't separate", () => {
-    const cands = [cand({ seq: 1, family: "kick" }), cand({ seq: 2, family: "kick" })];
-    expect(arcOrder(cands)).toHaveLength(1);
-    expect(arcOrder(cands, { dropRepeats: false })).toHaveLength(2);
+    const r0 = picks.filter((c) => c.round === 0);
+    expect(r0[r0.length - 1]!.seq).toBe(2);
   });
 
   it("stays within the budget beyond each round's best", () => {

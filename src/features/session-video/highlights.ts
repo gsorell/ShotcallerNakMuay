@@ -116,6 +116,24 @@ export const scoreClip = (
 };
 
 /**
+ * How many strikes should land on a bag or pads for a clip's calls: each
+ * attacking part once, a numbered part per number ("2 3" is two punches),
+ * defence not at all, a between-call's attacks included. Lets the trim end
+ * on the combination's last strike rather than guess from movement.
+ */
+export const expectedHits = (calls: CallInfo[]): number =>
+  calls.reduce(
+    (n, c) =>
+      n +
+      parts(c.text).reduce((m, p) => {
+        if (DEFENCE.test(p) && !POWER.test(p)) return m;
+        const numbers = p.match(/\b[1-6]\b/g)?.length ?? 0;
+        return m + Math.max(1, numbers);
+      }, 0),
+    0
+  );
+
+/**
  * How many moves a clip holds: the strikes in its combination, plus one for
  * a between-call that followed. Sets how long the clip may run.
  */

@@ -61,6 +61,26 @@ export class ReelNotes {
     this.lines.push(`round ${n} picked: ${picked.join(", ") || "none"}`);
   }
 
+  /**
+   * What the reel was planned from, saved beside the notes as
+   * reel-replay.json, so the planner can be re-run on a real session after
+   * the app has moved on (the timeline otherwise lives only in memory, and
+   * a reinstall loses it). Latest session only, like the notes.
+   */
+  async saveReplay(replay: unknown): Promise<void> {
+    if (!Capacitor.isNativePlatform()) return;
+    try {
+      await Filesystem.writeFile({
+        path: "reel-replay.json",
+        directory: Directory.Data,
+        encoding: Encoding.UTF8,
+        data: JSON.stringify(replay),
+      });
+    } catch {
+      /* for tuning only */
+    }
+  }
+
   async save(): Promise<void> {
     if (!Capacitor.isNativePlatform()) return;
     try {

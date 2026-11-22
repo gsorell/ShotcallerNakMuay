@@ -235,13 +235,15 @@ export const MAX_KEEP_MS = 5000;
 export const keepCapMs = (strikes: number): number =>
   Math.min(MAX_KEEP_MS, 1500 + 600 * Math.max(1, strikes));
 
+/** Kept before the first real movement: the weight shifting into it. */
+export const LEAD_MS = 200;
+/** Kept before the first strike heard landing: the strike on its way. */
+export const WINDUP_MS = 450;
 /**
- * The reaction to a call starts on its first word; the clip starts this long
- * after the call does, so the wind-up is in and the standing before isn't.
+ * After a combination's last strike lands, this long at most is kept for
+ * getting back to stance; past it, the movement is the next thing.
  */
-const AFTER_CALL_MS = 300;
-/** Kept before the first movement when there's no call to go by. */
-const LEAD_MS = 300;
+export const RECOVER_MAX_MS = 1200;
 /** Back in stance means this long below the settle level. */
 const SETTLED_FOR_MS = 300;
 /** Kept after settling: the guard coming back up. */
@@ -277,21 +279,31 @@ export interface ClipEvidence {
   callAtMs?: number;
   /** Strikes in what was called, for how long it may run. */
   strikes?: number;
+  /**
+   * Strikes that should be heard landing (highlights.expectedHits). When
+   * that many are heard, the clip ends on the last of them, not on a guess.
+   */
+  expectedHits?: number;
 }
 
 /**
  * The part of a filmed callout worth keeping, and what happened in it.
  *
- * Starts just after the call begins (people move on the first word), or
- * just before the first real movement if that comes sooner or there was no
- * call. Ends once the fighter is back in stance: after the last strike
- * heard, or the last real movement, the first moment movement stays down
- * near stillness for a beat. The old cut ended a fixed 0.4s after the last
- * big movement, which lopped off the snap back to guard — and the leg still
- * in the air at the end of a kick.
+ * The user's rules (2026-11-22): no waiting, and never cut before the
+ * action ends.
  *
- * If that runs past the combination's cap, the stretch of that length with
- * the most going on. A stare comes back empty.
+ * Starts just before the first real movement after the call (LEAD_MS), and
+ * where strikes were heard, no earlier than the first one's wind-up
+ * (WINDUP_MS): the call itself is no cue, since the voice can take a second
+ * or more while the fighter stands. Ends once the fighter is back in stance:
+ * after the last strike heard, or the last real movement, the first moment
+ * movement stays down near stillness for a beat. When every strike the call
+ * asked for was heard (expectedHits), the last of them fixes the finish: the
+ * clip runs past it by at least AFTER_HIT_MS and at most RECOVER_MAX_MS.
+ *
+ * If that runs past the combination's cap, the front goes, never the
+ * finish (with hits heard but not all of them, the stretch with the most
+ * strikes in it, the later one on a tie). A stare comes back empty.
  */
 export const cutClip = (e: ClipEvidence): ClipCut => {
   const { durationMs, levels } = e;
@@ -312,16 +324,15 @@ export const cutClip = (e: ClipEvidence): ClipCut => {
   // hits, once put a clip of someone standing still into the reel.
   if (!active.length || durationMs < MIN_KEEP_MS) return none;
 
-  const firstMove = active.length ? active[0]!.t : Infinity;
-  const lastMove = active.length ? active[active.length - 1]!.t : -Infinity;
-  const firstEvidence = Math.min(firstMove, hits[0] ?? Infinity);
-  let start = Math.max(
-    0,
-    Math.min(
-      e.callAtMs !== undefined ? e.callAtMs + AFTER_CALL_MS : Infinity,
-      firstEvidence - LEAD_MS
-    )
-  );
+  const firstMove = active[0]!.t;
+  const lastMove = active[active.length - 1]!.t;
+  // Rule 1 (user, 2026-11-22): no waiting. The clip opens on the first real
+  // movement, never on the call; and where strikes were heard, no earlier
+  // than the first one's wind-up, since bouncing in stance moves too.
+  let start = Math.max(0, firstMove - LEAD_MS, hits.length ? hits[0]! - WINDUP_MS : -Infinity);
+  // The strikes this combination should land, if all were heard.
+  const want = e.expectedHits ?? 0;
+  const lastWanted = want > 0 && hits.length >= want ? hits[want - 1]! : null;
 
   // Back in stance: below the settle level for SETTLED_FOR_MS, after the
   // last thing that happened.
@@ -341,14 +352,19 @@ export const cutClip = (e: ClipEvidence): ClipCut => {
       quietSince = null;
     }
   }
-  let end = Math.min(
-    durationMs,
+  let end =
     settledAt !== null
       ? settledAt + AFTER_SETTLE_MS
       : hits.length
       ? lastEvent + AFTER_HIT_MS
-      : lastEvent + SETTLED_FOR_MS + AFTER_SETTLE_MS
-  );
+      : lastEvent + SETTLED_FOR_MS + AFTER_SETTLE_MS;
+  // Rule 2: never before the combination's last strike has landed and come
+  // back; and once it has, no more than RECOVER_MAX_MS of what follows,
+  // which is the next thing (a fighter who flows on never "settles").
+  if (lastWanted !== null) {
+    end = Math.max(lastWanted + AFTER_HIT_MS, Math.min(end, lastWanted + RECOVER_MAX_MS));
+  }
+  end = Math.min(durationMs, end);
 
   const excess = (from: number, to: number) =>
     samples
@@ -357,27 +373,37 @@ export const cutClip = (e: ClipEvidence): ClipCut => {
   const hitsIn = (from: number, to: number) =>
     hits.filter((h) => h >= from && h <= to).length;
 
-  const cap = keepCapMs(e.strikes ?? 1);
+  // A combination heard landing in full gets the room it took, within the
+  // ceiling; the call's own cap is only a guess at that.
+  const heardSpan =
+    lastWanted !== null ? lastWanted + AFTER_HIT_MS - (hits[0]! - WINDUP_MS) : 0;
+  const cap = Math.min(MAX_KEEP_MS, Math.max(keepCapMs(e.strikes ?? 1), heardSpan));
   if (end - start > cap) {
-    // Slide a cap-length window across the span; keep the one with the most
-    // hits, then the most movement. Starting from the call is preferred, so
-    // ties keep the opening.
-    let best = start;
-    let bestKey = -1;
-    for (let from = start; from + cap <= end; from += 100) {
-      const key = hitsIn(from, from + cap) * 1000 + excess(from, from + cap);
-      if (key > bestKey + 1e-9) {
-        bestKey = key;
-        best = from;
+    if (lastWanted !== null || !hits.length) {
+      // The finish is known, or nothing was heard to choose by: keep the
+      // finish, and lose the front.
+      start = end - cap;
+    } else {
+      // Slide a cap-length window across the span; keep the one with the
+      // most hits, then the most movement. Ties keep the LATER window, so
+      // what gets lost is the run-up, never the finish.
+      let best = end - cap;
+      let bestKey = -1;
+      for (let from = end - cap; from >= start; from -= 100) {
+        const key = hitsIn(from, from + cap) * 1000 + excess(from, from + cap);
+        if (key > bestKey + 1e-9) {
+          bestKey = key;
+          best = from;
+        }
       }
+      start = best;
+      end = best + cap;
     }
-    start = best;
-    end = best + cap;
   }
 
+  // Too short to watch: grow past the finish (the guard coming up) before
+  // reaching back into the stillness before it.
   if (end - start < MIN_KEEP_MS) {
-    const grow = (MIN_KEEP_MS - (end - start)) / 2;
-    start = Math.max(0, start - grow);
     end = Math.min(durationMs, start + MIN_KEEP_MS);
     start = Math.max(0, end - MIN_KEEP_MS);
   }

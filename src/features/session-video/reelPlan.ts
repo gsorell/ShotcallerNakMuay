@@ -1,6 +1,7 @@
 import type { CallInfo } from "./calloutSignal";
 import {
   MAX_SHOWINGS,
+  expectedHits,
   scoreClip,
   strikesIn,
   techniqueFamily,
@@ -25,8 +26,14 @@ import { cutClip, disturbedNear, motionLevels, undisturbed, type ClipCut } from 
 
 /** A clip starts this long before its callout: people throw on the first word. */
 export const PREROLL_MS = 600;
-/** And runs this long past the next one's start, so nothing is lost between. */
-export const OVERLAP_MS = 900;
+/**
+ * And runs this long past the next one's start, so nothing is lost between:
+ * calls come every two seconds or so, and a combination is often still
+ * finishing when the next is called. At 900 ms every such clip was cut
+ * before its last strike (rule 2, 2026-11-22); the trim (cutClip) decides
+ * where it really ends.
+ */
+export const OVERLAP_MS = 1800;
 /** Longest stretch one callout is judged over, if no next callout comes. */
 export const MAX_SEGMENT_MS = 9000;
 
@@ -80,11 +87,8 @@ export interface ReelCandidate {
   /** What it looks like on camera (see techniqueFamily). */
   family: string;
   score: number;
-  /**
-   * Strikes heard landing in the kept part (pads, bag). Absent on clips
-   * planned before the reel was paced: their volume then comes from the call.
-   */
-  hits?: number;
+  /** How cleanly it finished, 0–1 (finishBalance), once framing was checked. */
+  balance?: number;
 }
 
 /** One clip's stretch of the recording, before it's trimmed to its action. */
@@ -177,6 +181,7 @@ export const reelCandidates = (tl: SessionTimeline): ReelCandidate[] => {
       cleanHits: heard.filter((h) => !inSpeech(h)).map((h) => h - w.fromMs),
       callAtMs: w.callAt - w.fromMs,
       strikes: strikesIn(w.calls),
+      expectedHits: expectedHits(w.calls),
     });
     if (cut.endMs <= cut.startMs) continue;
     if (disturbedNear(tl.motion, w.fromMs + cut.startMs, w.fromMs + cut.endMs)) continue;
@@ -193,7 +198,6 @@ export const reelCandidates = (tl: SessionTimeline): ReelCandidate[] => {
       calls: w.calls,
       family: techniqueFamily(mainCall(w.calls)?.text ?? ""),
       score: scoreClip(cut, w.calls, norm),
-      hits: cut.hits,
     }))
     .filter((c) => c.score > 0);
 };
@@ -232,99 +236,70 @@ export interface FramingFrame {
   error?: string;
 }
 
+/** Below this finish balance (finishBalance) a clip isn't shown. */
+export const MIN_BALANCE = 0.25;
+
+type Box = NonNullable<FramingFrame["box"]>;
+
+/**
+ * Rule 3 (user, 2026-11-22): clean technique over loss of balance and
+ * sloppy movement. A clean rep ends where it began: back in stance, head
+ * at the same height, standing as tall, not stumbled away. Compares the
+ * fighter's outline (the pose points' bounding box) just after the clip
+ * opens with just before it ends: 1 is back exactly where they started, 0
+ * is nowhere near (crouched, fallen, a leg still up, staggered off).
+ * Measured in the fighter's own height, so distance from the camera
+ * doesn't matter. Movement during the clip is free: kicks change the
+ * outline, finishing out of stance is what costs.
+ */
+export const finishBalance = (opening: Box, finish: Box): number => {
+  const h = opening.h;
+  if (!(h > 0.05)) return 1;
+  const headDrop = Math.abs(finish.y - opening.y) / h;
+  const shrink = (h - finish.h) / h;
+  const drift =
+    Math.abs(finish.x + finish.w / 2 - (opening.x + opening.w / 2)) / h;
+  // Some give in each: guard adjustments, a step back after a teep.
+  const off =
+    Math.max(0, headDrop - 0.08) + Math.max(0, shrink - 0.1) + 0.5 * Math.max(0, drift - 0.25);
+  return Math.max(0, Math.min(1, 1 - 2.5 * off));
+};
+
 /**
  * Drops the candidates the fighter isn't fully in (behind the bag, out of
- * shot at an edge: any probed frame below MIN_VISIBLE), and favours the ones
- * where they fill more of the frame. A candidate with no frames probed is
- * judged as it was: the check couldn't run.
+ * shot at an edge: any probed frame below MIN_VISIBLE) or doesn't finish in
+ * balance (finishBalance below MIN_BALANCE), favours the ones where they
+ * fill more of the frame, and marks the rest down for a scrappy finish. A
+ * candidate with no frames probed is judged as it was: the check couldn't
+ * run.
  */
 export const applyFraming = (
   cands: ReelCandidate[],
   frames: FramingFrame[]
 ): ReelCandidate[] =>
   cands.flatMap((c) => {
-    const times = new Set(probeTimes(c));
-    const mine = frames.filter((f) => times.has(Math.round(f.tMs)) && !f.error);
+    const times = probeTimes(c);
+    const at = (t: number) => frames.find((f) => Math.round(f.tMs) === t && !f.error);
+    const mine = frames.filter((f) => times.includes(Math.round(f.tMs)) && !f.error);
     if (!mine.length) return [c];
     if (mine.some((f) => !f.person || f.visible < MIN_VISIBLE)) return [];
     const h = mine.reduce((n, f) => n + (f.box?.h ?? 0), 0) / mine.length;
     const size = 0.7 + 0.5 * Math.min(1, h / 0.8);
-    return [{ ...c, score: c.score * size }];
+    const open = at(times[0]!)?.box;
+    const close = at(times[times.length - 1]!)?.box;
+    const balance = open && close ? finishBalance(open, close) : undefined;
+    if (balance !== undefined && balance < MIN_BALANCE) return [];
+    const form = balance === undefined ? 1 : 0.5 + 0.5 * balance;
+    return [{ ...c, score: c.score * size * form, ...(balance !== undefined ? { balance } : {}) }];
   });
-
-/**
- * How much is going on in a clip: the strikes called, or the strikes heard
- * landing if more were (a combination thrown twice on the pads).
- */
-export const clipVolume = (c: ReelCandidate): number =>
-  Math.max(strikesIn(c.calls), c.hits ?? 0);
-
-/** Where in the reel it peaks, as a fraction of the way through. */
-export const ARC_PEAK_AT = 0.75;
-const ARC_OPEN = 0.15;
-const ARC_CLOSE = 0.35;
-
-/**
- * The reel's shape (user, 2026-11-22): it opens slow, builds to its highest
- * volume about three quarters through, then tapers. The intensity wanted at
- * `x`, 0–1 of the way through, as a share of the peak.
- */
-export const arcTarget = (x: number): number =>
-  x <= ARC_PEAK_AT
-    ? ARC_OPEN + ((1 - ARC_OPEN) * x) / ARC_PEAK_AT
-    : 1 - ((1 - ARC_CLOSE) * (x - ARC_PEAK_AT)) / (1 - ARC_PEAK_AT);
-
-/**
- * Puts clips in the reel's arc (arcTarget): the quietest clips where the arc
- * is lowest, the busiest at its peak. Among equally busy clips the better
- * one goes where the arc is higher, so the close (which sits above the
- * opening) gets a strong clip to finish on. Rounds don't set the order.
- *
- * Then no technique type twice running: a clip that repeats the one before
- * it swaps with the nearest later clip that fits. With `dropRepeats` a clip
- * no swap can fix leaves the reel; without it (clips someone picked by hand)
- * it stays.
- */
-export const arcOrder = (
-  clips: ReelCandidate[],
-  { dropRepeats = true }: { dropRepeats?: boolean } = {}
-): ReelCandidate[] => {
-  const n = clips.length;
-  if (n < 2) return [...clips];
-  const slots = Array.from({ length: n }, (_, i) => ({ i, want: arcTarget(i / (n - 1)) }))
-    // Lowest wanted first; between equals, the earlier slot.
-    .sort((a, b) => a.want - b.want || a.i - b.i);
-  const byVolume = [...clips].sort(
-    (a, b) => clipVolume(a) - clipVolume(b) || a.score - b.score || a.fromMs - b.fromMs
-  );
-  const out: ReelCandidate[] = new Array(n);
-  slots.forEach((s, k) => (out[s.i] = byVolume[k]!));
-
-  const fits = (list: ReelCandidate[], at: number, c: ReelCandidate) =>
-    list[at - 1]?.family !== c.family && list[at + 1]?.family !== c.family;
-  for (let i = 1; i < out.length; i++) {
-    if (out[i]!.family !== out[i - 1]!.family) continue;
-    let j = i + 1;
-    for (; j < out.length; j++) {
-      const a = out[i]!;
-      const b = out[j]!;
-      const swapped = [...out];
-      swapped[i] = b;
-      swapped[j] = a;
-      if (fits(swapped, i, b) && fits(swapped, j, a)) break;
-    }
-    if (j < out.length) [out[i], out[j]] = [out[j]!, out[i]!];
-    else if (dropRepeats) out.splice(i--, 1);
-  }
-  return out;
-};
 
 /**
  * The reel: the best clips that fit `budgetMs`, every round represented if
  * it has anything to show, each technique type (family) at most
- * MAX_SHOWINGS times and once a round, then put in the reel's arc
- * (arcOrder): slow open, building to the busiest clips, tapering to the end.
- * Never the same type twice running.
+ * MAX_SHOWINGS times and once a round. In round order; within a round, in
+ * the order filmed with the round's best last, so each round builds to it.
+ * Never the same type twice running: where a round would open on the type
+ * the last one ended on, another of its clips opens it, or that clip goes.
  */
 export const pickReel = (cands: ReelCandidate[], budgetMs: number): ReelCandidate[] => {
   const byScore = [...cands].sort((a, b) => b.score - a.score);
@@ -352,7 +327,22 @@ export const pickReel = (cands: ReelCandidate[], budgetMs: number): ReelCandidat
     if (used + c.toMs - c.fromMs > budgetMs) continue;
     take(c);
   }
-  return arcOrder(picked);
+
+  const out: ReelCandidate[] = [];
+  for (const r of rounds) {
+    const mine = picked.filter((c) => c.round === r);
+    if (!mine.length) continue;
+    const best = mine.reduce((a, b) => (b.score > a.score ? b : a));
+    const ordered = [...mine.filter((c) => c !== best).sort((a, b) => a.fromMs - b.fromMs), best];
+    const prev = out[out.length - 1]?.family;
+    if (prev !== undefined && ordered[0]!.family === prev) {
+      const k = ordered.findIndex((c, i) => i > 0 && i < ordered.length - 1 && c.family !== prev);
+      if (k > 0) [ordered[0], ordered[k]] = [ordered[k]!, ordered[0]!];
+      else ordered.shift();
+    }
+    out.push(...ordered);
+  }
+  return out;
 };
 
 /**

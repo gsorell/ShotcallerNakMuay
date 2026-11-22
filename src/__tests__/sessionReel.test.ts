@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { CallInfo } from "@/features/session-video/calloutSignal";
-import { scoreClip, techniqueWeight } from "@/features/session-video/highlights";
+import { expectedHits, scoreClip, techniqueWeight } from "@/features/session-video/highlights";
 import {
   DISTURBANCE_PAD_MS,
+  LEAD_MS,
   MAX_KEEP_MS,
   MIN_KEEP_MS,
+  RECOVER_MAX_MS,
+  WINDUP_MS,
   cutClip,
   disturbedNear,
   isDisturbance,
@@ -41,7 +44,8 @@ describe("trimming a clip to its action", () => {
       callAtMs: 700,
       strikes: 3,
     });
-    expect(cut.startMs).toBe(600);
+    // Movement shows from 900 (smoothed); the clip opens LEAD_MS before it.
+    expect(cut.startMs).toBe(900 - LEAD_MS);
     expect(cut.endMs).toBe(2850);
     expect(cut.motion).toBeGreaterThan(0);
   });
@@ -54,7 +58,59 @@ describe("trimming a clip to its action", () => {
       callAtMs: 1200,
       strikes: 3,
     });
-    expect(cut.startMs).toBe(1100);
+    expect(cut.startMs).toBe(1400 - LEAD_MS);
+  });
+
+  it("opens on the first strike's wind-up, not on bouncing in stance", () => {
+    const cut = cutClip({
+      samples: samplesFor(5000, [[500, 3000]]),
+      durationMs: 5000,
+      levels: LEVELS,
+      callAtMs: 300,
+      hits: [1800, 2200],
+      strikes: 2,
+    });
+    expect(cut.startMs).toBe(1800 - WINDUP_MS);
+  });
+
+  it("ends on the combination's last strike when the fighter flows straight on", () => {
+    // Moving the whole time; this call's three strikes, then the next combo's two.
+    const cut = cutClip({
+      samples: samplesFor(5000, [[300, 4800]]),
+      durationMs: 5000,
+      levels: LEVELS,
+      callAtMs: 0,
+      hits: [600, 1000, 1400, 3000, 3400],
+      strikes: 3,
+      expectedHits: 3,
+    });
+    expect(cut.endMs).toBe(1400 + RECOVER_MAX_MS);
+    expect(cut.hits).toBe(3);
+  });
+
+  it("never ends before the last strike has landed and come back", () => {
+    // Movement dies early (a kick the meter barely saw); the third strike lands later.
+    const cut = cutClip({
+      samples: samplesFor(5000, [[300, 900]]),
+      durationMs: 5000,
+      levels: LEVELS,
+      callAtMs: 0,
+      hits: [500, 800, 1900],
+      strikes: 3,
+      expectedHits: 3,
+    });
+    expect(cut.endMs).toBeGreaterThanOrEqual(1900 + 450);
+  });
+
+  it("loses the run-up, never the finish, when it has to shorten", () => {
+    const cut = cutClip({
+      samples: samplesFor(9000, [[500, 8500]]),
+      durationMs: 9000,
+      levels: LEVELS,
+      strikes: 1,
+    });
+    expect(cut.endMs).toBeGreaterThan(8500);
+    expect(cut.endMs - cut.startMs).toBe(keepCapMs(1));
   });
 
   it("keeps the snap back to guard instead of cutting at the last big move", () => {
@@ -117,6 +173,15 @@ describe("trimming a clip to its action", () => {
     expect(levels.floor).toBeCloseTo(0.004);
     expect(levels.threshold).toBeGreaterThan(0.004);
     expect(levels.threshold).toBeLessThan(0.1);
+  });
+});
+
+describe("strikes that should land", () => {
+  it("counts each attack, each number in a numbered part, and no defence", () => {
+    expect(expectedHits([call("Jab, Cross")])).toBe(2);
+    expect(expectedHits([call("2 3")])).toBe(2);
+    expect(expectedHits([call("Slip the Jab, 2, Switch Kick"), call("Jab", true)])).toBe(3);
+    expect(expectedHits([call("Right Body Kick"), call("Check", true)])).toBe(1);
   });
 });
 
