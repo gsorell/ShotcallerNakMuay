@@ -23,6 +23,7 @@ import androidx.media3.transformer.EditedMediaItemSequence;
 import androidx.media3.transformer.Effects;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.ExportResult;
+import androidx.media3.transformer.ProgressHolder;
 import androidx.media3.transformer.Transformer;
 import androidx.media3.transformer.VideoEncoderSettings;
 import java.io.File;
@@ -59,7 +60,15 @@ final class ReelExport {
     void done(String uri, String summary, long durationMs);
 
     void failed(String message);
+
+    /** How far the export has got, 0 to 100; from the export's thread. */
+    default void progress(int percent) {}
   }
+
+  /** How often progress is read while the export runs. */
+  private static final long PROGRESS_EVERY_MS = 250;
+  /** A clip left shorter than this by the picture's end is dropped. */
+  private static final long MIN_CLIP_MS = 300;
 
   static final class Options {
     int width = 1080;
@@ -77,7 +86,21 @@ final class ReelExport {
   private ReelExport() {}
 
   /** Measures, then exports; reports through `cb` from another thread. */
-  static void run(Context context, String inPath, long[][] clips, String outPath, Options o, Callback cb) {
+  static void run(Context context, String inPath, long[][] asked, String outPath, Options o, Callback cb) {
+    // Never past the picture's end. Where the sound runs on beyond it (the
+    // recording's last seconds can have sound and no frames), Transformer
+    // holds the last frame for the rest of the clip: the reel froze on it.
+    final long[][] clips;
+    try {
+      clips = withinPicture(asked, videoEndMs(inPath));
+    } catch (Throwable e) {
+      cb.failed("reading the recording failed: " + e);
+      return;
+    }
+    if (clips.length == 0) {
+      cb.failed("no clip falls within the picture");
+      return;
+    }
     final Level level;
     try {
       level = measure(inPath, clips);
@@ -135,8 +158,9 @@ final class ReelExport {
                   : String.format(Locale.ROOT, "%.1f Mbps requested", o.videoBps / 1e6);
                 String summary = String.format(
                   Locale.ROOT,
-                  "%d clips, %.1fs, %dx%d@%.0f, gain %+.1f dB (rms %.1f, peak %.1f dBFS), %s",
+                  "%d clips%s, %.1fs, %dx%d@%.0f, gain %+.1f dB (rms %.1f, peak %.1f dBFS), %s",
                   clips.length,
+                  trimmedNote(asked, clips),
                   durationMs / 1000.0,
                   o.width,
                   o.height,
@@ -163,6 +187,26 @@ final class ReelExport {
         //noinspection ResultOfMethodCallIgnored
         new File(outPath).delete();
         transformer.start(composition, outPath);
+        // Read on the export's own thread (Transformer insists), until the
+        // thread quits with the export.
+        final ProgressHolder holder = new ProgressHolder();
+        handler.postDelayed(
+          new Runnable() {
+            int last = -1;
+
+            @Override
+            public void run() {
+              int state = transformer.getProgress(holder);
+              if (state == Transformer.PROGRESS_STATE_NOT_STARTED) return;
+              if (state == Transformer.PROGRESS_STATE_AVAILABLE && holder.progress != last) {
+                last = holder.progress;
+                cb.progress(last);
+              }
+              handler.postDelayed(this, PROGRESS_EVERY_MS);
+            }
+          },
+          PROGRESS_EVERY_MS
+        );
       } catch (Throwable e) {
         //noinspection ResultOfMethodCallIgnored
         new File(outPath).delete();
@@ -170,6 +214,69 @@ final class ReelExport {
         thread.quitSafely();
       }
     });
+  }
+
+  /**
+   * Where the picture ends, in ms from the file's first sample (the clips'
+   * zero, as in remuxToMp4): the last video frame's time plus one frame.
+   * Long.MAX_VALUE if the file has no picture to measure.
+   */
+  static long videoEndMs(String path) throws Exception {
+    MediaExtractor ex = new MediaExtractor();
+    try {
+      ex.setDataSource(path);
+      int video = -1;
+      for (int i = 0; i < ex.getTrackCount(); i++) {
+        String mime = ex.getTrackFormat(i).getString(MediaFormat.KEY_MIME);
+        if (mime != null && (mime.startsWith("video/") || mime.startsWith("audio/"))) ex.selectTrack(i);
+        if (video < 0 && mime != null && mime.startsWith("video/")) video = i;
+      }
+      if (video < 0) return Long.MAX_VALUE;
+      ex.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+      long t0Us = Math.max(0, ex.getSampleTime());
+      for (int i = 0; i < ex.getTrackCount(); i++) if (i != video) ex.unselectTrack(i);
+      // From the last keyframe (seconds from the end) to the last frame.
+      ex.seekTo(Long.MAX_VALUE / 2, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+      long lastUs = -1;
+      long frameUs = 33_333;
+      while (ex.getSampleTrackIndex() >= 0) {
+        long t = ex.getSampleTime();
+        if (t > lastUs) {
+          if (lastUs >= 0) frameUs = t - lastUs;
+          lastUs = t;
+        }
+        if (!ex.advance()) break;
+      }
+      if (lastUs < 0) return Long.MAX_VALUE;
+      return (lastUs + Math.max(frameUs, 1) - t0Us) / 1000;
+    } finally {
+      ex.release();
+    }
+  }
+
+  /** " (last cut at the picture's end)" and the like, for the log; "" if nothing changed. */
+  static String trimmedNote(long[][] asked, long[][] kept) {
+    long askedMs = 0;
+    long keptMs = 0;
+    for (long[] c : asked) askedMs += c[1] - c[0];
+    for (long[] c : kept) keptMs += c[1] - c[0];
+    if (askedMs == keptMs) return "";
+    return String.format(
+      Locale.ROOT,
+      " (%d dropped, %.1fs cut past the picture's end)",
+      asked.length - kept.length,
+      (askedMs - keptMs) / 1000.0
+    );
+  }
+
+  /** `clips` cut off at `endMs`; any left shorter than MIN_CLIP_MS dropped. */
+  static long[][] withinPicture(long[][] clips, long endMs) {
+    List<long[]> out = new ArrayList<>(clips.length);
+    for (long[] c : clips) {
+      long to = Math.min(c[1], endMs);
+      if (to - c[0] >= MIN_CLIP_MS) out.add(new long[] { c[0], to });
+    }
+    return out.toArray(new long[0][]);
   }
 
   /** RMS and peak of the chosen ranges' sound, as fractions of full scale. */

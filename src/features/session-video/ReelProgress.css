@@ -1,0 +1,44 @@
+/* ------------------------------------------- the reel's export progress -- */
+
+.reel-progress {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.reel-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 2px;
+  background: #ff5fb0;
+  transition: width 0.25s linear;
+}
+
+/* No figure yet: a short sweep, so it still reads as working. */
+.reel-progress.is-waiting .reel-progress-fill {
+  width: 30%;
+  transition: none;
+  animation: reel-progress-sweep 1.2s ease-in-out infinite;
+}
+
+@keyframes reel-progress-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reel-progress.is-waiting .reel-progress-fill {
+    animation: none;
+    width: 100%;
+    opacity: 0.35;
+  }
+}

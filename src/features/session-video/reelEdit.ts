@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 
 import { adoptReelFile } from "./reelFile";
-import { exportRanges, type ReelCandidate } from "./reelPlan";
+import { arcOrder, exportRanges, type ReelCandidate } from "./reelPlan";
 import type { ReelEdit, SessionReel } from "./reelStore";
 import { exportReel } from "./remux";
 
@@ -42,10 +42,15 @@ export const readExportedReel = async (
   };
 };
 
-/** The clips chosen, in filmed order (rounds stay in order). */
+/**
+ * The clips chosen, in the reel's arc like the automatic reel (arcOrder),
+ * whatever order they were ticked in. Every clip picked stays, even one that
+ * repeats the type before it.
+ */
 export const chosenClips = (edit: ReelEdit, seqs: Iterable<number>): ReelCandidate[] => {
   const want = new Set(seqs);
-  return edit.candidates.filter((c) => want.has(c.seq)).sort((a, b) => a.fromMs - b.fromMs);
+  const clips = edit.candidates.filter((c) => want.has(c.seq)).sort((a, b) => a.fromMs - b.fromMs);
+  return arcOrder(clips, { dropRepeats: false });
 };
 
 export const clipsMs = (clips: ReelCandidate[]): number =>
@@ -58,12 +63,13 @@ export const clipsMs = (clips: ReelCandidate[]): number =>
 export const rebuildReel = async (
   edit: ReelEdit,
   seqs: number[],
-  log: (line: string) => void = () => {}
+  log: (line: string) => void = () => {},
+  onProgress?: (fraction: number) => void
 ): Promise<SessionReel | null> => {
   const clips = chosenClips(edit, seqs);
   if (!clips.length) return null;
   const ranges = exportRanges(edit.timeline, clips);
-  const made = await exportReel(edit.source, ranges, await reelOutUri(), log);
+  const made = await exportReel(edit.source, ranges, await reelOutUri(), log, onProgress);
   if (!made) return null;
   try {
     return await readExportedReel(

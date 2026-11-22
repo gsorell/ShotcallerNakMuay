@@ -16,7 +16,7 @@ import { HitDetector } from "./hitDetector";
 import { endCard, titleCard } from "./cards";
 import { MotionMeter } from "./motion";
 import { errText, pickMime, type Card } from "./reelRenderer";
-import type { ReelEdit, SessionReel } from "./reelStore";
+import { setReelExportProgress, type ReelEdit, type SessionReel } from "./reelStore";
 import { readExportedReel, reelOutUri } from "./reelEdit";
 import { exportReel, probeFraming } from "./remux";
 import { FullSession, fullSessionWanted } from "./fullSession";
@@ -371,7 +371,10 @@ export class ReelRecorder {
       return null;
     }
     const ranges = exportRanges(tl, picks);
-    const made = await exportReel(source, ranges, await reelOutUri(), log);
+    // The completion screen shows how far the encode has got: it's the long wait.
+    const made = await exportReel(source, ranges, await reelOutUri(), log, setReelExportProgress).finally(() =>
+      setReelExportProgress(null)
+    );
     if (!made) {
       this.fail("the reel could not be exported");
       return null;

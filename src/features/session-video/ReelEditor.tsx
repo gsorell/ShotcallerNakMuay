@@ -8,6 +8,7 @@ import { HAND_PICKED_MAX_MS, chosenClips, clipsMs, rebuildReel } from "./reelEdi
 import type { ReelCandidate } from "./reelPlan";
 import { closeReelEditor, closeReelViewer, setReelEdit, setSessionReel, type ReelEdit } from "./reelStore";
 import { autoSaveReel } from "./saveToGallery";
+import ReelProgress, { percentText } from "./ReelProgress";
 import "./ReelEditor.css";
 
 const clipLabel = (c: ReelCandidate): string =>
@@ -37,6 +38,8 @@ export default function ReelEditor({ edit }: { edit: ReelEdit }) {
     return out;
   });
   const [busy, setBusy] = useState(false);
+  /** The rebuild's encode, 0 to 1; null before it reports. */
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
 
@@ -105,10 +108,17 @@ export default function ReelEditor({ edit }: { edit: ReelEdit }) {
 
   const rebuild = async () => {
     setBusy(true);
+    setProgress(null);
     setError(null);
     previewRef.current?.pause();
-    const reel = await rebuildReel(edit, picked, (line) => console.info(`[reel edit] ${line}`));
+    const reel = await rebuildReel(
+      edit,
+      picked,
+      (line) => console.info(`[reel edit] ${line}`),
+      (p) => setProgress(Math.round(p * 100) / 100)
+    );
     setBusy(false);
+    setProgress(null);
     try {
       trackEvent("session_reel_edit", {
         clips: picked.length,
@@ -201,6 +211,12 @@ export default function ReelEditor({ edit }: { edit: ReelEdit }) {
       </div>
 
       <div className="reel-editor-bar">
+        {busy && (
+          <div className="reel-editor-progress" role="status" aria-live="polite">
+            <ReelProgress progress={progress} />
+            <p className="reel-editor-progress-text">Keep the app open until it's done</p>
+          </div>
+        )}
         {error && (
           <p className="reel-editor-error" role="alert">
             {error}
@@ -216,7 +232,7 @@ export default function ReelEditor({ edit }: { edit: ReelEdit }) {
             onClick={rebuild}
             disabled={busy || !chosen.length || !changed}
           >
-            {busy ? "Building…" : "Rebuild reel"}
+            {busy ? `Building… ${percentText(progress)}`.trim() : "Rebuild reel"}
           </button>
         </div>
       </div>

@@ -239,6 +239,23 @@
   flex: 1;
 }
 
+.reel-editor-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reel-editor-progress-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #9d8fa9;
+  text-align: center;
+}
+
+.reel-editor-rebuild {
+  font-variant-numeric: tabular-nums;
+}
+
 .reel-editor-error {
   margin: 0;
   font-size: 0.82rem;

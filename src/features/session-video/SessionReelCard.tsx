@@ -12,12 +12,14 @@ import {
   useReelEdit,
   useReelEditorOpen,
   useReelBuilding,
+  useReelExportProgress,
   useReelFailure,
   useReelViewer,
   useSessionReel,
   fullSessionText,
 } from "./reelStore";
 import ReelEditor from "./ReelEditor";
+import ReelProgress, { percentText } from "./ReelProgress";
 import { shareReel, shareVideoFile } from "./shareReel";
 import "./SessionReelCard.css";
 
@@ -161,15 +163,23 @@ function ReelRow({ src }: { src: string | null }) {
   const reel = useSessionReel();
   const building = useReelBuilding();
   const failure = useReelFailure();
+  const progress = useReelExportProgress();
 
-  // The last round's best moments are still being cut in: a few seconds.
+  // Picked, then encoded: up to a minute on a long session. The bar and
+  // the ask to stay are so it isn't taken for a hang and force-quit.
   if (!reel && building) {
+    const pct = percentText(progress);
     return (
       <div className="reel-ready is-building" role="status" aria-live="polite">
         <span className="reel-ready-thumb reel-ready-spinner" aria-hidden="true" />
         <span className="reel-ready-text">
-          <span className="reel-ready-title">Cutting your reel…</span>
-          <span className="reel-ready-sub">Picking your best moments</span>
+          <span className="reel-ready-title">
+            Cutting your reel…{pct && <span className="reel-ready-pct"> {pct}</span>}
+          </span>
+          <span className="reel-ready-sub">
+            {progress === null ? "Picking your best moments" : "Keep the app open until it's done"}
+          </span>
+          <ReelProgress progress={progress} />
         </span>
       </div>
     );
