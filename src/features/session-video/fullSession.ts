@@ -45,6 +45,12 @@ import { cardAssetsReady, drawWatermark, loadWatermark } from "./watermark";
  */
 export const RAW_FLAG = "shotcaller_debug_raw_session";
 
+/**
+ * How long filming is kept past a round's end bell: the last strike or
+ * kick is often still landing when it rings.
+ */
+export const BELL_TAIL_MS = 1500;
+
 const debugFlag = (): boolean => {
   try {
     return localStorage.getItem(RAW_FLAG) === "1";
@@ -147,6 +153,11 @@ export class FullSession {
   private micTracks: MediaStreamTrack[] = [];
   /** Camera frames drawn into the recording, for the frame rate it achieved. */
   private frames = 0;
+  /** performance.now() of the last frame drawn, to tell when the loop has stalled. */
+  private lastPaint = 0;
+  /** Until when (ms from the first frame) the last bell's tail is kept. */
+  private tailUntil = 0;
+  private tagTimer: ReturnType<typeof setTimeout> | null = null;
   /** When the title was over the opening action, ms from the first frame. */
   private titleSpan: Span | null = null;
   /** When the end card was up. */
@@ -288,26 +299,59 @@ export class FullSession {
     this.work();
   }
 
-  /** A round ended: cut from here, and the tag moves on to the next. */
+  /**
+   * A round ended: cut from BELL_TAIL_MS after the bell (the last movement
+   * finishes after it), and the tag moves on to the next round then too.
+   */
   roundOver(): void {
     this.mark({ type: "roundOver" });
     this.held = true;
-    this.spans.close(this.now());
-    this.roundsOver += 1;
+    this.tailUntil = this.now() + BELL_TAIL_MS;
+    this.spans.close(this.tailUntil);
+    if (this.tagTimer) clearTimeout(this.tagTimer);
+    this.tagTimer = setTimeout(() => {
+      this.tagTimer = null;
+      this.roundsOver += 1;
+    }, BELL_TAIL_MS);
   }
 
   /**
-   * Closes on `card`: shown full frame for its duration and kept, then the
-   * caller stops the recording.
+   * Closes on `card`, after the last bell's tail is filmed: shown full frame
+   * for its duration and kept, then the caller stops the recording.
    */
   async end(card: Card): Promise<void> {
     if (!this.rec) return;
-    await cardAssetsReady();
-    this.card = card;
-    this.spans.close(this.now());
-    this.spans.open(this.now());
-    this.endCardSpan = { fromMs: Math.round(this.now()), toMs: Math.round(this.now() + card.durationMs) };
-    await new Promise((r) => setTimeout(r, card.durationMs));
+    // The camera's preview has left the page with the workout screen, which
+    // pauses it: started again, or the tail has no picture. Drawn on a clock
+    // as well, since the draw loop waits on a camera frame that may not come:
+    // the end card was never recorded that way, the sound ran on 2.5 s past
+    // the last picture, and every reel froze on that picture to the end.
+    const v = this.source;
+    if (v?.paused) void v.play().catch(() => undefined);
+    const tick = setInterval(() => {
+      if (!this.drawing) return;
+      if (this.card || performance.now() - this.lastPaint > 100) this.paint();
+    }, 1000 / 30);
+    try {
+      // Ended mid-round (the final bell, or Stop): film on for the tail.
+      // Ended on a bell already: whatever's left of its tail.
+      const tailEnd = this.spans.isOpen ? this.now() + BELL_TAIL_MS : this.tailUntil;
+      const wait = Math.max(0, tailEnd - this.now());
+      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      await cardAssetsReady();
+      if (this.tagTimer) {
+        clearTimeout(this.tagTimer);
+        this.tagTimer = null;
+      }
+      this.card = card;
+      this.spans.close(this.now());
+      this.spans.open(this.now());
+      this.endCardSpan = { fromMs: Math.round(this.now()), toMs: Math.round(this.now() + card.durationMs) };
+      this.paint();
+      await new Promise((r) => setTimeout(r, card.durationMs));
+    } finally {
+      clearInterval(tick);
+    }
     this.spans.close(this.now());
   }
 
@@ -452,6 +496,7 @@ export class FullSession {
     }
     if (!v || v.readyState < 2 || !v.videoWidth) return;
     this.frames += 1;
+    this.lastPaint = performance.now();
     // The true view, as the reel has it: only the live preview is mirrored.
     // Covering the frame if the camera's shape ever changes mid-session.
     const scale = Math.max(w / v.videoWidth, h / v.videoHeight);

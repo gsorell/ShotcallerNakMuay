@@ -150,7 +150,7 @@ public class VideoRemuxPlugin extends Plugin {
    * `{ file, clips: [{ fromMs, toMs }], out, width?, height?, fps?, videoBps?,
    * targetLufs? }`: the clips back to back, re-encoded (see ReelExport).
    * Resolves `{ uri, summary, durationMs }`; rejects removing a half-written
-   * `out`.
+   * `out`. Meanwhile fires "reelExportProgress" `{ out, percent }`.
    */
   @PluginMethod
   @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
@@ -200,6 +200,14 @@ public class VideoRemuxPlugin extends Plugin {
               //noinspection ResultOfMethodCallIgnored
               new File(outPath).delete();
               call.reject(message);
+            }
+
+            @Override
+            public void progress(int percent) {
+              JSObject p = new JSObject();
+              p.put("out", out);
+              p.put("percent", percent);
+              notifyListeners("reelExportProgress", p);
             }
           }
         ),

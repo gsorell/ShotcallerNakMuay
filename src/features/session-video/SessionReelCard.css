@@ -24,6 +24,15 @@
   cursor: default;
 }
 
+.reel-ready.is-building .reel-progress {
+  margin-top: 0.35rem;
+}
+
+.reel-ready-pct {
+  font-variant-numeric: tabular-nums;
+  color: #ff5fb0;
+}
+
 .reel-ready-spinner {
   display: flex;
   align-items: center;

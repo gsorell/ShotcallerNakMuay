@@ -1,4 +1,4 @@
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core";
 
 import { MIN_VISIBLE, type FramingFrame } from "./reelPlan";
 
@@ -27,6 +27,10 @@ interface VideoRemuxPlugin {
     videoBps?: number;
     targetLufs?: number;
   }): Promise<{ uri: string; summary?: string; durationMs?: number }>;
+  addListener(
+    event: "reelExportProgress",
+    cb: (p: { out: string; percent: number }) => void
+  ): Promise<PluginListenerHandle>;
 }
 
 const VideoRemux = registerPlugin<VideoRemuxPlugin>("VideoRemux");
@@ -98,22 +102,33 @@ export const REEL_EXPORT = { width: 1080, height: 1920, fps: 30, videoBps: 10_00
  * Cuts `clips` out of a recording on disk, back to back, into `out`:
  * frame-accurate, scaled to REEL_EXPORT, encoded once with the phone's
  * hardware encoder, the sound faded at each cut and brought to a feed's
- * loudness. Null on any failure or in the browser.
+ * loudness. Null on any failure or in the browser. `onProgress` hears how
+ * far along it is, 0 to 1, as the native side reports it.
  */
 export const exportReel = async (
   file: string,
   clips: KeepSpan[],
   out: string,
-  log: (line: string) => void = () => {}
+  log: (line: string) => void = () => {},
+  onProgress?: (fraction: number) => void
 ): Promise<{ uri: string; durationMs?: number } | null> => {
   if (!Capacitor.isNativePlatform() || !clips.length) return null;
+  let listener: PluginListenerHandle | null = null;
   try {
+    if (onProgress) {
+      listener = await VideoRemux.addListener("reelExportProgress", (p) => {
+        if (p.out === out) onProgress(Math.max(0, Math.min(1, p.percent / 100)));
+      }).catch(() => null);
+    }
     const startedAt = Date.now();
     const { uri, summary, durationMs } = await VideoRemux.exportReel({ file, clips, out, ...REEL_EXPORT });
     log(`reel exported in ${Date.now() - startedAt}ms: ${summary ?? "?"}`);
+    onProgress?.(1);
     return { uri, ...(typeof durationMs === "number" ? { durationMs } : {}) };
   } catch (e) {
     log(`reel could not be exported: ${String(e)}`);
     return null;
+  } finally {
+    void listener?.remove();
   }
 };

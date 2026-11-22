@@ -726,7 +726,21 @@ public class VideoRemuxPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                 }
             }
-            pump(picIn, from: picOut, "picture")
+            // How far along, from each frame's place in the reel: told to
+            // the page as "reelExportProgress" { out, percent }, once per percent.
+            let total = CMTimeGetSeconds(cursor)
+            var lastPercent = -1
+            pump(picIn, from: picOut, "picture", change: { sample in
+                let t = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample))
+                if total > 0, t.isFinite {
+                    let percent = max(0, min(99, Int(t / total * 100)))
+                    if percent != lastPercent {
+                        lastPercent = percent
+                        self.notifyListeners("reelExportProgress", data: ["out": to, "percent": percent])
+                    }
+                }
+                return sample
+            })
             if let sndIn = sndIn, let sndOut = sndOut {
                 pump(sndIn, from: sndOut, "sound",
                      change: gain == 1 ? nil : { VideoRemuxPlugin.amplified($0, by: gain) })

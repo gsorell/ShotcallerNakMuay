@@ -125,16 +125,17 @@ export default function SessionCameraPip({
     };
   }, [active, enabled]);
 
+  // A rest starting is a round over. Declared before the hold below so it
+  // runs first (effects run in order): the round's footage is kept a moment
+  // past the bell, and a hold first would cut it at the bell itself.
+  useEffect(() => {
+    if (resting) recorderRef.current?.roundOver();
+  }, [resting]);
+
   useEffect(() => {
     if (holding) recorderRef.current?.hold();
     else recorderRef.current?.resume();
   }, [holding]);
-
-  // The rest is when a round's best clips are picked and assembled, so by
-  // the final bell only the last round is left to do.
-  useEffect(() => {
-    if (resting) recorderRef.current?.roundOver();
-  }, [resting]);
 
   const closeEarly = () => {
     const rec = recorderRef.current;

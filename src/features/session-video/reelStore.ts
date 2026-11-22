@@ -176,6 +176,24 @@ export const setReelBuilding = (on: boolean): void => {
 export const useReelBuilding = (): boolean =>
   useSyncExternalStore(subscribe, () => building, () => false);
 
+/**
+ * How far the reel's export has got, 0 to 1, after the session or on a
+ * rebuild; null when none is running (or it hasn't started encoding yet).
+ * Shown so a wait of half a minute or more doesn't look like a hang.
+ */
+let exportProgress: number | null = null;
+
+export const setReelExportProgress = (p: number | null): void => {
+  // Whole percents: no re-render for a change nobody would see.
+  const next = p === null ? null : Math.round(Math.max(0, Math.min(1, p)) * 100) / 100;
+  if (next === exportProgress) return;
+  exportProgress = next;
+  emit();
+};
+
+export const useReelExportProgress = (): number | null =>
+  useSyncExternalStore(subscribe, () => exportProgress, () => null);
+
 /** Opens the player on the reel, or on the full session once it's saved. */
 export const openReelViewer = (which: "reel" | "full" = "reel"): void => {
   if (viewing) return;

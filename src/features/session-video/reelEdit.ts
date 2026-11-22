@@ -58,12 +58,13 @@ export const clipsMs = (clips: ReelCandidate[]): number =>
 export const rebuildReel = async (
   edit: ReelEdit,
   seqs: number[],
-  log: (line: string) => void = () => {}
+  log: (line: string) => void = () => {},
+  onProgress?: (fraction: number) => void
 ): Promise<SessionReel | null> => {
   const clips = chosenClips(edit, seqs);
   if (!clips.length) return null;
   const ranges = exportRanges(edit.timeline, clips);
-  const made = await exportReel(edit.source, ranges, await reelOutUri(), log);
+  const made = await exportReel(edit.source, ranges, await reelOutUri(), log, onProgress);
   if (!made) return null;
   try {
     return await readExportedReel(
