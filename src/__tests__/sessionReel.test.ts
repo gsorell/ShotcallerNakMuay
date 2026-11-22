@@ -7,7 +7,6 @@ import {
   LEAD_MS,
   MAX_KEEP_MS,
   MIN_KEEP_MS,
-  RECOVER_MAX_MS,
   WINDUP_MS,
   cutClip,
   disturbedNear,
@@ -73,19 +72,19 @@ describe("trimming a clip to its action", () => {
     expect(cut.startMs).toBe(1800 - WINDUP_MS);
   });
 
-  it("ends on the combination's last strike when the fighter flows straight on", () => {
-    // Moving the whole time; this call's three strikes, then the next combo's two.
+  it("doesn't end early on strikes that belong to the combination before", () => {
+    // The last combo's late strikes land just after this call, then this
+    // call's three, then it settles at 3000.
     const cut = cutClip({
-      samples: samplesFor(5000, [[300, 4800]]),
+      samples: samplesFor(5000, [[0, 2900]]),
       durationMs: 5000,
       levels: LEVELS,
-      callAtMs: 0,
-      hits: [600, 1000, 1400, 3000, 3400],
+      callAtMs: 200,
+      hits: [100, 250, 1200, 1700, 2300],
       strikes: 3,
       expectedHits: 3,
     });
-    expect(cut.endMs).toBe(1400 + RECOVER_MAX_MS);
-    expect(cut.hits).toBe(3);
+    expect(cut.endMs).toBeGreaterThan(2300 + 450);
   });
 
   it("never ends before the last strike has landed and come back", () => {

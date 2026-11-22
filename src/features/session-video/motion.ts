@@ -239,11 +239,6 @@ export const keepCapMs = (strikes: number): number =>
 export const LEAD_MS = 200;
 /** Kept before the first strike heard landing: the strike on its way. */
 export const WINDUP_MS = 450;
-/**
- * After a combination's last strike lands, this long at most is kept for
- * getting back to stance; past it, the movement is the next thing.
- */
-export const RECOVER_MAX_MS = 1200;
 /** Back in stance means this long below the settle level. */
 const SETTLED_FOR_MS = 300;
 /** Kept after settling: the guard coming back up. */
@@ -298,8 +293,8 @@ export interface ClipEvidence {
  * or more while the fighter stands. Ends once the fighter is back in stance:
  * after the last strike heard, or the last real movement, the first moment
  * movement stays down near stillness for a beat. When every strike the call
- * asked for was heard (expectedHits), the last of them fixes the finish: the
- * clip runs past it by at least AFTER_HIT_MS and at most RECOVER_MAX_MS.
+ * asked for was heard (expectedHits), the clip runs at least AFTER_HIT_MS
+ * past the last of them.
  *
  * If that runs past the combination's cap, the front goes, never the
  * finish (with hits heard but not all of them, the stretch with the most
@@ -358,12 +353,13 @@ export const cutClip = (e: ClipEvidence): ClipCut => {
       : hits.length
       ? lastEvent + AFTER_HIT_MS
       : lastEvent + SETTLED_FOR_MS + AFTER_SETTLE_MS;
-  // Rule 2: never before the combination's last strike has landed and come
-  // back; and once it has, no more than RECOVER_MAX_MS of what follows,
-  // which is the next thing (a fighter who flows on never "settles").
-  if (lastWanted !== null) {
-    end = Math.max(lastWanted + AFTER_HIT_MS, Math.min(end, lastWanted + RECOVER_MAX_MS));
-  }
+  // Rule 2: never before the combination's strikes have landed and come
+  // back. Only ever a floor: when combinations run into each other, the
+  // last one's late strikes are heard after this call and count as this
+  // one's, so ending "on the Nth strike" ended early, cutting the finish
+  // it was meant to keep (2026-11-22 session). The clip's stretch, running
+  // past the next call, is the ceiling.
+  if (lastWanted !== null) end = Math.max(end, lastWanted + AFTER_HIT_MS);
   end = Math.min(durationMs, end);
 
   const excess = (from: number, to: number) =>
