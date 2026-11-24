@@ -140,7 +140,7 @@ mechanism — with it unset, every existing iPhone owner would hit a paywall.
 | Lifetime | `snm_lifetime` | `premium_lifetime` | `$rc_lifetime` |
 
 Entitlement: **`Pro`** · Offering: **`default`** (current) ·
-Prices: $3.99 / $24.99 / $39.99
+Prices: $5.99 / $39.99 / $79.99 (from 2026-11-24; $3.99 / $24.99 / $39.99 before)
 
 ## Build reference
 

@@ -90,9 +90,9 @@ prose.
 ```
 Shot Caller Pro
 
-- Pro Monthly - $3.99 per month
-- Pro Annual - $24.99 per year ($2.08 per month)
-- Lifetime - $39.99, one time, no subscription
+- Pro Monthly - $5.99 per month
+- Pro Annual - $39.99 per year ($3.33 per month)
+- Lifetime - $79.99, one time, no subscription
 
 Pro unlocks the other seventeen fighting styles, the full ten-level guided path,
 the technique library, the training options, and styles you build yourself. The
