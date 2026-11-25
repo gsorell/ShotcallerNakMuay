@@ -50,6 +50,9 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   const { getPackages, purchase, restore, claimLegacyOwnership } =
     useEntitlement();
   const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
+  // True when the store says this device or account may not buy at all, which
+  // wants a different message from a connection or store fault.
+  const [purchasesBlocked, setPurchasesBlocked] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showLegacyClaim, setShowLegacyClaim] = useState(false);
@@ -116,7 +119,10 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         });
       } catch { /* analytics must never break the purchase it measures */ }
     }
-    if (mountedRef.current) setPackages(pkgs);
+    if (mountedRef.current) {
+      setPurchasesBlocked(failure?.stage === "purchases_not_allowed");
+      setPackages(pkgs);
+    }
   }, [getPackages, isWeb, source]);
 
   useEffect(() => {
@@ -314,8 +320,11 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           {packages !== null && sorted.length === 0 && (
             <>
               <p style={styles.muted}>
-                Couldn't load plans from the store. Check your connection and
-                try again.
+                {purchasesBlocked
+                  ? Capacitor.getPlatform() === "ios"
+                    ? "Purchases are turned off on this device. Check that you're signed in to the App Store and that in-app purchases are allowed in Settings → Screen Time → Content & Privacy Restrictions, then try again."
+                    : "Purchases aren't available on this device. Check that you're signed in to Google Play and that purchases aren't blocked by parental controls (Family Link), then try again."
+                  : "Couldn't load plans from the store. Check your connection and try again."}
               </p>
               <button
                 type="button"

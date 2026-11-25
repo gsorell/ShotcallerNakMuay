@@ -21,6 +21,12 @@
 export type PlansFailureStage =
   /** RevenueCat never finished configuring (no key, init threw, or timed out). */
   | "not_configured"
+  /**
+   * The device or store account may not buy: Screen Time / parental controls,
+   * a managed device, Play billing unavailable, no store account. Settled on
+   * the user's side, so it is not retried and is told apart from real faults.
+   */
+  | "purchases_not_allowed"
   /** `getOfferings` threw on every attempt. */
   | "offerings_error"
   /** The store answered, but the current offering had no packages. */
@@ -56,6 +62,13 @@ export interface LoadPlansDeps<P> {
 }
 
 const GA_PARAM_MAX = 100;
+
+/**
+ * RevenueCat's `PURCHASE_NOT_ALLOWED_ERROR` ("The device or user is not allowed
+ * to make the purchase."). Literal rather than imported to keep this file free
+ * of the RevenueCat dependency.
+ */
+export const PURCHASE_NOT_ALLOWED_CODE = "3";
 
 const defaultSleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -122,6 +135,14 @@ export async function loadPlans<P>(deps: LoadPlansDeps<P>): Promise<PlansResult<
       sawEmpty = true;
       lastError = null;
     } catch (error) {
+      const described = describePlansError(error);
+      // Retrying cannot change a device setting; answer at once.
+      if (described.code === PURCHASE_NOT_ALLOWED_CODE) {
+        return {
+          packages: [],
+          failure: { stage: "purchases_not_allowed", ...described, attempts },
+        };
+      }
       lastError = error;
       sawEmpty = false;
     }

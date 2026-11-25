@@ -58,7 +58,7 @@ describe("loadPlans", () => {
   });
 
   it("reports the store error code after the retries run out", async () => {
-    const fetchPackages = vi.fn().mockRejectedValue({ code: 3, message: "Billing unavailable" });
+    const fetchPackages = vi.fn().mockRejectedValue({ code: 2, message: "Store problem" });
     const result = await loadPlans({
       whenConfigured: () => Promise.resolve(true),
       fetchPackages,
@@ -67,10 +67,34 @@ describe("loadPlans", () => {
     expect(result.packages).toEqual([]);
     expect(result.failure).toEqual({
       stage: "offerings_error",
-      code: "3",
-      message: "Billing unavailable",
+      code: "2",
+      message: "Store problem",
       attempts: 2,
     });
+  });
+
+  it("reports purchases_not_allowed without retrying", async () => {
+    const message = "The device or user is not allowed to make the purchase.";
+    const fetchPackages = vi.fn().mockRejectedValue({ code: "3", message });
+    const result = await loadPlans({
+      whenConfigured: () => Promise.resolve(true),
+      fetchPackages,
+      sleep: noSleep,
+    });
+    expect(fetchPackages).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      packages: [],
+      failure: { stage: "purchases_not_allowed", code: "3", message, attempts: 1 },
+    });
+  });
+
+  it("accepts the not-allowed code as a number too", async () => {
+    const result = await loadPlans({
+      whenConfigured: () => Promise.resolve(true),
+      fetchPackages: vi.fn().mockRejectedValue({ code: 3, message: "Billing unavailable" }),
+      sleep: noSleep,
+    });
+    expect(result.failure?.stage).toBe("purchases_not_allowed");
   });
 
   it("tells an empty offering apart from an error", async () => {
