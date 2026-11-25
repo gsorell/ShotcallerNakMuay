@@ -147,8 +147,8 @@ public class VideoRemuxPlugin extends Plugin {
   }
 
   /**
-   * `{ file, clips: [{ fromMs, toMs }], out, width?, height?, fps?, videoBps?,
-   * targetLufs? }`: the clips back to back, re-encoded (see ReelExport).
+   * `{ file, clips: [{ fromMs, toMs, crop?: { x, y, w, h } }], out, width?,
+   * height?, fps?, videoBps?, targetLufs? }`: the clips back to back, re-encoded (see ReelExport).
    * Resolves `{ uri, summary, durationMs }`; rejects removing a half-written
    * `out`. Meanwhile fires "reelExportProgress" `{ out, percent }`.
    */
@@ -222,7 +222,22 @@ public class VideoRemuxPlugin extends Plugin {
     for (int i = 0; i < arr.length(); i++) {
       JSONObject o = arr.optJSONObject(i);
       if (o == null || !o.has("fromMs") || !o.has("toMs")) continue;
-      out.add(new long[] { o.optLong("fromMs"), o.optLong("toMs") });
+      JSONObject crop = o.optJSONObject("crop");
+      if (crop != null && crop.has("x") && crop.has("y") && crop.has("w") && crop.has("h")) {
+        // A reel clip's crop rides along in millionths of the frame (see ReelExport).
+        out.add(
+          new long[] {
+            o.optLong("fromMs"),
+            o.optLong("toMs"),
+            Math.round(crop.optDouble("x") * ReelExport.CROP_UNIT),
+            Math.round(crop.optDouble("y") * ReelExport.CROP_UNIT),
+            Math.round(crop.optDouble("w") * ReelExport.CROP_UNIT),
+            Math.round(crop.optDouble("h") * ReelExport.CROP_UNIT),
+          }
+        );
+      } else {
+        out.add(new long[] { o.optLong("fromMs"), o.optLong("toMs") });
+      }
     }
     return out.isEmpty() ? null : out.toArray(new long[0][]);
   }

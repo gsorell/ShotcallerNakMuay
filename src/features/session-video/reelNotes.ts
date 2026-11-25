@@ -1,10 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
-import type { CallInfo } from "./calloutSignal";
-import { mainCall } from "./highlights";
-import type { ClipCut } from "./motion";
-
 /**
  * Every clip's verdict from the last recorded session, saved as a small
  * text file in the app's private storage: what was called, how it was cut,
@@ -39,22 +35,6 @@ export class ReelNotes {
   /** Clips judged so far, kept or not. */
   get judged(): number {
     return this.lines.filter((l) => l.startsWith("clip ")).length;
-  }
-
-  clip(
-    seq: number,
-    calls: CallInfo[],
-    cut: ClipCut,
-    score: number,
-    heard = cut.hits
-  ): void {
-    const what = calls
-      .map((c) => (c.between ? `+${c.text}` : c.text))
-      .join(" ");
-    this.lines.push(
-      `clip ${seq}\t${score.toFixed(2)}\thits=${cut.hits}/${heard}\tmotion=${cut.motion.toFixed(3)}\t` +
-        `${Math.round(cut.startMs)}-${Math.round(cut.endMs)}ms\t${what || mainCall(calls)?.text || "?"}`
-    );
   }
 
   round(n: number, picked: number[]): void {

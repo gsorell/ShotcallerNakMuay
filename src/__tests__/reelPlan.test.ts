@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { reelBudgetMs, techniqueFamily } from "@/features/session-video/highlights";
+import { isDefenceOnly, reelBudgetMs, techniqueFamily } from "@/features/session-video/highlights";
 import {
-  MAX_SEGMENT_MS,
+  CARD_SETTLE_MS,
+  CROP_MIN,
+  LEAD_MS,
+  MAX_CLIP_MS,
   MIN_BALANCE,
   MIN_VISIBLE,
+  RECORDING_LAG_MS,
+  TAIL_MS,
+  WATERMARK_TOP,
   finishBalance,
-  OVERLAP_MS,
-  PREROLL_MS,
   applyFraming,
-  callWindows,
+  callsFor,
   exportRanges,
+  findFlurries,
+  fitCrop,
+  flurryClip,
+  notTheFighter,
   pickReel,
   probeTimes,
   reelCandidates,
@@ -101,44 +109,101 @@ describe("reel length", () => {
   });
 });
 
-describe("the stretch each callout is judged over", () => {
-  it("opens before the call and overlaps the next one's start", () => {
-    const tl = { ...session(1), calls: [call(5000, "Jab"), call(8000, "Teep")] };
-    const [a, b] = callWindows(tl);
-    expect(a!.fromMs).toBe(5000 - PREROLL_MS);
-    expect(a!.toMs).toBe(8000 - PREROLL_MS + OVERLAP_MS);
-    expect(b!.fromMs).toBe(8000 - PREROLL_MS);
+describe("finding the flurries", () => {
+  it("finds each burst of movement, and only those", () => {
+    const tl = session(1);
+    const fl = findFlurries(tl);
+    expect(fl).toHaveLength(tl.calls.length);
+    for (const [i, f] of fl.entries()) {
+      expect(f.fromMs).toBeGreaterThanOrEqual(tl.calls[i]!.t + 100);
+      expect(f.toMs).toBeLessThanOrEqual(tl.calls[i]!.t + 1800);
+    }
   });
 
-  it("folds a between-call into the combination before it", () => {
-    const tl = { ...session(1), calls: [call(5000, "Jab, Cross"), call(6500, "Check", true), call(9000, "Teep")] };
-    const ws = callWindows(tl);
-    expect(ws).toHaveLength(2);
-    expect(ws[0]!.calls.map((c) => c.text)).toEqual(["Jab, Cross", "Check"]);
+  it("runs a beat between strikes together, and splits a real stop", () => {
+    const tl = session(1);
+    const busy = (at: number) =>
+      (at >= 10000 && at <= 11000) || (at >= 11400 && at <= 12400) || (at >= 15000 && at <= 16000);
+    tl.motion = tl.motion.map((s) => ({ ...s, m: busy(s.at) ? 0.08 : 0.01 }));
+    const fl = findFlurries(tl);
+    expect(fl).toHaveLength(2);
+    expect(fl[0]!.toMs - fl[0]!.fromMs).toBeGreaterThan(2200);
   });
 
-  it("stops at the end of the round, and at a backstop with no next call", () => {
-    const tl = { ...session(1), calls: [call(60000, "Jab")] };
-    expect(callWindows(tl)[0]!.toMs).toBe(62000);
-    const long = { ...session(1), calls: [call(5000, "Jab")] };
-    expect(callWindows(long)[0]!.toMs).toBe(5000 - PREROLL_MS + MAX_SEGMENT_MS);
+  it("judges each round against itself: a camera moved closer isn't busier", () => {
+    const tl = session(2);
+    const second = tl.work[1]!.fromMs;
+    tl.motion = tl.motion.map((s) => (s.at >= second ? { ...s, m: s.m * 4 } : s));
+    const fl = findFlurries(tl);
+    expect(fl.filter((f) => f.round === 0).length).toBe(fl.filter((f) => f.round === 1).length);
   });
 
-  it("judges nothing called during a rest", () => {
-    const tl = { ...session(2), calls: [call(66000, "Jab")] };
-    expect(callWindows(tl)).toHaveLength(0);
+  it("ignores rests", () => {
+    const tl = session(2);
+    tl.motion = tl.motion.map((s) => (s.at > 63000 && s.at < 71000 ? { ...s, m: 0.2 } : s));
+    expect(findFlurries(tl).some((f) => f.fromMs > 62000 && f.toMs < 72000)).toBe(false);
+  });
+});
+
+describe("a flurry's clip", () => {
+  const work = { fromMs: 0, toMs: 60000 };
+
+  it("opens just before the first movement and ends just after the last", () => {
+    const clip = flurryClip({ fromMs: 10000, toMs: 11500, energy: 3, round: 0 }, work);
+    expect(clip).toEqual({ fromMs: 10000 - LEAD_MS, toMs: 11500 + TAIL_MS });
+  });
+
+  it("keeps the finish and loses the front when it runs long", () => {
+    const clip = flurryClip({ fromMs: 10000, toMs: 16000, energy: 3, round: 0 }, work);
+    expect(clip.toMs).toBe(16000 + TAIL_MS);
+    expect(clip.toMs - clip.fromMs).toBe(MAX_CLIP_MS);
+  });
+
+  it("stays inside the round", () => {
+    const clip = flurryClip({ fromMs: 59000, toMs: 59900, energy: 3, round: 0 }, work);
+    expect(clip.toMs).toBe(60000);
+  });
+});
+
+describe("what was called for a clip", () => {
+  it("is the last combination called before it got going, with its between-call", () => {
+    const calls = [call(5000, "Jab"), call(8000, "Jab, Cross, Left Kick"), call(9500, "Check", true), call(12000, "Teep")];
+    expect(callsFor(calls, { fromMs: 8700, toMs: 11000 }).map((c) => c.text)).toEqual([
+      "Jab, Cross, Left Kick",
+      "Check",
+    ]);
+  });
+
+  it("is nothing when nothing was called near it", () => {
+    expect(callsFor([call(5000, "Jab")], { fromMs: 20000, toMs: 22000 })).toEqual([]);
+  });
+
+  it("knows a call that is only defence", () => {
+    expect(isDefenceOnly("Check")).toBe(true);
+    expect(isDefenceOnly("Long Guard, Right Knee")).toBe(false);
   });
 });
 
 describe("candidates", () => {
-  it("trims each callout to its action and knows its round", () => {
-    const cands = reelCandidates(session(2));
+  it("makes a clip of each flurry, knows its round and what was called", () => {
+    const tl = session(2);
+    const cands = reelCandidates(tl);
     expect(cands.length).toBeGreaterThan(15);
     for (const c of cands) {
       expect(c.toMs - c.fromMs).toBeGreaterThanOrEqual(1200);
-      expect(c.toMs - c.fromMs).toBeLessThan(5000);
+      expect(c.toMs - c.fromMs).toBeLessThanOrEqual(MAX_CLIP_MS);
+      expect(c.calls).toHaveLength(1);
     }
     expect(new Set(cands.map((c) => c.round))).toEqual(new Set([0, 1]));
+  });
+
+  it("scores a flurry that lands above one that only moved", () => {
+    const tl = session(1);
+    const [a, b] = [tl.calls[2]!.t, tl.calls[3]!.t];
+    tl.hits = [a + 600, a + 900, a + 1200];
+    const cands = reelCandidates(tl);
+    const at = (t: number) => cands.find((c) => c.fromMs <= t + 600 && c.toMs >= t + 600)!;
+    expect(at(a).score).toBeGreaterThan(at(b).score);
   });
 
   it("leaves the opening to the title", () => {
@@ -190,9 +255,61 @@ describe("framing", () => {
     const a = cand({ seq: 1 });
     const b = cand({ seq: 2 });
     const c = cand({ seq: 3 });
-    const out = applyFraming([a, b, c], [...frames(a, 1, 0.8), ...frames(b, 1, 0.3)]);
+    const out = applyFraming([a, b, c], [...frames(a, 1, 0.65), ...frames(b, 1, 0.55)]);
     expect(out[0]!.score).toBeGreaterThan(out[1]!.score);
     expect(out[2]!.score).toBe(1);
+  });
+
+  it("drops a clip that shows someone else, not one odd frame", () => {
+    // The 2026-11-24 session: a child by the bag read as a taller person off to one side.
+    const usual = { x: 0.45, y: 0.48, w: 0.12, h: 0.235 };
+    const child = { x: 0.36, y: 0.51, w: 0.12, h: 0.3 };
+    const cs = Array.from({ length: 4 }, (_, i) => cand({ seq: i + 1 }));
+    const fs = cs.flatMap((c) => probeTimes(c).map((tMs) => ({ tMs, person: true, visible: 1, box: usual })));
+    const [kid, odd] = [cs[0]!, cs[1]!];
+    const swap = (c: ReelCandidate, n: number) =>
+      probeTimes(c)
+        .slice(0, n)
+        .forEach((t) => (fs.find((f) => f.tMs === t)!.box = child));
+    swap(kid, 2);
+    swap(odd, 1);
+    expect(applyFraming(cs, fs).map((c) => c.seq)).toEqual([2, 3, 4]);
+  });
+
+  it("tells the fighter's own movement from someone else", () => {
+    const usual = { h: 0.235, cx: 0.51 };
+    expect(notTheFighter({ x: 0.45, y: 0.48, w: 0.12, h: 0.25 }, usual)).toBe(false);
+    expect(notTheFighter({ x: 0.4, y: 0.5, w: 0.3, h: 0.22 }, usual)).toBe(false);
+    expect(notTheFighter({ x: 0.38, y: 0.53, w: 0.16, h: 0.3 }, usual)).toBe(true);
+    expect(notTheFighter({ x: 0.33, y: 0.52, w: 0.18, h: 0.28 }, usual)).toBe(true);
+  });
+});
+
+describe("cropping in on the fighter", () => {
+  const small = { x: 0.45, y: 0.48, w: 0.12, h: 0.235 };
+
+  it("crops a small fighter as close as the picture allows, centred on them", () => {
+    const crop = fitCrop([small, small, small], { h: 0.235, cx: 0.51 })!;
+    expect(crop.w).toBe(CROP_MIN);
+    expect(crop.h).toBe(CROP_MIN);
+    expect(crop.x).toBeCloseTo(0.51 - CROP_MIN / 2, 2);
+  });
+
+  it("never reaches down into the burned-in watermark, or off the frame", () => {
+    const low = { x: 0.02, y: 0.6, w: 0.12, h: 0.3 };
+    const crop = fitCrop([low], { h: 0.3, cx: 0.08 })!;
+    expect(crop.x).toBe(0);
+    expect(crop.y + crop.h).toBeLessThanOrEqual(WATERMARK_TOP + 1e-9);
+  });
+
+  it("leaves a fighter who already fills the frame alone", () => {
+    expect(fitCrop([{ x: 0.2, y: 0.1, w: 0.4, h: 0.8 }], { h: 0.8, cx: 0.4 })).toBeUndefined();
+  });
+
+  it("crops every probed clip in a round that shows the fighter", () => {
+    const cs = Array.from({ length: 3 }, (_, i) => cand({ seq: i + 1 }));
+    const fs = cs.flatMap((c) => probeTimes(c).map((tMs) => ({ tMs, person: true, visible: 1, box: small })));
+    for (const c of applyFraming(cs, fs)) expect(c.crop?.w).toBe(CROP_MIN);
   });
 });
 
@@ -291,7 +408,27 @@ describe("what gets cut out of the recording", () => {
     const picks = [cand({ seq: 2 }), cand({ seq: 5 })];
     const ranges = exportRanges(tl, picks);
     expect(ranges[0]).toEqual(tl.title);
-    expect(ranges[ranges.length - 1]).toEqual(tl.endCard);
+    expect(ranges[ranges.length - 1]!.fromMs).toBeGreaterThan(tl.endCard!.fromMs);
     expect(ranges).toHaveLength(4);
+  });
+
+  it("cuts on the recording's clock, which trails the timeline, and never opens the card on the room", () => {
+    const tl = session(1);
+    const pick = cand({ seq: 2 });
+    const [, clip, card] = exportRanges(tl, [pick]);
+    expect(clip!.fromMs - pick.fromMs).toBe(RECORDING_LAG_MS);
+    expect(clip!.toMs - pick.toMs).toBe(RECORDING_LAG_MS);
+    expect(card!.fromMs).toBe(tl.endCard!.fromMs + CARD_SETTLE_MS);
+    // The 2026-11-24 card appeared 333 ms after it was stamped.
+    expect(CARD_SETTLE_MS).toBeGreaterThan(333);
+  });
+
+  it("crops the clips, never the title or end card", () => {
+    const tl = session(1);
+    const crop = { x: 0.1, y: 0.2, w: 0.6, h: 0.6 };
+    const ranges = exportRanges(tl, [cand({ seq: 2, crop })]);
+    expect(ranges[1]!.crop).toEqual(crop);
+    expect(ranges[0]!.crop).toBeUndefined();
+    expect(ranges[2]!.crop).toBeUndefined();
   });
 });

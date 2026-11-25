@@ -177,7 +177,7 @@ function ReelRow({ src }: { src: string | null }) {
             Cutting your reel…{pct && <span className="reel-ready-pct"> {pct}</span>}
           </span>
           <span className="reel-ready-sub">
-            {progress === null ? "Picking your best moments" : "Keep the app open until it's done"}
+            This can take a minute or two. Keep the app open until it's done.
           </span>
           <ReelProgress progress={progress} />
         </span>

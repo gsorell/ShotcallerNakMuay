@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { openBuiltInMic } from "@/features/session-video/micChoice";
-import { cutClip } from "@/features/session-video/motion";
+import { reelCandidates } from "@/features/session-video/reelPlan";
 import { keepsReel } from "@/features/session-video/reelRecorder";
 
 const memory = () => {
@@ -122,16 +122,17 @@ describe("the first request after a launch", () => {
 
 describe("a clip with sound but no movement", () => {
   it("is no clip: a bell heard as hits doesn't make one", () => {
-    const still = [];
-    for (let t = 0; t <= 3000; t += 100) still.push({ t, m: 0.005 });
-    const cut = cutClip({
-      samples: still,
-      durationMs: 3000,
-      levels: { floor: 0.005, threshold: 0.02 },
-      hits: [400, 520, 700],
-      callAtMs: 300,
+    const motion = [];
+    for (let at = 0; at <= 60000; at += 100) motion.push({ at, m: 0.005 + (at % 700 === 0 ? 0.001 : 0) });
+    const cands = reelCandidates({
+      calls: [{ t: 30000, text: "Jab, Cross", between: false, combo: true }],
+      speech: [],
+      hits: [30400, 30520, 30700],
+      motion,
+      work: [{ fromMs: 0, toMs: 60000 }],
+      roundEnds: [60000],
     });
-    expect(cut.endMs - cut.startMs).toBe(0);
+    expect(cands).toHaveLength(0);
   });
 });
 

@@ -1,11 +1,20 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core";
 
-import { MIN_VISIBLE, type FramingFrame } from "./reelPlan";
+import { MIN_VISIBLE, type Crop, type FramingFrame } from "./reelPlan";
 
 /** A stretch of a recording to keep, in ms from its first frame. */
 export interface KeepSpan {
   fromMs: number;
   toMs: number;
+}
+
+/**
+ * A stretch for the reel, and the part of the frame to show (fractions of
+ * the frame). Cropped clips get the watermark drawn back over them, since
+ * the burned-in one is cropped away. Android only: iOS makes no reel.
+ */
+export interface ReelClip extends KeepSpan {
+  crop?: Crop;
 }
 
 interface VideoRemuxPlugin {
@@ -19,7 +28,7 @@ interface VideoRemuxPlugin {
   probeFraming(opts: { file: string; timesMs: number[] }): Promise<{ frames: FramingFrame[] }>;
   exportReel(opts: {
     file: string;
-    clips: KeepSpan[];
+    clips: ReelClip[];
     out: string;
     width?: number;
     height?: number;
@@ -34,6 +43,10 @@ interface VideoRemuxPlugin {
 }
 
 const VideoRemux = registerPlugin<VideoRemuxPlugin>("VideoRemux");
+
+/** probeFraming's batches: about this many, of at least PROBE_BATCH_MIN times. */
+const PROBE_BATCHES = 8;
+const PROBE_BATCH_MIN = 10;
 
 /**
  * The same fix for a video already on disk and too big to hold in memory:
@@ -75,17 +88,28 @@ export const remuxFileToMp4 = async (
  * Whether the fighter is in shot at each moment of a recording on disk:
  * pose detection on the exact frame, natively (Vision on iOS, ML Kit on
  * Android). Null on any failure or in the browser: the reel is then picked
- * without the check.
+ * without the check. `onProgress` hears how far along it is, 0 to 1: the
+ * times go over in a few batches so there is something to report, since
+ * this is most of the wait (147 frames took 59 s on a Pixel 9 Pro XL).
  */
 export const probeFraming = async (
   file: string,
   timesMs: number[],
-  log: (line: string) => void = () => {}
+  log: (line: string) => void = () => {},
+  onProgress?: (fraction: number) => void
 ): Promise<FramingFrame[] | null> => {
   if (!Capacitor.isNativePlatform() || !timesMs.length) return null;
   try {
     const startedAt = Date.now();
-    const { frames } = await VideoRemux.probeFraming({ file, timesMs });
+    const frames: FramingFrame[] = [];
+    // Each call opens the file and a pose detector again; eight is enough
+    // steps for the bar to move without paying that many times over.
+    const size = Math.max(PROBE_BATCH_MIN, Math.ceil(timesMs.length / PROBE_BATCHES));
+    for (let i = 0; i < timesMs.length; i += size) {
+      const batch = await VideoRemux.probeFraming({ file, timesMs: timesMs.slice(i, i + size) });
+      frames.push(...batch.frames);
+      onProgress?.(Math.min(1, (i + size) / timesMs.length));
+    }
     const out = frames.filter((f) => f.person && f.visible >= MIN_VISIBLE).length;
     log(`framing probed: ${frames.length} frames in ${Date.now() - startedAt}ms, ${out} fully in shot`);
     return frames;
@@ -100,14 +124,14 @@ export const REEL_EXPORT = { width: 1080, height: 1920, fps: 30, videoBps: 10_00
 
 /**
  * Cuts `clips` out of a recording on disk, back to back, into `out`:
- * frame-accurate, scaled to REEL_EXPORT, encoded once with the phone's
+ * frame-accurate, cropped where a clip says, scaled to REEL_EXPORT, encoded once with the phone's
  * hardware encoder, the sound faded at each cut and brought to a feed's
  * loudness. Null on any failure or in the browser. `onProgress` hears how
  * far along it is, 0 to 1, as the native side reports it.
  */
 export const exportReel = async (
   file: string,
-  clips: KeepSpan[],
+  clips: ReelClip[],
   out: string,
   log: (line: string) => void = () => {},
   onProgress?: (fraction: number) => void

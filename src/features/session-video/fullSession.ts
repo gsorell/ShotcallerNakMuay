@@ -250,7 +250,9 @@ export class FullSession {
       // it is also how close to a round's start a cut can land.
       const rec = new MediaRecorder(stream, {
         // The only encoder running now (the reel is cut from this afterwards).
-        videoBitsPerSecond: 6_000_000,
+        // 10 Mbps for 1080p, the reel's own rate: what's lost here the reel
+        // can't get back. About 75 MB a minute of session.
+        videoBitsPerSecond: 10_000_000,
         ...(audio.length ? { audioBitsPerSecond: 128_000 } : {}),
         videoKeyFrameIntervalDuration: 2000,
         ...(mimeType ? { mimeType } : {}),

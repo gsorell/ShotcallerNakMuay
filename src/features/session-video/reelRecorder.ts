@@ -132,10 +132,13 @@ export class ReelRecorder {
 
   /** Opens the camera (and microphone) into `preview` and gets ready. */
   async start(preview: HTMLVideoElement): Promise<void> {
+    // 1080p, the reel's own size. At 720p every reel frame was scaled up at
+    // least 1.5×, and a cropped clip about 2.5×, which looked soft (Pixel 9
+    // Pro XL, 2026-11-25). "ideal": a camera without 1080p gives what it has.
     const video = {
       facingMode: "user",
-      width: { ideal: 1280 },
-      height: { ideal: 720 },
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
       frameRate: { ideal: 30 },
     };
     const native = recordsSoundNatively();
@@ -350,8 +353,20 @@ export class ReelRecorder {
     return this.cutReel(source, timeline);
   }
 
-  /** Plans the reel from the timeline and cuts it out of `source`. */
+  /**
+   * Plans the reel from the timeline and cuts it out of `source`. The
+   * completion screen's bar covers the whole wait, cleared however it ends.
+   */
   private async cutReel(source: string, tl: SessionTimeline): Promise<SessionReel | null> {
+    setReelExportProgress(0);
+    try {
+      return await this.planAndCut(source, tl);
+    } finally {
+      setReelExportProgress(null);
+    }
+  }
+
+  private async planAndCut(source: string, tl: SessionTimeline): Promise<SessionReel | null> {
     const log = (line: string) => this.notes.log(line);
     const cardsMs = (tl.title ? tl.title.toMs - tl.title.fromMs : 0) +
       (tl.endCard ? tl.endCard.toMs - tl.endCard.fromMs : 0);
@@ -359,7 +374,15 @@ export class ReelRecorder {
     const cands = reelCandidates(tl);
     const short = shortlist(cands, budget);
     log(`${tl.calls.length} calls, ${cands.length} clips with action, ${short.length} shortlisted, budget ${Math.round(budget / 1000)}s`);
-    const frames = await probeFraming(source, short.flatMap(probeTimes), log);
+    const times = short.flatMap(probeTimes);
+    // The bar's split between the two steps, from a Pixel 9 Pro XL on
+    // 2026-11-25: about 0.4 s a probed frame, and an encode of about half
+    // the reel's length (147 frames in 59 s; a 39 s reel in 18.5 s).
+    const probeCost = times.length * 400;
+    const probeShare = probeCost / (probeCost + budget * 0.5);
+    const frames = await probeFraming(source, times, log, (f) =>
+      setReelExportProgress(f * probeShare)
+    );
     void this.notes.saveReplay({ workedMs: this.workedMs, budget, timeline: tl, frames });
     const judged = frames ? applyFraming(short, frames) : short;
     if (frames) log(`${judged.length} of ${short.length} shortlisted fully in shot and finishing in balance`);
@@ -376,9 +399,8 @@ export class ReelRecorder {
       return null;
     }
     const ranges = exportRanges(tl, picks);
-    // The completion screen shows how far the encode has got: it's the long wait.
-    const made = await exportReel(source, ranges, await reelOutUri(), log, setReelExportProgress).finally(() =>
-      setReelExportProgress(null)
+    const made = await exportReel(source, ranges, await reelOutUri(), log, (f) =>
+      setReelExportProgress(probeShare + f * (1 - probeShare))
     );
     if (!made) {
       this.fail("the reel could not be exported");
