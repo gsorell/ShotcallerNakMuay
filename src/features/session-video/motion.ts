@@ -93,6 +93,8 @@ export class MotionMeter {
   private weights: Float32Array | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private samples: MotionSample[] = [];
+  /** A frame is on its way: the next tick waits rather than stacking up. */
+  private busy = false;
 
   constructor(private readonly video: HTMLVideoElement) {}
 
@@ -142,8 +144,42 @@ export class MotionMeter {
       this.prev = null;
       this.weights = centreWeights(w, h);
     }
+    // Taken now: the bitmap below arrives a little later.
+    const at = performance.now();
+    if (typeof createImageBitmap !== "function") {
+      this.read(v, w, h, at);
+      return;
+    }
+    // Shrunk by the browser before it reaches this canvas. Drawn straight
+    // from the 1080p video into a canvas that is read back, the whole frame
+    // was copied off the GPU ten times a second, and that stalled the
+    // camera's pipeline: the preview and the full session dropped from 30 to
+    // about 13 fps, and every reel was choppy (Pixel 9 Pro XL, 2026-11-27).
+    if (this.busy) return;
+    this.busy = true;
+    createImageBitmap(v, { resizeWidth: w, resizeHeight: h, resizeQuality: "low" })
+      .then((bmp) => {
+        try {
+          this.read(bmp, w, h, at);
+        } finally {
+          bmp.close();
+        }
+      })
+      // A browser that can't make a bitmap from the video (or shrink one)
+      // reads it the old way: slower, but the meter keeps its readings.
+      .catch(() => this.read(v, w, h, at))
+      .finally(() => {
+        this.busy = false;
+      });
+  }
+
+  /** Compares `src`, already `w`x`h` or drawn to it, with the last sample. */
+  private read(src: CanvasImageSource, w: number, h: number, at: number): void {
+    const ctx = this.ctx;
+    // Stopped, or the camera's shape changed while the bitmap was on its way.
+    if (!ctx || !this.timer || this.canvas.width !== w || this.canvas.height !== h) return;
     try {
-      ctx.drawImage(v, 0, 0, w, h);
+      ctx.drawImage(src, 0, 0, w, h);
       const { data } = ctx.getImageData(0, 0, w, h);
       const lum = new Float32Array(w * h);
       let mean = 0;
@@ -163,7 +199,6 @@ export class MotionMeter {
           wsum += wt;
           if (d > CHANGED_PIXEL) changed += 1;
         }
-        const at = performance.now();
         this.samples.push({
           at,
           m: sum / wsum,

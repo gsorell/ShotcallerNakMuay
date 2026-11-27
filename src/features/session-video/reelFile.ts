@@ -24,6 +24,15 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
 const PIECE = 2 * 1024 * 1024;
 
 /**
+ * The piece size while the camera is filming. Each piece holds up the page
+ * while it is encoded and handed over; at 2 MB the full session's 10 s chunk
+ * (about 10 MB at 1080p) stalled the drawing for up to 190 ms every 10 s,
+ * dropping frames from the recording. 256 KB pieces left no stall over
+ * 100 ms (Pixel 9 Pro XL, 2026-11-27).
+ */
+export const LIVE_PIECE = 256 * 1024;
+
+/**
  * Writes (or, with `append`, adds to) a file from a Blob, a piece at a time.
  * Everything crossing to native code travels as one base64 string in the
  * app's Java heap (256 MB on a Pixel 9); a 43 MB recording sent in one call
@@ -33,12 +42,13 @@ export const writeBlobInPieces = async (
   path: string,
   directory: Directory,
   blob: Blob,
-  append = false
+  append = false,
+  piece = PIECE
 ): Promise<string> => {
   let uri = "";
   let started = append;
-  for (let at = 0; at < blob.size || (!started && at === 0); at += PIECE) {
-    const data = await blobToBase64(blob.slice(at, at + PIECE));
+  for (let at = 0; at < blob.size || (!started && at === 0); at += piece) {
+    const data = await blobToBase64(blob.slice(at, at + piece));
     if (started) {
       await Filesystem.appendFile({ path, directory, data });
     } else {
