@@ -3,7 +3,7 @@ import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
 import type { NativeSound } from "./micChoice";
 import { getKeepFullSession, reelWanted } from "./recordPreference";
-import { writeBlobInPieces } from "./reelFile";
+import { LIVE_PIECE, writeBlobInPieces } from "./reelFile";
 import { drawCard, drawTitleOverlay, type Card } from "./reelRenderer";
 import { patchFullSession, setFullSession } from "./reelStore";
 import { remuxFileToMp4, type KeepSpan } from "./remux";
@@ -540,7 +540,7 @@ export class FullSession {
   private async append(chunk: Blob): Promise<void> {
     if (this.broken) return;
     try {
-      await writeBlobInPieces(`${this.path}.${this.ext}`, Directory.Cache, chunk, this.wrote);
+      await writeBlobInPieces(`${this.path}.${this.ext}`, Directory.Cache, chunk, this.wrote, LIVE_PIECE);
       this.wrote = true;
       this.bytes += chunk.size;
       this.chunks += 1;
